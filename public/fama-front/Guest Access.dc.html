@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F4EDDD; --surface:#FCF8EF; --elevated:#FFFFFF;
+  --ink:#1B1813; --muted:#6E665A; --subtle:#9C927F;
+  --line:#E5DCCD; --line-strong:#D6CBB7;
+  --primary:#1B1813; --on-primary:#F6F1E7;
+  --accent:#22608C; --accent-weak:#D9E5EF; --accent-ink:#16405F; --on-accent:#FBF8F0;
+  --gold:#B0862F; --gold-weak:#EEE0C2;
+  --success:#4E7C59; --success-weak:#DDE8DB;
+  --warn:#A87B2C; --warn-weak:#EFE4C8;
+  --danger:#B14A3A; --danger-weak:#F0DAD2;
+  --focus:rgba(34,96,140,.42);
+  --font-head:var(--font-display);
+  --r-xs:2px; --r-sm:4px; --r-md:8px; --r-lg:14px; --r-pill:999px;
+  --e1:0 1px 2px rgba(27,24,19,.05),0 1px 3px rgba(27,24,19,.04);
+  --e2:0 6px 16px -8px rgba(27,24,19,.14),0 2px 6px -3px rgba(27,24,19,.08);
+  --e3:0 18px 40px -14px rgba(27,24,19,.20),0 6px 14px -10px rgba(27,24,19,.12);
+  --e4:0 36px 80px -24px rgba(27,24,19,.34);
+  --dur-1:90ms; --dur-2:160ms; --dur-3:260ms; --dur-4:420ms; --dur-5:680ms;
+  --ease-out:cubic-bezier(.16,1,.3,1); --ease-in-out:cubic-bezier(.65,0,.35,1);
+  --ease-spring:cubic-bezier(.34,1.4,.64,1); --ease-in:cubic-bezier(.4,0,1,1);
+  --font-display:"Bodoni Moda",Georgia,"Times New Roman",serif;
+  --font-ui:"IBM Plex Sans","IBM Plex Sans Arabic",system-ui,sans-serif;
+  --font-ar:"IBM Plex Sans Arabic","IBM Plex Sans",system-ui,sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+[data-theme="dark"]{
+  --bg:#0E1317; --surface:#151C21; --elevated:#1D262B;
+  --ink:#F1E9DA; --muted:#AEA48F; --subtle:#7E7565;
+  --line:#28323A; --line-strong:#39454D;
+  --primary:#F1E9DA; --on-primary:#1B1813;
+  --accent:#5AA6D6; --accent-weak:#153140; --accent-ink:#92C7E8; --on-accent:#0E1317;
+  --gold:#CCA45E; --gold-weak:#332913;
+  --success:#6FA277; --success-weak:#1E2B20;
+  --warn:#CDA04A; --warn-weak:#302813;
+  --danger:#D2715F; --danger-weak:#35201B;
+  --focus:rgba(90,166,214,.5);
+  --e1:0 1px 2px rgba(0,0,0,.4),0 1px 3px rgba(0,0,0,.3);
+  --e2:0 8px 20px -8px rgba(0,0,0,.55),0 2px 6px -3px rgba(0,0,0,.4);
+  --e3:0 20px 44px -14px rgba(0,0,0,.6),0 6px 14px -10px rgba(0,0,0,.45);
+  --e4:0 40px 90px -24px rgba(0,0,0,.7);
+}
+[dir="rtl"]{--font-head:var(--font-ar)}
+[dir="ltr"]{--font-head:var(--font-display)}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font-family:var(--font-ui);background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+::selection{background:var(--accent);color:var(--on-accent)}
+*{transition-property:transform,box-shadow,opacity,width!important}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes toastIn{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}}
+</style>
+</helmet>
+<div data-theme="{{ theme }}" dir="{{ dir }}" style="min-height:100vh;background:var(--bg);color:var(--ink);font-family:var(--font-ui);display:flex;flex-direction:column">
+
+  <header style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px clamp(16px,4vw,44px)">
+    <div style="display:flex;align-items:baseline;gap:1px"><span style="font-family:var(--font-display);font-weight:600;font-size:24px">Fama</span><span style="color:var(--accent);font-family:var(--font-display);font-weight:600;font-size:24px">.</span></div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div role="group" aria-label="Language" style="display:inline-flex;align-items:center;gap:2px;border:1px solid var(--line-strong);border-radius:var(--r-pill);padding:3px;background:var(--surface)">
+        <button type="button" onClick="{{ setEn }}" aria-pressed="{{ isEn }}" style="{{ enBtnStyle }}">EN</button>
+        <button type="button" onClick="{{ setAr }}" aria-pressed="{{ isAr }}" style="{{ arBtnStyle }}">ع</button>
+      </div>
+      <button type="button" onClick="{{ toggleTheme }}" aria-label="{{ s.themeLabel }}" style-hover="border-color:var(--accent);color:var(--accent)" style="width:38px;height:38px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);border-radius:var(--r-pill);cursor:pointer">
+        <span style="position:relative;width:17px;height:17px;display:inline-block"><span style="position:absolute;inset:0;border-radius:var(--r-pill);background:currentColor"></span><sc-if value="{{ isDark }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:-3px;inset-inline-end:-4px;width:15px;height:15px;border-radius:var(--r-pill);background:var(--surface)"></span></sc-if></span>
+      </button>
+    </div>
+  </header>
+
+  <main style="flex:1;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:clamp(28px,5vw,72px);padding:clamp(24px,4vw,56px) clamp(16px,4vw,44px);max-width:1160px;margin-inline:auto;width:100%">
+
+    <!-- EDITORIAL / LOCKED PREVIEW -->
+    <section style="flex:1 1 360px;max-width:480px">
+      <div style="font-family:var(--font-mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--accent-ink);margin-block-end:18px">{{ s.kicker }}</div>
+      <h1 style="font-family:var(--font-head);font-weight:500;font-size:clamp(34px,5vw,56px);line-height:1.04;letter-spacing:-.015em;margin:0">{{ s.headline }}</h1>
+      <p style="font-size:clamp(15px,1.5vw,17px);color:var(--muted);line-height:1.6;margin:20px 0 0;max-width:44ch">{{ s.blurb }}</p>
+      <div style="position:relative;margin-block-start:32px;border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;background:var(--surface)">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding:16px;filter:blur(3px);opacity:.7">
+          <div style="aspect-ratio:3/4;border-radius:var(--r-sm);background:repeating-linear-gradient(135deg,var(--line) 0 1px,transparent 1px 10px),var(--elevated)"></div>
+          <div style="aspect-ratio:3/4;border-radius:var(--r-sm);background:repeating-linear-gradient(135deg,var(--line) 0 1px,transparent 1px 10px),var(--elevated)"></div>
+          <div style="aspect-ratio:3/4;border-radius:var(--r-sm);background:repeating-linear-gradient(135deg,var(--line) 0 1px,transparent 1px 10px),var(--elevated)"></div>
+        </div>
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:color-mix(in srgb,var(--surface) 40%,transparent)">
+          <span style="position:relative;width:26px;height:30px;display:block"><span style="position:absolute;inset-block-start:0;inset-inline-start:5px;width:16px;height:15px;border:2.5px solid var(--accent-ink);border-block-end:0;border-radius:8px 8px 0 0"></span><span style="position:absolute;inset-block-end:0;inset-inline-start:0;width:26px;height:19px;border-radius:var(--r-sm);background:var(--accent-ink)"></span></span>
+          <span style="font-family:var(--font-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-ink)">{{ s.lockedPreview }}</span>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px;margin-block-start:28px">
+        <sc-for list="{{ perks }}" as="p" hint-placeholder-count="3"><div style="display:flex;align-items:center;gap:11px"><span style="width:20px;height:20px;flex-shrink:0;border-radius:var(--r-pill);background:var(--accent-weak);color:var(--accent-ink);display:grid;place-items:center;font-size:10px;font-weight:700">✓</span><span style="font-size:14px;color:var(--ink)">{{ p }}</span></div></sc-for>
+      </div>
+    </section>
+
+    <!-- AUTH CARD -->
+    <section style="flex:1 1 380px;max-width:440px;width:100%">
+      <div style="background:var(--elevated);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--e3);padding:clamp(24px,3vw,34px)">
+        <div style="display:inline-flex;align-items:center;gap:8px;background:var(--warn-weak);color:color-mix(in srgb,var(--warn) 76%,var(--ink));border-radius:var(--r-pill);padding:6px 13px;font-size:12px;font-weight:600;margin-block-end:20px">
+          <span style="position:relative;width:13px;height:15px;display:block"><span style="position:absolute;inset-block-start:0;inset-inline-start:2.5px;width:8px;height:8px;border:2px solid currentColor;border-block-end:0;border-radius:4px 4px 0 0"></span><span style="position:absolute;inset-block-end:0;inset-inline-start:0;width:13px;height:10px;border-radius:2px;background:currentColor"></span></span>
+          {{ s.membersOnly }}
+        </div>
+        <h2 style="font-family:var(--font-head);font-weight:500;font-size:clamp(24px,3vw,30px);margin:0 0 8px;letter-spacing:-.01em">{{ s.gateTitle }}</h2>
+        <p style="font-size:14px;color:var(--muted);line-height:1.6;margin:0 0 22px">{{ s.gateSub }}</p>
+
+        <div style="display:inline-flex;width:100%;border:1px solid var(--line-strong);border-radius:var(--r-pill);padding:3px;background:var(--surface);margin-block-end:20px">
+          <sc-for list="{{ roleItems }}" as="r" hint-placeholder-count="2"><button type="button" onClick="{{ r.onClick }}" style="{{ r.style }}">{{ r.label }}</button></sc-for>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <label style="display:flex;flex-direction:column;gap:7px"><span style="font-family:var(--font-mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)">{{ s.email }}</span><input type="email" value="{{ email }}" onChange="{{ onEmail }}" placeholder="name@studio.com" style="width:100%;background:var(--surface);border:1px solid {{ emailBorder }};border-radius:var(--r-sm);padding:12px 14px;font-family:var(--font-ui);font-size:14px;color:var(--ink);outline:none" style-focus="border-color:var(--accent);box-shadow:0 0 0 3px var(--focus)" /></label>
+          <label style="display:flex;flex-direction:column;gap:7px"><span style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-family:var(--font-mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)">{{ s.password }}</span><button type="button" onClick="{{ toggleShowPw }}" style="background:transparent;border:0;color:var(--accent-ink);font-family:var(--font-ui);font-size:11px;cursor:pointer;font-weight:600">{{ showPwLabel }}</button></span><input type="{{ pwType }}" value="{{ pw }}" onChange="{{ onPw }}" placeholder="••••••••" style="width:100%;background:var(--surface);border:1px solid {{ pwBorder }};border-radius:var(--r-sm);padding:12px 14px;font-family:var(--font-ui);font-size:14px;color:var(--ink);outline:none" style-focus="border-color:var(--accent);box-shadow:0 0 0 3px var(--focus)" /></label>
+          <sc-if value="{{ showErr }}" hint-placeholder-val="{{ false }}"><div style="font-size:12px;color:var(--danger)">{{ s.errMsg }}</div></sc-if>
+          <button type="button" onClick="{{ submit }}" style="background:var(--primary);color:var(--on-primary);border:0;padding:13px;border-radius:var(--r-sm);font-family:var(--font-ui);font-weight:600;font-size:15px;cursor:pointer;margin-block-start:4px" style-hover="transform:translateY(-1px);box-shadow:var(--e2)">{{ signInLabel }}</button>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:12px;margin-block:22px"><span style="flex:1;height:1px;background:var(--line)"></span><span style="font-family:var(--font-mono);font-size:11px;color:var(--subtle)">{{ s.or }}</span><span style="flex:1;height:1px;background:var(--line)"></span></div>
+
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <button type="button" onClick="{{ createAccount }}" style="background:transparent;color:var(--ink);border:1px solid var(--line-strong);padding:12px;border-radius:var(--r-sm);font-family:var(--font-ui);font-weight:600;font-size:14px;cursor:pointer" style-hover="border-color:var(--accent);color:var(--accent-ink);background:var(--accent-weak)">{{ createLabel }}</button>
+          <a href="Talent Discovery.dc.html" style="text-align:center;background:transparent;color:var(--muted);border:0;padding:10px;border-radius:var(--r-sm);font-family:var(--font-ui);font-weight:500;font-size:13px;cursor:pointer;text-decoration:none" style-hover="color:var(--accent-ink)">{{ s.continueGuest }} →</a>
+        </div>
+      </div>
+      <p style="font-size:11px;color:var(--subtle);text-align:center;line-height:1.5;margin:16px auto 0;max-width:36ch">{{ s.terms }}</p>
+    </section>
+  </main>
+
+  <div aria-live="polite" style="position:fixed;inset-block-end:20px;inset-inline-end:20px;z-index:110;display:flex;flex-direction:column;gap:10px;width:min(340px,calc(100vw - 40px));pointer-events:none">
+    <sc-for list="{{ toasts }}" as="t" hint-placeholder-count="0">
+      <div style="display:flex;align-items:stretch;gap:12px;background:var(--elevated);border:1px solid var(--line);border-radius:var(--r-md);box-shadow:var(--e3);padding:13px 14px;animation:toastIn var(--dur-3) var(--ease-out);pointer-events:auto">
+        <span style="width:4px;align-self:stretch;border-radius:var(--r-pill);background:{{ t.color }}"></span>
+        <span style="flex:1;font-size:13px;color:var(--ink);align-self:center;line-height:1.4">{{ t.msg }}</span>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1160,&quot;height&quot;:760},&quot;defaultTheme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;'light'|'dark'&quot;,&quot;section&quot;:&quot;Theme&quot;},&quot;defaultLang&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;en&quot;,&quot;ar&quot;],&quot;default&quot;:&quot;en&quot;,&quot;tsType&quot;:&quot;'en'|'ar'&quot;,&quot;section&quot;:&quot;Theme&quot;}}">
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    this.state={ theme:(props&&props.defaultTheme)||'light', lang:(props&&props.defaultLang)||'en', role:'talent', email:'', pw:'', showPw:false, tried:false, toasts:[] };
+    this._tid=0;
+  }
+  strings={
+    en:{
+      themeLabel:'Toggle light / dark',
+      kicker:'Members area · 401',
+      headline:'This part of Fama is for members.',
+      blurb:'You’re signed out. Sign in to open dashboards, deal rooms, bookings and your saved talent — or keep browsing the public side.',
+      lockedPreview:'Sign in to view', membersOnly:'Members only',
+      perks:['Open deal rooms and bookings','Save and brief talent','Manage campaigns and reviews'],
+      gateTitle:'You’re browsing as a guest', gateSub:'Sign in or create a free account to continue where you left off.',
+      roleTalent:'I’m talent', roleBrand:'I’m a brand',
+      email:'Work email', password:'Password', show:'Show', hide:'Hide', or:'or',
+      signInTalent:'Sign in as talent', signInBrand:'Sign in as brand',
+      createTalent:'Create a talent account', createBrand:'Create a brand account',
+      continueGuest:'Continue browsing as guest',
+      errMsg:'Enter a valid email and your password.',
+      terms:'By continuing you agree to Fama’s Terms and Privacy Policy.',
+      toastWelcome:'Welcome back — opening your dashboard…', toastCreate:'Let’s set up your account…',
+    },
+    ar:{
+      themeLabel:'تبديل الوضع الفاتح / الداكن',
+      kicker:'منطقة الأعضاء · ٤٠١',
+      headline:'هذا الجزء من فاما للأعضاء.',
+      blurb:'أنت غير مسجّل الدخول. سجّل الدخول لفتح اللوحات وغرف الصفقات والحجوزات والمواهب المحفوظة — أو تابع تصفّح الجانب العام.',
+      lockedPreview:'سجّل الدخول للعرض', membersOnly:'للأعضاء فقط',
+      perks:['فتح غرف الصفقات والحجوزات','حفظ المواهب وإرسال الموجزات','إدارة الحملات والتقييمات'],
+      gateTitle:'أنت تتصفّح كضيف', gateSub:'سجّل الدخول أو أنشئ حسابًا مجانيًا لتكمل من حيث توقّفت.',
+      roleTalent:'أنا موهبة', roleBrand:'أنا علامة',
+      email:'البريد المهني', password:'كلمة المرور', show:'إظهار', hide:'إخفاء', or:'أو',
+      signInTalent:'دخول كموهبة', signInBrand:'دخول كعلامة',
+      createTalent:'إنشاء حساب موهبة', createBrand:'إنشاء حساب علامة',
+      continueGuest:'المتابعة كضيف',
+      errMsg:'أدخل بريدًا صحيحًا وكلمة المرور.',
+      terms:'بالمتابعة فإنك توافق على شروط فاما وسياسة الخصوصية.',
+      toastWelcome:'مرحبًا بعودتك — جارٍ فتح لوحتك…', toastCreate:'لنُجهّز حسابك…',
+    }
+  };
+  toggleTheme=()=>this.setState(s=>({theme:s.theme==='dark'?'light':'dark'}));
+  setEn=()=>this.setState({lang:'en'});
+  setAr=()=>this.setState({lang:'ar'});
+  setRole=(v)=>this.setState({role:v});
+  onEmail=(e)=>this.setState({email:e.target.value});
+  onPw=(e)=>this.setState({pw:e.target.value});
+  toggleShowPw=()=>this.setState(s=>({showPw:!s.showPw}));
+  submit=()=>{ const ok=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.state.email)&&this.state.pw.length>=1; this.setState({tried:true}); if(ok) this.pushToast(this.strings[this.state.lang].toastWelcome,'var(--success)'); };
+  createAccount=()=>this.pushToast(this.strings[this.state.lang].toastCreate,'var(--accent)');
+  pushToast=(msg,color)=>{ const id=++this._tid; this.setState(s=>({toasts:[...s.toasts,{id,msg,color}]})); setTimeout(()=>this.setState(s=>({toasts:s.toasts.filter(t=>t.id!==id)})),3600); };
+
+  renderVals(){
+    const st=this.state, isDark=st.theme==='dark', isAr=st.lang==='ar', isEn=!isAr;
+    const s=this.strings[st.lang];
+    const segOn='flex:1;border:0;cursor:pointer;font-family:var(--font-ui);font-size:13px;font-weight:600;padding:8px 11px;border-radius:var(--r-pill);background:var(--ink);color:var(--on-primary)';
+    const segOff='flex:1;border:0;cursor:pointer;font-family:var(--font-ui);font-size:13px;font-weight:500;padding:8px 11px;border-radius:var(--r-pill);background:transparent;color:var(--muted)';
+    const emailValid=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(st.email);
+    const pwValid=st.pw.length>=1;
+    const showErr=st.tried&&(!emailValid||!pwValid);
+    const isTalent=st.role==='talent';
+    return {
+      theme:st.theme, dir:isAr?'rtl':'ltr', isDark, isAr, isEn, s,
+      enBtnStyle:isEn?'flex:0;'+segOn:'flex:0;'+segOff, arBtnStyle:isAr?'flex:0;'+segOn:'flex:0;'+segOff,
+      toggleTheme:this.toggleTheme, setEn:this.setEn, setAr:this.setAr,
+      perks:s.perks,
+      roleItems:[['talent',s.roleTalent],['brand',s.roleBrand]].map(([v,label])=>({v,label,onClick:()=>this.setRole(v),style:st.role===v?segOn:segOff})),
+      email:st.email, onEmail:this.onEmail, pw:st.pw, onPw:this.onPw,
+      pwType:st.showPw?'text':'password', showPwLabel:st.showPw?s.hide:s.show, toggleShowPw:this.toggleShowPw,
+      emailBorder:(st.tried&&!emailValid)?'var(--danger)':'var(--line-strong)', pwBorder:(st.tried&&!pwValid)?'var(--danger)':'var(--line-strong)', showErr,
+      submit:this.submit, signInLabel:isTalent?s.signInTalent:s.signInBrand,
+      createAccount:this.createAccount, createLabel:isTalent?s.createTalent:s.createBrand,
+      toasts:st.toasts,
+    };
+  }
+}
+</script>
+</body>
+</html>

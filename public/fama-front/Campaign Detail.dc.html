@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F4EDDD; --surface:#FCF8EF; --elevated:#FFFFFF;
+  --ink:#1B1813; --muted:#6E665A; --subtle:#9C927F;
+  --line:#E5DCCD; --line-strong:#D6CBB7;
+  --primary:#1B1813; --on-primary:#F6F1E7;
+  --accent:#22608C; --accent-weak:#D9E5EF; --accent-ink:#16405F; --on-accent:#FBF8F0;
+  --gold:#B0862F; --gold-weak:#EEE0C2;
+  --success:#4E7C59; --success-weak:#DDE8DB;
+  --warn:#A87B2C; --warn-weak:#EFE4C8;
+  --danger:#B14A3A; --danger-weak:#F0DAD2;
+  --focus:rgba(34,96,140,.42);
+  --font-head:var(--font-display);
+  --r-xs:2px; --r-sm:4px; --r-md:8px; --r-lg:14px; --r-pill:999px;
+  --e1:0 1px 2px rgba(27,24,19,.05),0 1px 3px rgba(27,24,19,.04);
+  --e2:0 6px 16px -8px rgba(27,24,19,.14),0 2px 6px -3px rgba(27,24,19,.08);
+  --e3:0 18px 40px -14px rgba(27,24,19,.20),0 6px 14px -10px rgba(27,24,19,.12);
+  --e4:0 36px 80px -24px rgba(27,24,19,.34);
+  --dur-1:90ms; --dur-2:160ms; --dur-3:260ms; --dur-4:420ms; --dur-5:680ms;
+  --ease-out:cubic-bezier(.16,1,.3,1); --ease-in-out:cubic-bezier(.65,0,.35,1);
+  --ease-spring:cubic-bezier(.34,1.4,.64,1); --ease-in:cubic-bezier(.4,0,1,1);
+  --font-display:"Bodoni Moda",Georgia,"Times New Roman",serif;
+  --font-ui:"IBM Plex Sans","IBM Plex Sans Arabic",system-ui,sans-serif;
+  --font-ar:"IBM Plex Sans Arabic","IBM Plex Sans",system-ui,sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+[data-theme="dark"]{
+  --bg:#0E1317; --surface:#151C21; --elevated:#1D262B;
+  --ink:#F1E9DA; --muted:#AEA48F; --subtle:#7E7565;
+  --line:#28323A; --line-strong:#39454D;
+  --primary:#F1E9DA; --on-primary:#1B1813;
+  --accent:#5AA6D6; --accent-weak:#153140; --accent-ink:#92C7E8; --on-accent:#0E1317;
+  --gold:#CCA45E; --gold-weak:#332913;
+  --success:#6FA277; --success-weak:#1E2B20;
+  --warn:#CDA04A; --warn-weak:#302813;
+  --danger:#D2715F; --danger-weak:#35201B;
+  --focus:rgba(90,166,214,.5);
+  --e1:0 1px 2px rgba(0,0,0,.4),0 1px 3px rgba(0,0,0,.3);
+  --e2:0 8px 20px -8px rgba(0,0,0,.55),0 2px 6px -3px rgba(0,0,0,.4);
+  --e3:0 20px 44px -14px rgba(0,0,0,.6),0 6px 14px -10px rgba(0,0,0,.45);
+  --e4:0 40px 90px -24px rgba(0,0,0,.7);
+}
+[dir="rtl"]{--font-head:var(--font-ar)}
+[dir="ltr"]{--font-head:var(--font-display)}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--font-ui);background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+::selection{background:var(--accent);color:var(--on-accent)}
+*{transition-property:transform,box-shadow,opacity,width!important}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes overlayIn{from{opacity:0}to{opacity:1}}
+@keyframes sheetIn{from{opacity:0;transform:translateY(14px) scale(.985)}to{opacity:1;transform:none}}
+@keyframes toastIn{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:none}}
+@keyframes pulseDot{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--warn) 55%,transparent)}70%{box-shadow:0 0 0 7px transparent}100%{box-shadow:0 0 0 0 transparent}}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}}
+</style>
+</helmet>
+<div data-theme="{{ theme }}" dir="{{ dir }}" style="min-height:100vh;background:var(--bg);color:var(--ink);font-family:var(--font-ui)">
+
+  <header style="position:sticky;top:0;z-index:60;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px clamp(16px,4vw,44px);background:color-mix(in srgb,var(--bg) 80%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-block-end:1px solid var(--line)">
+    <div style="display:flex;align-items:baseline;gap:1px"><a href="Talent Discovery.dc.html" style="text-decoration:none;color:inherit;display:flex;align-items:baseline;gap:1px"><span style="font-family:var(--font-display);font-weight:600;font-size:24px;letter-spacing:.005em">Fama</span><span style="color:var(--accent);font-family:var(--font-display);font-weight:600;font-size:24px">.</span></a></div>
+    <nav style="display:flex;align-items:center;gap:6px">
+      <a href="Talent Discovery.dc.html" style="display:none;font-size:13px;color:var(--muted);text-decoration:none;padding:7px 12px">{{ s.navDiscover }}</a>
+      <div role="group" aria-label="Language" style="display:inline-flex;align-items:center;gap:2px;border:1px solid var(--line-strong);border-radius:var(--r-pill);padding:3px;background:var(--surface)">
+        <button type="button" onClick="{{ setEn }}" aria-pressed="{{ isEn }}" style="{{ enBtnStyle }}">EN</button>
+        <button type="button" onClick="{{ setAr }}" aria-pressed="{{ isAr }}" style="{{ arBtnStyle }}">ع</button>
+      </div>
+      <button type="button" onClick="{{ toggleTheme }}" aria-label="{{ s.themeLabel }}" title="{{ s.themeLabel }}" style-hover="border-color:var(--accent);color:var(--accent)" style="width:38px;height:38px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);border-radius:var(--r-pill);cursor:pointer">
+        <span style="position:relative;width:17px;height:17px;display:inline-block"><span style="position:absolute;inset:0;border-radius:var(--r-pill);background:currentColor"></span><sc-if value="{{ isDark }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:-3px;inset-inline-end:-4px;width:15px;height:15px;border-radius:var(--r-pill);background:var(--surface)"></span></sc-if></span>
+      </button>
+    </nav>
+  </header>
+
+  <main style="max-width:1200px;margin-inline:auto;padding:clamp(20px,3vw,32px) clamp(16px,4vw,44px) 0">
+    <a href="Brand Profile.dc.html" style="display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--muted);text-decoration:none;margin-block-end:16px" style-hover="color:var(--accent-ink)"><span style="font-size:15px">‹</span>{{ s.backToBrand }}</a>
+
+    <!-- COVER -->
+    <div style="position:relative;aspect-ratio:21/9;min-height:260px;border-radius:var(--r-lg);overflow:hidden;background:repeating-linear-gradient(135deg,var(--line) 0 1px,transparent 1px 15px),var(--surface);animation:fadeIn var(--dur-5) var(--ease-out) both">
+      <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(10,8,6,.66),rgba(10,8,6,.15) 52%,transparent)"></div>
+      <span style="position:absolute;inset-block-start:16px;inset-inline-start:16px;display:inline-flex;align-items:center;gap:8px;background:color-mix(in srgb,var(--warn) 88%,#000);color:#fff;border-radius:var(--r-pill);padding:7px 14px;font-size:12px;font-weight:600"><span style="width:7px;height:7px;border-radius:var(--r-pill);background:#fff;animation:pulseDot 2.2s var(--ease-out) infinite"></span>{{ s.statusOpen }}</span>
+      <div style="position:absolute;inset-block-end:0;inset-inline:0;padding:clamp(20px,3vw,32px)">
+        <div style="font-family:var(--font-mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.8);margin-block-end:10px">{{ s.byBrand }}</div>
+        <h1 style="font-family:var(--font-head);font-weight:500;font-size:clamp(32px,6vw,64px);line-height:1.02;letter-spacing:-.015em;margin:0;color:#fff;max-width:18ch">{{ s.title }}</h1>
+      </div>
+    </div>
+
+    <!-- META STRIP -->
+    <div style="display:flex;flex-wrap:wrap;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden;margin-block-start:20px">
+      <div style="flex:1 1 150px;background:var(--surface);padding:16px 18px"><div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--subtle)">{{ s.mBudget }}</div><div style="font-family:var(--font-head);font-weight:500;font-size:22px;margin-block-start:5px">{{ s.budgetVal }}</div></div>
+      <div style="flex:1 1 150px;background:var(--surface);padding:16px 18px"><div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--subtle)">{{ s.mDates }}</div><div style="font-family:var(--font-head);font-weight:500;font-size:22px;margin-block-start:5px">{{ s.datesVal }}</div></div>
+      <div style="flex:1 1 150px;background:var(--surface);padding:16px 18px"><div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--subtle)">{{ s.mLocation }}</div><div style="font-family:var(--font-head);font-weight:500;font-size:22px;margin-block-start:5px">{{ s.locationVal }}</div></div>
+      <div style="flex:1 1 150px;background:var(--surface);padding:16px 18px"><div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--subtle)">{{ s.mCloses }}</div><div style="font-family:var(--font-head);font-weight:500;font-size:22px;margin-block-start:5px;color:var(--accent-ink)">{{ s.closesVal }}</div></div>
+    </div>
+
+    <div style="display:flex;flex-wrap:wrap;gap:clamp(28px,4vw,56px);align-items:flex-start;margin-block-start:clamp(30px,5vw,52px)">
+      <div style="flex:1 1 460px;min-width:0;display:flex;flex-direction:column;gap:clamp(36px,5vw,56px)">
+
+        <!-- BRIEF -->
+        <section>
+          <div style="font-family:var(--font-mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent-ink);margin-block-end:14px">{{ s.briefLabel }}</div>
+          <p style="font-family:var(--font-head);font-weight:500;font-size:clamp(20px,2.5vw,28px);line-height:1.45;letter-spacing:-.01em;margin:0 0 16px;max-width:42ch">{{ s.briefLead }}</p>
+          <p style="font-size:15px;line-height:1.7;color:var(--muted);margin:0;max-width:60ch">{{ s.briefBody }}</p>
+        </section>
+
+        <!-- ROLES SOUGHT -->
+        <section>
+          <div style="font-family:var(--font-mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent-ink);margin-block-end:8px">{{ s.rolesLabel }}</div>
+          <h2 style="font-family:var(--font-head);font-weight:500;font-size:clamp(22px,2.8vw,30px);margin:0 0 20px;letter-spacing:-.01em">{{ s.rolesTitle }}</h2>
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <sc-for list="{{ roleCards }}" as="r" hint-placeholder-count="4">
+              <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:18px 20px">
+                <div style="min-width:0">
+                  <div style="display:flex;align-items:center;gap:10px"><span style="font-family:var(--font-head);font-weight:500;font-size:20px">{{ r.title }}</span><span style="font-family:var(--font-mono);font-size:11px;color:var(--accent-ink);background:var(--accent-weak);border-radius:var(--r-pill);padding:3px 9px">×{{ r.count }}</span></div>
+                  <div style="font-size:13px;color:var(--muted);margin-block-start:6px">{{ r.note }} · <span style="font-family:var(--font-mono);color:var(--ink)">{{ r.rate }}</span></div>
+                </div>
+                <button type="button" onClick="{{ r.onClick }}" style="background:var(--primary);color:var(--on-primary);border:0;padding:10px 20px;border-radius:var(--r-sm);font-family:var(--font-ui);font-weight:600;font-size:13px;cursor:pointer;white-space:nowrap" style-hover="transform:translateY(-1px);box-shadow:var(--e2)">{{ s.expressInterest }}</button>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+
+        <!-- MOOD BOARD -->
+        <section>
+          <div style="font-family:var(--font-mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent-ink);margin-block-end:8px">{{ s.moodLabel }}</div>
+          <h2 style="font-family:var(--font-head);font-weight:500;font-size:clamp(22px,2.8vw,30px);margin:0 0 20px;letter-spacing:-.01em">{{ s.moodTitle }}</h2>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px">
+            <sc-for list="{{ galleryItems }}" as="g" hint-placeholder-count="6"><button type="button" onClick="{{ g.onClick }}" style="aspect-ratio:{{ g.r }};position:relative;cursor:pointer;border:1px solid var(--line);padding:0;border-radius:var(--r-md);overflow:hidden;background:repeating-linear-gradient(135deg,var(--line) 0 1px,transparent 1px 12px),var(--surface)" style-hover="transform:scale(1.02);box-shadow:var(--e2)"><span style="position:absolute;inset-block-end:8px;inset-inline-start:10px;font-family:var(--font-mono);font-size:8px;letter-spacing:.1em;color:var(--subtle);text-transform:uppercase">{{ g.l }}</span></button></sc-for>
+          </div>
+        </section>
+      </div>
+
+      <!-- SIDEBAR -->
+      <aside style="flex:1 1 280px;max-width:330px;position:sticky;top:84px;align-self:flex-start;display:flex;flex-direction:column;gap:16px">
+        <div style="background:var(--elevated);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--e2);padding:22px;display:flex;flex-direction:column;gap:16px">
+          <a href="Brand Profile.dc.html" style="display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit" style-hover="opacity:.85"><span style="width:44px;height:44px;flex-shrink:0;border-radius:var(--r-md);background:var(--ink);color:var(--bg);display:grid;place-items:center;font-family:var(--font-display);font-weight:600;font-size:17px">MR</span><span><span style="display:block;font-family:var(--font-head);font-size:18px;line-height:1.1">{{ s.brandName }}</span><span style="display:flex;align-items:center;gap:5px;font-size:11px;color:color-mix(in srgb,var(--success) 78%,var(--ink));margin-block-start:3px"><span style="width:13px;height:13px;border-radius:var(--r-pill);background:var(--accent);color:var(--on-accent);display:grid;place-items:center;font-size:8px;font-weight:700">✓</span>{{ s.verified }}</span></span></a>
+          <div style="height:1px;background:var(--line)"></div>
+          <div style="display:flex;flex-direction:column;gap:11px">
+            <div style="display:flex;justify-content:space-between;gap:12px;font-size:13px"><span style="color:var(--muted)">{{ s.mBudget }}</span><span style="font-family:var(--font-mono);color:var(--accent-ink)">{{ s.budgetVal }}</span></div>
+            <div style="display:flex;justify-content:space-between;gap:12px;font-size:13px"><span style="color:var(--muted)">{{ s.mDates }}</span><span style="font-weight:600;text-align:end">{{ s.datesVal }}</span></div>
+            <div style="display:flex;justify-content:space-between;gap:12px;font-size:13px"><span style="color:var(--muted)">{{ s.applicants }}</span><span style="font-weight:600">{{ s.applicantsVal }}</span></div>
+            <div style="display:flex;justify-content:space-between;gap:12px;font-size:13px"><span style="color:var(--muted)">{{ s.mCloses }}</span><span style="font-weight:600;color:var(--accent-ink)">{{ s.closesVal }}</span></div>
+          </div>
+          <button type="button" onClick="{{ applyAll }}" style="background:var(--primary);color:var(--on-primary);border:0;padding:13px;border-radius:var(--r-sm);font-family:var(--font-ui);font-weight:600;font-size:14px;cursor:pointer" style-hover="transform:translateY(-1px);box-shadow:var(--e2)">{{ s.applyNow }}</button>
+          <button type="button" onClick="{{ fireShare }}" style="background:transparent;color:var(--ink);border:1px solid var(--line-strong);padding:12px;border-radius:var(--r-sm);font-family:var(--font-ui);font-weight:600;font-size:14px;cursor:pointer" style-hover="border-color:var(--accent);color:var(--accent-ink);background:var(--accent-weak)">{{ s.share }}</button>
+        </div>
+      </aside>
+    </div>
+
+    <footer style="border-block-start:1px solid var(--line);margin-block-start:clamp(48px,7vw,88px);padding:40px 0;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between">
+      <div style="display:flex;align-items:baseline;gap:6px"><span style="font-family:var(--font-display);font-weight:600;font-size:18px">Fama</span><span style="color:var(--accent);font-family:var(--font-display);font-weight:600;font-size:18px">.</span><span style="font-size:13px;color:var(--muted);padding-inline-start:8px">{{ s.footer }}</span></div>
+      <span style="font-family:var(--font-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--subtle)">fama.com/brands/maison-reem/work/ss26-desert-bloom</span>
+    </footer>
+  </main>
+
+  <!-- LIGHTBOX -->
+  <sc-if value="{{ lightboxOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeLightbox }}" role="dialog" aria-modal="true" aria-label="Image viewer" style="position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:clamp(16px,5vw,64px);background:color-mix(in srgb,var(--ink) 78%,#000);backdrop-filter:blur(8px);animation:overlayIn var(--dur-2) var(--ease-out) both">
+      <div onClick="{{ stop }}" style="position:relative;display:flex;align-items:center;gap:14px;max-width:100%">
+        <button type="button" onClick="{{ lightboxPrev }}" aria-label="Previous" style="width:44px;height:44px;flex-shrink:0;display:grid;place-items:center;border:1px solid color-mix(in srgb,#fff 30%,transparent);background:transparent;color:#fff;border-radius:var(--r-pill);cursor:pointer;font-size:20px;line-height:1">‹</button>
+        <div style="position:relative;width:min(64vh,540px);max-width:calc(100vw - 180px);aspect-ratio:{{ lbRatio }};border-radius:var(--r-md);overflow:hidden;background:repeating-linear-gradient(135deg,rgba(255,255,255,.14) 0 1px,transparent 1px 14px),#2a241d;box-shadow:var(--e4);animation:sheetIn var(--dur-3) var(--ease-out) both">
+          <span style="position:absolute;inset-block-end:14px;inset-inline-start:16px;font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;color:rgba(255,255,255,.7);text-transform:uppercase">{{ lbLabel }}</span>
+          <span style="position:absolute;inset-block-start:14px;inset-inline-end:16px;font-family:var(--font-mono);font-size:11px;color:rgba(255,255,255,.8)">{{ lightboxNum }} / {{ galleryCount }}</span>
+        </div>
+        <button type="button" onClick="{{ lightboxNext }}" aria-label="Next" style="width:44px;height:44px;flex-shrink:0;display:grid;place-items:center;border:1px solid color-mix(in srgb,#fff 30%,transparent);background:transparent;color:#fff;border-radius:var(--r-pill);cursor:pointer;font-size:20px;line-height:1">›</button>
+        <button type="button" onClick="{{ closeLightbox }}" aria-label="Close" style="position:absolute;inset-block-start:-46px;inset-inline-end:0;width:40px;height:40px;display:grid;place-items:center;border:1px solid color-mix(in srgb,#fff 30%,transparent);background:transparent;color:#fff;border-radius:var(--r-pill);cursor:pointer;font-size:18px;line-height:1">×</button>
+      </div>
+    </div>
+  </sc-if>
+
+  <div aria-live="polite" style="position:fixed;inset-block-end:20px;inset-inline-end:20px;z-index:110;display:flex;flex-direction:column;gap:10px;width:min(340px,calc(100vw - 40px));pointer-events:none">
+    <sc-for list="{{ toasts }}" as="t" hint-placeholder-count="0">
+      <div style="display:flex;align-items:stretch;gap:12px;background:var(--elevated);border:1px solid var(--line);border-radius:var(--r-md);box-shadow:var(--e3);padding:13px 14px;animation:toastIn var(--dur-3) var(--ease-out);pointer-events:auto">
+        <span style="width:4px;align-self:stretch;border-radius:var(--r-pill);background:var(--success)"></span>
+        <span style="flex:1;font-size:13px;color:var(--ink);align-self:center;line-height:1.4">{{ t.msg }}</span>
+        <button type="button" onClick="{{ t.onClick }}" aria-label="Dismiss" style="align-self:flex-start;border:0;background:transparent;color:var(--subtle);cursor:pointer;font-size:15px;line-height:1;padding:2px" style-hover="color:var(--ink)">×</button>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:900},&quot;defaultTheme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;'light'|'dark'&quot;,&quot;section&quot;:&quot;Theme&quot;},&quot;defaultLang&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;en&quot;,&quot;ar&quot;],&quot;default&quot;:&quot;en&quot;,&quot;tsType&quot;:&quot;'en'|'ar'&quot;,&quot;section&quot;:&quot;Theme&quot;}}">
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    this.state={ theme:(props&&props.defaultTheme)||'light', lang:(props&&props.defaultLang)||'en', lightbox:null, toasts:[] };
+    this._tid=0;
+  }
+  strings={
+    en:{
+      navDiscover:'Discover', themeLabel:'Toggle light / dark', backToBrand:'Maison Reem',
+      statusOpen:'Open · accepting applications', byBrand:'Maison Reem · Campaign', title:'SS26 — Desert Bloom',
+      mBudget:'Budget', budgetVal:'EGP 240k', mDates:'Dates', datesVal:'12–20 Aug', mLocation:'Location', locationVal:'Cairo + desert', mCloses:'Closes', closesVal:'in 6 days',
+      briefLabel:'The brief', briefLead:'A sun-bleached editorial shot on location between Cairo and the Western Desert.',
+      briefBody:'We are producing the SS26 campaign for Maison Reem — eight looks spanning ready-to-wear and eveningwear, photographed over three days on location. We are looking for talent comfortable with movement, natural light and early call times. Usage is regional, 12 months, digital and print.',
+      rolesLabel:'Casting', rolesTitle:'Roles sought',
+      roles:[['Female model','2','Editorial · movement','EGP 8,500 / day'],['Director of Photography','1','35mm · location','EGP 20,000 / day'],['Stylist','1','Womenswear','EGP 6,000 / day'],['Makeup artist','1','Natural, sun-kissed','EGP 4,500 / day']],
+      expressInterest:'Express interest',
+      moodLabel:'Direction', moodTitle:'Mood board',
+      applicants:'Applications', applicantsVal:'34', applyNow:'Apply to campaign', share:'Share campaign',
+      brandName:'Maison Reem', verified:'Verified business',
+      interestSent:'Interest sent for', appliedAll:'Application sent to Maison Reem.', shared:'Campaign link copied.',
+      footer:'An open campaign on Fama.',
+    },
+    ar:{
+      navDiscover:'اكتشف', themeLabel:'تبديل الوضع الفاتح / الداكن', backToBrand:'ميزون ريم',
+      statusOpen:'مفتوحة · تستقبل الطلبات', byBrand:'ميزون ريم · حملة', title:'SS26 — ازدهار الصحراء',
+      mBudget:'الميزانية', budgetVal:'٢٤٠ ألف ج.م', mDates:'التواريخ', datesVal:'١٢–٢٠ أغسطس', mLocation:'الموقع', locationVal:'القاهرة + الصحراء', mCloses:'تُغلق', closesVal:'خلال ٦ أيام',
+      briefLabel:'الموجز', briefLead:'عمل تحريري تحت شمس ساطعة يُصوَّر في مواقع بين القاهرة والصحراء الغربية.',
+      briefBody:'ننتج حملة SS26 لميزون ريم — ثماني إطلالات بين الملابس الجاهزة والسهرة، تُصوَّر على مدى ثلاثة أيام في المواقع. نبحث عن مواهب مرتاحة مع الحركة والإضاءة الطبيعية ومواعيد التصوير المبكرة. الاستخدام إقليمي لمدة ١٢ شهرًا، رقمي ومطبوع.',
+      rolesLabel:'اختيار الممثّلين', rolesTitle:'الأدوار المطلوبة',
+      roles:[['عارضة','2','تحريري · حركة','٨٬٥٠٠ ج.م / يوم'],['مدير تصوير','1','٣٥ مم · مواقع','٢٠٬٠٠٠ ج.م / يوم'],['مصمّم أزياء','1','أزياء نسائية','٦٬٠٠٠ ج.م / يوم'],['خبير مكياج','1','طبيعي ومشمس','٤٬٥٠٠ ج.م / يوم']],
+      expressInterest:'إبداء الاهتمام',
+      moodLabel:'الاتجاه', moodTitle:'لوحة المزاج',
+      applicants:'الطلبات', applicantsVal:'٣٤', applyNow:'التقديم للحملة', share:'مشاركة الحملة',
+      brandName:'ميزون ريم', verified:'نشاط موثّق',
+      interestSent:'تم إرسال اهتمامك بدور', appliedAll:'تم إرسال طلبك إلى ميزون ريم.', shared:'تم نسخ رابط الحملة.',
+      footer:'حملة مفتوحة على فاما.',
+    }
+  };
+  gallery(){
+    const labels=['Palette · 4:5','Location · 1:1','Texture · 3:4','Light · 4:5','Styling · 1:1','Motion · 3:4'];
+    const ratios=['4 / 5','1 / 1','3 / 4','4 / 5','1 / 1','3 / 4'];
+    return labels.map((l,i)=>({l,r:ratios[i]}));
+  }
+  toggleTheme=()=>this.setState(s=>({theme:s.theme==='dark'?'light':'dark'}));
+  setEn=()=>this.setState({lang:'en'});
+  setAr=()=>this.setState({lang:'ar'});
+  stop=(e)=>{ if(e&&e.stopPropagation) e.stopPropagation(); };
+  openLightbox=(i)=>this.setState({lightbox:i});
+  closeLightbox=()=>this.setState({lightbox:null});
+  lightboxNext=()=>this.setState(s=>({lightbox:(s.lightbox+1)%this.gallery().length}));
+  lightboxPrev=()=>this.setState(s=>({lightbox:(s.lightbox+this.gallery().length-1)%this.gallery().length}));
+  pushMsg=(msg)=>{ const id=++this._tid; this.setState(s=>({toasts:[...s.toasts,{id,msg}]})); setTimeout(()=>this.removeToast(id),3600); };
+  removeToast=(id)=>this.setState(s=>({toasts:s.toasts.filter(t=>t.id!==id)}));
+  applyRole=(label)=>this.pushMsg(this.strings[this.state.lang].interestSent+' '+label);
+  applyAll=()=>this.pushMsg(this.strings[this.state.lang].appliedAll);
+  fireShare=()=>this.pushMsg(this.strings[this.state.lang].shared);
+
+  renderVals(){
+    const st=this.state, isDark=st.theme==='dark', isAr=st.lang==='ar', isEn=!isAr;
+    const s=this.strings[st.lang];
+    const segOn='border:0;cursor:pointer;font-family:var(--font-ui);font-size:12px;font-weight:600;padding:5px 11px;border-radius:var(--r-pill);background:var(--ink);color:var(--on-primary)';
+    const segOff='border:0;cursor:pointer;font-family:var(--font-ui);font-size:12px;font-weight:500;padding:5px 11px;border-radius:var(--r-pill);background:transparent;color:var(--muted)';
+    const gal=this.gallery();
+    const galleryItems=gal.map((g,i)=>({l:g.l,r:g.r,onClick:()=>this.openLightbox(i)}));
+    const lb=st.lightbox, lbImg=lb!==null?gal[lb]:null;
+    return {
+      theme:st.theme, dir:isAr?'rtl':'ltr', isDark, isAr, isEn, s,
+      enBtnStyle:isEn?segOn:segOff, arBtnStyle:isAr?segOn:segOff,
+      toggleTheme:this.toggleTheme, setEn:this.setEn, setAr:this.setAr, stop:this.stop,
+      roleCards:s.roles.map(x=>({title:x[0],count:x[1],note:x[2],rate:x[3],onClick:()=>this.applyRole(x[0])})),
+      galleryItems, galleryCount:gal.length,
+      lightboxOpen:st.lightbox!==null, closeLightbox:this.closeLightbox, lightboxNext:this.lightboxNext, lightboxPrev:this.lightboxPrev,
+      lightboxNum:(st.lightbox||0)+1, lbLabel:lbImg?lbImg.l:'', lbRatio:lbImg?lbImg.r:'4 / 5',
+      applyAll:this.applyAll, fireShare:this.fireShare,
+      toasts:st.toasts.map(t=>({id:t.id,msg:t.msg,onClick:()=>this.removeToast(t.id)})),
+    };
+  }
+}
+</script>
+</body>
+</html>

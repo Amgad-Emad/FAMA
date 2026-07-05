@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F4EDDD; --surface:#FCF8EF; --elevated:#FFFFFF;
+  --ink:#1B1813; --muted:#6E665A; --subtle:#9C927F;
+  --line:#E5DCCD; --line-strong:#D6CBB7;
+  --primary:#1B1813; --on-primary:#F6F1E7;
+  --accent:#22608C; --accent-weak:#D9E5EF; --accent-ink:#16405F; --on-accent:#FBF8F0;
+  --gold:#B0862F; --gold-weak:#EEE0C2;
+  --success:#4E7C59; --success-weak:#DDE8DB;
+  --warn:#A87B2C; --warn-weak:#EFE4C8;
+  --danger:#B14A3A; --danger-weak:#F0DAD2;
+  --focus:rgba(34,96,140,.42);
+  --font-head:var(--font-display);
+  --r-xs:2px; --r-sm:4px; --r-md:8px; --r-lg:14px; --r-pill:999px;
+  --e1:0 1px 2px rgba(27,24,19,.05),0 1px 3px rgba(27,24,19,.04);
+  --e2:0 6px 16px -8px rgba(27,24,19,.14),0 2px 6px -3px rgba(27,24,19,.08);
+  --e3:0 18px 40px -14px rgba(27,24,19,.20),0 6px 14px -10px rgba(27,24,19,.12);
+  --e4:0 36px 80px -24px rgba(27,24,19,.34);
+  --dur-1:90ms; --dur-2:160ms; --dur-3:260ms; --dur-4:420ms; --dur-5:680ms;
+  --ease-out:cubic-bezier(.16,1,.3,1); --ease-in-out:cubic-bezier(.65,0,.35,1);
+  --ease-spring:cubic-bezier(.34,1.4,.64,1); --ease-in:cubic-bezier(.4,0,1,1);
+  --font-display:"Bodoni Moda",Georgia,"Times New Roman",serif;
+  --font-ui:"IBM Plex Sans","IBM Plex Sans Arabic",system-ui,sans-serif;
+  --font-ar:"IBM Plex Sans Arabic","IBM Plex Sans",system-ui,sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+[data-theme="dark"]{
+  --bg:#0E1317; --surface:#151C21; --elevated:#1D262B;
+  --ink:#F1E9DA; --muted:#AEA48F; --subtle:#7E7565;
+  --line:#28323A; --line-strong:#39454D;
+  --primary:#F1E9DA; --on-primary:#1B1813;
+  --accent:#5AA6D6; --accent-weak:#153140; --accent-ink:#92C7E8; --on-accent:#0E1317;
+  --gold:#CCA45E; --gold-weak:#332913;
+  --success:#6FA277; --success-weak:#1E2B20;
+  --warn:#CDA04A; --warn-weak:#302813;
+  --danger:#D2715F; --danger-weak:#35201B;
+  --focus:rgba(90,166,214,.5);
+  --e1:0 1px 2px rgba(0,0,0,.4),0 1px 3px rgba(0,0,0,.3);
+  --e2:0 8px 20px -8px rgba(0,0,0,.55),0 2px 6px -3px rgba(0,0,0,.4);
+  --e3:0 20px 44px -14px rgba(0,0,0,.6),0 6px 14px -10px rgba(0,0,0,.45);
+  --e4:0 40px 90px -24px rgba(0,0,0,.7);
+}
+[data-theme="light"][data-accent="brass"]{--accent:#A9853F;--accent-weak:#ECE0C5;--accent-ink:#6E531F;--focus:rgba(169,133,63,.42)}
+[data-theme="dark"][data-accent="brass"]{--accent:#CDA866;--accent-weak:#352B17;--accent-ink:#E3C588;--focus:rgba(205,168,102,.48)}
+[data-theme="light"][data-accent="emerald"]{--accent:#3F7D5E;--accent-weak:#D7E6DD;--accent-ink:#285740;--focus:rgba(63,125,94,.42)}
+[data-theme="dark"][data-accent="emerald"]{--accent:#5BA77F;--accent-weak:#16271E;--accent-ink:#86C7A1;--focus:rgba(91,167,127,.48)}
+[data-theme="light"][data-accent="terracotta"]{--accent:#BD6A4A;--accent-weak:#F1DFD2;--accent-ink:#8E482E;--focus:rgba(189,106,74,.42)}
+[data-theme="dark"][data-accent="terracotta"]{--accent:#D88A6A;--accent-weak:#3A291F;--accent-ink:#ECA888;--focus:rgba(216,138,106,.48)}
+/* Surface & line tones — default 'papyrus' lives in :root / dark above */
+[data-theme="light"][data-surface="alabaster"]{--bg:#EDEEF0;--surface:#F7F8FA;--elevated:#FFFFFF;--line:#E0E2E6;--line-strong:#CDD0D5}
+[data-theme="dark"][data-surface="alabaster"]{--bg:#0F1214;--surface:#181B1E;--elevated:#202427;--line:#2B3033;--line-strong:#3B4247}
+[data-theme="light"][data-surface="porcelain"]{--bg:#EAEEF2;--surface:#F6F9FC;--elevated:#FFFFFF;--line:#DCE3EA;--line-strong:#C7D2DC}
+[data-theme="dark"][data-surface="porcelain"]{--bg:#0C1116;--surface:#141B22;--elevated:#1C2530;--line:#26313B;--line-strong:#37454F}
+[data-theme="light"][data-surface="limestone"]{--bg:#E9E5DE;--surface:#F4F1EB;--elevated:#FCFAF6;--line:#DAD4CA;--line-strong:#C8C0B2}
+[data-theme="dark"][data-surface="limestone"]{--bg:#14130F;--surface:#1D1B16;--elevated:#26231D;--line:#322E27;--line-strong:#443E34}
+[data-theme="light"][data-surface="sandstone"]{--bg:#EFE4D0;--surface:#F9F1E2;--elevated:#FFFBF3;--line:#E1D2B9;--line-strong:#D0BD9C}
+[data-theme="dark"][data-surface="sandstone"]{--bg:#12100B;--surface:#1B1710;--elevated:#241F16;--line:#322B1F;--line-strong:#463C2B}
+[dir="rtl"]{--font-head:var(--font-ar)}
+[dir="ltr"]{--font-head:var(--font-display)}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--font-ui);background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+::selection{background:var(--accent);color:var(--on-accent)}
+*{transition-property:transform,box-shadow,opacity,width!important}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes fadeOut{from{opacity:1}to{opacity:0}}
+@keyframes shimmer{0%{background-position:-160% 0}100%{background-position:160% 0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes toastIn{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:none}}
+@keyframes overlayIn{from{opacity:0}to{opacity:1}}
+@keyframes overlayOut{from{opacity:1}to{opacity:0}}
+@keyframes sheetIn{from{opacity:0;transform:translateY(14px) scale(.985)}to{opacity:1;transform:none}}
+@keyframes sheetOut{from{opacity:1;transform:none}to{opacity:0;transform:translateY(10px) scale(.99)}}
+@keyframes drawerInEnd{from{transform:translateX(102%)}to{transform:none}}
+@keyframes drawerOutEnd{from{transform:none}to{transform:translateX(102%)}}
+@keyframes drawerInStart{from{transform:translateX(-102%)}to{transform:none}}
+@keyframes drawerOutStart{from{transform:none}to{transform:translateX(-102%)}}
+@keyframes pulseDot{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--success) 55%,transparent)}70%{box-shadow:0 0 0 7px transparent}100%{box-shadow:0 0 0 0 transparent}}
+@keyframes travel{0%{margin-inline-start:1px}100%{margin-inline-start:calc(100% - 17px)}}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}}
+</style>
+</helmet>
+<div data-theme="{{ theme }}" data-accent="{{ accent }}" data-surface="{{ surfaceTone }}" dir="{{ dir }}" style="min-height:100vh;background:var(--bg);color:var(--ink);font-family:var(--font-ui)">
+
+  <header style="position:sticky;top:0;z-index:60;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px clamp(16px,4vw,48px);background:color-mix(in srgb,var(--bg) 80%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-block-end:1px solid var(--line)">
+    <div style="display:flex;align-items:baseline;gap:12px">
+      <a href="#top" style="text-decoration:none;color:var(--ink);display:flex;align-items:baseline;gap:1px">
+        <span style="font-family:var(--font-display);font-weight:600;font-size:26px;letter-spacing:.005em">Fama</span>
+        <span style="color:var(--accent);font-family:var(--font-display);font-weight:600;font-size:26px">.</span>
+      </a>
+      <span style="font-family:var(--font-mono);font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--subtle);padding-inline-start:6px;border-inline-start:1px solid var(--line-strong)">{{ s.tag }}</span>
+    </div>
+    <nav style="display:flex;align-items:center;gap:8px">
+      <a href="#foundations" style-hover="color:var(--ink);background:var(--surface)" style="display:none;font-size:13px;color:var(--muted);text-decoration:none;padding:7px 12px;border-radius:var(--r-pill);transition:color var(--dur-2),background var(--dur-2)">{{ s.navFoundations }}</a>
+      <a href="#components" style-hover="color:var(--ink);background:var(--surface)" style="display:none;font-size:13px;color:var(--muted);text-decoration:none;padding:7px 12px;border-radius:var(--r-pill);transition:color var(--dur-2),background var(--dur-2)">{{ s.navComponents }}</a>
+      <div role="group" aria-label="Language" style="display:inline-flex;align-items:center;gap:2px;border:1px solid var(--line-strong);border-radius:var(--r-pill);padding:3px;background:var(--surface)">
+        <button type="button" onClick="{{ setEn }}" aria-pressed="{{ isEn }}" style="{{ enBtnStyle }}">EN</button>
+        <button type="button" onClick="{{ setAr }}" aria-pressed="{{ isAr }}" style="{{ arBtnStyle }}">ع</button>
+      </div>
+      <button type="button" onClick="{{ toggleTheme }}" aria-label="{{ s.themeLabel }}" title="{{ s.themeLabel }}" style-hover="border-color:var(--accent);color:var(--accent)" style-focus="outline:2px solid var(--accent);outline-offset:2px" style="width:38px;height:38px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);border-radius:var(--r-pill);cursor:pointer;transition:color var(--dur-2),border-color var(--dur-2)">
+        <span style="position:relative;width:17px;height:17px;display:inline-block">
+          <span style="position:absolute;inset:0;border-radius:var(--r-pill);background:currentColor"></span>
+          <sc-if value="{{ isDark }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:-3px;inset-inline-end:-4px;width:15px;height:15px;border-radius:var(--r-pill);background:var(--surface)"></span></sc-if>
+        </span>
+      </button>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section style="padding:clamp(46px,8vw,104px) clamp(16px,4vw,48px) clamp(30px,4vw,52px);max-width:1180px;margin-inline:auto">
+      <div style="font-family:var(--font-mono);font-size:11px;letter-spacing:.26em;text-transform:uppercase;color:var(--accent-ink);margin-block-end:22px;animation:fadeInUp var(--dur-4) var(--ease-out) both">{{ s.heroKicker }}</div>
+      <h1 style="font-family:var(--font-head);font-weight:500;font-size:clamp(40px,7vw,86px);line-height:1.03;letter-spacing:-.012em;margin:0;max-width:16ch;animation:fadeInUp var(--dur-5) var(--ease-out) both;animation-delay:60ms">{{ s.heroTitle }}</h1>
+      <p style="font-size:clamp(16px,1.5vw,19px);line-height:1.62;color:var(--muted);max-width:60ch;margin:26px 0 0;animation:fadeInUp var(--dur-5) var(--ease-out) both;animation-delay:140ms">{{ s.heroBody }}</p>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;margin-block-start:32px;animation:fadeInUp var(--dur-5) var(--ease-out) both;animation-delay:220ms">
+        <span style="font-family:var(--font-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:8px 14px;border:1px solid var(--line-strong);border-radius:var(--r-pill)">{{ s.heroMeta1 }}</span>
+        <span style="font-family:var(--font-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:8px 14px;border:1px solid var(--line-strong);border-radius:var(--r-pill)">{{ s.heroMeta2 }}</span>
+        <span style="font-family:var(--font-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:8px 14px;border:1px solid var(--line-strong);border-radius:var(--r-pill)">{{ s.heroMeta3 }}</span>
+      </div>
+    </section>
+
+    <section style="padding:0 clamp(16px,4vw,48px);max-width:1180px;margin-inline:auto 0;margin-inline:auto">
+      <div style="position:relative;height:clamp(120px,18vw,220px);border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden;background:repeating-linear-gradient(135deg,var(--line) 0 1px,transparent 1px 13px),var(--surface);display:flex;align-items:flex-end;animation:fadeIn var(--dur-5) var(--ease-out) both;animation-delay:300ms">
+        <span style="font-family:var(--font-mono);font-size:11px;letter-spacing:.14em;color:var(--subtle);padding:14px 16px;text-transform:uppercase">{{ s.heroImg }}</span>
+      </div>
+    </section>
+
+    <section id="foundations" style="padding:clamp(20px,3vw,40px) clamp(16px,4vw,48px) clamp(30px,5vw,60px);max-width:1180px;margin-inline:auto">
+      <div style="display:flex;align-items:center;gap:18px;padding-block-start:8px;border-block-start:1px solid var(--line)">
+        <span style="font-family:var(--font-mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent-ink);padding-block-start:18px">{{ s.foundationsKicker }}</span>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:clamp(46px,6vw,72px);margin-block-start:36px">
+
+        <!-- COLOR -->
+        <div>
+          <div style="margin-block-end:26px">
+            <h3 style="font-family:var(--font-head);font-weight:500;font-size:clamp(24px,3vw,32px);margin:0;letter-spacing:-.01em">{{ s.fColor }}</h3>
+            <p style="color:var(--muted);font-size:15px;margin:8px 0 0;max-width:56ch">{{ s.fColorSub }}</p>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:26px">
+            <div>
+              <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--subtle);margin-block-end:12px">Surfaces &amp; lines</div>
+              <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:14px">
+                <div style="display:flex;flex-direction:column;gap:8px"><div style="height:58px;border-radius:var(--r-sm);border:1px solid var(--line);background:var(--bg)"></div><div><div style="font-family:var(--font-mono);font-size:11px">--bg</div><div style="font-size:11px;color:var(--subtle)">Page</div></div></div>
+                <div style="display:flex;flex-direction:column;gap:8px"><div style="height:58px;border-radius:var(--r-sm);border:1px solid var(--line);background:var(--surface)"></div><div><div style="font-family:var(--font-mono);font-size:11px">--surface</div><div style="font-size:11px;color:var(--subtle)">Card</div></div></div>
+                <div style="display:flex;flex-direction:column;gap:8px"><div style="height:58px;border-radius:var(--r-sm);border:1px solid var(--line);background:var(--elevated)"></div><div><div style="font-family:var(--font-mono);font-size:11px">--elevated</div><div style="font-size:11px;color:var(--subtle)">Elevated</div></div></div>
+                <div style="display:flex;flex-direction:column;gap:8px"><div style="height:58px;border-radius:var(--r-sm);border:1px solid var(--line);background:var(--line)"></div><div><div style="font-family:var(--font-mono);font-size:11px">--line</div><div style="font-size:11px;color:var(--subtle)">Hairline</div></div></div>
+                <div style="display:flex;flex-direction:column;gap:8px"><div style="height:58px;border-radius:var(--r-sm);border:1px solid var(--line);background:var(--line-strong)"></div><div><div style="font-family:var(--font-mono);font-size:11px">--line-strong</div><div style="font-size:11px;color:var(--subtle)">Border</div></div></div>
+              </div>
+            </div>
+            <div>
+              <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--subtle);margin-block-end:12px">Content</div>
+              <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:14px">
+                <div style="display:flex;flex-direction:column;gap:8px"><div style="height:58px;border-radius:var(--r-sm);border:1px solid var(--line);background:var(--ink)"></div><div><div style="font-family:var(--font-mono);font-size:11px">--ink</div><div style="font-size:11px;color:var(--subtle)">Primary text</div></div></div>
+                <div style="display:flex;flex-direction:column;gap:8px"><div style="height:58px;border-radius:var(--r-sm);border:1px solid var(--line);background:var(--muted)"></div><div><div style="font-family:var(--font-mono);font-size:11px">--muted</div><div style="font-size:11px;color:var(--subtle)">Muted text</div></div></div>
+                <div style="display:flex;flex-direction:column;gap:8px"><div style="height:58px;border-radius:var(--r-sm);border:1px solid var(--line);background:var(--subtle)"></div><div><div style="font-family:var(--font-mono);font-size:11px">--subtle</div><div style="font-size:11px;color:var(--subtle)">Subtle text</div></div></div>
+              </div>
+            </div>
+            <div>
+              <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--subtle);margin-block-end:12px">Brand</div>
+              <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:14px">
+                <div style="display:flex;flex-direction:column;gap:8px"><div style="height:58px;border-radius:var(--r-sm);border:1px solid var(--line);background:var(--primary)"></div><div><div style="font-family:var(--font-mono);font-size:11px">--primary</div><div style="font-size:11px;color:var(--subtle)">Primary action</div></div></div>
+                <div style="display:flex;flex-direction:column;gap:8px"><div style="height:58px;border-radius:var(--r-sm);border:1px solid var(--line);background:var(--accent)"></div><div><div style="font-family:var(--font-mono);font-size:11px">--accent</div><div style="font-size:11px;color:var(--subtle)">Accent</div></div></div>
+                <div style="display:flex;flex-direction:column;gap:8px"><div style="height:58px;border-radius:var(--r-sm);border:1px solid var(--line);background:var(--accent-weak)"></div><div><div style="font-family:var(--font-mono);font-size:11px">--accent-weak</div><div style="font-size:11px;color:var(--subtle)">Accent wash</div></div></div>
+                <div style="display:flex;flex-direction:column;gap:8px"><div style="height:58px;border-radius:var(--r-sm);border:1px solid var(--line);background:var(--gold)"></div><div><div style="font-family:var(--font-mono);font-size:11px">--gold</div><div style="font-size:11px;color:var(--subtle)">Merit / brass</div></div></div>
+              </div>
+            </div>
+            <div>
+              <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--subtle);margin-block-end:12px">Semantic</div>
+              <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:14px">
+                <div style="display:flex;flex-direction:column;gap:8px"><div style="height:58px;border-radius:var(--r-sm);border:1px solid var(--line);background:var(--success)"></div><div><div style="font-family:var(--font-mono);font-size:11px">--success</div><div style="font-size:11px;color:var(--subtle)">Success</div></div></div>
+                <div style="display:flex;flex-direction:column;gap:8px"><div style="height:58px;border-radius:var(--r-sm);border:1px solid var(--line);background:var(--warn)"></div><div><div style="font-family:var(--font-mono);font-size:11px">--warn</div><div style="font-size:11px;color:var(--subtle)">Warning</div></div></div>
+                <div style="display:flex;flex-direction:column;gap:8px"><div style="height:58px;border-radius:var(--r-sm);border:1px solid var(--line);background:var(--danger)"></div><div><div style="font-family:var(--font-mono);font-size:11px">--danger</div><div style="font-size:11px;color:var(--subtle)">Danger</div></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TYPOGRAPHY -->
+        <div>
+          <div style="margin-block-end:26px">
+            <h3 style="font-family:var(--font-head);font-weight:500;font-size:clamp(24px,3vw,32px);margin:0;letter-spacing:-.01em">{{ s.fType }}</h3>
+            <p style="color:var(--muted);font-size:15px;margin:8px 0 0;max-width:56ch">{{ s.fTypeSub }}</p>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px">
+            <div style="background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:24px;display:flex;flex-direction:column;gap:18px">
+              <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--subtle)">Display · Bodoni Moda</div>
+              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px"><span style="font-family:var(--font-head);font-weight:500;font-size:46px;line-height:1;letter-spacing:-.015em">A living passport</span><span style="font-family:var(--font-mono);font-size:10px;color:var(--subtle);white-space:nowrap">64 / 1.03</span></div>
+              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px"><span style="font-family:var(--font-head);font-weight:500;font-size:32px;line-height:1.05">Discover talent</span><span style="font-family:var(--font-mono);font-size:10px;color:var(--subtle);white-space:nowrap">H1 · 40</span></div>
+              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px"><span style="font-family:var(--font-head);font-weight:500;font-size:24px;line-height:1.1">Brand collaborations</span><span style="font-family:var(--font-mono);font-size:10px;color:var(--subtle);white-space:nowrap">H2 · 30</span></div>
+              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px"><span style="font-family:var(--font-head);font-weight:500;font-size:19px;line-height:1.15">Services &amp; rate card</span><span style="font-family:var(--font-mono);font-size:10px;color:var(--subtle);white-space:nowrap">H3 · 22</span></div>
+            </div>
+            <div style="background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:24px;display:flex;flex-direction:column;gap:16px">
+              <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--subtle)">Interface · IBM Plex Sans</div>
+              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px"><span style="font-size:18px;line-height:1.5">Booked for an editorial in Cairo.</span><span style="font-family:var(--font-mono);font-size:10px;color:var(--subtle);white-space:nowrap">Body L · 18</span></div>
+              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px"><span style="font-size:16px;line-height:1.5">Booked for an editorial in Cairo.</span><span style="font-family:var(--font-mono);font-size:10px;color:var(--subtle);white-space:nowrap">Body · 16</span></div>
+              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px"><span style="font-size:14px;line-height:1.5;color:var(--muted)">Booked for an editorial in Cairo.</span><span style="font-family:var(--font-mono);font-size:10px;color:var(--subtle);white-space:nowrap">Body S · 14</span></div>
+              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px"><span style="font-size:13px;color:var(--subtle)">Updated 3 days ago</span><span style="font-family:var(--font-mono);font-size:10px;color:var(--subtle);white-space:nowrap">Caption · 13</span></div>
+              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px"><span style="font-family:var(--font-mono);font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent-ink)">Editorial · Cairo</span><span style="font-family:var(--font-mono);font-size:10px;color:var(--subtle);white-space:nowrap">Overline · 12</span></div>
+            </div>
+          </div>
+          <div style="background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:24px;margin-block-start:18px" dir="rtl">
+            <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--subtle);margin-block-end:14px" dir="ltr">IBM Plex Sans Arabic · RTL</div>
+            <div style="font-family:var(--font-ar);font-weight:600;font-size:34px;line-height:1.3;margin-block-end:8px">مواهب إبداعية، بإتقان</div>
+            <div style="font-family:var(--font-ar);font-size:16px;line-height:1.8;color:var(--muted)">يقرأ النص العربي بوضوح وأناقة في الاتجاهين، مع انعكاس التخطيط دون المساس بسهولة القراءة.</div>
+          </div>
+        </div>
+
+        <!-- SPACING -->
+        <div>
+          <div style="margin-block-end:26px">
+            <h3 style="font-family:var(--font-head);font-weight:500;font-size:clamp(24px,3vw,32px);margin:0;letter-spacing:-.01em">{{ s.fSpace }}</h3>
+            <p style="color:var(--muted);font-size:15px;margin:8px 0 0;max-width:56ch">{{ s.fSpaceSub }}</p>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div style="display:flex;align-items:center;gap:16px"><span style="font-family:var(--font-mono);font-size:11px;width:74px;flex-shrink:0">space-1</span><span style="font-family:var(--font-mono);font-size:11px;color:var(--subtle);width:42px;flex-shrink:0">4</span><div style="height:14px;width:4px;background:var(--accent);border-radius:var(--r-xs)"></div></div>
+            <div style="display:flex;align-items:center;gap:16px"><span style="font-family:var(--font-mono);font-size:11px;width:74px;flex-shrink:0">space-2</span><span style="font-family:var(--font-mono);font-size:11px;color:var(--subtle);width:42px;flex-shrink:0">8</span><div style="height:14px;width:8px;background:var(--accent);border-radius:var(--r-xs)"></div></div>
+            <div style="display:flex;align-items:center;gap:16px"><span style="font-family:var(--font-mono);font-size:11px;width:74px;flex-shrink:0">space-3</span><span style="font-family:var(--font-mono);font-size:11px;color:var(--subtle);width:42px;flex-shrink:0">12</span><div style="height:14px;width:12px;background:var(--accent);border-radius:var(--r-xs)"></div></div>
+            <div style="display:flex;align-items:center;gap:16px"><span style="font-family:var(--font-mono);font-size:11px;width:74px;flex-shrink:0">space-4</span><span style="font-family:var(--font-mono);font-size:11px;color:var(--subtle);width:42px;flex-shrink:0">16</span><div style="height:14px;width:16px;background:var(--accent);border-radius:var(--r-xs)"></div></div>
+            <div style="display:flex;align-items:center;gap:16px"><span style="font-family:var(--font-mono);font-size:11px;width:74px;flex-shrink:0">space-5</span><span style="font-family:var(--font-mono);font-size:11px;color:var(--subtle);width:42px;flex-shrink:0">24</span><div style="height:14px;width:24px;background:var(--accent);border-radius:var(--r-xs)"></div></div>
+            <div style="display:flex;align-items:center;gap:16px"><span style="font-family:var(--font-mono);font-size:11px;width:74px;flex-shrink:0">space-6</span><span style="font-family:var(--font-mono);font-size:11px;color:var(--subtle);width:42px;flex-shrink:0">32</span><div style="height:14px;width:32px;background:var(--accent);border-radius:var(--r-xs)"></div></div>
+            <div style="display:flex;align-items:center;gap:16px"><span style="font-family:var(--font-mono);font-size:11px;width:74px;flex-shrink:0">space-7</span><span style="font-family:var(--font-mono);font-size:11px;color:var(--subtle);width:42px;flex-shrink:0">48</span><div style="height:14px;width:48px;background:var(--accent);border-radius:var(--r-xs)"></div></div>
+            <div style="display:flex;align-items:center;gap:16px"><span style="font-family:var(--font-mono);font-size:11px;width:74px;flex-shrink:0">space-8</span><span style="font-family:var(--font-mono);font-size:11px;color:var(--subtle);width:42px;flex-shrink:0">64</span><div style="height:14px;width:64px;background:var(--accent);border-radius:var(--r-xs)"></div></div>
+            <div style="display:flex;align-items:center;gap:16px"><span style="font-family:var(--font-mono);font-size:11px;width:74px;flex-shrink:0">space-9</span><span style="font-family:var(--font-mono);font-size:11px;color:var(--subtle);width:42px;flex-shrink:0">96</span><div style="height:14px;width:96px;background:var(--accent);border-radius:var(--r-xs)"></div></div>
+          </div>
+        </div>
+
+        <!-- RADIUS + ELEVATION row -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:clamp(32px,5vw,56px)">
+          <div>
+            <div style="margin-block-end:26px">
+              <h3 style="font-family:var(--font-head);font-weight:500;font-size:clamp(24px,3vw,32px);margin:0;letter-spacing:-.01em">{{ s.fRadius }}</h3>
+              <p style="color:var(--muted);font-size:15px;margin:8px 0 0">{{ s.fRadiusSub }}</p>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:18px">
+              <div style="display:flex;flex-direction:column;gap:8px;align-items:center"><div style="width:64px;height:64px;background:var(--accent-weak);border:1px solid var(--accent);border-radius:var(--r-xs)"></div><span style="font-family:var(--font-mono);font-size:10px;color:var(--subtle)">xs · 2</span></div>
+              <div style="display:flex;flex-direction:column;gap:8px;align-items:center"><div style="width:64px;height:64px;background:var(--accent-weak);border:1px solid var(--accent);border-radius:var(--r-sm)"></div><span style="font-family:var(--font-mono);font-size:10px;color:var(--subtle)">sm · 4</span></div>
+              <div style="display:flex;flex-direction:column;gap:8px;align-items:center"><div style="width:64px;height:64px;background:var(--accent-weak);border:1px solid var(--accent);border-radius:var(--r-md)"></div><span style="font-family:var(--font-mono);font-size:10px;color:var(--subtle)">md · 8</span></div>
+              <div style="display:flex;flex-direction:column;gap:8px;align-items:center"><div style="width:64px;height:64px;background:var(--accent-weak);border:1px solid var(--accent);border-radius:var(--r-lg)"></div><span style="font-family:var(--font-mono);font-size:10px;color:var(--subtle)">lg · 14</span></div>
+              <div style="display:flex;flex-direction:column;gap:8px;align-items:center"><div style="width:64px;height:64px;background:var(--accent-weak);border:1px solid var(--accent);border-radius:var(--r-pill)"></div><span style="font-family:var(--font-mono);font-size:10px;color:var(--subtle)">pill</span></div>
+            </div>
+          </div>
+          <div>
+            <div style="margin-block-end:26px">
+              <h3 style="font-family:var(--font-head);font-weight:500;font-size:clamp(24px,3vw,32px);margin:0;letter-spacing:-.01em">{{ s.fElev }}</h3>
+              <p style="color:var(--muted);font-size:15px;margin:8px 0 0">{{ s.fElevSub }}</p>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:22px;padding-block:6px">
+              <div style="display:flex;flex-direction:column;gap:10px;align-items:center"><div style="width:108px;height:74px;background:var(--elevated);border-radius:var(--r-md);box-shadow:var(--e1)"></div><span style="font-family:var(--font-mono);font-size:10px;color:var(--subtle)">--e1</span></div>
+              <div style="display:flex;flex-direction:column;gap:10px;align-items:center"><div style="width:108px;height:74px;background:var(--elevated);border-radius:var(--r-md);box-shadow:var(--e2)"></div><span style="font-family:var(--font-mono);font-size:10px;color:var(--subtle)">--e2</span></div>
+              <div style="display:flex;flex-direction:column;gap:10px;align-items:center"><div style="width:108px;height:74px;background:var(--elevated);border-radius:var(--r-md);box-shadow:var(--e3)"></div><span style="font-family:var(--font-mono);font-size:10px;color:var(--subtle)">--e3</span></div>
+              <div style="display:flex;flex-direction:column;gap:10px;align-items:center"><div style="width:108px;height:74px;background:var(--elevated);border-radius:var(--r-md);box-shadow:var(--e4)"></div><span style="font-family:var(--font-mono);font-size:10px;color:var(--subtle)">--e4</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- MOTION -->
+        <div>
+          <div style="margin-block-end:26px">
+            <h3 style="font-family:var(--font-head);font-weight:500;font-size:clamp(24px,3vw,32px);margin:0;letter-spacing:-.01em">{{ s.fMotion }}</h3>
+            <p style="color:var(--muted);font-size:15px;margin:8px 0 0;max-width:56ch">{{ s.fMotionSub }}</p>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:22px">
+            <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+              <span style="font-family:var(--font-mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--subtle);margin-inline-end:6px">Durations</span>
+              <span style="font-family:var(--font-mono);font-size:11px;padding:6px 12px;border:1px solid var(--line-strong);border-radius:var(--r-pill);color:var(--muted)">dur-1 · 90ms</span>
+              <span style="font-family:var(--font-mono);font-size:11px;padding:6px 12px;border:1px solid var(--line-strong);border-radius:var(--r-pill);color:var(--muted)">dur-2 · 160ms</span>
+              <span style="font-family:var(--font-mono);font-size:11px;padding:6px 12px;border:1px solid var(--line-strong);border-radius:var(--r-pill);color:var(--muted)">dur-3 · 260ms</span>
+              <span style="font-family:var(--font-mono);font-size:11px;padding:6px 12px;border:1px solid var(--line-strong);border-radius:var(--r-pill);color:var(--muted)">dur-4 · 420ms</span>
+              <span style="font-family:var(--font-mono);font-size:11px;padding:6px 12px;border:1px solid var(--line-strong);border-radius:var(--r-pill);color:var(--muted)">dur-5 · 680ms</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:14px;max-width:560px">
+              <div style="display:flex;align-items:center;gap:14px"><span style="font-family:var(--font-mono);font-size:11px;width:118px;flex-shrink:0;color:var(--muted)">ease-out</span><div style="flex:1;height:18px;border-radius:var(--r-pill);background:var(--surface);border:1px solid var(--line)"><div style="width:16px;height:16px;border-radius:var(--r-pill);background:var(--accent);margin-block:1px;animation:travel 2.6s var(--ease-out) infinite alternate"></div></div></div>
+              <div style="display:flex;align-items:center;gap:14px"><span style="font-family:var(--font-mono);font-size:11px;width:118px;flex-shrink:0;color:var(--muted)">ease-in-out</span><div style="flex:1;height:18px;border-radius:var(--r-pill);background:var(--surface);border:1px solid var(--line)"><div style="width:16px;height:16px;border-radius:var(--r-pill);background:var(--accent);margin-block:1px;animation:travel 2.6s var(--ease-in-out) infinite alternate"></div></div></div>
+              <div style="display:flex;align-items:center;gap:14px"><span style="font-family:var(--font-mono);font-size:11px;width:118px;flex-shrink:0;color:var(--muted)">ease-spring</span><div style="flex:1;height:18px;border-radius:var(--r-pill);background:var(--surface);border:1px solid var(--line)"><div style="width:16px;height:16px;border-radius:var(--r-pill);background:var(--accent);margin-block:1px;animation:travel 2.6s var(--ease-spring) infinite alternate"></div></div></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <section id="components" style="padding:clamp(20px,3vw,40px) clamp(16px,4vw,48px) clamp(20px,3vw,40px);max-width:1180px;margin-inline:auto">
+      <div style="padding-block-start:8px;border-block-start:1px solid var(--line)">
+        <span style="font-family:var(--font-mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent-ink);display:inline-block;padding-block-start:18px">{{ s.componentsKicker }}</span>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:clamp(40px,5vw,58px);margin-block-start:34px">
+
+        <!-- BUTTONS -->
+        <div>
+          <div style="display:flex;align-items:baseline;gap:14px;margin-block-end:18px"><h3 style="font-family:var(--font-head);font-weight:500;font-size:clamp(20px,2.4vw,26px);margin:0">{{ s.cButtons }}</h3><span style="flex:1;height:1px;background:var(--line)"></span></div>
+          <div style="background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:clamp(20px,3vw,30px);display:flex;flex-direction:column;gap:22px">
+            <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center">
+              <button type="button" style="display:inline-flex;align-items:center;gap:8px;background:var(--primary);color:var(--on-primary);border:1px solid var(--primary);padding:11px 20px;border-radius:var(--r-sm);font-family:var(--font-ui);font-weight:600;font-size:14px;cursor:pointer;transition:transform var(--dur-2) var(--ease-out),box-shadow var(--dur-2)" style-hover="box-shadow:var(--e2);transform:translateY(-1px)" style-active="transform:translateY(0) scale(.99)" style-focus="outline:2px solid var(--accent);outline-offset:2px">{{ s.btnPrimary }}</button>
+              <button type="button" style="display:inline-flex;align-items:center;gap:8px;background:transparent;color:var(--ink);border:1px solid var(--line-strong);padding:11px 20px;border-radius:var(--r-sm);font-family:var(--font-ui);font-weight:600;font-size:14px;cursor:pointer;transition:all var(--dur-2) var(--ease-out)" style-hover="border-color:var(--accent);color:var(--accent-ink);background:var(--accent-weak)" style-active="transform:scale(.99)" style-focus="outline:2px solid var(--accent);outline-offset:2px">{{ s.btnSecondary }}</button>
+              <button type="button" style="display:inline-flex;align-items:center;gap:8px;background:transparent;color:var(--muted);border:1px solid transparent;padding:11px 18px;border-radius:var(--r-sm);font-family:var(--font-ui);font-weight:600;font-size:14px;cursor:pointer;transition:all var(--dur-2) var(--ease-out)" style-hover="background:var(--accent-weak);color:var(--accent-ink)" style-active="transform:scale(.99)" style-focus="outline:2px solid var(--accent);outline-offset:2px">{{ s.btnGhost }}</button>
+              <button type="button" aria-label="{{ s.btnIcon }}" title="{{ s.btnIcon }}" style="display:grid;place-items:center;width:42px;height:42px;background:transparent;color:var(--ink);border:1px solid var(--line-strong);border-radius:var(--r-sm);cursor:pointer;transition:all var(--dur-2) var(--ease-out)" style-hover="border-color:var(--accent);color:var(--accent)" style-active="transform:scale(.95)" style-focus="outline:2px solid var(--accent);outline-offset:2px"><span style="position:relative;width:14px;height:14px;display:block"><span style="position:absolute;top:6px;inset-inline:0;height:2px;background:currentColor;border-radius:2px"></span><span style="position:absolute;inset-inline-start:6px;inset-block:0;width:2px;background:currentColor;border-radius:2px"></span></span></button>
+              <button type="button" disabled style="display:inline-flex;align-items:center;gap:9px;background:var(--primary);color:var(--on-primary);border:1px solid var(--primary);padding:11px 20px;border-radius:var(--r-sm);font-family:var(--font-ui);font-weight:600;font-size:14px;cursor:wait;opacity:.82"><span style="width:14px;height:14px;border:2px solid color-mix(in srgb,var(--on-primary) 32%,transparent);border-top-color:var(--on-primary);border-radius:var(--r-pill);display:inline-block;animation:spin .7s linear infinite"></span>{{ s.btnLoading }}</button>
+              <button type="button" disabled style="display:inline-flex;align-items:center;gap:8px;background:transparent;color:var(--ink);border:1px solid var(--line-strong);padding:11px 20px;border-radius:var(--r-sm);font-family:var(--font-ui);font-weight:600;font-size:14px;cursor:not-allowed;opacity:.42">{{ s.btnDisabled }}</button>
+            </div>
+            <div style="height:1px;background:var(--line)"></div>
+            <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center">
+              <span style="font-family:var(--font-mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--subtle);margin-inline-end:4px">Sizes</span>
+              <button type="button" style="background:transparent;color:var(--ink);border:1px solid var(--line-strong);padding:7px 14px;border-radius:var(--r-sm);font-family:var(--font-ui);font-weight:600;font-size:13px;cursor:pointer;transition:all var(--dur-2)" style-hover="border-color:var(--accent);color:var(--accent-ink)">Small</button>
+              <button type="button" style="background:transparent;color:var(--ink);border:1px solid var(--line-strong);padding:11px 20px;border-radius:var(--r-sm);font-family:var(--font-ui);font-weight:600;font-size:14px;cursor:pointer;transition:all var(--dur-2)" style-hover="border-color:var(--accent);color:var(--accent-ink)">Medium</button>
+              <button type="button" style="background:transparent;color:var(--ink);border:1px solid var(--line-strong);padding:14px 26px;border-radius:var(--r-sm);font-family:var(--font-ui);font-weight:600;font-size:15px;cursor:pointer;transition:all var(--dur-2)" style-hover="border-color:var(--accent);color:var(--accent-ink)">Large</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- INPUTS -->
+        <div>
+          <div style="display:flex;align-items:baseline;gap:14px;margin-block-end:18px"><h3 style="font-family:var(--font-head);font-weight:500;font-size:clamp(20px,2.4vw,26px);margin:0">{{ s.cInputs }}</h3><span style="flex:1;height:1px;background:var(--line)"></span></div>
+          <div style="background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:clamp(20px,3vw,30px)">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:20px">
+              <label style="display:flex;flex-direction:column;gap:7px">
+                <span style="font-family:var(--font-mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)">{{ s.emailLabel }}</span>
+                <input type="email" value="{{ email }}" onChange="{{ onEmail }}" onBlur="{{ onEmailBlur }}" placeholder="name@studio.com" style="width:100%;background:var(--elevated);border:1px solid {{ emailBorder }};border-radius:var(--r-sm);padding:11px 13px;font-family:var(--font-ui);font-size:14px;color:var(--ink);outline:none;transition:border-color var(--dur-2),box-shadow var(--dur-2)" style-focus="border-color:var(--accent);box-shadow:0 0 0 3px var(--focus)" />
+                <sc-if value="{{ emailHasMsg }}" hint-placeholder-val="{{ false }}"><span style="font-size:12px;color:{{ emailMsgColor }}">{{ emailMsg }}</span></sc-if>
+              </label>
+              <label style="display:flex;flex-direction:column;gap:7px">
+                <span style="font-family:var(--font-mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)">{{ s.selectLabel }}</span>
+                <div style="position:relative">
+                  <select style="width:100%;appearance:none;-webkit-appearance:none;background:var(--elevated);border:1px solid var(--line-strong);border-radius:var(--r-sm);padding:11px 36px 11px 13px;font-family:var(--font-ui);font-size:14px;color:var(--ink);cursor:pointer;outline:none;transition:border-color var(--dur-2),box-shadow var(--dur-2)" style-focus="border-color:var(--accent);box-shadow:0 0 0 3px var(--focus)">
+                    <sc-for list="{{ s.professions }}" as="p" hint-placeholder-count="4"><option>{{ p }}</option></sc-for>
+                  </select>
+                  <span style="position:absolute;inset-inline-end:14px;top:50%;width:8px;height:8px;border-inline-end:2px solid var(--muted);border-block-end:2px solid var(--muted);transform:translateY(-70%) rotate(45deg);pointer-events:none"></span>
+                </div>
+              </label>
+              <label style="display:flex;flex-direction:column;gap:7px">
+                <span style="font-family:var(--font-mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)">Day rate · EGP</span>
+                <input type="text" defaultValue="8,500" style="width:100%;background:var(--elevated);border:1px solid var(--success);border-radius:var(--r-sm);padding:11px 13px;font-family:var(--font-ui);font-size:14px;color:var(--ink);outline:none" style-focus="box-shadow:0 0 0 3px color-mix(in srgb,var(--success) 30%,transparent)" />
+                <span style="font-size:12px;color:var(--success)">{{ s.emailOk }}</span>
+              </label>
+              <label style="display:flex;flex-direction:column;gap:7px;grid-column:1/-1">
+                <span style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-family:var(--font-mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)">{{ s.bioLabel }}</span><span style="font-family:var(--font-mono);font-size:11px;color:var(--subtle)">{{ bioCount }}</span></span>
+                <textarea value="{{ bio }}" onChange="{{ onBio }}" rows="3" placeholder="{{ s.bioPh }}" style="width:100%;background:var(--elevated);border:1px solid var(--line-strong);border-radius:var(--r-sm);padding:11px 13px;font-family:var(--font-ui);font-size:14px;line-height:1.55;color:var(--ink);outline:none;resize:vertical;min-height:82px;transition:border-color var(--dur-2),box-shadow var(--dur-2)" style-focus="border-color:var(--accent);box-shadow:0 0 0 3px var(--focus)"></textarea>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- CHIPS + BADGES row -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:clamp(28px,4vw,44px)">
+          <div>
+            <div style="display:flex;align-items:baseline;gap:14px;margin-block-end:18px"><h3 style="font-family:var(--font-head);font-weight:500;font-size:clamp(20px,2.4vw,26px);margin:0">{{ s.cChips }}</h3><span style="flex:1;height:1px;background:var(--line)"></span></div>
+            <div style="background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:clamp(20px,3vw,28px);display:flex;flex-direction:column;gap:20px">
+              <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+                <sc-for list="{{ removableChips }}" as="chip" hint-placeholder-count="3">
+                  <span style="display:inline-flex;align-items:center;gap:7px;background:var(--elevated);border:1px solid var(--line-strong);border-radius:var(--r-pill);padding-block:6px;padding-inline-start:13px;padding-inline-end:7px;font-size:13px;color:var(--ink)">{{ chip.label }}<button type="button" onClick="{{ chip.onClick }}" aria-label="Remove" style="display:grid;place-items:center;width:18px;height:18px;border:0;border-radius:var(--r-pill);background:transparent;color:var(--muted);cursor:pointer;font-size:14px;line-height:1;transition:all var(--dur-2)" style-hover="background:var(--danger-weak);color:var(--danger)">×</button></span>
+                </sc-for>
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:10px">
+                <sc-for list="{{ filterItems }}" as="f" hint-placeholder-count="5"><button type="button" onClick="{{ f.onClick }}" aria-pressed="{{ f.on }}" style="{{ f.style }}">{{ f.label }}</button></sc-for>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div style="display:flex;align-items:baseline;gap:14px;margin-block-end:18px"><h3 style="font-family:var(--font-head);font-weight:500;font-size:clamp(20px,2.4vw,26px);margin:0">{{ s.cBadges }}</h3><span style="flex:1;height:1px;background:var(--line)"></span></div>
+            <div style="background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:clamp(20px,3vw,28px);display:flex;flex-wrap:wrap;gap:12px;align-items:center;min-height:64px">
+              <span style="display:inline-flex;align-items:center;gap:8px;background:var(--success-weak);color:color-mix(in srgb,var(--success) 78%,var(--ink));border:1px solid color-mix(in srgb,var(--success) 32%,transparent);border-radius:var(--r-pill);padding:6px 13px;font-size:12px;font-weight:600"><span style="width:7px;height:7px;border-radius:var(--r-pill);background:var(--success);animation:pulseDot 2.2s var(--ease-out) infinite"></span>{{ s.available }}</span>
+              <span style="display:inline-flex;align-items:center;gap:8px;background:var(--warn-weak);color:color-mix(in srgb,var(--warn) 76%,var(--ink));border:1px solid color-mix(in srgb,var(--warn) 32%,transparent);border-radius:var(--r-pill);padding:6px 13px;font-size:12px;font-weight:600"><span style="width:7px;height:7px;border-radius:var(--r-pill);background:var(--warn)"></span>{{ s.booked }}</span>
+              <span style="display:inline-flex;align-items:center;gap:8px;background:var(--surface);color:var(--subtle);border:1px solid var(--line-strong);border-radius:var(--r-pill);padding:6px 13px;font-size:12px;font-weight:600"><span style="width:7px;height:7px;border-radius:var(--r-pill);background:var(--subtle)"></span>{{ s.unavailable }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- AVATARS -->
+        <div>
+          <div style="display:flex;align-items:baseline;gap:14px;margin-block-end:18px"><h3 style="font-family:var(--font-head);font-weight:500;font-size:clamp(20px,2.4vw,26px);margin:0">{{ s.cAvatars }}</h3><span style="flex:1;height:1px;background:var(--line)"></span></div>
+          <div style="background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:clamp(20px,3vw,30px);display:flex;flex-wrap:wrap;gap:28px;align-items:center">
+            <div style="display:flex;gap:16px;align-items:center">
+              <span style="width:28px;height:28px;border-radius:var(--r-pill);background:var(--accent-weak);color:var(--accent-ink);display:grid;place-items:center;font-weight:600;font-size:11px">LM</span>
+              <span style="width:36px;height:36px;border-radius:var(--r-pill);background:var(--accent-weak);color:var(--accent-ink);display:grid;place-items:center;font-weight:600;font-size:13px">LM</span>
+              <span style="width:44px;height:44px;border-radius:var(--r-pill);background:var(--accent-weak);color:var(--accent-ink);display:grid;place-items:center;font-weight:600;font-size:15px">LM</span>
+              <span style="width:56px;height:56px;border-radius:var(--r-pill);background:var(--accent-weak);color:var(--accent-ink);display:grid;place-items:center;font-weight:600;font-size:18px">LM</span>
+              <span style="width:72px;height:72px;border-radius:var(--r-pill);background:var(--accent-weak);color:var(--accent-ink);display:grid;place-items:center;font-weight:600;font-size:24px">LM</span>
+            </div>
+            <div style="width:1px;height:48px;background:var(--line)"></div>
+            <div style="position:relative;width:56px;height:56px"><span style="width:56px;height:56px;border-radius:var(--r-pill);background:var(--accent-weak);color:var(--accent-ink);display:grid;place-items:center;font-weight:600;font-size:18px;box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--success)">YF</span><span style="position:absolute;inset-block-end:0;inset-inline-end:0;width:14px;height:14px;border-radius:var(--r-pill);background:var(--success);border:2px solid var(--surface)"></span></div>
+            <div style="width:1px;height:48px;background:var(--line)"></div>
+            <div style="display:flex;align-items:center">
+              <span style="width:40px;height:40px;border-radius:var(--r-pill);background:var(--accent-weak);color:var(--accent-ink);display:grid;place-items:center;font-weight:600;font-size:14px;border:2px solid var(--surface)">LM</span>
+              <span style="width:40px;height:40px;border-radius:var(--r-pill);background:var(--gold-weak);color:color-mix(in srgb,var(--gold) 80%,var(--ink));display:grid;place-items:center;font-weight:600;font-size:14px;border:2px solid var(--surface);margin-inline-start:-12px">KA</span>
+              <span style="width:40px;height:40px;border-radius:var(--r-pill);background:var(--accent-weak);color:var(--accent-ink);display:grid;place-items:center;font-weight:600;font-size:14px;border:2px solid var(--surface);margin-inline-start:-12px">DS</span>
+              <span style="width:40px;height:40px;border-radius:var(--r-pill);background:var(--ink);color:var(--bg);display:grid;place-items:center;font-weight:600;font-size:12px;border:2px solid var(--surface);margin-inline-start:-12px">+5</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- CARDS -->
+        <div>
+          <div style="display:flex;align-items:baseline;gap:14px;margin-block-end:18px"><h3 style="font-family:var(--font-head);font-weight:500;font-size:clamp(20px,2.4vw,26px);margin:0">{{ s.cCards }}</h3><span style="flex:1;height:1px;background:var(--line)"></span></div>
+          <div style="display:flex;flex-wrap:wrap;gap:20px">
+            <div style="width:280px;max-width:100%;background:var(--elevated);border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden;box-shadow:var(--e1);transition:transform var(--dur-3) var(--ease-out),box-shadow var(--dur-3)" style-hover="transform:translateY(-3px);box-shadow:var(--e3)">
+              <div style="position:relative;aspect-ratio:4/5;background:repeating-linear-gradient(135deg,var(--line) 0 1px,transparent 1px 12px),var(--surface)">
+                <span style="position:absolute;inset-block-start:12px;inset-inline-start:12px;display:inline-flex;align-items:center;gap:7px;background:color-mix(in srgb,var(--surface) 88%,transparent);backdrop-filter:blur(6px);color:color-mix(in srgb,var(--success) 78%,var(--ink));border-radius:var(--r-pill);padding:5px 11px;font-size:11px;font-weight:600"><span style="width:6px;height:6px;border-radius:var(--r-pill);background:var(--success);animation:pulseDot 2.2s var(--ease-out) infinite"></span>{{ s.available }}</span>
+                <span style="position:absolute;inset-block-end:10px;inset-inline-start:12px;font-family:var(--font-mono);font-size:9px;letter-spacing:.12em;color:var(--subtle);text-transform:uppercase">Editorial · 4:5</span>
+              </div>
+              <div style="padding:16px;display:flex;flex-direction:column;gap:11px">
+                <div><div style="font-family:var(--font-head);font-weight:500;font-size:20px;line-height:1.1">{{ s.cardName }}</div><div style="color:var(--muted);font-size:13px;margin-block-start:3px">{{ s.cardRole }}</div></div>
+                <div style="display:flex;align-items:center;justify-content:space-between"><span style="font-family:var(--font-mono);font-size:11px;color:var(--subtle)">{{ s.cardLoc }}</span><span style="display:inline-flex;align-items:center;gap:4px;font-size:12px;color:var(--muted)"><span style="color:var(--gold);letter-spacing:1px">★★★★★</span>4.9</span></div>
+                <div style="display:flex;gap:8px;margin-block-start:4px">
+                  <button type="button" style="flex:1;background:var(--primary);color:var(--on-primary);border:0;padding:10px;border-radius:var(--r-sm);font-family:var(--font-ui);font-weight:600;font-size:13px;cursor:pointer;transition:transform var(--dur-2)" style-hover="transform:translateY(-1px)" style-active="transform:scale(.99)">{{ s.btnPrimary }}</button>
+                  <button type="button" aria-label="{{ s.btnIcon }}" style="display:grid;place-items:center;width:40px;border:1px solid var(--line-strong);background:transparent;color:var(--ink);border-radius:var(--r-sm);cursor:pointer;transition:all var(--dur-2)" style-hover="border-color:var(--accent);color:var(--accent)"><span style="width:9px;height:9px;border-radius:var(--r-pill);background:currentColor"></span></button>
+                </div>
+              </div>
+            </div>
+            <div style="width:280px;max-width:100%;background:var(--elevated);border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden;box-shadow:var(--e1);transition:transform var(--dur-3) var(--ease-out),box-shadow var(--dur-3)" style-hover="transform:translateY(-3px);box-shadow:var(--e3)">
+              <div style="position:relative;aspect-ratio:4/5;background:repeating-linear-gradient(135deg,var(--line) 0 1px,transparent 1px 12px),var(--surface)">
+                <span style="position:absolute;inset-block-start:12px;inset-inline-start:12px;display:inline-flex;align-items:center;gap:7px;background:color-mix(in srgb,var(--surface) 88%,transparent);backdrop-filter:blur(6px);color:color-mix(in srgb,var(--warn) 76%,var(--ink));border-radius:var(--r-pill);padding:5px 11px;font-size:11px;font-weight:600"><span style="width:6px;height:6px;border-radius:var(--r-pill);background:var(--warn)"></span>{{ s.booked }}</span>
+                <span style="position:absolute;inset-block-end:10px;inset-inline-start:12px;font-family:var(--font-mono);font-size:9px;letter-spacing:.12em;color:var(--subtle);text-transform:uppercase">Campaign · 4:5</span>
+              </div>
+              <div style="padding:16px;display:flex;flex-direction:column;gap:11px">
+                <div><div style="font-family:var(--font-head);font-weight:500;font-size:20px;line-height:1.1">{{ s.cardName2 }}</div><div style="color:var(--muted);font-size:13px;margin-block-start:3px">{{ s.cardRole2 }}</div></div>
+                <div style="display:flex;align-items:center;justify-content:space-between"><span style="font-family:var(--font-mono);font-size:11px;color:var(--subtle)">{{ s.cardLoc2 }}</span><span style="display:inline-flex;align-items:center;gap:4px;font-size:12px;color:var(--muted)"><span style="color:var(--gold);letter-spacing:1px">★★★★★</span>4.8</span></div>
+                <div style="display:flex;gap:8px;margin-block-start:4px">
+                  <button type="button" style="flex:1;background:transparent;color:var(--ink);border:1px solid var(--line-strong);padding:10px;border-radius:var(--r-sm);font-family:var(--font-ui);font-weight:600;font-size:13px;cursor:pointer;transition:all var(--dur-2)" style-hover="border-color:var(--accent);color:var(--accent-ink);background:var(--accent-weak)">{{ s.btnSecondary }}</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- STAT TILES -->
+        <div>
+          <div style="display:flex;align-items:baseline;gap:14px;margin-block-end:18px"><h3 style="font-family:var(--font-head);font-weight:500;font-size:clamp(20px,2.4vw,26px);margin:0">{{ s.cStats }}</h3><span style="flex:1;height:1px;background:var(--line)"></span></div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px">
+            <div style="background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:18px;display:flex;flex-direction:column;gap:8px"><span style="font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)">{{ s.statViews }}</span><span style="font-family:var(--font-head);font-weight:500;font-size:32px;line-height:1">12,480</span><span style="display:inline-flex;align-items:center;gap:4px;align-self:flex-start;background:var(--success-weak);color:color-mix(in srgb,var(--success) 80%,var(--ink));font-family:var(--font-mono);font-size:11px;padding:3px 8px;border-radius:var(--r-pill)">↑ 18%</span></div>
+            <div style="background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:18px;display:flex;flex-direction:column;gap:8px"><span style="font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)">{{ s.statBookings }}</span><span style="font-family:var(--font-head);font-weight:500;font-size:32px;line-height:1">24</span><span style="font-size:12px;color:var(--subtle)">this quarter</span></div>
+            <div style="background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:18px;display:flex;flex-direction:column;gap:8px"><span style="font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)">{{ s.statRating }}</span><span style="font-family:var(--font-head);font-weight:500;font-size:32px;line-height:1;display:inline-flex;align-items:baseline;gap:7px">4.9<span style="color:var(--gold);font-size:16px;font-family:var(--font-ui)">★</span></span><span style="font-size:12px;color:var(--subtle)">38 reviews</span></div>
+            <div style="background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:18px;display:flex;flex-direction:column;gap:8px"><span style="font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)">{{ s.statResp }}</span><span style="font-family:var(--font-head);font-weight:500;font-size:32px;line-height:1">96%</span><span style="font-size:12px;color:var(--subtle)">avg. 2h reply</span></div>
+          </div>
+        </div>
+
+        <!-- TABS -->
+        <div>
+          <div style="display:flex;align-items:baseline;gap:14px;margin-block-end:18px"><h3 style="font-family:var(--font-head);font-weight:500;font-size:clamp(20px,2.4vw,26px);margin:0">{{ s.cTabs }}</h3><span style="flex:1;height:1px;background:var(--line)"></span></div>
+          <div style="background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:clamp(18px,3vw,26px);max-width:540px">
+            <div role="tablist" style="position:relative;display:flex;border-block-end:1px solid var(--line)">
+              <sc-for list="{{ tabItems }}" as="tab" hint-placeholder-count="3"><button role="tab" type="button" aria-selected="{{ tab.sel }}" onClick="{{ tab.onClick }}" style="{{ tab.style }}">{{ tab.label }}</button></sc-for>
+              <div style="{{ tabIndicatorStyle }}"></div>
+            </div>
+            <div key="{{ activeTab }}" style="padding-block:20px 2px;animation:fadeIn var(--dur-3) var(--ease-out)">
+              <sc-if value="{{ isTab0 }}" hint-placeholder-val="{{ true }}">
+                <div style="color:var(--muted);font-size:14px;margin-block-end:12px">{{ s.tabGallery }}</div>
+                <div style="display:flex;gap:8px"><div style="flex:1;aspect-ratio:4/5;border-radius:var(--r-sm);background:repeating-linear-gradient(135deg,var(--line) 0 1px,transparent 1px 10px),var(--elevated)"></div><div style="flex:1;aspect-ratio:4/5;border-radius:var(--r-sm);background:repeating-linear-gradient(135deg,var(--line) 0 1px,transparent 1px 10px),var(--elevated)"></div><div style="flex:1;aspect-ratio:4/5;border-radius:var(--r-sm);background:repeating-linear-gradient(135deg,var(--line) 0 1px,transparent 1px 10px),var(--elevated)"></div></div>
+              </sc-if>
+              <sc-if value="{{ isTab1 }}" hint-placeholder-val="{{ false }}">
+                <blockquote style="font-family:var(--font-head);font-weight:500;font-size:21px;line-height:1.4;margin:0">{{ s.tabReview }}</blockquote>
+                <div style="color:var(--muted);font-size:13px;margin-block-start:12px">{{ s.tabReviewBy }}</div>
+              </sc-if>
+              <sc-if value="{{ isTab2 }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;flex-direction:column;gap:12px">
+                  <div style="display:flex;justify-content:space-between;align-items:baseline;padding-block-end:12px;border-block-end:1px solid var(--line)"><span style="font-size:14px;color:var(--ink)">{{ s.rateRow1 }}</span><span style="font-family:var(--font-mono);font-size:14px;color:var(--accent-ink)">{{ s.rateVal1 }}</span></div>
+                  <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:14px;color:var(--ink)">{{ s.rateRow2 }}</span><span style="font-family:var(--font-mono);font-size:14px;color:var(--accent-ink)">{{ s.rateVal2 }}</span></div>
+                </div>
+              </sc-if>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEPPER -->
+        <div>
+          <div style="display:flex;align-items:baseline;gap:14px;margin-block-end:18px"><h3 style="font-family:var(--font-head);font-weight:500;font-size:clamp(20px,2.4vw,26px);margin:0">{{ s.cStepper }}</h3><span style="flex:1;height:1px;background:var(--line)"></span></div>
+          <div style="background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:clamp(22px,3vw,34px)">
+            <div style="position:relative;margin-block-end:6px">
+              <div style="position:absolute;inset-inline:18px;top:17px;height:2px;background:var(--line)"><div style="{{ stepFillStyle }}"></div></div>
+              <div style="position:relative;display:flex;justify-content:space-between">
+                <sc-for list="{{ stepNodes }}" as="n" hint-placeholder-count="5">
+                  <button type="button" onClick="{{ n.onClick }}" style="background:transparent;border:0;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:9px;flex:1;padding:0" style-focus="outline:none">
+                    <span style="width:36px;height:36px;border-radius:var(--r-pill);display:grid;place-items:center;font-size:13px;font-weight:600;transition:all var(--dur-3) var(--ease-out);{{ n.dotStyle }}">{{ n.mark }}</span>
+                    <span style="font-size:12px;text-align:center;transition:color var(--dur-3);{{ n.labelStyle }}">{{ n.label }}</span>
+                  </button>
+                </sc-for>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;background:var(--accent-weak);border:1px solid color-mix(in srgb,var(--accent) 28%,transparent);border-radius:var(--r-sm);padding:11px 14px;margin-block:24px 18px">
+              <span style="width:7px;height:7px;border-radius:var(--r-pill);background:var(--accent);animation:pulseDot 2.2s var(--ease-out) infinite;flex-shrink:0"></span>
+              <span style="font-size:13px;color:var(--accent-ink);font-weight:500">{{ s.stepWhose }}</span>
+            </div>
+            <div style="display:flex;gap:10px;justify-content:flex-end">
+              <button type="button" onClick="{{ stepPrev }}" disabled="{{ atStart }}" style="background:transparent;color:var(--ink);border:1px solid var(--line-strong);padding:10px 18px;border-radius:var(--r-sm);font-family:var(--font-ui);font-weight:600;font-size:13px;cursor:pointer;transition:all var(--dur-2);opacity:{{ prevOpacity }}" style-hover="border-color:var(--accent);color:var(--accent-ink)">{{ s.prev }}</button>
+              <button type="button" onClick="{{ stepNext }}" disabled="{{ atEnd }}" style="background:var(--primary);color:var(--on-primary);border:1px solid var(--primary);padding:10px 18px;border-radius:var(--r-sm);font-family:var(--font-ui);font-weight:600;font-size:13px;cursor:pointer;transition:all var(--dur-2);opacity:{{ nextOpacity }}" style-hover="transform:translateY(-1px);box-shadow:var(--e2)">{{ s.next }}</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- MODAL + DRAWER + TOASTS -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:clamp(28px,4vw,44px)">
+          <div>
+            <div style="display:flex;align-items:baseline;gap:14px;margin-block-end:18px"><h3 style="font-family:var(--font-head);font-weight:500;font-size:clamp(20px,2.4vw,26px);margin:0">{{ s.cModal }}</h3><span style="flex:1;height:1px;background:var(--line)"></span></div>
+            <div style="background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:clamp(20px,3vw,28px);display:flex;flex-wrap:wrap;gap:12px;align-items:center;min-height:64px">
+              <button type="button" onClick="{{ openModal }}" style="background:var(--primary);color:var(--on-primary);border:0;padding:11px 18px;border-radius:var(--r-sm);font-family:var(--font-ui);font-weight:600;font-size:14px;cursor:pointer;transition:transform var(--dur-2)" style-hover="transform:translateY(-1px);box-shadow:var(--e2)">{{ s.openModal }}</button>
+              <button type="button" onClick="{{ openDrawer }}" style="background:transparent;color:var(--ink);border:1px solid var(--line-strong);padding:11px 18px;border-radius:var(--r-sm);font-family:var(--font-ui);font-weight:600;font-size:14px;cursor:pointer;transition:all var(--dur-2)" style-hover="border-color:var(--accent);color:var(--accent-ink);background:var(--accent-weak)">{{ s.openDrawer }}</button>
+            </div>
+          </div>
+          <div>
+            <div style="display:flex;align-items:baseline;gap:14px;margin-block-end:18px"><h3 style="font-family:var(--font-head);font-weight:500;font-size:clamp(20px,2.4vw,26px);margin:0">{{ s.cToasts }}</h3><span style="flex:1;height:1px;background:var(--line)"></span></div>
+            <div style="background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:clamp(20px,3vw,28px);display:flex;flex-wrap:wrap;gap:10px;align-items:center;min-height:64px">
+              <button type="button" onClick="{{ fireSuccess }}" style="display:inline-flex;align-items:center;gap:7px;background:transparent;color:var(--ink);border:1px solid var(--line-strong);padding:9px 14px;border-radius:var(--r-sm);font-family:var(--font-ui);font-weight:500;font-size:13px;cursor:pointer;transition:all var(--dur-2)" style-hover="border-color:var(--success)"><span style="width:7px;height:7px;border-radius:var(--r-pill);background:var(--success)"></span>{{ s.toastBtnS }}</button>
+              <button type="button" onClick="{{ fireWarn }}" style="display:inline-flex;align-items:center;gap:7px;background:transparent;color:var(--ink);border:1px solid var(--line-strong);padding:9px 14px;border-radius:var(--r-sm);font-family:var(--font-ui);font-weight:500;font-size:13px;cursor:pointer;transition:all var(--dur-2)" style-hover="border-color:var(--warn)"><span style="width:7px;height:7px;border-radius:var(--r-pill);background:var(--warn)"></span>{{ s.toastBtnW }}</button>
+              <button type="button" onClick="{{ fireError }}" style="display:inline-flex;align-items:center;gap:7px;background:transparent;color:var(--ink);border:1px solid var(--line-strong);padding:9px 14px;border-radius:var(--r-sm);font-family:var(--font-ui);font-weight:500;font-size:13px;cursor:pointer;transition:all var(--dur-2)" style-hover="border-color:var(--danger)"><span style="width:7px;height:7px;border-radius:var(--r-pill);background:var(--danger)"></span>{{ s.toastBtnE }}</button>
+              <button type="button" onClick="{{ fireInfo }}" style="display:inline-flex;align-items:center;gap:7px;background:transparent;color:var(--ink);border:1px solid var(--line-strong);padding:9px 14px;border-radius:var(--r-sm);font-family:var(--font-ui);font-weight:500;font-size:13px;cursor:pointer;transition:all var(--dur-2)" style-hover="border-color:var(--accent)"><span style="width:7px;height:7px;border-radius:var(--r-pill);background:var(--accent)"></span>{{ s.toastBtnI }}</button>
+            </div>
+          </div>
+        </div>
+
+        <sc-if value="{{ modalOpen }}" hint-placeholder-val="{{ false }}">
+          <div onClick="{{ closeModal }}" role="dialog" aria-modal="true" aria-label="{{ s.modalTitle }}" style="{{ modalOverlayStyle }}">
+            <div onClick="{{ stop }}" style="{{ modalPanelStyle }}">
+              <h3 style="font-family:var(--font-head);font-weight:500;font-size:24px;margin:0 0 10px">{{ s.modalTitle }}</h3>
+              <p style="color:var(--muted);font-size:14px;line-height:1.6;margin:0 0 22px">{{ s.modalBody }}</p>
+              <div style="display:flex;gap:10px;justify-content:flex-end">
+                <button type="button" onClick="{{ closeModal }}" style="background:transparent;color:var(--ink);border:1px solid var(--line-strong);padding:10px 18px;border-radius:var(--r-sm);font-family:var(--font-ui);font-weight:600;font-size:14px;cursor:pointer;transition:all var(--dur-2)" style-hover="border-color:var(--accent);color:var(--accent-ink)">{{ s.cancel }}</button>
+                <button type="button" onClick="{{ confirmModal }}" style="background:var(--primary);color:var(--on-primary);border:0;padding:10px 18px;border-radius:var(--r-sm);font-family:var(--font-ui);font-weight:600;font-size:14px;cursor:pointer;transition:transform var(--dur-2)" style-hover="transform:translateY(-1px);box-shadow:var(--e2)">{{ s.confirm }}</button>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ drawerOpen }}" hint-placeholder-val="{{ false }}">
+          <div onClick="{{ closeDrawer }}" style="{{ drawerOverlayStyle }}"></div>
+          <div role="dialog" aria-modal="true" aria-label="{{ s.drawerTitle }}" style="{{ drawerPanelStyle }}">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-block-end:22px">
+              <h3 style="font-family:var(--font-head);font-weight:500;font-size:22px;margin:0">{{ s.drawerTitle }}</h3>
+              <button type="button" onClick="{{ closeDrawer }}" aria-label="{{ s.cancel }}" style="display:grid;place-items:center;width:34px;height:34px;border:1px solid var(--line-strong);background:transparent;color:var(--muted);border-radius:var(--r-pill);cursor:pointer;font-size:16px;line-height:1;transition:all var(--dur-2)" style-hover="border-color:var(--accent);color:var(--accent)">×</button>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:16px;flex:1">
+              <span style="font-family:var(--font-mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)">{{ s.cChips }}</span>
+              <div style="display:flex;flex-wrap:wrap;gap:10px">
+                <sc-for list="{{ filterItems }}" as="f" hint-placeholder-count="5"><button type="button" onClick="{{ f.onClick }}" aria-pressed="{{ f.on }}" style="{{ f.style }}">{{ f.label }}</button></sc-for>
+              </div>
+            </div>
+            <button type="button" onClick="{{ closeDrawer }}" style="background:var(--primary);color:var(--on-primary);border:0;padding:12px;border-radius:var(--r-sm);font-family:var(--font-ui);font-weight:600;font-size:14px;cursor:pointer;margin-block-start:18px;transition:transform var(--dur-2)" style-hover="transform:translateY(-1px)">{{ s.confirm }}</button>
+          </div>
+        </sc-if>
+
+        <div aria-live="polite" style="position:fixed;inset-block-end:20px;inset-inline-end:20px;z-index:95;display:flex;flex-direction:column;gap:10px;width:min(340px,calc(100vw - 40px));pointer-events:none">
+          <sc-for list="{{ toasts }}" as="t" hint-placeholder-count="0">
+            <div style="display:flex;align-items:stretch;gap:12px;background:var(--elevated);border:1px solid var(--line);border-radius:var(--r-md);box-shadow:var(--e3);padding:13px 14px;animation:toastIn var(--dur-3) var(--ease-out);pointer-events:auto">
+              <span style="{{ t.barStyle }}"></span>
+              <span style="flex:1;font-size:13px;color:var(--ink);align-self:center;line-height:1.4">{{ t.msg }}</span>
+              <button type="button" onClick="{{ t.onClick }}" aria-label="Dismiss" style="align-self:flex-start;border:0;background:transparent;color:var(--subtle);cursor:pointer;font-size:15px;line-height:1;padding:2px" style-hover="color:var(--ink)">×</button>
+            </div>
+          </sc-for>
+        </div>
+
+        <!-- TABLE -->
+        <div>
+          <div style="display:flex;align-items:baseline;gap:14px;margin-block-end:18px"><h3 style="font-family:var(--font-head);font-weight:500;font-size:clamp(20px,2.4vw,26px);margin:0">{{ s.cTable }}</h3><span style="flex:1;height:1px;background:var(--line)"></span></div>
+          <div style="background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden">
+            <div style="overflow-x:auto">
+              <div role="table" style="min-width:540px">
+                <div role="row" style="display:grid;grid-template-columns:minmax(150px,1.6fr) 1.1fr .9fr 1fr .8fr;gap:12px;padding:14px 16px;border-block-end:1px solid var(--line)">
+                  <sc-for list="{{ s.th }}" as="h" hint-placeholder-count="5"><div role="columnheader" style="font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:500;white-space:nowrap">{{ h }}</div></sc-for>
+                </div>
+                <sc-for list="{{ tableRows }}" as="r" hint-placeholder-count="5">
+                  <div role="row" style="display:grid;grid-template-columns:minmax(150px,1.6fr) 1.1fr .9fr 1fr .8fr;gap:12px;padding:12px 16px;border-block-end:1px solid var(--line);align-items:center;transition:background var(--dur-2)" style-hover="background:var(--elevated)">
+                    <div style="display:flex;align-items:center;gap:11px;min-width:0"><span style="width:30px;height:30px;border-radius:var(--r-pill);background:var(--accent-weak);color:var(--accent-ink);display:grid;place-items:center;font-size:11px;font-weight:600;flex-shrink:0">{{ r.initials }}</span><span style="font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.name }}</span></div>
+                    <div style="color:var(--muted)">{{ r.prof }}</div>
+                    <div style="font-family:var(--font-mono);font-size:12px;color:var(--subtle)">{{ r.loc }}</div>
+                    <div><span style="{{ r.statusStyle }}"><span style="{{ r.dotStyle }}"></span>{{ r.statusLabel }}</span></div>
+                    <div style="font-family:var(--font-mono);font-size:13px;text-align:end;white-space:nowrap">{{ r.rate }}</div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PAGINATION + LOAD MORE -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:clamp(28px,4vw,44px)">
+          <div>
+            <div style="display:flex;align-items:baseline;gap:14px;margin-block-end:18px"><h3 style="font-family:var(--font-head);font-weight:500;font-size:clamp(20px,2.4vw,26px);margin:0">{{ s.cPager }}</h3><span style="flex:1;height:1px;background:var(--line)"></span></div>
+            <div style="background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:clamp(20px,3vw,28px);display:flex;flex-direction:column;gap:16px">
+              <span style="font-size:13px;color:var(--muted)">{{ s.showing }} 1–5 {{ s.of }} 38 {{ s.results }}</span>
+              <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
+                <button type="button" onClick="{{ pagePrev }}" aria-label="Previous" style="width:36px;height:36px;display:grid;place-items:center;border:1px solid var(--line-strong);background:transparent;color:var(--muted);border-radius:var(--r-sm);cursor:pointer;font-size:16px;line-height:1;transition:all var(--dur-2)" style-hover="border-color:var(--accent);color:var(--accent)">‹</button>
+                <sc-for list="{{ pages }}" as="pg" hint-placeholder-count="4"><button type="button" onClick="{{ pg.onClick }}" style="{{ pg.style }}">{{ pg.p }}</button></sc-for>
+                <button type="button" onClick="{{ pageNext }}" aria-label="Next" style="width:36px;height:36px;display:grid;place-items:center;border:1px solid var(--line-strong);background:transparent;color:var(--muted);border-radius:var(--r-sm);cursor:pointer;font-size:16px;line-height:1;transition:all var(--dur-2)" style-hover="border-color:var(--accent);color:var(--accent)">›</button>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div style="display:flex;align-items:baseline;gap:14px;margin-block-end:18px"><span style="font-family:var(--font-mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--subtle)">{{ s.loadMoreBtn }}</span><span style="flex:1;height:1px;background:var(--line)"></span></div>
+            <div style="background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:clamp(20px,3vw,28px);display:flex;flex-direction:column;gap:12px">
+              <sc-for list="{{ loadListVisible }}" as="m" hint-placeholder-count="3">
+                <div style="display:flex;align-items:center;gap:11px;animation:fadeInUp var(--dur-3) var(--ease-out) both"><span style="width:34px;height:34px;border-radius:var(--r-pill);background:var(--accent-weak);color:var(--accent-ink);display:grid;place-items:center;font-size:12px;font-weight:600">{{ m.initials }}</span><span style="flex:1"><span style="display:block;font-size:14px;font-weight:500">{{ m.name }}</span><span style="display:block;font-size:12px;color:var(--muted)">{{ m.prof }}</span></span></div>
+              </sc-for>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-block-start:6px">
+                <span style="font-family:var(--font-mono);font-size:11px;color:var(--subtle)">{{ s.showing }} {{ loadMoreCount }} {{ s.of }} {{ loadTotal }}</span>
+                <sc-if value="{{ loadMoreMore }}" hint-placeholder-val="{{ true }}"><button type="button" onClick="{{ loadMore }}" style="background:transparent;color:var(--accent-ink);border:1px solid var(--line-strong);padding:8px 16px;border-radius:var(--r-sm);font-family:var(--font-ui);font-weight:600;font-size:13px;cursor:pointer;transition:all var(--dur-2)" style-hover="border-color:var(--accent);background:var(--accent-weak)">{{ s.loadMoreBtn }}</button></sc-if>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- GALLERY -->
+        <div>
+          <div style="display:flex;align-items:baseline;gap:14px;margin-block-end:18px"><h3 style="font-family:var(--font-head);font-weight:500;font-size:clamp(20px,2.4vw,26px);margin:0">{{ s.cGallery }}</h3><span style="flex:1;height:1px;background:var(--line)"></span></div>
+          <div style="display:flex;flex-direction:column;gap:26px">
+            <div>
+              <div style="display:flex;align-items:center;gap:10px;margin-block-end:12px"><span style="font-family:var(--font-mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)">{{ s.grid }}</span><span style="font-size:12px;color:var(--subtle)">— {{ s.lightboxHint }}</span></div>
+              <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:12px">
+                <sc-for list="{{ galleryItems }}" as="g" hint-placeholder-count="6"><button type="button" onClick="{{ g.onClick }}" style="aspect-ratio:{{ g.r }};position:relative;cursor:pointer;border:1px solid var(--line);padding:0;border-radius:var(--r-sm);overflow:hidden;background:repeating-linear-gradient(135deg,var(--line) 0 1px,transparent 1px 11px),var(--surface);transition:transform var(--dur-2) var(--ease-out)" style-hover="transform:scale(1.02)"><span style="position:absolute;inset-block-end:8px;inset-inline-start:9px;font-family:var(--font-mono);font-size:8px;letter-spacing:.08em;color:var(--subtle);text-transform:uppercase">{{ g.l }}</span></button></sc-for>
+              </div>
+            </div>
+            <div>
+              <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-block-end:12px">{{ s.masonry }}</div>
+              <div style="columns:148px;column-gap:12px">
+                <sc-for list="{{ galleryItems }}" as="g" hint-placeholder-count="6"><button type="button" onClick="{{ g.onClick }}" style="break-inside:avoid;width:100%;display:block;margin-block-end:12px;height:{{ g.mh }}px;position:relative;cursor:pointer;border:1px solid var(--line);padding:0;border-radius:var(--r-sm);overflow:hidden;background:repeating-linear-gradient(135deg,var(--line) 0 1px,transparent 1px 11px),var(--surface)" style-hover="border-color:var(--accent)"><span style="position:absolute;inset-block-end:8px;inset-inline-start:9px;font-family:var(--font-mono);font-size:8px;letter-spacing:.08em;color:var(--subtle);text-transform:uppercase">{{ g.l }}</span></button></sc-for>
+              </div>
+            </div>
+            <div>
+              <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-block-end:12px">{{ s.carousel }}</div>
+              <div style="position:relative;border-radius:var(--r-md);overflow:hidden;border:1px solid var(--line)">
+                <div style="{{ carouselTrackStyle }}">
+                  <sc-for list="{{ galleryItems }}" as="g" hint-placeholder-count="6"><div style="flex:0 0 100%;aspect-ratio:16/7;position:relative;background:repeating-linear-gradient(135deg,var(--line) 0 1px,transparent 1px 13px),var(--surface)"><span style="position:absolute;inset-block-end:12px;inset-inline-start:14px;font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;color:var(--subtle);text-transform:uppercase">{{ g.l }}</span></div></sc-for>
+                </div>
+                <button type="button" onClick="{{ carouselPrev }}" aria-label="Previous" style="position:absolute;inset-block-start:50%;inset-inline-start:12px;transform:translateY(-50%);width:38px;height:38px;display:grid;place-items:center;border:0;border-radius:var(--r-pill);background:color-mix(in srgb,var(--elevated) 86%,transparent);backdrop-filter:blur(6px);color:var(--ink);cursor:pointer;font-size:18px;line-height:1;box-shadow:var(--e2);transition:transform var(--dur-2)" style-hover="transform:translateY(-50%) scale(1.08)">‹</button>
+                <button type="button" onClick="{{ carouselNext }}" aria-label="Next" style="position:absolute;inset-block-start:50%;inset-inline-end:12px;transform:translateY(-50%);width:38px;height:38px;display:grid;place-items:center;border:0;border-radius:var(--r-pill);background:color-mix(in srgb,var(--elevated) 86%,transparent);backdrop-filter:blur(6px);color:var(--ink);cursor:pointer;font-size:18px;line-height:1;box-shadow:var(--e2);transition:transform var(--dur-2)" style-hover="transform:translateY(-50%) scale(1.08)">›</button>
+                <div style="position:absolute;inset-block-end:12px;inset-inline:0;display:flex;justify-content:center;gap:7px"><sc-for list="{{ carouselDots }}" as="d" hint-placeholder-count="6"><button type="button" onClick="{{ d.onClick }}" aria-label="Slide" style="{{ d.style }}"></button></sc-for></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <sc-if value="{{ lightboxOpen }}" hint-placeholder-val="{{ false }}">
+          <div onClick="{{ closeLightbox }}" role="dialog" aria-modal="true" aria-label="Image viewer" style="position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:clamp(16px,5vw,64px);background:color-mix(in srgb,var(--ink) 78%,#000);backdrop-filter:blur(8px);animation:overlayIn var(--dur-2) var(--ease-out) both">
+            <div onClick="{{ stop }}" style="position:relative;display:flex;align-items:center;gap:14px;max-width:100%">
+              <button type="button" onClick="{{ lightboxPrev }}" aria-label="Previous" style="width:44px;height:44px;flex-shrink:0;display:grid;place-items:center;border:1px solid color-mix(in srgb,#fff 30%,transparent);background:transparent;color:#fff;border-radius:var(--r-pill);cursor:pointer;font-size:20px;line-height:1;transition:background var(--dur-2)" style-hover="background:color-mix(in srgb,#fff 14%,transparent)">‹</button>
+              <div style="position:relative;width:min(62vh,520px);max-width:calc(100vw - 180px);aspect-ratio:{{ lbRatio }};border-radius:var(--r-md);overflow:hidden;background:repeating-linear-gradient(135deg,rgba(255,255,255,.14) 0 1px,transparent 1px 14px),#2a241d;box-shadow:var(--e4);animation:sheetIn var(--dur-3) var(--ease-out) both">
+                <span style="position:absolute;inset-block-end:14px;inset-inline-start:16px;font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;color:rgba(255,255,255,.7);text-transform:uppercase">{{ lbLabel }}</span>
+                <span style="position:absolute;inset-block-start:14px;inset-inline-end:16px;font-family:var(--font-mono);font-size:11px;color:rgba(255,255,255,.8)">{{ lightboxNum }} / 6</span>
+              </div>
+              <button type="button" onClick="{{ lightboxNext }}" aria-label="Next" style="width:44px;height:44px;flex-shrink:0;display:grid;place-items:center;border:1px solid color-mix(in srgb,#fff 30%,transparent);background:transparent;color:#fff;border-radius:var(--r-pill);cursor:pointer;font-size:20px;line-height:1;transition:background var(--dur-2)" style-hover="background:color-mix(in srgb,#fff 14%,transparent)">›</button>
+              <button type="button" onClick="{{ closeLightbox }}" aria-label="Close" style="position:absolute;inset-block-start:-46px;inset-inline-end:0;width:40px;height:40px;display:grid;place-items:center;border:1px solid color-mix(in srgb,#fff 30%,transparent);background:transparent;color:#fff;border-radius:var(--r-pill);cursor:pointer;font-size:18px;line-height:1">×</button>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- UPLOAD -->
+        <div>
+          <div style="display:flex;align-items:baseline;gap:14px;margin-block-end:18px"><h3 style="font-family:var(--font-head);font-weight:500;font-size:clamp(20px,2.4vw,26px);margin:0">{{ s.cUpload }}</h3><span style="flex:1;height:1px;background:var(--line)"></span></div>
+          <div style="background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:clamp(20px,3vw,28px);display:flex;flex-direction:column;gap:16px">
+            <div role="button" tabindex="0" onClick="{{ simulateUpload }}" onDragOver="{{ onDragOver }}" onDragLeave="{{ onDragLeave }}" onDrop="{{ onDrop }}" style="{{ dropzoneStyle }}">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:10px;pointer-events:none">
+                <span style="width:44px;height:44px;border-radius:var(--r-pill);background:var(--accent-weak);color:var(--accent-ink);display:grid;place-items:center;font-size:20px;line-height:1">↑</span>
+                <span style="font-size:14px;color:var(--ink)">{{ s.dropHint }} <span style="color:var(--accent-ink);font-weight:600;text-decoration:underline;text-underline-offset:2px">{{ s.browse }}</span></span>
+                <span style="font-family:var(--font-mono);font-size:11px;color:var(--subtle)">{{ s.uploadNote }}</span>
+              </div>
+            </div>
+            <sc-if value="{{ hasUploads }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-direction:column;gap:12px">
+                <sc-for list="{{ uploads }}" as="u" hint-placeholder-count="1">
+                  <div style="display:flex;align-items:center;gap:12px">
+                    <span style="width:34px;height:34px;border-radius:var(--r-sm);background:var(--elevated);border:1px solid var(--line);display:grid;place-items:center;flex-shrink:0;font-family:var(--font-mono);font-size:9px;color:var(--subtle)">IMG</span>
+                    <div style="flex:1;min-width:0">
+                      <div style="display:flex;justify-content:space-between;gap:10px;margin-block-end:5px"><span style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ u.name }}</span><span style="font-family:var(--font-mono);font-size:11px;color:var(--muted);flex-shrink:0">{{ u.pct }}%</span></div>
+                      <div style="height:6px;border-radius:var(--r-pill);background:var(--line);overflow:hidden"><div style="{{ u.barStyle }}"></div></div>
+                    </div>
+                  </div>
+                </sc-for>
+                <button type="button" onClick="{{ clearUploads }}" style="align-self:flex-start;background:transparent;color:var(--muted);border:0;padding:4px 0;font-family:var(--font-ui);font-size:13px;cursor:pointer;text-decoration:underline;text-underline-offset:2px" style-hover="color:var(--danger)">{{ s.clearUploads }}</button>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+
+        <!-- RATING + EMPTY -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:clamp(28px,4vw,44px)">
+          <div>
+            <div style="display:flex;align-items:baseline;gap:14px;margin-block-end:18px"><h3 style="font-family:var(--font-head);font-weight:500;font-size:clamp(20px,2.4vw,26px);margin:0">{{ s.cRating }}</h3><span style="flex:1;height:1px;background:var(--line)"></span></div>
+            <div style="background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:clamp(20px,3vw,28px);display:flex;flex-direction:column;gap:20px">
+              <div style="display:flex;align-items:baseline;gap:12px"><span style="font-family:var(--font-head);font-weight:500;font-size:44px;line-height:1">4.9</span><div style="display:flex;flex-direction:column;gap:2px"><span style="color:var(--gold);font-size:16px;letter-spacing:2px">★★★★★</span><span style="font-size:12px;color:var(--subtle)">{{ s.ratingOutOf }}</span></div></div>
+              <div style="display:flex;flex-direction:column;gap:13px">
+                <div style="display:flex;align-items:center;gap:12px"><span style="font-size:13px;color:var(--muted);width:120px;flex-shrink:0">{{ s.axisComm }}</span><div style="flex:1;height:7px;border-radius:var(--r-pill);background:var(--line);overflow:hidden"><div style="height:100%;width:98%;background:var(--accent);border-radius:var(--r-pill)"></div></div><span style="font-family:var(--font-mono);font-size:12px;width:30px;text-align:end">4.9</span></div>
+                <div style="display:flex;align-items:center;gap:12px"><span style="font-size:13px;color:var(--muted);width:120px;flex-shrink:0">{{ s.axisFair }}</span><div style="flex:1;height:7px;border-radius:var(--r-pill);background:var(--line);overflow:hidden"><div style="height:100%;width:94%;background:var(--accent);border-radius:var(--r-pill)"></div></div><span style="font-family:var(--font-mono);font-size:12px;width:30px;text-align:end">4.7</span></div>
+                <div style="display:flex;align-items:center;gap:12px"><span style="font-size:13px;color:var(--muted);width:120px;flex-shrink:0">{{ s.axisResp }}</span><div style="flex:1;height:7px;border-radius:var(--r-pill);background:var(--line);overflow:hidden"><div style="height:100%;width:100%;background:var(--gold);border-radius:var(--r-pill)"></div></div><span style="font-family:var(--font-mono);font-size:12px;width:30px;text-align:end">5.0</span></div>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div style="display:flex;align-items:baseline;gap:14px;margin-block-end:18px"><h3 style="font-family:var(--font-head);font-weight:500;font-size:clamp(20px,2.4vw,26px);margin:0">{{ s.cEmpty }}</h3><span style="flex:1;height:1px;background:var(--line)"></span></div>
+            <div style="background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:clamp(28px,4vw,40px);display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px">
+              <span style="width:54px;height:54px;border:1.5px dashed var(--line-strong);border-radius:var(--r-md);display:grid;place-items:center;margin-block-end:4px"><span style="width:14px;height:14px;background:var(--accent-weak);border:1px solid var(--accent);transform:rotate(45deg)"></span></span>
+              <h4 style="font-family:var(--font-head);font-weight:500;font-size:20px;margin:0">{{ s.emptyTitle }}</h4>
+              <p style="font-size:14px;color:var(--muted);line-height:1.55;margin:0;max-width:34ch">{{ s.emptyBody }}</p>
+              <button type="button" style="margin-block-start:6px;background:var(--primary);color:var(--on-primary);border:0;padding:10px 20px;border-radius:var(--r-sm);font-family:var(--font-ui);font-weight:600;font-size:13px;cursor:pointer;transition:transform var(--dur-2)" style-hover="transform:translateY(-1px);box-shadow:var(--e2)">{{ s.emptyCta }}</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- SKELETON -->
+        <div>
+          <div style="display:flex;align-items:center;gap:14px;margin-block-end:18px;flex-wrap:wrap"><h3 style="font-family:var(--font-head);font-weight:500;font-size:clamp(20px,2.4vw,26px);margin:0">{{ s.cSkeleton }}</h3><button type="button" onClick="{{ toggleSkeleton }}" style="background:transparent;color:var(--accent-ink);border:1px solid var(--line-strong);padding:6px 14px;border-radius:var(--r-pill);font-family:var(--font-ui);font-size:12px;font-weight:600;cursor:pointer;transition:all var(--dur-2)" style-hover="border-color:var(--accent);background:var(--accent-weak)">{{ s.skelToggle }}</button><span style="flex:1;height:1px;background:var(--line)"></span></div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px">
+            <sc-if value="{{ skeleton }}" hint-placeholder-val="{{ true }}">
+              <div style="background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:16px;display:flex;flex-direction:column;gap:12px"><div style="aspect-ratio:4/3;border-radius:var(--r-sm);background:linear-gradient(90deg,var(--line) 25%,color-mix(in srgb,var(--line) 45%,var(--surface)) 37%,var(--line) 63%);background-size:400% 100%;animation:shimmer 1.4s var(--ease-in-out) infinite"></div><div style="height:13px;width:72%;border-radius:var(--r-pill);background:linear-gradient(90deg,var(--line) 25%,color-mix(in srgb,var(--line) 45%,var(--surface)) 37%,var(--line) 63%);background-size:400% 100%;animation:shimmer 1.4s var(--ease-in-out) infinite"></div><div style="height:11px;width:44%;border-radius:var(--r-pill);background:linear-gradient(90deg,var(--line) 25%,color-mix(in srgb,var(--line) 45%,var(--surface)) 37%,var(--line) 63%);background-size:400% 100%;animation:shimmer 1.4s var(--ease-in-out) infinite"></div></div>
+              <div style="background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:16px;display:flex;flex-direction:column;gap:12px"><div style="aspect-ratio:4/3;border-radius:var(--r-sm);background:linear-gradient(90deg,var(--line) 25%,color-mix(in srgb,var(--line) 45%,var(--surface)) 37%,var(--line) 63%);background-size:400% 100%;animation:shimmer 1.4s var(--ease-in-out) infinite"></div><div style="height:13px;width:64%;border-radius:var(--r-pill);background:linear-gradient(90deg,var(--line) 25%,color-mix(in srgb,var(--line) 45%,var(--surface)) 37%,var(--line) 63%);background-size:400% 100%;animation:shimmer 1.4s var(--ease-in-out) infinite"></div><div style="height:11px;width:50%;border-radius:var(--r-pill);background:linear-gradient(90deg,var(--line) 25%,color-mix(in srgb,var(--line) 45%,var(--surface)) 37%,var(--line) 63%);background-size:400% 100%;animation:shimmer 1.4s var(--ease-in-out) infinite"></div></div>
+              <div style="background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:16px;display:flex;flex-direction:column;gap:12px"><div style="aspect-ratio:4/3;border-radius:var(--r-sm);background:linear-gradient(90deg,var(--line) 25%,color-mix(in srgb,var(--line) 45%,var(--surface)) 37%,var(--line) 63%);background-size:400% 100%;animation:shimmer 1.4s var(--ease-in-out) infinite"></div><div style="height:13px;width:80%;border-radius:var(--r-pill);background:linear-gradient(90deg,var(--line) 25%,color-mix(in srgb,var(--line) 45%,var(--surface)) 37%,var(--line) 63%);background-size:400% 100%;animation:shimmer 1.4s var(--ease-in-out) infinite"></div><div style="height:11px;width:38%;border-radius:var(--r-pill);background:linear-gradient(90deg,var(--line) 25%,color-mix(in srgb,var(--line) 45%,var(--surface)) 37%,var(--line) 63%);background-size:400% 100%;animation:shimmer 1.4s var(--ease-in-out) infinite"></div></div>
+            </sc-if>
+            <sc-if value="{{ skeletonDone }}" hint-placeholder-val="{{ false }}">
+              <div style="background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:16px;display:flex;flex-direction:column;gap:11px;animation:fadeIn var(--dur-3) var(--ease-out)"><div style="aspect-ratio:4/3;border-radius:var(--r-sm);background:repeating-linear-gradient(135deg,var(--line) 0 1px,transparent 1px 11px),var(--elevated)"></div><div style="font-family:var(--font-head);font-size:17px">{{ s.cardName }}</div><div style="font-size:12px;color:var(--muted)">{{ s.cardRole }}</div></div>
+              <div style="background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:16px;display:flex;flex-direction:column;gap:11px;animation:fadeIn var(--dur-3) var(--ease-out)"><div style="aspect-ratio:4/3;border-radius:var(--r-sm);background:repeating-linear-gradient(135deg,var(--line) 0 1px,transparent 1px 11px),var(--elevated)"></div><div style="font-family:var(--font-head);font-size:17px">{{ s.cardName2 }}</div><div style="font-size:12px;color:var(--muted)">{{ s.cardRole2 }}</div></div>
+              <div style="background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:16px;display:flex;flex-direction:column;gap:11px;animation:fadeIn var(--dur-3) var(--ease-out)"><div style="aspect-ratio:4/3;border-radius:var(--r-sm);background:repeating-linear-gradient(135deg,var(--line) 0 1px,transparent 1px 11px),var(--elevated)"></div><div style="font-family:var(--font-head);font-size:17px">Yara Fahmy</div><div style="font-size:12px;color:var(--muted)">{{ s.selectLabel }}</div></div>
+            </sc-if>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer style="border-block-start:1px solid var(--line);margin-block-start:clamp(48px,7vw,96px);padding:44px clamp(16px,4vw,48px);display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;max-width:1180px;margin-inline:auto">
+      <div style="display:flex;align-items:baseline;gap:8px">
+        <span style="font-family:var(--font-display);font-weight:600;font-size:18px">Fama</span>
+        <span style="color:var(--accent);font-family:var(--font-display);font-weight:600;font-size:18px">.</span>
+        <span style="font-size:13px;color:var(--muted);padding-inline-start:8px">{{ s.footer }}</span>
+      </div>
+      <span style="font-family:var(--font-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--subtle)">v1.0 · 2026</span>
+    </footer>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:920},&quot;surfaceTone&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;papyrus&quot;,&quot;alabaster&quot;,&quot;porcelain&quot;,&quot;limestone&quot;,&quot;sandstone&quot;],&quot;default&quot;:&quot;papyrus&quot;,&quot;tsType&quot;:&quot;'papyrus'|'alabaster'|'porcelain'|'limestone'|'sandstone'&quot;,&quot;section&quot;:&quot;Surfaces &amp; lines&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;lapis&quot;,&quot;brass&quot;,&quot;emerald&quot;,&quot;terracotta&quot;],&quot;default&quot;:&quot;lapis&quot;,&quot;tsType&quot;:&quot;'lapis'|'brass'|'emerald'|'terracotta'&quot;,&quot;section&quot;:&quot;Theme&quot;},&quot;defaultTheme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;'light'|'dark'&quot;,&quot;section&quot;:&quot;Theme&quot;},&quot;defaultLang&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;en&quot;,&quot;ar&quot;],&quot;default&quot;:&quot;en&quot;,&quot;tsType&quot;:&quot;'en'|'ar'&quot;,&quot;section&quot;:&quot;Theme&quot;}}">
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    this.state = {
+      theme: (props && props.defaultTheme) || 'light',
+      lang: (props && props.defaultLang) || 'en',
+      activeTab: 0,
+      chips: ['Editorial','Beauty','Studio'],
+      chipsAr: ['تصوير تحريري','جمال','استوديو'],
+      filters: { Editorial:true, Beauty:false, Studio:true, Campaign:false, Ecom:false },
+      email:'', emailTouched:false, pw:'', bio:'',
+      step:2,
+      modalOpen:false, modalClosing:false,
+      drawerOpen:false, drawerClosing:false,
+      toasts:[],
+      page:1, loadMore:3, carousel:0, lightbox:null,
+      dragOver:false, uploads:[], skeleton:true,
+    };
+    this._tid=0; this._uid=0; this._uploadTimer=null;
+  }
+
+  strings = {
+    en:{
+      tag:'Design System', navFoundations:'Foundations', navComponents:'Components', themeLabel:'Toggle light / dark',
+      heroKicker:'Fama · Creative Talent Marketplace · MENA',
+      heroTitle:'The system behind a living creative passport.',
+      heroBody:'Design tokens, an editorial type scale, refined motion and a complete component library — engineered for light, dark and right-to-left from the very first pixel.',
+      heroMeta1:'Light + Dark', heroMeta2:'RTL ready', heroMeta3:'Bilingual EN / عربى',
+      heroImg:'Hero image · editorial 16:5 · drop talent shot here',
+      foundationsKicker:'01 — Foundations',
+      fColor:'Color', fColorSub:'Warm editorial neutrals, one terracotta accent, brass for merit.',
+      fType:'Typography', fTypeSub:'Bodoni Moda display over IBM Plex Sans — bilingual by design.',
+      fSpace:'Spacing', fSpaceSub:'A 4px rhythm scaled with editorial generosity.',
+      fRadius:'Radius', fRadiusSub:'Sharp structure, rounded controls.',
+      fElev:'Elevation', fElevSub:'Four soft, warm-tinted shadow steps.',
+      fMotion:'Motion', fMotionSub:'Restrained and confident — and reduced-motion aware.',
+      componentsKicker:'02 — Component library',
+      cButtons:'Buttons', cInputs:'Inputs & validation', cChips:'Tags & chips', cBadges:'Availability badges',
+      cAvatars:'Avatars', cCards:'Talent card', cStats:'Stat tiles', cTabs:'Tabs',
+      cStepper:'Deal stepper', cModal:'Modal & drawer', cToasts:'Toasts', cTable:'Table',
+      cPager:'Pagination & load more', cGallery:'Gallery — grid · masonry · carousel',
+      cUpload:'File upload', cRating:'Rating — stars & three-axis', cEmpty:'Empty state', cSkeleton:'Skeleton loaders',
+      btnPrimary:'Book talent', btnSecondary:'View profile', btnGhost:'Message', btnIcon:'Save', btnLoading:'Sending…', btnDisabled:'Unavailable',
+      emailLabel:'Work email', emailErr:'Enter a valid email address.', emailOk:'Looks good.',
+      bioLabel:'Short bio', bioPh:'Tell brands who you are…', selectLabel:'Primary profession',
+      professions:['Model','Photographer','Director of Photography','Creative Director','Stylist','Graphic Designer'],
+      available:'Available', booked:'Booked', unavailable:'Unavailable',
+      cardName:'Layla Mansour', cardRole:'Fashion & Editorial Model', cardLoc:'Cairo, EG',
+      cardName2:'Karim Adel', cardRole2:'Fashion Photographer', cardLoc2:'Alexandria, EG',
+      statViews:'Profile views', statBookings:'Bookings', statRating:'Avg. rating', statResp:'Response rate',
+      tabLabels:['Gallery','Reviews','Rate card'],
+      tabGallery:'12 editorial looks · updated 3 days ago',
+      tabReview:'“Layla brought the entire mood board to life — effortless on set, generous with direction.”',
+      tabReviewBy:'— Creative Director, Studio Noor',
+      rateRow1:'Editorial day rate', rateRow2:'Campaign / commercial', rateVal1:'EGP 8,500', rateVal2:'EGP 18,000',
+      stepLabels:['Brief','Quote','Agreement','Production','Payment'],
+      stepWhose:'Your turn — review the brand brief', prev:'Back', next:'Advance step',
+      openModal:'Open modal', openDrawer:'Open drawer', modalTitle:'Send booking request',
+      modalBody:'Confirm the dates and budget. The brand has 48 hours to respond before the request expires.',
+      cancel:'Cancel', confirm:'Send request', drawerTitle:'Filters',
+      toastBtnS:'Success', toastBtnW:'Warning', toastBtnE:'Error', toastBtnI:'Info',
+      toastS:'Quote sent to the brand.', toastW:'Your availability is out of date.', toastE:'Upload failed — please try again.', toastI:'Brief saved as draft.',
+      th:['Talent','Profession','Location','Status','Day rate'],
+      loadMoreBtn:'Load more', loadingMore:'Loading…', showing:'Showing', of:'of', results:'results',
+      grid:'Grid', masonry:'Masonry', carousel:'Carousel', lightboxHint:'Click any image to open the lightbox',
+      dropHint:'Drop images here, or', browse:'browse', uploadNote:'JPG or PNG · up to 20MB each', uploadDone:'Uploaded', clearUploads:'Clear',
+      axisComm:'Communication', axisFair:'Fairness', axisResp:'Creative respect', ratingOutOf:'based on 38 reviews',
+      emptyTitle:'No campaigns yet', emptyBody:'When brands invite you, their campaigns will appear here.', emptyCta:'Browse open campaigns',
+      skelToggle:'Toggle loading', skelLive:'Loaded', skelLoading:'Loading',
+      footer:'Built token-first for a Laravel · Blade hand-off.',
+    },
+    ar:{
+      tag:'نظام التصميم', navFoundations:'الأسس', navComponents:'المكوّنات', themeLabel:'تبديل الوضع الفاتح / الداكن',
+      heroKicker:'فاما · سوق المواهب الإبداعية · الشرق الأوسط',
+      heroTitle:'النظام الكامن خلف جواز سفر إبداعي حيّ.',
+      heroBody:'رموز تصميم، وسُلّم طباعة تحريري، وحركة مصقولة، ومكتبة مكوّنات كاملة — مصمّمة للوضع الفاتح والداكن ومن اليمين إلى اليسار منذ أول بكسل.',
+      heroMeta1:'فاتح + داكن', heroMeta2:'جاهز لليمين-لليسار', heroMeta3:'ثنائي اللغة EN / عربى',
+      heroImg:'صورة الواجهة · تحريري ١٦:٥ · أفلت لقطة الموهبة هنا',
+      foundationsKicker:'٠١ — الأسس',
+      fColor:'اللون', fColorSub:'حياديات تحريرية دافئة، ولون تيراكوتا واحد، ونحاسي للجدارة.',
+      fType:'الطباعة', fTypeSub:'عرض بودوني مودا فوق IBM Plex Sans — ثنائي اللغة بالتصميم.',
+      fSpace:'التباعد', fSpaceSub:'إيقاع من ٤ بكسل بسخاء تحريري.',
+      fRadius:'الاستدارة', fRadiusSub:'بنية حادّة، وعناصر تحكّم مستديرة.',
+      fElev:'الارتفاع', fElevSub:'أربع درجات ظل ناعمة بلمسة دافئة.',
+      fMotion:'الحركة', fMotionSub:'متحفّظة وواثقة — وتراعي تقليل الحركة.',
+      componentsKicker:'٠٢ — مكتبة المكوّنات',
+      cButtons:'الأزرار', cInputs:'الحقول والتحقّق', cChips:'الوسوم والرقائق', cBadges:'شارات التوفّر',
+      cAvatars:'الصور الرمزية', cCards:'بطاقة الموهبة', cStats:'لوحات الإحصاء', cTabs:'التبويبات',
+      cStepper:'مراحل الصفقة', cModal:'النافذة واللوحة', cToasts:'الإشعارات', cTable:'الجدول',
+      cPager:'الترقيم وتحميل المزيد', cGallery:'المعرض — شبكة · متدرّج · شرائح',
+      cUpload:'رفع الملفات', cRating:'التقييم — نجوم وثلاثة محاور', cEmpty:'حالة فارغة', cSkeleton:'هياكل التحميل',
+      btnPrimary:'احجز الموهبة', btnSecondary:'عرض الملف', btnGhost:'مراسلة', btnIcon:'حفظ', btnLoading:'جارٍ الإرسال…', btnDisabled:'غير متاح',
+      emailLabel:'البريد المهني', emailErr:'أدخل بريدًا إلكترونيًا صحيحًا.', emailOk:'يبدو جيدًا.',
+      bioLabel:'نبذة مختصرة', bioPh:'عرّف العلامات التجارية بنفسك…', selectLabel:'المهنة الأساسية',
+      professions:['عارضة','مصوّر','مدير تصوير','مدير إبداعي','مصمّمة أزياء','مصمّم جرافيك'],
+      available:'متاح', booked:'محجوز', unavailable:'غير متاح',
+      cardName:'ليلى منصور', cardRole:'عارضة أزياء وتحرير', cardLoc:'القاهرة، مصر',
+      cardName2:'كريم عادل', cardRole2:'مصوّر أزياء', cardLoc2:'الإسكندرية، مصر',
+      statViews:'مشاهدات الملف', statBookings:'الحجوزات', statRating:'متوسط التقييم', statResp:'معدّل الاستجابة',
+      tabLabels:['المعرض','التقييمات','قائمة الأسعار'],
+      tabGallery:'١٢ إطلالة تحريرية · حُدّثت قبل ٣ أيام',
+      tabReview:'«أحيَت ليلى لوحة المزاج بالكامل — انسيابية في الموقع، وكريمة في التوجيه.»',
+      tabReviewBy:'— مدير إبداعي، استوديو نور',
+      rateRow1:'الأجر اليومي التحريري', rateRow2:'حملة / تجاري', rateVal1:'٨٬٥٠٠ ج.م', rateVal2:'١٨٬٠٠٠ ج.م',
+      stepLabels:['الموجز','عرض السعر','الاتفاق','الإنتاج','الدفع'],
+      stepWhose:'دورك — راجع موجز العلامة', prev:'رجوع', next:'الخطوة التالية',
+      openModal:'افتح النافذة', openDrawer:'افتح اللوحة', modalTitle:'إرسال طلب الحجز',
+      modalBody:'أكّد التواريخ والميزانية. أمام العلامة ٤٨ ساعة للرد قبل انتهاء الطلب.',
+      cancel:'إلغاء', confirm:'إرسال الطلب', drawerTitle:'عوامل التصفية',
+      toastBtnS:'نجاح', toastBtnW:'تحذير', toastBtnE:'خطأ', toastBtnI:'معلومة',
+      toastS:'تم إرسال العرض إلى العلامة.', toastW:'حالة توفّرك غير محدّثة.', toastE:'فشل الرفع — حاول مجددًا.', toastI:'تم حفظ الموجز كمسودة.',
+      th:['الموهبة','المهنة','الموقع','الحالة','الأجر اليومي'],
+      loadMoreBtn:'تحميل المزيد', loadingMore:'جارٍ التحميل…', showing:'عرض', of:'من', results:'نتيجة',
+      grid:'شبكة', masonry:'متدرّج', carousel:'شرائح', lightboxHint:'انقر أي صورة لفتح العارض',
+      dropHint:'أفلت الصور هنا، أو', browse:'تصفّح', uploadNote:'JPG أو PNG · حتى ٢٠ ميغابايت', uploadDone:'تم الرفع', clearUploads:'مسح',
+      axisComm:'التواصل', axisFair:'الإنصاف', axisResp:'الاحترام الإبداعي', ratingOutOf:'بناءً على ٣٨ تقييمًا',
+      emptyTitle:'لا حملات بعد', emptyBody:'عند دعوتك من العلامات، ستظهر حملاتها هنا.', emptyCta:'تصفّح الحملات المفتوحة',
+      skelToggle:'تبديل التحميل', skelLive:'تم التحميل', skelLoading:'جارٍ التحميل',
+      footer:'مبني بالرموز أولًا لتسليم Laravel · Blade.',
+    }
+  };
+
+  rows(){
+    const ar=this.state.lang==='ar';
+    const data=[
+      {en:['Layla Mansour','Model','Cairo'],ar:['ليلى منصور','عارضة','القاهرة'],st:'available',rate:'8,500'},
+      {en:['Karim Adel','Photographer','Alexandria'],ar:['كريم عادل','مصوّر','الإسكندرية'],st:'booked',rate:'14,000'},
+      {en:['Yara Fahmy','Stylist','Cairo'],ar:['يارا فهمي','مصمّمة أزياء','القاهرة'],st:'available',rate:'6,200'},
+      {en:['Tarek Mostafa','DoP','Dubai'],ar:['طارق مصطفى','مدير تصوير','دبي'],st:'unavailable',rate:'22,000'},
+      {en:['Dina Saleh','Creative Director','Beirut'],ar:['دينا صالح','مدير إبداعي','بيروت'],st:'available',rate:'18,400'},
+    ];
+    return data.map((r,i)=>{ const c=ar?r.ar:r.en; return {i, name:c[0], prof:c[1], loc:c[2], st:r.st, rate:r.rate}; });
+  }
+
+  gallery(){
+    return [
+      {l:'Editorial · 4:5', r:'4 / 5'},
+      {l:'Campaign · 1:1', r:'1 / 1'},
+      {l:'Beauty · 3:4', r:'3 / 4'},
+      {l:'Studio · 4:5', r:'4 / 5'},
+      {l:'Street · 1:1', r:'1 / 1'},
+      {l:'Motion · 16:9', r:'16 / 9'},
+    ];
+  }
+
+  // ---- handlers ----
+  toggleTheme = () => this.setState(s=>({theme:s.theme==='dark'?'light':'dark'}));
+  setEn = () => this.setState({lang:'en'});
+  setAr = () => this.setState({lang:'ar'});
+  setTab = (i) => this.setState({activeTab:i});
+  stop = (e) => { if(e&&e.stopPropagation) e.stopPropagation(); };
+  removeChip = (label) => this.setState(s=>({ chips:s.chips.filter(c=>c!==label), chipsAr:s.chipsAr.filter((_,i)=>s.chips[i]!==label) }));
+  toggleFilter = (k) => this.setState(s=>({filters:{...s.filters,[k]:!s.filters[k]}}));
+  onEmail = (e) => this.setState({email:e.target.value});
+  onEmailBlur = () => this.setState({emailTouched:true});
+  onBio = (e) => this.setState({bio:e.target.value.slice(0,160)});
+  stepNext = () => this.setState(s=>({step:Math.min(s.step+1,4)}));
+  stepPrev = () => this.setState(s=>({step:Math.max(s.step-1,0)}));
+  setStep = (i) => this.setState({step:i});
+  openModal = () => this.setState({modalOpen:true,modalClosing:false});
+  closeModal = () => { this.setState({modalClosing:true}); setTimeout(()=>this.setState({modalOpen:false,modalClosing:false}),190); };
+  openDrawer = () => this.setState({drawerOpen:true,drawerClosing:false});
+  closeDrawer = () => { this.setState({drawerClosing:true}); setTimeout(()=>this.setState({drawerOpen:false,drawerClosing:false}),360); };
+  pushToast = (type) => {
+    const id=++this._tid;
+    this.setState(s=>({toasts:[...s.toasts,{id,type}]}));
+    setTimeout(()=>this.removeToast(id),4000);
+  };
+  removeToast = (id) => this.setState(s=>({toasts:s.toasts.filter(t=>t.id!==id)}));
+  setPage = (p) => this.setState({page:p});
+  loadMore = () => this.setState(s=>({loadMore:Math.min(s.loadMore+3,9)}));
+  carouselNext = () => this.setState(s=>({carousel:(s.carousel+1)%6}));
+  carouselPrev = () => this.setState(s=>({carousel:(s.carousel+5)%6}));
+  goCarousel = (i) => this.setState({carousel:i});
+  openLightbox = (i) => this.setState({lightbox:i});
+  closeLightbox = () => this.setState({lightbox:null});
+  lightboxNext = () => this.setState(s=>({lightbox:(s.lightbox+1)%6}));
+  lightboxPrev = () => this.setState(s=>({lightbox:(s.lightbox+5)%6}));
+  onDragOver = (e) => { e.preventDefault(); if(!this.state.dragOver) this.setState({dragOver:true}); };
+  onDragLeave = (e) => { e.preventDefault(); this.setState({dragOver:false}); };
+  onDrop = (e) => { e.preventDefault(); this.setState({dragOver:false}); this.simulateUpload(); };
+  simulateUpload = () => {
+    const id=++this._uid;
+    const names=['editorial_01.jpg','campaign_02.jpg','studio_03.jpg','beauty_04.jpg','street_05.jpg'];
+    const name=names[(id-1)%names.length];
+    const dur=1500+Math.random()*1500;
+    this.setState(s=>({uploads:[...s.uploads,{id,name,start:Date.now(),dur,progress:0}]}), ()=>this._ensureUploadTimer());
+  };
+  _ensureUploadTimer(){
+    if(this._uploadTimer) return;
+    this._uploadTimer=setInterval(()=>{
+      let any=false;
+      this.setState(s=>({uploads:s.uploads.map(u=>{ const p=Math.min(100,((Date.now()-u.start)/u.dur)*100); if(p<100)any=true; return {...u,progress:p}; })}));
+      if(!any){ clearInterval(this._uploadTimer); this._uploadTimer=null; }
+    },80);
+  }
+  clearUploads = () => { if(this._uploadTimer){clearInterval(this._uploadTimer);this._uploadTimer=null;} this.setState({uploads:[]}); };
+  toggleSkeleton = () => this.setState(s=>({skeleton:!s.skeleton}));
+  componentWillUnmount(){ if(this._uploadTimer) clearInterval(this._uploadTimer); }
+
+  renderVals(){
+    const st=this.state;
+    const isDark=st.theme==='dark', isAr=st.lang==='ar', isEn=!isAr;
+    const s=this.strings[st.lang];
+    const accent=(this.props&&this.props.accent)||'lapis';
+    const surfaceTone=(this.props&&this.props.surfaceTone)||'papyrus';
+    const segOn='border:0;cursor:pointer;font-family:var(--font-ui);font-size:12px;font-weight:600;padding:5px 11px;border-radius:var(--r-pill);background:var(--ink);color:var(--on-primary);transition:all var(--dur-2) var(--ease-out)';
+    const segOff='border:0;cursor:pointer;font-family:var(--font-ui);font-size:12px;font-weight:500;padding:5px 11px;border-radius:var(--r-pill);background:transparent;color:var(--muted);transition:all var(--dur-2) var(--ease-out)';
+
+    // stepper nodes
+    const stepNodes=s.stepLabels.map((label,i)=>{
+      const status=i<st.step?'done':(i===st.step?'active':'todo');
+      let dot;
+      if(status==='done') dot='background:var(--accent);color:var(--on-accent);border:1px solid var(--accent)';
+      else if(status==='active') dot='background:var(--surface);color:var(--accent);border:2px solid var(--accent);box-shadow:0 0 0 5px var(--accent-weak)';
+      else dot='background:var(--surface);color:var(--subtle);border:1px solid var(--line-strong)';
+      const lab=status==='active'?'color:var(--ink);font-weight:600':(status==='done'?'color:var(--muted)':'color:var(--subtle)');
+      return {i, label, mark: status==='done'?'✓':String(i+1), dotStyle:dot, labelStyle:lab, onClick:()=>this.setStep(i)};
+    });
+    const stepFillStyle=`position:absolute;inset-block:0;inset-inline-start:0;width:${(st.step/(s.stepLabels.length-1))*100}%;background:var(--accent);transition:width var(--dur-4) var(--ease-out)`;
+
+    // tabs
+    const tabItems=s.tabLabels.map((label,i)=>({i,label,
+      sel:i===st.activeTab,
+      onClick:()=>this.setTab(i),
+      style:`appearance:none;border:0;background:transparent;cursor:pointer;font-family:var(--font-ui);font-size:14px;padding:12px 4px;flex:1;text-align:center;transition:color var(--dur-2);color:${i===st.activeTab?'var(--ink)':'var(--muted)'};font-weight:${i===st.activeTab?'600':'500'}`}));
+    const tabIndicatorStyle=`position:absolute;bottom:-1px;inset-inline-start:0;height:2px;width:${100/s.tabLabels.length}%;background:var(--accent);transform:translateX(${(isAr?-1:1)*st.activeTab*100}%);transition:transform var(--dur-3) var(--ease-out)`;
+
+    // chips
+    const chipLabels=isAr?st.chipsAr:st.chips;
+    const removableChips=chipLabels.map((label,i)=>({label, raw:st.chips[i], onClick:()=>this.removeChip(st.chips[i])}));
+    const fKeys=[['Editorial','Editorial','تصوير تحريري'],['Beauty','Beauty','جمال'],['Studio','Studio','استوديو'],['Campaign','Campaign','حملة'],['Ecom','E-commerce','تجارة إلكترونية']];
+    const filterItems=fKeys.map(([k,en,ar])=>{ const on=st.filters[k]; return {k,label:isAr?ar:en,on,onClick:()=>this.toggleFilter(k),
+      style:`cursor:pointer;font-family:var(--font-ui);font-size:13px;font-weight:500;padding:8px 14px;border-radius:var(--r-pill);transition:all var(--dur-2) var(--ease-out);border:1px solid ${on?'var(--accent)':'var(--line-strong)'};background:${on?'var(--accent-weak)':'transparent'};color:${on?'var(--accent-ink)':'var(--muted)'}`}; });
+
+    // inputs validation
+    const emailValid=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(st.email);
+    const emailState=!st.emailTouched&&!st.email?'idle':(emailValid?'ok':'error');
+    const emailBorder=emailState==='error'?'var(--danger)':(emailState==='ok'?'var(--success)':'var(--line-strong)');
+    const emailMsg=emailState==='error'?s.emailErr:(emailState==='ok'?s.emailOk:'');
+    const emailMsgColor=emailState==='error'?'var(--danger)':'var(--success)';
+    const bioCount=`${st.bio.length} / 160`;
+
+    // toasts
+    const tmap={success:{c:'var(--success)',w:'var(--success-weak)',m:s.toastS},warn:{c:'var(--warn)',w:'var(--warn-weak)',m:s.toastW},error:{c:'var(--danger)',w:'var(--danger-weak)',m:s.toastE},info:{c:'var(--accent)',w:'var(--accent-weak)',m:s.toastI}};
+    const toasts=st.toasts.map(t=>({id:t.id,msg:tmap[t.type].m,
+      barStyle:`width:4px;align-self:stretch;border-radius:var(--r-pill);background:${tmap[t.type].c}`,onClick:()=>this.removeToast(t.id)}));
+
+    // modal / drawer styles
+    const modalOverlayStyle=`position:fixed;inset:0;z-index:90;display:flex;align-items:center;justify-content:center;padding:20px;background:color-mix(in srgb,var(--ink) 42%,transparent);backdrop-filter:blur(3px);animation:${st.modalClosing?'overlayOut':'overlayIn'} var(--dur-2) var(--ease-out) both`;
+    const modalPanelStyle=`width:min(440px,100%);background:var(--elevated);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--e4);padding:28px;animation:${st.modalClosing?'sheetOut':'sheetIn'} var(--dur-3) var(--ease-out) both`;
+    const drawerOverlayStyle=`position:fixed;inset:0;z-index:90;background:color-mix(in srgb,var(--ink) 42%,transparent);backdrop-filter:blur(3px);animation:${st.drawerClosing?'overlayOut':'overlayIn'} var(--dur-2) var(--ease-out) both`;
+    const drawerAnim=isAr?(st.drawerClosing?'drawerOutStart':'drawerInStart'):(st.drawerClosing?'drawerOutEnd':'drawerInEnd');
+    const drawerPanelStyle=`position:fixed;inset-block:0;inset-inline-end:0;z-index:91;width:min(360px,86vw);background:var(--elevated);border-inline-start:1px solid var(--line);box-shadow:var(--e4);padding:24px;animation:${drawerAnim} var(--dur-4) var(--ease-out) both;display:flex;flex-direction:column`;
+
+    // carousel + uploads
+    const carouselTrackStyle=`display:flex;transition:transform var(--dur-4) var(--ease-out);transform:translateX(${(isAr?1:-1)*st.carousel*100}%)`;
+    const uploads=st.uploads.map(u=>({id:u.id,name:u.name,pct:Math.round(u.progress),done:u.progress>=100,
+      barStyle:`height:100%;width:${u.progress}%;background:${u.progress>=100?'var(--success)':'var(--accent)'};border-radius:var(--r-pill);transition:width var(--dur-2) linear`}));
+
+    const gal=this.gallery();
+    const mh=[232,312,190,272,208,330];
+    const galleryItems=gal.map((g,i)=>({l:g.l,r:g.r,i,mh:mh[i],onClick:()=>this.openLightbox(i)}));
+    const carouselDots=gal.map((g,i)=>({i,onClick:()=>this.goCarousel(i),style:`width:7px;height:7px;border-radius:var(--r-pill);border:0;cursor:pointer;padding:0;transition:all var(--dur-2);background:${i===st.carousel?'var(--accent)':'color-mix(in srgb,var(--ink) 26%,transparent)'}`}));
+    const lb=st.lightbox; const lbImg=lb!==null?gal[lb]:null;
+    const pages=[1,2,3,4].map(p=>({p,onClick:()=>this.setPage(p),style:`min-width:36px;height:36px;padding:0 10px;display:grid;place-items:center;border-radius:var(--r-sm);cursor:pointer;font-family:var(--font-ui);font-size:13px;font-weight:600;transition:all var(--dur-2);border:1px solid ${p===st.page?'var(--primary)':'var(--line-strong)'};background:${p===st.page?'var(--primary)':'transparent'};color:${p===st.page?'var(--on-primary)':'var(--muted)'}`}));
+    const pool=isAr?[['ليلى منصور','عارضة'],['كريم عادل','مصوّر'],['يارا فهمي','مصمّمة أزياء'],['طارق مصطفى','مدير تصوير'],['دينا صالح','مدير إبداعي'],['نور الدين','مصوّر'],['مريم خالد','عارضة'],['سيف العيش','مدير تصوير'],['هبة راضي','مصمّمة جرافيك']]:[['Layla Mansour','Model'],['Karim Adel','Photographer'],['Yara Fahmy','Stylist'],['Tarek Mostafa','DoP'],['Dina Saleh','Creative Director'],['Nour El Din','Photographer'],['Mariam Khaled','Model'],['Seif Elesh','DoP'],['Heba Rady','Graphic Designer']];
+    const initialsOf=(nm)=>nm.split(' ').map(w=>w[0]).join('').slice(0,2);
+    const loadListVisible=pool.slice(0,st.loadMore).map((x,i)=>({name:x[0],prof:x[1],i,initials:initialsOf(x[0])}));
+    const tableRows=this.rows().map(r=>{ const sty=r.st==='available'?'background:var(--success-weak);color:color-mix(in srgb,var(--success) 78%,var(--ink))':(r.st==='booked'?'background:var(--warn-weak);color:color-mix(in srgb,var(--warn) 76%,var(--ink))':'background:var(--surface);color:var(--subtle)'); return {i:r.i,name:r.name,prof:r.prof,loc:r.loc,rate:r.rate,initials:initialsOf(r.name),statusLabel:s[r.st],statusStyle:`display:inline-flex;align-items:center;gap:6px;border-radius:var(--r-pill);padding:4px 10px;font-size:11px;font-weight:600;${sty}`,dotStyle:`width:6px;height:6px;border-radius:var(--r-pill);flex-shrink:0;background:${r.st==='available'?'var(--success)':(r.st==='booked'?'var(--warn)':'var(--subtle)')}`}; });
+
+    return {
+      theme:st.theme, accent, surfaceTone, dir:isAr?'rtl':'ltr', isDark, isAr, isEn, s,
+      enBtnStyle:isEn?segOn:segOff, arBtnStyle:isAr?segOn:segOff,
+      activeTab:st.activeTab, isTab0:st.activeTab===0, isTab1:st.activeTab===1, isTab2:st.activeTab===2,
+      tabItems, tabIndicatorStyle, setTab:this.setTab,
+      removableChips, removeChip:this.removeChip, filterItems, toggleFilter:this.toggleFilter,
+      toggleTheme:this.toggleTheme, setEn:this.setEn, setAr:this.setAr, stop:this.stop,
+      email:st.email, onEmail:this.onEmail, onEmailBlur:this.onEmailBlur, emailBorder, emailMsg, emailMsgColor, emailHasMsg:!!emailMsg,
+      bio:st.bio, onBio:this.onBio, bioCount,
+      step:st.step, stepNodes, stepFillStyle, stepNext:this.stepNext, stepPrev:this.stepPrev,
+      atStart:st.step===0, atEnd:st.step===4,
+      modalOpen:st.modalOpen, openModal:this.openModal, closeModal:this.closeModal, modalOverlayStyle, modalPanelStyle,
+      drawerOpen:st.drawerOpen, openDrawer:this.openDrawer, closeDrawer:this.closeDrawer, drawerOverlayStyle, drawerPanelStyle,
+      toasts, pushToast:this.pushToast, removeToast:this.removeToast,
+      hasToastS:()=>{}, rows:this.rows(),
+      page:st.page, setPage:this.setPage, loadMoreCount:st.loadMore, loadMore:this.loadMore, loadMoreDone:st.loadMore>=9,
+      carouselTrackStyle, carouselNext:this.carouselNext, carouselPrev:this.carouselPrev, goCarousel:this.goCarousel,
+      lightbox:st.lightbox, lightboxOpen:st.lightbox!==null, openLightbox:this.openLightbox, closeLightbox:this.closeLightbox, lightboxNext:this.lightboxNext, lightboxPrev:this.lightboxPrev, lightboxNum:(st.lightbox||0)+1,
+      dragOver:st.dragOver, onDragOver:this.onDragOver, onDragLeave:this.onDragLeave, onDrop:this.onDrop, simulateUpload:this.simulateUpload, uploads, hasUploads:st.uploads.length>0, clearUploads:this.clearUploads,
+      dropzoneStyle:`border:1.5px dashed ${st.dragOver?'var(--accent)':'var(--line-strong)'};background:${st.dragOver?'var(--accent-weak)':'var(--surface)'};border-radius:var(--r-md);padding:30px 20px;text-align:center;transition:all var(--dur-2) var(--ease-out)`,
+      confirmModal:()=>{this.closeModal();this.pushToast('success');},
+      fireSuccess:()=>this.pushToast('success'), fireWarn:()=>this.pushToast('warn'), fireError:()=>this.pushToast('error'), fireInfo:()=>this.pushToast('info'),
+      prevOpacity:st.step===0?'.45':'1', nextOpacity:st.step===4?'.45':'1',
+      galleryItems, carouselDots, tableRows, pages, loadListVisible, loadTotal:9, lbLabel:lbImg?lbImg.l:'', lbRatio:lbImg?lbImg.r:'4 / 5',
+      pagePrev:()=>this.setPage(Math.max(1,st.page-1)), pageNext:()=>this.setPage(Math.min(4,st.page+1)),
+      loadMoreMore:st.loadMore<9, skeletonDone:!st.skeleton,
+      skeleton:st.skeleton, toggleSkeleton:this.toggleSkeleton,
+    };
+  }
+}
+</script>
+</body>
+</html>

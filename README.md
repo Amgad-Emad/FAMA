@@ -1,58 +1,108 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Fama
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Fama is a **creative talent marketplace** — Egypt-first, MENA-wide. It connects **talent** (models,
+photographers, cinematographers/DOPs, stylists, creative directors, graphic designers) with **brands**
+through rich, malleable talent profiles, a discovery feed, and an admin-configurable **deal engine**
+that walks a brand and a talent through booking, quoting, contracting, payment, delivery, and reviews.
 
-## About Laravel
+> **Canonical reference:** [`docs/specs/`](docs/specs/) is the single source of truth for the data
+> model, pages, workflows, and lifecycles. Read the relevant spec before building anything. Project
+> laws live in [`CLAUDE.md`](CLAUDE.md); architecture/decisions in [`docs/`](docs/).
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Stack
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- **PHP 8.3+ / Laravel 13**
+- **Auth:** Laravel Breeze (Blade + Alpine + Tailwind + Vite); multi-guard; **Sanctum** for the mobile API
+- **Front-end:** Blade + Alpine, **Tailwind v4** (Vite), dark mode (class strategy), full RTL
+- **i18n:** `mcamara/laravel-localization` (locale-prefixed routes) + `spatie/laravel-translatable`
+- **Domain packages:** `spatie/laravel-medialibrary`, `laravel-model-states`, `laravel-data`,
+  `laravel-activitylog`, `laravel-query-builder`
+- **API docs:** `knuckleswtf/scribe` · **Tests:** Pest
+- **DB:** SQLite by default (dev + tests); any Laravel-supported driver in production
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
-
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+## Setup
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+composer install
+cp .env.example .env          # if you don't have a .env yet
+php artisan key:generate
+touch database/database.sqlite # default DB (or configure another in .env)
+php artisan migrate            # Phase 0: vendor/auth + infrastructure tables only
+npm install
+npm run build                  # or `npm run dev` while developing
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+## Run
 
-## Contributing
+```bash
+composer dev                   # serve + queue + logs + vite (all-in-one)
+# or individually:
+php artisan serve
+npm run dev
+php artisan test               # Pest suite (in-memory SQLite)
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## Three-guard auth model
 
-## Code of Conduct
+Fama has **three login entities**, each with its own session guard + Eloquent provider
+([`config/auth.php`](config/auth.php)):
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+| Guard | Provider → Model | Table | Web home |
+|---|---|---|---|
+| `admin` (default) | `users` → `App\Models\User` | `users` (migrated) | `/admin/dashboard` |
+| `brand` | `brands` → `App\Models\Brand` | `brands` (Phase 1) | `/brand/dashboard` |
+| `talent` | `talents` → `App\Models\Talent` | `talents` (Phase 1A) | `/talent/dashboard` |
 
-## Security Vulnerabilities
+- **Login** is a single, role-aware form: the submitted `role` selects the guard; absent `role`
+  defaults to `admin` (the only migrated auth table in Phase 0). `route('dashboard')` dispatches to the
+  active guard's dashboard.
+- **Dashboards** are guarded route groups (`auth:admin` / `auth:brand` / `auth:talent`). Public pages
+  (home now; public talent/brand profiles in Phase 1) are unguarded.
+- **Mobile API** authenticates with **Sanctum** tokens (Phase 4); all three models use `HasApiTokens`.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## Folder structure (Fama additions)
 
-## License
+```
+app/
+  Actions/Contracts/Action.php     # single-purpose action contract
+  Data/BaseData.php                # base DTO (spatie/laravel-data)
+  Enums/UserRole.php               # role ⇄ guard source of truth
+  Http/
+    Controllers/Auth/…             # guard-aware Breeze auth
+    Requests/Auth/LoginRequest.php # role-aware login
+    Resources/BaseResource.php     # base API/web resource
+  Models/{User,Brand,Talent}.php   # the three login entities
+  Policies/BasePolicy.php          # authorization convention
+  Providers/AppServiceProvider.php # response macros + strict models
+  Services/Service.php             # base service (transactions + fail logging)
+  Support/
+    ApiResponse.php                # the JSON envelope
+    Auth/Guards.php                # multi-guard helper
+config/    auth · logging · sanctum · media-library · laravellocalization · scribe · …
+resources/
+  css/app.css                      # Tailwind v4 entry (dark = class strategy)
+  js/http.js                       # shared fetch wrapper (parses the envelope)
+  views/…                          # Blade layouts, components, auth
+routes/    web.php (locale group + guards) · auth.php · console.php
+docs/
+  specs/                           # ← canonical: schema-master, talent-spec, brand-spec
+  architecture · schema · api · conventions · decisions · changelog
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+## Response envelope
+
+Every JSON response (web-Ajax and API) uses one shape:
+
+```json
+{ "success": true, "data": {}, "message": null, "errors": null, "meta": null }
+```
+
+Built via `App\Support\ApiResponse` and the `response()->success|error|paginated()` macros. See
+[`docs/api.md`](docs/api.md).
+
+## Project laws
+
+- Thin controllers, business logic in services + actions, SOLID throughout.
+- All media through the media library; external links stay plain URLs.
+- Every interaction is Ajax (no page reloads); lists eager-loaded and paginated.
+- **Never** run git write operations. See [`CLAUDE.md`](CLAUDE.md) for the full ruleset.

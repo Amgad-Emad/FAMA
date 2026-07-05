@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F4EDDD; --surface:#FCF8EF; --elevated:#FFFFFF;
+  --ink:#1B1813; --muted:#6E665A; --subtle:#9C927F;
+  --line:#E5DCCD; --line-strong:#D6CBB7;
+  --primary:#1B1813; --on-primary:#F6F1E7;
+  --accent:#22608C; --accent-weak:#D9E5EF; --accent-ink:#16405F; --on-accent:#FBF8F0;
+  --gold:#B0862F; --gold-weak:#EEE0C2;
+  --success:#4E7C59; --success-weak:#DDE8DB;
+  --warn:#A87B2C; --warn-weak:#EFE4C8;
+  --danger:#B14A3A; --danger-weak:#F0DAD2;
+  --focus:rgba(34,96,140,.42);
+  --font-head:var(--font-display);
+  --r-xs:2px; --r-sm:4px; --r-md:8px; --r-lg:14px; --r-pill:999px;
+  --e1:0 1px 2px rgba(27,24,19,.05),0 1px 3px rgba(27,24,19,.04);
+  --e2:0 6px 16px -8px rgba(27,24,19,.14),0 2px 6px -3px rgba(27,24,19,.08);
+  --e3:0 18px 40px -14px rgba(27,24,19,.20),0 6px 14px -10px rgba(27,24,19,.12);
+  --e4:0 36px 80px -24px rgba(27,24,19,.34);
+  --dur-1:90ms; --dur-2:160ms; --dur-3:260ms; --dur-4:420ms; --dur-5:680ms;
+  --ease-out:cubic-bezier(.16,1,.3,1); --ease-in-out:cubic-bezier(.65,0,.35,1);
+  --ease-spring:cubic-bezier(.34,1.4,.64,1); --ease-in:cubic-bezier(.4,0,1,1);
+  --font-display:"Bodoni Moda",Georgia,"Times New Roman",serif;
+  --font-ui:"IBM Plex Sans","IBM Plex Sans Arabic",system-ui,sans-serif;
+  --font-ar:"IBM Plex Sans Arabic","IBM Plex Sans",system-ui,sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+[data-theme="dark"]{
+  --bg:#0E1317; --surface:#151C21; --elevated:#1D262B;
+  --ink:#F1E9DA; --muted:#AEA48F; --subtle:#7E7565;
+  --line:#28323A; --line-strong:#39454D;
+  --primary:#F1E9DA; --on-primary:#1B1813;
+  --accent:#5AA6D6; --accent-weak:#153140; --accent-ink:#92C7E8; --on-accent:#0E1317;
+  --gold:#CCA45E; --gold-weak:#332913;
+  --success:#6FA277; --success-weak:#1E2B20;
+  --warn:#CDA04A; --warn-weak:#302813;
+  --danger:#D2715F; --danger-weak:#35201B;
+  --focus:rgba(90,166,214,.5);
+  --e1:0 1px 2px rgba(0,0,0,.4),0 1px 3px rgba(0,0,0,.3);
+  --e2:0 8px 20px -8px rgba(0,0,0,.55),0 2px 6px -3px rgba(0,0,0,.4);
+  --e3:0 20px 44px -14px rgba(0,0,0,.6),0 6px 14px -10px rgba(0,0,0,.45);
+  --e4:0 40px 90px -24px rgba(0,0,0,.7);
+}
+[dir="rtl"]{--font-head:var(--font-ar)}
+[dir="ltr"]{--font-head:var(--font-display)}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font-family:var(--font-ui);background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+::selection{background:var(--accent);color:var(--on-accent)}
+*{transition-property:transform,box-shadow,opacity,width!important}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes toastIn{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}}
+</style>
+</helmet>
+<div data-theme="{{ theme }}" dir="{{ dir }}" style="min-height:100vh;background:var(--bg);color:var(--ink);font-family:var(--font-ui);display:flex;flex-wrap:wrap;align-items:stretch">
+
+  <aside style="flex:1 1 216px;max-width:248px;min-height:100vh;position:sticky;top:0;align-self:flex-start;border-inline-end:1px solid var(--line);background:var(--surface);padding:20px 16px;display:flex;flex-direction:column;gap:22px">
+    <div style="display:flex;align-items:baseline;gap:1px;padding-inline:8px"><span style="font-family:var(--font-display);font-weight:600;font-size:23px">Fama</span><span style="color:var(--accent);font-family:var(--font-display);font-weight:600;font-size:23px">.</span><span style="font-family:var(--font-mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--subtle);padding-inline-start:8px">{{ s.admin }}</span></div>
+    <nav style="display:flex;flex-direction:column;gap:3px">
+      <sc-for list="{{ navItems }}" as="n" hint-placeholder-count="4"><button type="button" onClick="{{ n.onClick }}" style="{{ n.style }}"><span style="{{ n.dotStyle }}"></span>{{ n.label }}</button></sc-for>
+    </nav>
+    <div style="margin-block-start:auto;display:flex;align-items:center;gap:8px;padding-inline:2px">
+      <div role="group" aria-label="Language" style="display:inline-flex;align-items:center;gap:2px;border:1px solid var(--line-strong);border-radius:var(--r-pill);padding:3px;background:var(--elevated)">
+        <button type="button" onClick="{{ setEn }}" aria-pressed="{{ isEn }}" style="{{ enBtnStyle }}">EN</button>
+        <button type="button" onClick="{{ setAr }}" aria-pressed="{{ isAr }}" style="{{ arBtnStyle }}">ع</button>
+      </div>
+      <button type="button" onClick="{{ toggleTheme }}" aria-label="{{ s.themeLabel }}" style-hover="border-color:var(--accent);color:var(--accent)" style="width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--line-strong);background:var(--elevated);color:var(--ink);border-radius:var(--r-pill);cursor:pointer">
+        <span style="position:relative;width:15px;height:15px;display:inline-block"><span style="position:absolute;inset:0;border-radius:var(--r-pill);background:currentColor"></span><sc-if value="{{ isDark }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:-3px;inset-inline-end:-3px;width:13px;height:13px;border-radius:var(--r-pill);background:var(--elevated)"></span></sc-if></span>
+      </button>
+    </div>
+  </aside>
+
+  <main style="flex:1 1 560px;min-width:0;min-height:100vh;display:flex;flex-direction:column">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px clamp(16px,3vw,36px);border-block-end:1px solid var(--line);position:sticky;top:0;background:color-mix(in srgb,var(--bg) 82%,transparent);backdrop-filter:blur(12px);z-index:20">
+      <h1 style="font-family:var(--font-head);font-weight:500;font-size:clamp(22px,3vw,30px);margin:0;letter-spacing:-.01em">{{ pageTitle }}</h1>
+      <span style="font-family:var(--font-mono);font-size:11px;color:var(--subtle);display:inline-flex;align-items:center;gap:7px"><span style="width:7px;height:7px;border-radius:var(--r-pill);background:var(--success)"></span>{{ s.systemOk }}</span>
+    </div>
+
+    <div style="padding:clamp(20px,3vw,36px);flex:1">
+
+      <!-- DEAL FLOW BUILDER -->
+      <sc-if value="{{ isFlow }}" hint-placeholder-val="{{ true }}">
+        <div style="max-width:1040px;animation:fadeIn var(--dur-3) var(--ease-out)">
+          <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-block-end:22px">
+            <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center"><span style="font-family:var(--font-mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-inline-end:4px">{{ s.scope }}</span><sc-for list="{{ catChips }}" as="c" hint-placeholder-count="4"><button type="button" onClick="{{ c.onClick }}" style="{{ c.style }}">{{ c.label }}</button></sc-for></div>
+            <button type="button" onClick="{{ saveFlow }}" style="background:var(--primary);color:var(--on-primary);border:0;padding:10px 18px;border-radius:var(--r-sm);font-family:var(--font-ui);font-weight:600;font-size:13px;cursor:pointer" style-hover="transform:translateY(-1px);box-shadow:var(--e2)">{{ s.setDefault }}</button>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;align-items:start">
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <sc-for list="{{ flowSteps }}" as="st" hint-placeholder-count="5">
+                <div style="{{ st.rowStyle }}" onClick="{{ st.onSelect }}">
+                  <span style="display:grid;gap:3px;cursor:grab;flex-shrink:0"><span style="width:14px;height:2px;background:var(--line-strong);border-radius:2px"></span><span style="width:14px;height:2px;background:var(--line-strong);border-radius:2px"></span><span style="width:14px;height:2px;background:var(--line-strong);border-radius:2px"></span></span>
+                  <span style="width:26px;height:26px;flex-shrink:0;border-radius:var(--r-pill);background:var(--accent-weak);color:var(--accent-ink);display:grid;place-items:center;font-family:var(--font-mono);font-size:12px;font-weight:600">{{ st.num }}</span>
+                  <span style="flex:1;min-width:0"><span style="display:block;font-size:15px;font-weight:600">{{ st.label }}</span><span style="display:block;font-size:11px;color:var(--muted);margin-block-start:2px">{{ st.actorLabel }} · {{ st.typeLabel }}{{ st.reqLabel }}</span></span>
+                  <span style="display:flex;flex-direction:column;gap:2px;flex-shrink:0"><button type="button" onClick="{{ st.onUp }}" aria-label="Up" style="width:22px;height:18px;display:grid;place-items:center;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted);border-radius:var(--r-xs) var(--r-xs) 0 0;cursor:pointer;font-size:9px" style-hover="color:var(--accent);border-color:var(--accent)">▲</button><button type="button" onClick="{{ st.onDown }}" aria-label="Down" style="width:22px;height:18px;display:grid;place-items:center;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted);border-radius:0 0 var(--r-xs) var(--r-xs);cursor:pointer;font-size:9px" style-hover="color:var(--accent);border-color:var(--accent)">▼</button></span>
+                </div>
+              </sc-for>
+            </div>
+            <div style="background:var(--elevated);border:1px solid var(--line);border-radius:var(--r-md);padding:22px;position:sticky;top:84px">
+              <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--subtle);margin-block-end:6px">{{ s.configure }}</div>
+              <div style="font-family:var(--font-head);font-weight:500;font-size:24px;margin-block-end:20px">{{ selLabel }}</div>
+              <div style="display:flex;flex-direction:column;gap:20px">
+                <div><div style="font-size:13px;font-weight:600;margin-block-end:10px">{{ s.actor }}</div><div style="display:inline-flex;border:1px solid var(--line-strong);border-radius:var(--r-pill);padding:3px;background:var(--surface)"><sc-for list="{{ actorItems }}" as="a" hint-placeholder-count="3"><button type="button" onClick="{{ a.onClick }}" style="{{ a.style }}">{{ a.label }}</button></sc-for></div></div>
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><div><div style="font-size:13px;font-weight:600">{{ s.required }}</div><div style="font-size:12px;color:var(--muted);margin-block-start:2px">{{ s.requiredSub }}</div></div><button type="button" onClick="{{ toggleRequired }}" role="switch" aria-checked="{{ selRequired }}" style="{{ reqTrackStyle }}"><span style="{{ reqKnobStyle }}"></span></button></div>
+                <div><div style="font-size:13px;font-weight:600;margin-block-end:8px">{{ s.stepType }}</div><div style="font-family:var(--font-mono);font-size:13px;color:var(--accent-ink);background:var(--accent-weak);border-radius:var(--r-sm);padding:9px 13px;display:inline-block">{{ selType }}</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- MODERATION -->
+      <sc-if value="{{ isMod }}" hint-placeholder-val="{{ false }}">
+        <div style="max-width:1000px;animation:fadeIn var(--dur-3) var(--ease-out)">
+          <div style="display:flex;flex-wrap:wrap;gap:6px;border-block-end:1px solid var(--line);margin-block-end:18px">
+            <sc-for list="{{ modTabs }}" as="t" hint-placeholder-count="4"><button type="button" onClick="{{ t.onClick }}" style="{{ t.style }}">{{ t.label }} <span style="{{ t.countStyle }}">{{ t.count }}</span></button></sc-for>
+          </div>
+          <sc-if value="{{ hasSel }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;background:var(--ink);color:var(--on-primary);border-radius:var(--r-md);padding:12px 16px;margin-block-end:14px;animation:fadeInUp var(--dur-2) var(--ease-out)">
+              <span style="font-size:13px;font-weight:600">{{ selCount }} {{ s.selected }}</span>
+              <div style="display:flex;gap:8px"><button type="button" onClick="{{ approve }}" style="background:var(--success);color:#fff;border:0;padding:8px 16px;border-radius:var(--r-sm);font-family:var(--font-ui);font-weight:600;font-size:13px;cursor:pointer" style-hover="transform:translateY(-1px)">{{ s.approve }}</button><button type="button" onClick="{{ reject }}" style="background:transparent;color:var(--on-primary);border:1px solid color-mix(in srgb,var(--on-primary) 40%,transparent);padding:8px 16px;border-radius:var(--r-sm);font-family:var(--font-ui);font-weight:600;font-size:13px;cursor:pointer" style-hover="background:color-mix(in srgb,var(--on-primary) 12%,transparent)">{{ s.reject }}</button></div>
+            </div>
+          </sc-if>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <sc-for list="{{ modItems }}" as="m" hint-placeholder-count="4">
+              <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;background:var(--elevated);border:1px solid {{ m.borderColor }};border-radius:var(--r-md);padding:14px 16px">
+                <div style="display:flex;align-items:center;gap:13px;min-width:0">
+                  <button type="button" onClick="{{ m.onToggle }}" role="checkbox" aria-checked="{{ m.sel }}" style="{{ m.checkStyle }}">{{ m.check }}</button>
+                  <span style="width:40px;height:40px;flex-shrink:0;border-radius:{{ m.avatarRadius }};background:var(--surface);border:1px solid var(--line);display:grid;place-items:center;font-family:var(--font-mono);font-size:9px;color:var(--subtle)">{{ m.thumb }}</span>
+                  <span style="min-width:0"><span style="display:block;font-size:15px;font-weight:600">{{ m.title }}</span><span style="display:block;font-size:12px;color:var(--muted)">{{ m.sub }}</span></span>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px"><span style="font-family:var(--font-mono);font-size:11px;color:var(--subtle)">{{ m.meta }}</span><span style="display:inline-flex;align-items:center;gap:5px;background:var(--warn-weak);color:color-mix(in srgb,var(--warn) 76%,var(--ink));border-radius:var(--r-pill);padding:4px 10px;font-size:11px;font-weight:600">{{ s.pending }}</span></div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- TEMPLATES -->
+      <sc-if value="{{ isTemplates }}" hint-placeholder-val="{{ false }}">
+        <div style="max-width:720px;animation:fadeIn var(--dur-3) var(--ease-out)">
+          <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-block-end:26px"><span style="font-family:var(--font-mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-inline-end:4px">{{ tmplProfLabel }}</span><sc-for list="{{ tmplProfChips }}" as="c" hint-placeholder-count="6"><button type="button" onClick="{{ c.onClick }}" style="{{ c.style }}">{{ c.label }}</button></sc-for></div>
+          <div style="margin-block-end:16px"><div style="font-family:var(--font-head);font-weight:500;font-size:22px">{{ tmplBlocksLabel }}</div><div style="font-size:13px;color:var(--muted);margin-block-start:4px;max-width:56ch">{{ tmplHint }}</div></div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <sc-for list="{{ tmplBlocks }}" as="b" hint-placeholder-count="7">
+              <div style="display:flex;align-items:center;gap:14px;background:var(--elevated);border:1px solid var(--line);border-radius:var(--r-md);padding:14px 16px">
+                <span style="display:grid;gap:3px;cursor:grab;flex-shrink:0"><span style="width:14px;height:2px;background:var(--line-strong);border-radius:2px"></span><span style="width:14px;height:2px;background:var(--line-strong);border-radius:2px"></span><span style="width:14px;height:2px;background:var(--line-strong);border-radius:2px"></span></span>
+                <span style="flex:1;font-size:15px;font-weight:500">{{ b.label }}</span>
+                <button type="button" onClick="{{ b.onToggle }}" role="switch" style="{{ b.trackStyle }}"><span style="{{ b.knobStyle }}"></span></button>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- INTERVENTION -->
+      <sc-if value="{{ isIntervene }}" hint-placeholder-val="{{ false }}">
+        <div style="max-width:640px;animation:fadeIn var(--dur-3) var(--ease-out)">
+          <div style="background:var(--elevated);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden">
+            <div style="display:flex;align-items:flex-start;gap:12px;background:var(--warn-weak);border-block-end:1px solid color-mix(in srgb,var(--warn) 30%,transparent);padding:18px 20px">
+              <span style="width:28px;height:28px;flex-shrink:0;border-radius:var(--r-pill);background:color-mix(in srgb,var(--warn) 80%,var(--ink));color:#fff;display:grid;place-items:center;font-size:15px;font-weight:700">!</span>
+              <div><div style="font-family:var(--font-head);font-weight:500;font-size:20px">{{ iTitle }}</div><div style="font-size:13px;color:color-mix(in srgb,var(--warn) 70%,var(--ink));margin-block-start:3px">{{ iSub }}</div></div>
+            </div>
+            <div style="padding:22px;display:flex;flex-direction:column;gap:20px">
+              <div style="display:flex;align-items:center;gap:12px"><span style="width:38px;height:38px;border-radius:var(--r-pill);background:var(--accent-weak);color:var(--accent-ink);display:grid;place-items:center;font-size:12px;font-weight:600">LM</span><span style="font-family:var(--font-mono);color:var(--subtle)">↔</span><span style="width:38px;height:38px;border-radius:var(--r-sm);background:var(--ink);color:var(--bg);display:grid;place-items:center;font-family:var(--font-display);font-size:13px;font-weight:600">NC</span><span style="font-size:14px;color:var(--muted);padding-inline-start:6px">Layla Mansour ↔ Nile &amp; Co</span></div>
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md)"><span style="font-size:13px;color:var(--muted)">{{ iStepHdr }}</span><span style="display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:600"><span style="width:7px;height:7px;border-radius:var(--r-pill);background:var(--warn)"></span>{{ iStepLabel }}</span></div>
+              <div style="display:flex;flex-wrap:wrap;gap:10px">
+                <button type="button" onClick="{{ forceStep }}" style="flex:1;min-width:150px;background:var(--primary);color:var(--on-primary);border:0;padding:12px;border-radius:var(--r-sm);font-family:var(--font-ui);font-weight:600;font-size:14px;cursor:pointer" style-hover="transform:translateY(-1px);box-shadow:var(--e2)">{{ forceStepLabel }}</button>
+                <button type="button" onClick="{{ actAs }}" style="flex:1;min-width:150px;background:transparent;color:var(--ink);border:1px solid var(--line-strong);padding:12px;border-radius:var(--r-sm);font-family:var(--font-ui);font-weight:600;font-size:14px;cursor:pointer" style-hover="border-color:var(--accent);color:var(--accent-ink);background:var(--accent-weak)">{{ actAsLabel }}</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <!--AVIEWS-->
+
+    </div>
+  </main>
+
+  <div aria-live="polite" style="position:fixed;inset-block-end:20px;inset-inline-end:20px;z-index:110;display:flex;flex-direction:column;gap:10px;width:min(340px,calc(100vw - 40px));pointer-events:none">
+    <sc-for list="{{ toasts }}" as="t" hint-placeholder-count="0">
+      <div style="display:flex;align-items:stretch;gap:12px;background:var(--elevated);border:1px solid var(--line);border-radius:var(--r-md);box-shadow:var(--e3);padding:13px 14px;animation:toastIn var(--dur-3) var(--ease-out);pointer-events:auto">
+        <span style="width:4px;align-self:stretch;border-radius:var(--r-pill);background:var(--success)"></span>
+        <span style="flex:1;font-size:13px;color:var(--ink);align-self:center;line-height:1.4">{{ t.msg }}</span>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:900},&quot;defaultTheme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;'light'|'dark'&quot;,&quot;section&quot;:&quot;Theme&quot;},&quot;defaultLang&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;en&quot;,&quot;ar&quot;],&quot;default&quot;:&quot;en&quot;,&quot;tsType&quot;:&quot;'en'|'ar'&quot;,&quot;section&quot;:&quot;Theme&quot;}}">
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    this.state={ theme:(props&&props.defaultTheme)||'light', lang:(props&&props.defaultLang)||'en', view:'flow',
+      steps:[{key:'brief',actor:'brand',type:'form',required:true},{key:'quote',actor:'talent',type:'quote',required:true},{key:'agreement',actor:'either',type:'sign',required:true},{key:'production',actor:'talent',type:'upload',required:false},{key:'payment',actor:'brand',type:'payment',required:true}],
+      selStep:0, category:'editorial', modTab:'profiles', modSel:{}, tmplProf:'model', tmplHidden:{}, iStep:2, toasts:[] };
+    this._tid=0;
+  }
+  strings={
+    en:{
+      admin:'Admin', themeLabel:'Toggle light / dark', systemOk:'All systems normal',
+      navFlow:'Deal flow', navMod:'Moderation', navTemplates:'Templates', navIntervene:'Intervention',
+      titleFlow:'Deal-flow builder', titleMod:'Moderation', titleTemplates:'Profession templates', titleIntervene:'Deal intervention',
+      scope:'Scope', setDefault:'Set as default', configure:'Configure step', actor:'Who acts', required:'Required', requiredSub:'Deal cannot skip this step', stepType:'Step type',
+      cats:[['editorial','Editorial'],['campaign','Campaign'],['runway','Runway'],['ecom','E-commerce']],
+      stepNames:{brief:'Brief',quote:'Quote',agreement:'Agreement',production:'Production',payment:'Payment'},
+      actors:[['brand','Brand'],['talent','Talent'],['either','Either']],
+      types:{form:'Form',quote:'Quote',sign:'E-signature',upload:'File upload',payment:'Payment'},
+      reqYes:' · required', reqNo:' · skippable',
+      modTabs:[['profiles','Talent profiles'],['reviews','Reviews'],['brands','Brands'],['campaigns','Campaigns']],
+      selected:'selected', approve:'Approve', reject:'Reject', pending:'Pending',
+      toastDefault:'Default flow saved for this category.', toastApproved:'items approved.', toastRejected:'items rejected.', toastOverride:'Step overridden as admin.',
+      tmplProfession:'Profession', tmplBlocks:'Default blocks', tmplHint:'Blocks new talent in this profession start with. Drag to reorder, toggle to hide.',
+      iTitle:'Stuck deal', iSub:'No response for 52h at the Agreement step.', override:'Override step', actAs:'Act as admin', iStepLabel:'Current step', iForce:'Force to next step',
+    },
+    ar:{
+      admin:'الإدارة', themeLabel:'تبديل الوضع الفاتح / الداكن', systemOk:'كل الأنظمة طبيعية',
+      navFlow:'مسار الصفقة', navMod:'الإشراف', navTemplates:'القوالب', navIntervene:'التدخّل',
+      titleFlow:'باني مسار الصفقة', titleMod:'الإشراف', titleTemplates:'قوالب المهن', titleIntervene:'التدخّل في الصفقة',
+      scope:'النطاق', setDefault:'تعيين افتراضيًا', configure:'إعداد الخطوة', actor:'من ينفّذ', required:'إلزامية', requiredSub:'لا يمكن تخطّي هذه الخطوة', stepType:'نوع الخطوة',
+      cats:[['editorial','تحريري'],['campaign','حملة'],['runway','منصّة'],['ecom','تجارة إلكترونية']],
+      stepNames:{brief:'الموجز',quote:'العرض',agreement:'الاتفاق',production:'الإنتاج',payment:'الدفع'},
+      actors:[['brand','العلامة'],['talent','الموهبة'],['either','أيّهما']],
+      types:{form:'نموذج',quote:'عرض سعر',sign:'توقيع إلكتروني',upload:'رفع ملفات',payment:'دفع'},
+      reqYes:' · إلزامية', reqNo:' · قابلة للتخطّي',
+      modTabs:[['profiles','ملفات المواهب'],['reviews','التقييمات'],['brands','العلامات'],['campaigns','الحملات']],
+      selected:'محدّد', approve:'قبول', reject:'رفض', pending:'قيد المراجعة',
+      toastDefault:'حُفظ المسار الافتراضي لهذه الفئة.', toastApproved:'عنصرًا تمت الموافقة عليه.', toastRejected:'عنصرًا تم رفضه.', toastOverride:'تم تجاوز الخطوة كمشرف.',
+      tmplProfession:'المهنة', tmplBlocks:'الكتل الافتراضية', tmplHint:'الكتل التي يبدأ بها المواهب الجدد في هذه المهنة. اسحب لإعادة الترتيب، وبدّل للإخفاء.',
+      iTitle:'صفقة متوقّفة', iSub:'لا رد منذ ٥٢ ساعة عند خطوة الاتفاق.', override:'تجاوز الخطوة', actAs:'التصرّف كمشرف', iStepLabel:'الخطوة الحالية', iForce:'الدفع للخطوة التالية',
+    }
+  };
+  modQueue(){
+    const A=this.state.lang==='ar';
+    const T={
+      profiles:[['Rana Wael','رنا وائل','Model · Cairo','عارضة · القاهرة'],['Seif Elesh','سيف العيش','DoP · Cairo','مدير تصوير · القاهرة'],['Mona Adel','منى عادل','Stylist · Dubai','مصمّمة أزياء · دبي']],
+      reviews:[['Review of Karim Adel','تقييم كريم عادل','“Professional and on time.”','«محترف وملتزم بالمواعيد.»'],['Review of Layla Mansour','تقييم ليلى منصور','“A joy on set.”','«متعة في الموقع.»']],
+      brands:[['Atlas Studios','أطلس ستوديوز','Fashion · Riyadh','أزياء · الرياض'],['Delta Media','دلتا ميديا','Publication · Cairo','نشر · القاهرة']],
+      campaigns:[['FW26 — Nocturne','خريف ٢٦ — نوكتيرن','Maison Reem · EGP 210k','ميزون ريم · ٢١٠ ألف ج.م'],['Souk Series','سلسلة السوق','Nile & Co · EGP 95k','نايل وشركاه · ٩٥ ألف ج.م']]
+    };
+    return (T[this.state.modTab]||[]).map((r,i)=>({id:this.state.modTab+i, title:A?r[1]:r[0], sub:A?r[3]:r[2]}));
+  }
+  toggleTheme=()=>this.setState(s=>({theme:s.theme==='dark'?'light':'dark'}));
+  setEn=()=>this.setState({lang:'en'});
+  setAr=()=>this.setState({lang:'ar'});
+  setView=(v)=>this.setState({view:v});
+  setCategory=(v)=>this.setState({category:v});
+  selectStep=(i)=>this.setState({selStep:i});
+  moveUp=(i)=>{ if(i<=0)return; this.setState(s=>{ const a=[...s.steps]; const t=a[i-1]; a[i-1]=a[i]; a[i]=t; return {steps:a, selStep:i-1}; }); };
+  moveDown=(i)=>{ this.setState(s=>{ if(i>=s.steps.length-1)return {}; const a=[...s.steps]; const t=a[i+1]; a[i+1]=a[i]; a[i]=t; return {steps:a, selStep:i+1}; }); };
+  setActor=(actor)=>this.setState(s=>{ const a=[...s.steps]; a[s.selStep]={...a[s.selStep],actor}; return {steps:a}; });
+  toggleRequired=()=>this.setState(s=>{ const a=[...s.steps]; a[s.selStep]={...a[s.selStep],required:!a[s.selStep].required}; return {steps:a}; });
+  saveFlow=()=>this.pushToast(this.strings[this.state.lang].toastDefault);
+  setTmplProf=(v)=>this.setState({tmplProf:v});
+  toggleBlock=(b)=>this.setState(s=>({tmplHidden:{...s.tmplHidden,[s.tmplProf+b]:!s.tmplHidden[s.tmplProf+b]}}));
+  setModTab=(v)=>this.setState({modTab:v, modSel:{}});
+  toggleSel=(id)=>this.setState(s=>({modSel:{...s.modSel,[id]:!s.modSel[id]}}));
+  approve=()=>{ const n=Object.values(this.state.modSel).filter(Boolean).length; this.setState({modSel:{}}); this.pushToast(n+' '+this.strings[this.state.lang].toastApproved); };
+  reject=()=>{ const n=Object.values(this.state.modSel).filter(Boolean).length; this.setState({modSel:{}}); this.pushToast(n+' '+this.strings[this.state.lang].toastRejected); };
+  forceStep=()=>{ this.setState(s=>({iStep:Math.min(s.iStep+1,4)})); this.pushToast(this.strings[this.state.lang].toastOverride); };
+  pushToast=(msg)=>{ const id=++this._tid; this.setState(s=>({toasts:[...s.toasts,{id,msg}]})); setTimeout(()=>this.setState(s=>({toasts:s.toasts.filter(t=>t.id!==id)})),3400); };
+
+  renderVals(){
+    const st=this.state, isDark=st.theme==='dark', isAr=st.lang==='ar', isEn=!isAr;
+    const s=this.strings[st.lang];
+    const segOn='border:0;cursor:pointer;font-family:var(--font-ui);font-size:12px;font-weight:600;padding:5px 12px;border-radius:var(--r-pill);background:var(--ink);color:var(--on-primary)';
+    const segOff='border:0;cursor:pointer;font-family:var(--font-ui);font-size:12px;font-weight:500;padding:5px 12px;border-radius:var(--r-pill);background:transparent;color:var(--muted)';
+    const chip=(on)=>`cursor:pointer;font-family:var(--font-ui);font-size:12px;font-weight:500;padding:7px 13px;border-radius:var(--r-pill);border:1px solid ${on?'var(--accent)':'var(--line-strong)'};background:${on?'var(--accent-weak)':'transparent'};color:${on?'var(--accent-ink)':'var(--muted)'}`;
+    const navDef=[['flow',s.navFlow],['mod',s.navMod],['templates',s.navTemplates],['intervene',s.navIntervene]];
+    const navItems=navDef.map(([v,label])=>{ const on=st.view===v; return {v,label,onClick:()=>this.setView(v),
+      style:`display:flex;align-items:center;gap:11px;width:100%;text-align:start;border:0;cursor:pointer;font-family:var(--font-ui);font-size:14px;font-weight:${on?'600':'500'};padding:10px 12px;border-radius:var(--r-sm);background:${on?'var(--accent-weak)':'transparent'};color:${on?'var(--accent-ink)':'var(--muted)'}`,
+      dotStyle:`width:6px;height:6px;border-radius:var(--r-pill);background:${on?'var(--accent)':'var(--line-strong)'}`}; });
+    const catChips=s.cats.map(([v,label])=>({v,label,onClick:()=>this.setCategory(v),style:chip(st.category===v)}));
+    const flowSteps=st.steps.map((step,i)=>({num:i+1,label:s.stepNames[step.key],actorLabel:s.actors.find(a=>a[0]===step.actor)[1],typeLabel:s.types[step.type],reqLabel:step.required?s.reqYes:s.reqNo,
+      onSelect:()=>this.selectStep(i),onUp:()=>this.moveUp(i),onDown:()=>this.moveDown(i),
+      rowStyle:`display:flex;align-items:center;gap:12px;background:var(--elevated);border:1px solid ${i===st.selStep?'var(--accent)':'var(--line)'};border-radius:var(--r-md);padding:13px 14px;cursor:pointer;box-shadow:${i===st.selStep?'var(--e1)':'none'}`}));
+    const sel=st.steps[st.selStep];
+    const actorItems=s.actors.map(([v,label])=>({v,label,onClick:()=>this.setActor(v),style:sel.actor===v?segOn:segOff}));
+    const modTabs=s.modTabs.map(([v,label])=>{ const on=st.modTab===v; const cnt={profiles:3,reviews:2,brands:2,campaigns:2}[v]; return {v,label,count:cnt,onClick:()=>this.setModTab(v),
+      style:`background:transparent;border:0;border-block-end:2px solid ${on?'var(--accent)':'transparent'};cursor:pointer;font-family:var(--font-ui);font-size:14px;font-weight:${on?'600':'500'};color:${on?'var(--ink)':'var(--muted)'};padding:12px 14px;display:inline-flex;align-items:center;gap:7px`,
+      countStyle:`font-family:var(--font-mono);font-size:10px;background:${on?'var(--accent-weak)':'var(--surface)'};color:${on?'var(--accent-ink)':'var(--subtle)'};border-radius:var(--r-pill);padding:2px 7px`}; });
+    const isReviews=st.modTab==='reviews', isBrands=st.modTab==='brands';
+    const modItems=this.modQueue().map(m=>{ const on=!!st.modSel[m.id]; return {id:m.id,title:m.title,sub:m.sub,sel:on,onToggle:()=>this.toggleSel(m.id),
+      thumb:isReviews?'★':(isBrands?'LOGO':'IMG'), avatarRadius:isReviews||isBrands?'var(--r-sm)':'var(--r-pill)', meta:isAr?'اليوم':'Today', borderColor:on?'var(--accent)':'var(--line)',
+      check:on?'✓':'', checkStyle:`width:22px;height:22px;flex-shrink:0;border-radius:var(--r-xs);cursor:pointer;display:grid;place-items:center;font-size:12px;font-weight:700;border:1px solid ${on?'var(--accent)':'var(--line-strong)'};background:${on?'var(--accent)':'transparent'};color:${on?'var(--on-accent)':'transparent'}`}; });
+    const selCount=Object.values(st.modSel).filter(Boolean).length;
+    const reqOn=sel.required;
+    const tmplProfList=[['model','Model'],['photographer','Photographer'],['dop','DoP'],['stylist','Stylist'],['creative','Creative Director'],['graphic','Graphic Designer']];
+    const tmplProfAr={model:'عارض',photographer:'مصوّر',dop:'مدير تصوير',stylist:'مصمّم أزياء',creative:'مدير إبداعي',graphic:'مصمّم جرافيك'};
+    const tmplProfChips=tmplProfList.map(([v,label])=>({v,label:isAr?tmplProfAr[v]:label,onClick:()=>this.setTmplProf(v),style:chip(st.tmplProf===v)}));
+    const blockSets={model:['Gallery','Comp card','Looks','Digitals','Brand collabs','Reviews','Services'],photographer:['Gallery','Showreel','Equipment','Software','Case studies','Reviews','Services'],dop:['Gallery','Showreel','Equipment','Software','Case studies','Reviews','Services']};
+    const blockAr={Gallery:'المعرض','Comp card':'بطاقة القياسات',Looks:'الإطلالات',Digitals:'صور طبيعية','Brand collabs':'تعاونات',Reviews:'التقييمات',Services:'الخدمات',Showreel:'ريِل',Equipment:'المعدّات',Software:'البرمجيات','Case studies':'دراسات حالة'};
+    const bset=blockSets[st.tmplProf]||['Gallery','Case studies','Software','Brand collabs','Reviews','Services'];
+    const tmplBlocks=bset.map(b=>{ const vis=!st.tmplHidden[st.tmplProf+b]; return {label:isAr?(blockAr[b]||b):b,onToggle:()=>this.toggleBlock(b),
+      trackStyle:`width:38px;height:22px;border-radius:var(--r-pill);border:0;cursor:pointer;padding:3px;display:flex;justify-content:${vis?'flex-end':'flex-start'};background:${vis?'var(--accent)':'var(--line-strong)'}`,
+      knobStyle:'width:16px;height:16px;border-radius:var(--r-pill);background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.3)'}; });
+    const iKeys=['brief','quote','agreement','production','payment'];
+    const iStepLabel=s.stepNames[iKeys[st.iStep]];
+    const titleMap={flow:s.titleFlow,mod:s.titleMod,templates:s.titleTemplates,intervene:s.titleIntervene};
+    return {
+      theme:st.theme, dir:isAr?'rtl':'ltr', isDark, isAr, isEn, s,
+      enBtnStyle:isEn?segOn:segOff, arBtnStyle:isAr?segOn:segOff,
+      toggleTheme:this.toggleTheme, setEn:this.setEn, setAr:this.setAr,
+      navItems, pageTitle:titleMap[st.view], systemOk:s.systemOk,
+      isFlow:st.view==='flow', isMod:st.view==='mod', isTemplates:st.view==='templates', isIntervene:st.view==='intervene',
+      catChips, flowSteps, saveFlow:this.saveFlow, setDefault:s.setDefault,
+      selLabel:s.stepNames[sel.key], actorItems, toggleRequired:this.toggleRequired, selRequired:reqOn, selType:s.types[sel.type],
+      reqTrackStyle:`width:42px;height:24px;border-radius:var(--r-pill);border:0;cursor:pointer;padding:3px;display:flex;justify-content:${reqOn?'flex-end':'flex-start'};background:${reqOn?'var(--accent)':'var(--line-strong)'}`,
+      reqKnobStyle:'width:18px;height:18px;border-radius:var(--r-pill);background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.3)',
+      modTabs, modItems, hasSel:selCount>0, selCount, approve:this.approve, reject:this.reject,
+      forceStep:this.forceStep, iStep:st.iStep,
+      tmplProfChips, tmplBlocks, tmplProfLabel:s.tmplProfession, tmplBlocksLabel:s.tmplBlocks, tmplHint:s.tmplHint,
+      iStepLabel, forceStepLabel:s.iForce, iTitle:s.iTitle, iSub:s.iSub, iStepHdr:s.iStepLabel, actAsLabel:s.actAs,
+      actAs:()=>this.pushToast(isAr?'أنت تتصرّف الآن كمشرف على هذه الصفقة.':'You are now acting as admin on this deal.'),
+      toasts:st.toasts,
+    };
+  }
+}
+</script>
+</body>
+</html>

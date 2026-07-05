@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F4EDDD; --surface:#FCF8EF; --elevated:#FFFFFF;
+  --ink:#1B1813; --muted:#6E665A; --subtle:#9C927F;
+  --line:#E5DCCD; --line-strong:#D6CBB7;
+  --primary:#1B1813; --on-primary:#F6F1E7;
+  --accent:#22608C; --accent-weak:#D9E5EF; --accent-ink:#16405F; --on-accent:#FBF8F0;
+  --gold:#B0862F; --gold-weak:#EEE0C2;
+  --success:#4E7C59; --success-weak:#DDE8DB;
+  --warn:#A87B2C; --warn-weak:#EFE4C8;
+  --danger:#B14A3A; --danger-weak:#F0DAD2;
+  --focus:rgba(34,96,140,.42);
+  --font-head:var(--font-display);
+  --r-xs:2px; --r-sm:4px; --r-md:8px; --r-lg:14px; --r-pill:999px;
+  --e1:0 1px 2px rgba(27,24,19,.05),0 1px 3px rgba(27,24,19,.04);
+  --e2:0 6px 16px -8px rgba(27,24,19,.14),0 2px 6px -3px rgba(27,24,19,.08);
+  --e3:0 18px 40px -14px rgba(27,24,19,.20),0 6px 14px -10px rgba(27,24,19,.12);
+  --e4:0 36px 80px -24px rgba(27,24,19,.34);
+  --dur-1:90ms; --dur-2:160ms; --dur-3:260ms; --dur-4:420ms; --dur-5:680ms;
+  --ease-out:cubic-bezier(.16,1,.3,1); --ease-in-out:cubic-bezier(.65,0,.35,1);
+  --ease-spring:cubic-bezier(.34,1.4,.64,1); --ease-in:cubic-bezier(.4,0,1,1);
+  --font-display:"Bodoni Moda",Georgia,"Times New Roman",serif;
+  --font-ui:"IBM Plex Sans","IBM Plex Sans Arabic",system-ui,sans-serif;
+  --font-ar:"IBM Plex Sans Arabic","IBM Plex Sans",system-ui,sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+[data-theme="dark"]{
+  --bg:#0E1317; --surface:#151C21; --elevated:#1D262B;
+  --ink:#F1E9DA; --muted:#AEA48F; --subtle:#7E7565;
+  --line:#28323A; --line-strong:#39454D;
+  --primary:#F1E9DA; --on-primary:#1B1813;
+  --accent:#5AA6D6; --accent-weak:#153140; --accent-ink:#92C7E8; --on-accent:#0E1317;
+  --gold:#CCA45E; --gold-weak:#332913;
+  --success:#6FA277; --success-weak:#1E2B20;
+  --warn:#CDA04A; --warn-weak:#302813;
+  --danger:#D2715F; --danger-weak:#35201B;
+  --focus:rgba(90,166,214,.5);
+  --e1:0 1px 2px rgba(0,0,0,.4),0 1px 3px rgba(0,0,0,.3);
+  --e2:0 8px 20px -8px rgba(0,0,0,.55),0 2px 6px -3px rgba(0,0,0,.4);
+  --e3:0 20px 44px -14px rgba(0,0,0,.6),0 6px 14px -10px rgba(0,0,0,.45);
+  --e4:0 40px 90px -24px rgba(0,0,0,.7);
+}
+[dir="rtl"]{--font-head:var(--font-ar)}
+[dir="ltr"]{--font-head:var(--font-display)}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font-family:var(--font-ui);background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+::selection{background:var(--accent);color:var(--on-accent)}
+*{transition-property:transform,box-shadow,opacity,width!important}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes toastIn{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:none}}
+@keyframes shimmer{0%{background-position:-160% 0}100%{background-position:160% 0}}
+@keyframes pulseDot{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--accent) 55%,transparent)}70%{box-shadow:0 0 0 6px transparent}100%{box-shadow:0 0 0 0 transparent}}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}}
+</style>
+</helmet>
+<div data-theme="{{ theme }}" dir="{{ dir }}" style="min-height:100vh;background:var(--bg);color:var(--ink);font-family:var(--font-ui);display:flex;flex-wrap:wrap;align-items:stretch">
+
+  <aside style="flex:1 1 216px;max-width:248px;min-height:100vh;position:sticky;top:0;align-self:flex-start;border-inline-end:1px solid var(--line);background:var(--surface);padding:20px 16px;display:flex;flex-direction:column;gap:22px">
+    <div style="display:flex;align-items:baseline;gap:1px;padding-inline:8px"><span style="font-family:var(--font-display);font-weight:600;font-size:23px">Fama</span><span style="color:var(--accent);font-family:var(--font-display);font-weight:600;font-size:23px">.</span><span style="font-family:var(--font-mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--subtle);padding-inline-start:8px">{{ s.brand }}</span></div>
+    <nav style="display:flex;flex-direction:column;gap:3px">
+      <sc-for list="{{ navItems }}" as="n" hint-placeholder-count="4"><button type="button" onClick="{{ n.onClick }}" style="{{ n.style }}"><span style="{{ n.dotStyle }}"></span>{{ n.label }}</button></sc-for>
+    </nav>
+    <div style="margin-block-start:auto;display:flex;flex-direction:column;gap:14px">
+      <a href="Brand Profile.dc.html" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;padding:10px;border:1px solid var(--line);border-radius:var(--r-md)" style-hover="border-color:var(--accent);background:var(--elevated)"><span style="width:34px;height:34px;flex-shrink:0;border-radius:var(--r-sm);background:var(--ink);color:var(--bg);display:grid;place-items:center;font-family:var(--font-display);font-size:14px;font-weight:600">MR</span><span style="min-width:0"><span style="display:block;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Maison Reem</span><span style="display:block;font-size:11px;color:var(--muted)">{{ s.viewProfile }} ↗</span></span></a>
+      <div style="display:flex;align-items:center;gap:8px;padding-inline:2px">
+        <div role="group" aria-label="Language" style="display:inline-flex;align-items:center;gap:2px;border:1px solid var(--line-strong);border-radius:var(--r-pill);padding:3px;background:var(--elevated)">
+          <button type="button" onClick="{{ setEn }}" aria-pressed="{{ isEn }}" style="{{ enBtnStyle }}">EN</button>
+          <button type="button" onClick="{{ setAr }}" aria-pressed="{{ isAr }}" style="{{ arBtnStyle }}">ع</button>
+        </div>
+        <button type="button" onClick="{{ toggleTheme }}" aria-label="{{ s.themeLabel }}" style-hover="border-color:var(--accent);color:var(--accent)" style="width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--line-strong);background:var(--elevated);color:var(--ink);border-radius:var(--r-pill);cursor:pointer">
+          <span style="position:relative;width:15px;height:15px;display:inline-block"><span style="position:absolute;inset:0;border-radius:var(--r-pill);background:currentColor"></span><sc-if value="{{ isDark }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:-3px;inset-inline-end:-3px;width:13px;height:13px;border-radius:var(--r-pill);background:var(--elevated)"></span></sc-if></span>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <main style="flex:1 1 560px;min-width:0;min-height:100vh;display:flex;flex-direction:column">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px clamp(16px,3vw,36px);border-block-end:1px solid var(--line);position:sticky;top:0;background:color-mix(in srgb,var(--bg) 82%,transparent);backdrop-filter:blur(12px);z-index:20">
+      <h1 style="font-family:var(--font-head);font-weight:500;font-size:clamp(22px,3vw,30px);margin:0;letter-spacing:-.01em">{{ pageTitle }}</h1>
+      <button type="button" onClick="{{ goDiscover }}" style="background:var(--primary);color:var(--on-primary);border:0;padding:10px 18px;border-radius:var(--r-sm);font-family:var(--font-ui);font-weight:600;font-size:13px;cursor:pointer" style-hover="transform:translateY(-1px);box-shadow:var(--e2)">{{ s.newCampaign }}</button>
+    </div>
+
+    <div style="padding:clamp(20px,3vw,36px);flex:1">
+
+      <!-- HOME -->
+      <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+        <div style="max-width:980px;display:flex;flex-direction:column;gap:26px;animation:fadeIn var(--dur-3) var(--ease-out)">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px">
+            <div style="background:var(--elevated);border:1px solid var(--line);border-radius:var(--r-md);padding:18px"><div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)">{{ s.stCampaigns }}</div><div style="font-family:var(--font-head);font-weight:500;font-size:30px;line-height:1;margin-block-start:8px">3</div><div style="font-size:12px;color:var(--subtle);margin-block-start:10px">{{ s.oneClosing }}</div></div>
+            <div style="background:var(--elevated);border:1px solid var(--line);border-radius:var(--r-md);padding:18px"><div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)">{{ s.stSaved }}</div><div style="font-family:var(--font-head);font-weight:500;font-size:30px;line-height:1;margin-block-start:8px">18</div><div style="font-size:12px;color:var(--subtle);margin-block-start:10px">{{ s.acrossRoles }}</div></div>
+            <div style="background:var(--elevated);border:1px solid var(--line);border-radius:var(--r-md);padding:18px"><div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)">{{ s.stAction }}</div><div style="font-family:var(--font-head);font-weight:500;font-size:30px;line-height:1;margin-block-start:8px;color:var(--accent-ink)">2</div><div style="font-size:12px;color:var(--subtle);margin-block-start:10px">{{ s.needYou }}</div></div>
+            <div style="background:var(--elevated);border:1px solid var(--line);border-radius:var(--r-md);padding:18px"><div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)">{{ s.stSpend }}</div><div style="font-family:var(--font-head);font-weight:500;font-size:30px;line-height:1;margin-block-start:8px">380k</div><div style="font-size:12px;color:var(--subtle);margin-block-start:10px">{{ s.thisQuarter }}</div></div>
+          </div>
+
+          <div>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-block-end:14px"><h2 style="font-family:var(--font-head);font-weight:500;font-size:22px;margin:0">{{ s.needsYou }}</h2></div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <sc-for list="{{ actionDeals }}" as="d" hint-placeholder-count="2">
+                <button type="button" onClick="{{ d.onClick }}" style="display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;background:var(--elevated);border:1px solid var(--accent);border-radius:var(--r-md);padding:16px 18px;cursor:pointer;text-align:start;width:100%" style-hover="box-shadow:var(--e2);transform:translateY(-1px)">
+                  <div style="display:flex;align-items:center;gap:12px;min-width:0"><span style="width:38px;height:38px;flex-shrink:0;border-radius:var(--r-pill);background:var(--accent-weak);color:var(--accent-ink);display:grid;place-items:center;font-size:13px;font-weight:600">{{ d.initials }}</span><span style="min-width:0"><span style="display:block;font-size:15px;font-weight:600">{{ d.name }}</span><span style="display:block;font-size:12px;color:var(--muted)">{{ d.role }}</span></span></div>
+                  <div style="display:flex;align-items:center;gap:14px"><span style="font-family:var(--font-mono);font-size:11px;color:var(--subtle)">{{ d.stepLabel }}</span><span style="display:inline-flex;align-items:center;gap:6px;background:var(--accent-weak);color:var(--accent-ink);border-radius:var(--r-pill);padding:4px 11px;font-size:11px;font-weight:600"><span style="width:6px;height:6px;border-radius:var(--r-pill);background:var(--accent);animation:pulseDot 2.2s var(--ease-out) infinite"></span>{{ d.action }}</span></div>
+                </button>
+              </sc-for>
+            </div>
+          </div>
+
+          <div>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-block-end:14px"><h2 style="font-family:var(--font-head);font-weight:500;font-size:22px;margin:0">{{ s.savedTalent }}</h2><button type="button" onClick="{{ goDiscover }}" style="background:transparent;border:0;color:var(--accent-ink);font-family:var(--font-ui);font-size:13px;font-weight:600;cursor:pointer" style-hover="text-decoration:underline">{{ s.discoverMore }} →</button></div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px">
+              <sc-for list="{{ savedRow }}" as="c" hint-placeholder-count="4"><a href="Talent Profile.dc.html" style="text-decoration:none;color:inherit;background:var(--elevated);border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden;display:block" style-hover="transform:translateY(-3px);box-shadow:var(--e3)"><div style="aspect-ratio:4/5;background:repeating-linear-gradient(135deg,var(--line) 0 1px,transparent 1px 12px),var(--surface)"></div><div style="padding:12px"><div style="font-family:var(--font-head);font-size:16px;line-height:1.1">{{ c.name }}</div><div style="font-size:12px;color:var(--muted);margin-block-start:3px">{{ c.prof }}</div></div></a></sc-for>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- DISCOVER -->
+      <sc-if value="{{ isDiscover }}" hint-placeholder-val="{{ false }}">
+        <div style="max-width:1080px;animation:fadeIn var(--dur-3) var(--ease-out)">
+          <p style="font-size:14px;color:var(--muted);margin:0 0 20px">{{ s.discoverSub }}</p>
+          <sc-if value="{{ loading }}" hint-placeholder-val="{{ true }}">
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px">
+              <sc-for list="{{ skeletonCells }}" as="k" hint-placeholder-count="8"><div style="background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden"><div style="aspect-ratio:4/5;background:linear-gradient(90deg,var(--line) 25%,color-mix(in srgb,var(--line) 45%,var(--surface)) 37%,var(--line) 63%);background-size:400% 100%;animation:shimmer 1.4s var(--ease-in-out) infinite"></div><div style="padding:14px;display:flex;flex-direction:column;gap:8px"><div style="height:12px;width:70%;border-radius:var(--r-pill);background:linear-gradient(90deg,var(--line) 25%,color-mix(in srgb,var(--line) 45%,var(--surface)) 37%,var(--line) 63%);background-size:400% 100%;animation:shimmer 1.4s var(--ease-in-out) infinite"></div><div style="height:10px;width:45%;border-radius:var(--r-pill);background:linear-gradient(90deg,var(--line) 25%,color-mix(in srgb,var(--line) 45%,var(--surface)) 37%,var(--line) 63%);background-size:400% 100%;animation:shimmer 1.4s var(--ease-in-out) infinite"></div></div></div></sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{ showFeed }}" hint-placeholder-val="{{ false }}">
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px">
+              <sc-for list="{{ feedCards }}" as="c" hint-placeholder-count="8">
+                <div style="background:var(--elevated);border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden;box-shadow:var(--e1);animation:fadeInUp var(--dur-3) var(--ease-out) both">
+                  <a href="Talent Profile.dc.html" style="text-decoration:none;color:inherit;display:block"><div style="position:relative;aspect-ratio:4/5;background:repeating-linear-gradient(135deg,var(--line) 0 1px,transparent 1px 12px),var(--surface)"><span style="position:absolute;inset-block-start:10px;inset-inline-start:10px;display:inline-flex;align-items:center;gap:5px;background:color-mix(in srgb,var(--surface) 88%,transparent);backdrop-filter:blur(6px);border-radius:var(--r-pill);padding:3px 9px;font-size:10px;font-weight:600;color:color-mix(in srgb,var(--success) 78%,var(--ink))"><span style="width:5px;height:5px;border-radius:var(--r-pill);background:var(--success)"></span>{{ c.match }}</span></div></a>
+                  <div style="padding:14px;display:flex;flex-direction:column;gap:10px">
+                    <div><div style="font-family:var(--font-head);font-size:17px;line-height:1.1">{{ c.name }}</div><div style="font-size:12px;color:var(--muted);margin-block-start:3px">{{ c.prof }} · {{ c.loc }}</div></div>
+                    <div style="display:flex;gap:8px">
+                      <button type="button" onClick="{{ c.onBrief }}" style="flex:1;background:var(--primary);color:var(--on-primary);border:0;padding:9px;border-radius:var(--r-sm);font-family:var(--font-ui);font-weight:600;font-size:12px;cursor:pointer" style-hover="transform:translateY(-1px)">{{ s.brief }}</button>
+                      <button type="button" onClick="{{ c.onSave }}" aria-pressed="{{ c.saved }}" aria-label="{{ s.save }}" style="{{ c.saveStyle }}">♥</button>
+                    </div>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="display:flex;justify-content:center;margin-block-start:28px"><button type="button" onClick="{{ loadMore }}" style="background:transparent;color:var(--ink);border:1px solid var(--line-strong);padding:12px 28px;border-radius:var(--r-sm);font-family:var(--font-ui);font-weight:600;font-size:14px;cursor:pointer" style-hover="border-color:var(--accent);color:var(--accent-ink);background:var(--accent-weak)">{{ s.loadMore }}</button></div>
+          </sc-if>
+        </div>
+      </sc-if>
+
+      <!-- CAMPAIGNS -->
+      <sc-if value="{{ isCampaigns }}" hint-placeholder-val="{{ false }}">
+        <div style="max-width:980px;animation:fadeIn var(--dur-3) var(--ease-out)">
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px">
+            <sc-for list="{{ campaigns }}" as="c" hint-placeholder-count="4">
+              <a href="Campaign Detail.dc.html" style="text-decoration:none;color:inherit;background:var(--elevated);border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden;box-shadow:var(--e1);display:block" style-hover="transform:translateY(-3px);box-shadow:var(--e3)">
+                <div style="position:relative;aspect-ratio:16/9;background:repeating-linear-gradient(135deg,var(--line) 0 1px,transparent 1px 12px),var(--surface)"><span style="position:absolute;inset-block-start:10px;inset-inline-start:10px;{{ c.statusStyle }}">{{ c.statusLabel }}</span></div>
+                <div style="padding:16px;display:flex;flex-direction:column;gap:10px"><div style="font-family:var(--font-head);font-weight:500;font-size:19px;line-height:1.15">{{ c.title }}</div><div style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted);padding-block-start:10px;border-block-start:1px solid var(--line)"><span>{{ c.roles }} {{ s.rolesFilled }}</span><span style="font-family:var(--font-mono)">{{ c.applicants }} {{ s.applicants }}</span></div></div>
+              </a>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- DEAL ROOM (brand view) -->
+      <sc-if value="{{ isRoom }}" hint-placeholder-val="{{ false }}">
+        <div style="max-width:880px;display:flex;flex-direction:column;gap:22px;animation:fadeIn var(--dur-3) var(--ease-out)">
+          <button type="button" onClick="{{ backToDeals }}" style="align-self:flex-start;display:inline-flex;align-items:center;gap:7px;background:transparent;border:0;color:var(--muted);font-family:var(--font-ui);font-size:13px;cursor:pointer" style-hover="color:var(--accent-ink)"><span style="font-size:15px">‹</span>{{ s.back }}</button>
+
+          <div style="background:var(--elevated);border:1px solid var(--line);border-radius:var(--r-lg);padding:clamp(20px,3vw,28px)">
+            <div style="display:flex;align-items:center;gap:12px;margin-block-end:24px"><span style="width:44px;height:44px;flex-shrink:0;border-radius:var(--r-pill);background:var(--accent-weak);color:var(--accent-ink);display:grid;place-items:center;font-family:var(--font-display);font-size:16px;font-weight:600">LM</span><div><div style="font-family:var(--font-head);font-size:20px;line-height:1.1">{{ roomTalent }}</div><div style="font-size:13px;color:var(--muted);margin-block-start:2px">{{ roomRole }}</div></div></div>
+            <div style="position:relative">
+              <div style="position:absolute;inset-inline:18px;top:17px;height:2px;background:var(--line)"><div style="{{ roomFill }}"></div></div>
+              <div style="position:relative;display:flex;justify-content:space-between">
+                <sc-for list="{{ roomNodes }}" as="n" hint-placeholder-count="5"><div style="display:flex;flex-direction:column;align-items:center;gap:8px;flex:1"><span style="width:36px;height:36px;border-radius:var(--r-pill);display:grid;place-items:center;font-size:13px;font-weight:600;{{ n.dotStyle }}">{{ n.mark }}</span><span style="font-size:11px;text-align:center;{{ n.labelStyle }}">{{ n.label }}</span></div></sc-for>
+              </div>
+            </div>
+          </div>
+
+          <div style="background:var(--accent-weak);border:1px solid color-mix(in srgb,var(--accent) 28%,transparent);border-radius:var(--r-md);padding:20px">
+            <div style="display:flex;align-items:center;gap:10px;margin-block-end:14px"><span style="width:7px;height:7px;border-radius:var(--r-pill);background:var(--accent);animation:pulseDot 2.2s var(--ease-out) infinite;flex-shrink:0"></span><span style="font-size:12px;color:var(--accent-ink);font-weight:600">{{ whoseTurnBanner }}</span></div>
+            <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between">
+              <div style="min-width:0"><div style="font-family:var(--font-head);font-weight:500;font-size:20px">{{ actionTitle }}</div><div style="font-size:13px;color:var(--muted);margin-block-start:4px;max-width:46ch">{{ actionBody }}</div></div>
+              <sc-if value="{{ actionHasBtn }}" hint-placeholder-val="{{ true }}"><button type="button" onClick="{{ brandAction }}" style="background:var(--primary);color:var(--on-primary);border:0;padding:12px 22px;border-radius:var(--r-sm);font-family:var(--font-ui);font-weight:600;font-size:14px;cursor:pointer;white-space:nowrap" style-hover="transform:translateY(-1px);box-shadow:var(--e2)">{{ actionBtn }}</button></sc-if>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <sc-for list="{{ timelineRows }}" as="ev" hint-placeholder-count="4">
+              <sc-if value="{{ ev.isSystem }}" hint-placeholder-val="{{ false }}"><div style="text-align:center"><span style="display:inline-block;font-family:var(--font-mono);font-size:11px;color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:var(--r-pill);padding:5px 13px">{{ ev.text }} · {{ ev.time }}</span></div></sc-if>
+              <sc-if value="{{ ev.isMsg }}" hint-placeholder-val="{{ true }}"><div style="{{ ev.wrapStyle }}"><div style="{{ ev.bubbleStyle }}">{{ ev.text }}</div><span style="font-family:var(--font-mono);font-size:10px;color:var(--subtle)">{{ ev.who }} · {{ ev.time }}</span></div></sc-if>
+            </sc-for>
+          </div>
+
+          <div style="display:flex;gap:10px;position:sticky;inset-block-end:0;background:var(--bg);padding-block:12px">
+            <input type="text" value="{{ composer }}" onChange="{{ onComposer }}" placeholder="{{ s.composerPh }}" style="flex:1;background:var(--elevated);border:1px solid var(--line-strong);border-radius:var(--r-pill);padding:12px 18px;font-family:var(--font-ui);font-size:14px;color:var(--ink);outline:none" style-focus="border-color:var(--accent);box-shadow:0 0 0 3px var(--focus)" />
+            <button type="button" onClick="{{ sendMessage }}" style="background:var(--primary);color:var(--on-primary);border:0;padding:12px 22px;border-radius:var(--r-pill);font-family:var(--font-ui);font-weight:600;font-size:14px;cursor:pointer" style-hover="transform:translateY(-1px)">{{ s.send }}</button>
+          </div>
+        </div>
+      </sc-if>
+
+      <!--BVIEWS-->
+
+    </div>
+  </main>
+
+  <div aria-live="polite" style="position:fixed;inset-block-end:20px;inset-inline-end:20px;z-index:110;display:flex;flex-direction:column;gap:10px;width:min(340px,calc(100vw - 40px));pointer-events:none">
+    <sc-for list="{{ toasts }}" as="t" hint-placeholder-count="0">
+      <div style="display:flex;align-items:stretch;gap:12px;background:var(--elevated);border:1px solid var(--line);border-radius:var(--r-md);box-shadow:var(--e3);padding:13px 14px;animation:toastIn var(--dur-3) var(--ease-out);pointer-events:auto">
+        <span style="width:4px;align-self:stretch;border-radius:var(--r-pill);background:var(--success)"></span>
+        <span style="flex:1;font-size:13px;color:var(--ink);align-self:center;line-height:1.4">{{ t.msg }}</span>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:900},&quot;defaultTheme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;'light'|'dark'&quot;,&quot;section&quot;:&quot;Theme&quot;},&quot;defaultLang&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;en&quot;,&quot;ar&quot;],&quot;default&quot;:&quot;en&quot;,&quot;tsType&quot;:&quot;'en'|'ar'&quot;,&quot;section&quot;:&quot;Theme&quot;}}">
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    this.state={ theme:(props&&props.defaultTheme)||'light', lang:(props&&props.defaultLang)||'en', view:'home', step:1, saved:{0:true,2:true}, loading:false, visible:8, composer:'', extraMsgs:[], toasts:[] };
+    this._tid=0; this._t=null;
+  }
+  componentWillUnmount(){ if(this._t) clearTimeout(this._t); }
+  strings={
+    en:{
+      brand:'Brand', themeLabel:'Toggle light / dark', viewProfile:'View brand page', newCampaign:'+ New campaign',
+      navHome:'Home', navDiscover:'Discover', navCampaigns:'Campaigns', navDeals:'Deals',
+      titleHome:'Dashboard', titleDiscover:'Discover talent', titleCampaigns:'Campaigns', titleRoom:'Deal room',
+      stCampaigns:'Active campaigns', stSaved:'Saved talent', stAction:'Need your action', stSpend:'Spend (EGP)',
+      oneClosing:'1 closing soon', acrossRoles:'across 5 roles', needYou:'quotes & signatures', thisQuarter:'this quarter',
+      needsYou:'Needs your action', savedTalent:'Saved talent', discoverMore:'Discover more',
+      discoverSub:'Personalised from your creative needs, aesthetic and budget.', brief:'Brief', save:'Save', loadMore:'Load more', match:'Match',
+      back:'Deals', submitBrief:'Submit brief', acceptQuote:'Accept quote', signAgreement:'Sign agreement', payNow:'Release payment', composerPh:'Write a message…', send:'Send',
+      campStatusOpen:'Open', campStatusDraft:'Draft', campStatusClosed:'Closed', manage:'Manage', applicants:'applicants', rolesFilled:'roles filled',
+      toastBrief:'Brief sent.', toastSaved:'Saved to your list.', toastUnsaved:'Removed from saved.', toastAccepted:'Quote accepted. Sent for signature.', toastSigned:'Agreement signed.', toastPaid:'Payment released.', toastMsg:'Message sent.',
+    },
+    ar:{
+      brand:'علامة', themeLabel:'تبديل الوضع الفاتح / الداكن', viewProfile:'عرض صفحة العلامة', newCampaign:'+ حملة جديدة',
+      navHome:'الرئيسية', navDiscover:'اكتشف', navCampaigns:'الحملات', navDeals:'الصفقات',
+      titleHome:'لوحة التحكم', titleDiscover:'اكتشف المواهب', titleCampaigns:'الحملات', titleRoom:'غرفة الصفقة',
+      stCampaigns:'حملات نشطة', stSaved:'مواهب محفوظة', stAction:'بانتظار إجراءك', stSpend:'الإنفاق (ج.م)',
+      oneClosing:'واحدة تُغلق قريبًا', acrossRoles:'عبر ٥ أدوار', needYou:'عروض وتواقيع', thisQuarter:'هذا الربع',
+      needsYou:'بانتظار إجراءك', savedTalent:'المواهب المحفوظة', discoverMore:'اكتشف المزيد',
+      discoverSub:'مُخصّصة من احتياجاتك الإبداعية وجماليتك وميزانيتك.', brief:'موجز', save:'حفظ', loadMore:'تحميل المزيد', match:'مطابقة',
+      back:'الصفقات', submitBrief:'إرسال الموجز', acceptQuote:'قبول العرض', signAgreement:'توقيع الاتفاق', payNow:'تحرير الدفعة', composerPh:'اكتب رسالة…', send:'إرسال',
+      campStatusOpen:'مفتوحة', campStatusDraft:'مسودة', campStatusClosed:'مغلقة', manage:'إدارة', applicants:'متقدّم', rolesFilled:'دور مكتمل',
+      toastBrief:'تم إرسال الموجز.', toastSaved:'أُضيف إلى قائمتك.', toastUnsaved:'أُزيل من المحفوظات.', toastAccepted:'قُبل العرض. أُرسل للتوقيع.', toastSigned:'تم توقيع الاتفاق.', toastPaid:'تم تحرير الدفعة.', toastMsg:'تم إرسال الرسالة.',
+    }
+  };
+  feed(){
+    const A=this.state.lang==='ar';
+    const D=[['Layla Mansour','ليلى منصور','model','cairo','98%'],['Karim Adel','كريم عادل','photographer','alexandria','95%'],['Yara Fahmy','يارا فهمي','stylist','cairo','92%'],['Tarek Mostafa','طارق مصطفى','dop','dubai','90%'],['Dina Saleh','دينا صالح','creative','beirut','96%'],['Nour El Din','نور الدين','photographer','cairo','88%'],['Mariam Khaled','مريم خالد','model','dubai','91%'],['Heba Rady','هبة راضي','graphic','alexandria','87%']];
+    const PM={model:A?'عارضة':'Model',photographer:A?'مصوّر':'Photographer',stylist:A?'مصمّمة أزياء':'Stylist',dop:A?'مدير تصوير':'DoP',creative:A?'مدير إبداعي':'Creative Director',graphic:A?'مصمّم جرافيك':'Graphic Designer'};
+    const LM={cairo:A?'القاهرة':'Cairo',alexandria:A?'الإسكندرية':'Alexandria',dubai:A?'دبي':'Dubai',beirut:A?'بيروت':'Beirut'};
+    return D.map((d,i)=>({id:i,name:A?d[1]:d[0],prof:PM[d[2]],loc:LM[d[3]],match:d[4]}));
+  }
+  timelineSeed(){
+    const A=this.state.lang==='ar';
+    return A?[
+      {type:'system',text:'أرسلتَ الموجز إلى ليلى منصور',time:'قبل يومين'},
+      {type:'msg',side:'me',who:'أنت',text:'مرحبًا ليلى — الموجز مرفق. التواريخ ١٢–٢٠ أغسطس.',time:'قبل يومين'},
+      {type:'msg',side:'them',who:'ليلى منصور',text:'شكرًا! التواريخ مناسبة. أرسل العرض الآن.',time:'أمس'},
+      {type:'system',text:'استُلم العرض — ٨٬٥٠٠ ج.م/يوم × ٣',time:'أمس'},
+    ]:[
+      {type:'system',text:'You sent the brief to Layla Mansour',time:'2d ago'},
+      {type:'msg',side:'me',who:'You',text:'Hi Layla — brief attached. Dates are 12–20 Aug.',time:'2d ago'},
+      {type:'msg',side:'them',who:'Layla Mansour',text:'Thank you! The dates work. Sending a quote now.',time:'1d ago'},
+      {type:'system',text:'Quote received — EGP 8,500/day × 3',time:'1d ago'},
+    ];
+  }
+  toggleTheme=()=>this.setState(s=>({theme:s.theme==='dark'?'light':'dark'}));
+  setEn=()=>this.setState({lang:'en'});
+  setAr=()=>this.setState({lang:'ar'});
+  setView=(v)=>{ if(v==='discover'){ this.setState({view:v,loading:true}); if(this._t)clearTimeout(this._t); this._t=setTimeout(()=>this.setState({loading:false}),700); } else this.setState({view:v}); };
+  goDiscover=()=>this.setView('discover');
+  openRoom=()=>this.setState({view:'room'});
+  toggleSave=(id)=>{ const willSave=!this.state.saved[id]; this.setState(s=>({saved:{...s.saved,[id]:willSave}})); this.pushToast(willSave?this.strings[this.state.lang].toastSaved:this.strings[this.state.lang].toastUnsaved); };
+  fireBrief=()=>this.pushToast(this.strings[this.state.lang].toastBrief);
+  loadMore=()=>this.setState(s=>({visible:s.visible+8}));
+  onComposer=(e)=>this.setState({composer:e.target.value});
+  sendMessage=()=>{ const t=this.state.composer.trim(); if(!t)return; const A=this.state.lang==='ar'; this.setState(s=>({extraMsgs:[...s.extraMsgs,{type:'msg',side:'me',who:A?'أنت':'You',text:t,time:A?'الآن':'now'}],composer:''})); };
+  brandAction=()=>{ const st=this.state; const A=st.lang==='ar'; const now=A?'الآن':'now'; const S=this.strings[st.lang]; let sysText,toast; if(st.step<=1){sysText=A?'قبلت ميزون ريم العرض':'Quote accepted by Maison Reem';toast=S.toastAccepted;} else if(st.step===2){sysText=A?'وقّعت ميزون ريم الاتفاق':'Agreement signed by Maison Reem';toast=S.toastSigned;} else {sysText=A?'حرّرت ميزون ريم الدفعة':'Payment released by Maison Reem';toast=S.toastPaid;} this.setState(s=>({step:Math.min(s.step+1,4),extraMsgs:[...s.extraMsgs,{type:'system',text:sysText,time:now}]})); this.pushToast(toast); };
+  pushToast=(msg)=>{ const id=++this._tid; this.setState(s=>({toasts:[...s.toasts,{id,msg}]})); setTimeout(()=>this.setState(s=>({toasts:s.toasts.filter(t=>t.id!==id)})),3400); };
+
+  renderVals(){
+    const st=this.state, isDark=st.theme==='dark', isAr=st.lang==='ar', isEn=!isAr;
+    const s=this.strings[st.lang];
+    const segOn='border:0;cursor:pointer;font-family:var(--font-ui);font-size:12px;font-weight:600;padding:5px 12px;border-radius:var(--r-pill);background:var(--ink);color:var(--on-primary)';
+    const segOff='border:0;cursor:pointer;font-family:var(--font-ui);font-size:12px;font-weight:500;padding:5px 12px;border-radius:var(--r-pill);background:transparent;color:var(--muted)';
+    const navDef=[['home',s.navHome],['discover',s.navDiscover],['campaigns',s.navCampaigns],['deals',s.navDeals]];
+    const navItems=navDef.map(([v,label])=>{ const on=st.view===v||(v==='deals'&&st.view==='room'); return {v,label,onClick:()=>this.setView(v==='deals'?'room':v),
+      style:`display:flex;align-items:center;gap:11px;width:100%;text-align:start;border:0;cursor:pointer;font-family:var(--font-ui);font-size:14px;font-weight:${on?'600':'500'};padding:10px 12px;border-radius:var(--r-sm);background:${on?'var(--accent-weak)':'transparent'};color:${on?'var(--accent-ink)':'var(--muted)'}`,
+      dotStyle:`width:6px;height:6px;border-radius:var(--r-pill);background:${on?'var(--accent)':'var(--line-strong)'}`}; });
+    const stepKeys=[s.submitBrief,s.acceptQuote,s.signAgreement,'',''];
+    const allFeed=this.feed();
+    const feedCards=allFeed.slice(0,st.visible).map(c=>({...c, saved:!!st.saved[c.id], onSave:()=>this.toggleSave(c.id), onBrief:this.fireBrief,
+      saveStyle:`width:38px;flex-shrink:0;display:grid;place-items:center;border-radius:var(--r-sm);cursor:pointer;font-size:14px;border:1px solid ${st.saved[c.id]?'var(--accent)':'var(--line-strong)'};background:${st.saved[c.id]?'var(--accent-weak)':'transparent'};color:${st.saved[c.id]?'var(--accent)':'var(--muted)'}`}));
+    const savedRow=allFeed.filter(c=>st.saved[c.id]).slice(0,4);
+    const actionDeals=[{initials:'LM',name:isAr?'ليلى منصور':'Layla Mansour',role:isAr?'عارضة · SS26':'Model · SS26',stepLabel:s.navDeals,action:s.acceptQuote,onClick:this.openRoom},{initials:'TM',name:isAr?'طارق مصطفى':'Tarek Mostafa',role:isAr?'مدير تصوير · حملة':'DoP · Campaign',stepLabel:s.navDeals,action:s.signAgreement,onClick:this.openRoom}];
+    const roomSteps=[isAr?'الموجز':'Brief',isAr?'العرض':'Quote',isAr?'الاتفاق':'Agreement',isAr?'الإنتاج':'Production',isAr?'الدفع':'Payment'];
+    const roomNodes=roomSteps.map((label,i)=>{ const status=i<st.step?'done':(i===st.step?'active':'todo'); let dot; if(status==='done')dot='background:var(--accent);color:var(--on-accent);border:1px solid var(--accent)'; else if(status==='active')dot='background:var(--surface);color:var(--accent);border:2px solid var(--accent);box-shadow:0 0 0 5px var(--accent-weak)'; else dot='background:var(--surface);color:var(--subtle);border:1px solid var(--line-strong)'; return {label,mark:status==='done'?'✓':String(i+1),dotStyle:dot,labelStyle:status==='active'?'color:var(--ink);font-weight:600':(status==='done'?'color:var(--muted)':'color:var(--subtle)')}; });
+    const roomFill=`position:absolute;inset-block:0;inset-inline-start:0;width:${(st.step/(roomSteps.length-1))*100}%;background:var(--accent)`;
+    const timelineRows=[...this.timelineSeed(),...st.extraMsgs].map(ev=>{ if(ev.type==='system') return {isSystem:true,isMsg:false,text:ev.text,time:ev.time}; const me=ev.side==='me'; return {isSystem:false,isMsg:true,me,who:ev.who,text:ev.text,time:ev.time,wrapStyle:`display:flex;flex-direction:column;gap:4px;align-items:${me?'flex-end':'flex-start'}`,bubbleStyle:`max-width:80%;padding:11px 14px;border-radius:var(--r-md);font-size:14px;line-height:1.5;${me?'background:var(--accent-weak);color:var(--ink)':'background:var(--surface);border:1px solid var(--line);color:var(--ink)'}`}; });
+    const atProd=st.step===3;
+    const actionTitle=st.step<=1?s.acceptQuote:(st.step===2?s.signAgreement:(atProd?(isAr?'الإنتاج جارٍ':'Production in progress'):s.payNow));
+    const actionBody=st.step<=1?(isAr?'راجع عرض ليلى: ٨٬٥٠٠ ج.م/يوم × ٣ أيام.':'Review Layla’s quote: EGP 8,500/day × 3 days.'):(st.step===2?(isAr?'راجع الشروط ثم وقّع لتثبيت الحجز.':'Review the terms, then sign to lock the booking.'):(atProd?(isAr?'بانتظار تسليم ليلى للمواد.':'Awaiting Layla’s deliverables.'):(isAr?'حرّر الدفعة لإتمام الصفقة.':'Release payment to complete the deal.')));
+    const actionBtn=atProd?null:(st.step<=1?s.acceptQuote:(st.step===2?s.signAgreement:s.payNow));
+    const campaigns=[
+      {title:isAr?'SS26 — ازدهار الصحراء':'SS26 — Desert Bloom',cs:'open',applicants:'34',roles:'3 / 4'},
+      {title:isAr?'كبسولة رمضان':'Ramadan Capsule',cs:'open',applicants:'21',roles:'2 / 2'},
+      {title:isAr?'بورتريهات الأتيليه':'Atelier Portraits',cs:'draft',applicants:'0',roles:'0 / 2'},
+      {title:isAr?'لوك بوك الشتاء':'Winter Lookbook',cs:'closed',applicants:'48',roles:'4 / 4'},
+    ].map(c=>{ const m={open:[s.campStatusOpen,'var(--success-weak)','color-mix(in srgb,var(--success) 78%,var(--ink))'],draft:[s.campStatusDraft,'var(--warn-weak)','color-mix(in srgb,var(--warn) 76%,var(--ink))'],closed:[s.campStatusClosed,'var(--surface)','var(--subtle)']}[c.cs]; return {title:c.title,applicants:c.applicants,roles:c.roles,statusLabel:m[0],statusStyle:`display:inline-flex;align-items:center;border-radius:var(--r-pill);padding:4px 11px;font-size:11px;font-weight:600;background:${m[1]};color:${m[2]}`}; });
+    const titleMap={home:s.titleHome,discover:s.titleDiscover,campaigns:s.titleCampaigns,room:s.titleRoom};
+    return {
+      theme:st.theme, dir:isAr?'rtl':'ltr', isDark, isAr, isEn, s,
+      enBtnStyle:isEn?segOn:segOff, arBtnStyle:isAr?segOn:segOff,
+      toggleTheme:this.toggleTheme, setEn:this.setEn, setAr:this.setAr,
+      navItems, pageTitle:titleMap[st.view]||s.titleHome, newCampaign:s.newCampaign, goDiscover:this.goDiscover,
+      isHome:st.view==='home', isDiscover:st.view==='discover', isCampaigns:st.view==='campaigns', isRoom:st.view==='room',
+      loading:st.loading, showFeed:!st.loading, skeletonCells:[0,1,2,3,4,5,6,7],
+      feedCards, savedRow, actionDeals,
+      openRoom:this.openRoom, backToDeals:()=>this.setView('home'), loadMore:this.loadMore,
+      roomTalent:isAr?'ليلى منصور':'Layla Mansour', roomRole:isAr?'عارضة · SS26 ازدهار الصحراء':'Model · SS26 Desert Bloom',
+      roomNodes, roomFill, timelineRows,
+      actionTitle, actionBody, actionBtn, actionHasBtn:!!actionBtn, brandAction:this.brandAction, whoseTurnBanner:(isAr?'دورك — ':'Your turn — ')+actionTitle,
+      composer:st.composer, onComposer:this.onComposer, sendMessage:this.sendMessage,
+      campaigns,
+      toasts:st.toasts,
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -118,6 +118,44 @@ return [
             'replace_placeholders' => true,
         ],
 
+        /*
+        | Fama dedicated channels. Domain code catches, logs to the relevant
+        | channel WITH context, then rethrows or returns an error envelope
+        | (see App\Services\Service::runInTransaction and docs/conventions.md).
+        */
+
+        'app' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/app.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => env('LOG_DAILY_DAYS', 14),
+            'replace_placeholders' => true,
+        ],
+
+        'auth' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/auth.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => env('LOG_DAILY_DAYS', 30),
+            'replace_placeholders' => true,
+        ],
+
+        'deals' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/deals.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => env('LOG_DAILY_DAYS', 90),
+            'replace_placeholders' => true,
+        ],
+
+        'media' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/media.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => env('LOG_DAILY_DAYS', 30),
+            'replace_placeholders' => true,
+        ],
+
         'null' => [
             'driver' => 'monolog',
             'handler' => NullHandler::class,

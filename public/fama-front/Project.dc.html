@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F4EDDD; --surface:#FCF8EF; --elevated:#FFFFFF;
+  --ink:#1B1813; --muted:#6E665A; --subtle:#9C927F;
+  --line:#E5DCCD; --line-strong:#D6CBB7;
+  --primary:#1B1813; --on-primary:#F6F1E7;
+  --accent:#22608C; --accent-weak:#D9E5EF; --accent-ink:#16405F; --on-accent:#FBF8F0;
+  --gold:#B0862F; --gold-weak:#EEE0C2;
+  --success:#4E7C59; --success-weak:#DDE8DB;
+  --warn:#A87B2C; --warn-weak:#EFE4C8;
+  --danger:#B14A3A; --danger-weak:#F0DAD2;
+  --focus:rgba(34,96,140,.42);
+  --font-head:var(--font-display);
+  --r-xs:2px; --r-sm:4px; --r-md:8px; --r-lg:14px; --r-pill:999px;
+  --e1:0 1px 2px rgba(27,24,19,.05),0 1px 3px rgba(27,24,19,.04);
+  --e2:0 6px 16px -8px rgba(27,24,19,.14),0 2px 6px -3px rgba(27,24,19,.08);
+  --e3:0 18px 40px -14px rgba(27,24,19,.20),0 6px 14px -10px rgba(27,24,19,.12);
+  --e4:0 36px 80px -24px rgba(27,24,19,.34);
+  --dur-1:90ms; --dur-2:160ms; --dur-3:260ms; --dur-4:420ms; --dur-5:680ms;
+  --ease-out:cubic-bezier(.16,1,.3,1); --ease-in-out:cubic-bezier(.65,0,.35,1);
+  --ease-spring:cubic-bezier(.34,1.4,.64,1); --ease-in:cubic-bezier(.4,0,1,1);
+  --font-display:"Bodoni Moda",Georgia,"Times New Roman",serif;
+  --font-ui:"IBM Plex Sans","IBM Plex Sans Arabic",system-ui,sans-serif;
+  --font-ar:"IBM Plex Sans Arabic","IBM Plex Sans",system-ui,sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+[data-theme="dark"]{
+  --bg:#0E1317; --surface:#151C21; --elevated:#1D262B;
+  --ink:#F1E9DA; --muted:#AEA48F; --subtle:#7E7565;
+  --line:#28323A; --line-strong:#39454D;
+  --primary:#F1E9DA; --on-primary:#1B1813;
+  --accent:#5AA6D6; --accent-weak:#153140; --accent-ink:#92C7E8; --on-accent:#0E1317;
+  --gold:#CCA45E; --gold-weak:#332913;
+  --success:#6FA277; --success-weak:#1E2B20;
+  --warn:#CDA04A; --warn-weak:#302813;
+  --danger:#D2715F; --danger-weak:#35201B;
+  --focus:rgba(90,166,214,.5);
+  --e1:0 1px 2px rgba(0,0,0,.4),0 1px 3px rgba(0,0,0,.3);
+  --e2:0 8px 20px -8px rgba(0,0,0,.55),0 2px 6px -3px rgba(0,0,0,.4);
+  --e3:0 20px 44px -14px rgba(0,0,0,.6),0 6px 14px -10px rgba(0,0,0,.45);
+  --e4:0 40px 90px -24px rgba(0,0,0,.7);
+}
+[dir="rtl"]{--font-head:var(--font-ar)}
+[dir="ltr"]{--font-head:var(--font-display)}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--font-ui);background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+::selection{background:var(--accent);color:var(--on-accent)}
+*{transition-property:transform,box-shadow,opacity,width!important}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes overlayIn{from{opacity:0}to{opacity:1}}
+@keyframes sheetIn{from{opacity:0;transform:translateY(14px) scale(.985)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}}
+</style>
+</helmet>
+<div data-theme="{{ theme }}" dir="{{ dir }}" style="min-height:100vh;background:var(--bg);color:var(--ink);font-family:var(--font-ui)">
+
+  <header style="position:sticky;top:0;z-index:60;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px clamp(16px,4vw,44px);background:color-mix(in srgb,var(--bg) 80%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-block-end:1px solid var(--line)">
+    <div style="display:flex;align-items:baseline;gap:1px"><a href="Talent Discovery.dc.html" style="text-decoration:none;color:inherit;display:flex;align-items:baseline;gap:1px"><span style="font-family:var(--font-display);font-weight:600;font-size:24px">Fama</span><span style="color:var(--accent);font-family:var(--font-display);font-weight:600;font-size:24px">.</span></a></div>
+    <nav style="display:flex;align-items:center;gap:6px">
+      <div role="group" aria-label="Language" style="display:inline-flex;align-items:center;gap:2px;border:1px solid var(--line-strong);border-radius:var(--r-pill);padding:3px;background:var(--surface)">
+        <button type="button" onClick="{{ setEn }}" aria-pressed="{{ isEn }}" style="{{ enBtnStyle }}">EN</button>
+        <button type="button" onClick="{{ setAr }}" aria-pressed="{{ isAr }}" style="{{ arBtnStyle }}">ع</button>
+      </div>
+      <button type="button" onClick="{{ toggleTheme }}" aria-label="{{ s.themeLabel }}" title="{{ s.themeLabel }}" style-hover="border-color:var(--accent);color:var(--accent)" style="width:38px;height:38px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);border-radius:var(--r-pill);cursor:pointer">
+        <span style="position:relative;width:17px;height:17px;display:inline-block"><span style="position:absolute;inset:0;border-radius:var(--r-pill);background:currentColor"></span><sc-if value="{{ isDark }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:-3px;inset-inline-end:-4px;width:15px;height:15px;border-radius:var(--r-pill);background:var(--surface)"></span></sc-if></span>
+      </button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- COVER -->
+    <section style="max-width:1200px;margin-inline:auto;padding:clamp(20px,3vw,32px) clamp(16px,4vw,44px) 0">
+      <div style="text-align:center;max-width:800px;margin-inline:auto;margin-block-end:24px;animation:fadeInUp var(--dur-4) var(--ease-out) both">
+        <div style="font-family:var(--font-mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--accent-ink);margin-block-end:16px">{{ s.kicker }}</div>
+        <h1 style="font-family:var(--font-head);font-weight:500;font-size:clamp(38px,7vw,80px);line-height:1;letter-spacing:-.02em;margin:0">{{ s.title }}</h1>
+        <p style="font-size:clamp(15px,1.5vw,18px);color:var(--muted);line-height:1.6;margin:18px auto 0;max-width:56ch">{{ s.standfirst }}</p>
+      </div>
+      <div style="position:relative;aspect-ratio:16/9;border-radius:var(--r-lg);overflow:hidden;background:repeating-linear-gradient(135deg,var(--line) 0 1px,transparent 1px 15px),var(--surface);animation:fadeIn var(--dur-5) var(--ease-out) both;animation-delay:100ms">
+        <span style="position:absolute;inset-block-end:14px;inset-inline-end:18px;font-family:var(--font-mono);font-size:10px;letter-spacing:.14em;color:var(--subtle);text-transform:uppercase">{{ s.coverLabel }}</span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden;margin-block-start:20px">
+        <sc-for list="{{ metaRows }}" as="m" hint-placeholder-count="4"><div style="flex:1 1 140px;background:var(--surface);padding:15px 18px"><div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--subtle)">{{ m.k }}</div><div style="font-size:15px;font-weight:600;margin-block-start:5px">{{ m.v }}</div></div></sc-for>
+      </div>
+    </section>
+
+    <!-- NARRATIVE -->
+    <article style="max-width:760px;margin-inline:auto;padding:clamp(40px,6vw,80px) clamp(16px,4vw,44px) 0;display:flex;flex-direction:column;gap:clamp(36px,5vw,60px)">
+      <p style="font-family:var(--font-head);font-weight:500;font-size:clamp(22px,3vw,32px);line-height:1.4;letter-spacing:-.01em;margin:0">{{ s.lead }}</p>
+      <p style="font-size:16px;line-height:1.8;color:var(--muted);margin:0">{{ s.para1 }}</p>
+    </article>
+
+    <section style="max-width:1200px;margin-inline:auto;padding:clamp(32px,5vw,56px) clamp(16px,4vw,44px) 0">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px">
+        <sc-for list="{{ galleryItems }}" as="g" hint-placeholder-count="4"><button type="button" onClick="{{ g.onClick }}" style="aspect-ratio:{{ g.r }};position:relative;cursor:pointer;border:1px solid var(--line);padding:0;border-radius:var(--r-md);overflow:hidden;background:repeating-linear-gradient(135deg,var(--line) 0 1px,transparent 1px 13px),var(--surface)" style-hover="transform:scale(1.01);box-shadow:var(--e2)"><span style="position:absolute;inset-block-end:10px;inset-inline-start:12px;font-family:var(--font-mono);font-size:9px;letter-spacing:.1em;color:var(--subtle);text-transform:uppercase">{{ g.l }}</span></button></sc-for>
+      </div>
+    </section>
+
+    <article style="max-width:760px;margin-inline:auto;padding:clamp(36px,5vw,60px) clamp(16px,4vw,44px) 0">
+      <h2 style="font-family:var(--font-head);font-weight:500;font-size:clamp(24px,3vw,34px);margin:0 0 16px;letter-spacing:-.01em">{{ s.h2 }}</h2>
+      <p style="font-size:16px;line-height:1.8;color:var(--muted);margin:0">{{ s.para2 }}</p>
+    </article>
+
+    <!-- RESULTS -->
+    <section style="max-width:1200px;margin-inline:auto;padding:clamp(40px,6vw,72px) clamp(16px,4vw,44px) 0">
+      <div style="font-family:var(--font-mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent-ink);margin-block-end:20px;text-align:center">{{ s.resultsLabel }}</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px">
+        <sc-for list="{{ resultRows }}" as="r" hint-placeholder-count="4"><div style="background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:22px;text-align:center"><div style="font-family:var(--font-head);font-weight:500;font-size:clamp(30px,4vw,42px);line-height:1">{{ r.v }}</div><div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-block-start:8px">{{ r.k }}</div></div></sc-for>
+      </div>
+    </section>
+
+    <!-- CREDITS -->
+    <section style="max-width:1000px;margin-inline:auto;padding:clamp(40px,6vw,72px) clamp(16px,4vw,44px) 0">
+      <div style="font-family:var(--font-mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent-ink);margin-block-end:8px">{{ s.creditsLabel }}</div>
+      <h2 style="font-family:var(--font-head);font-weight:500;font-size:clamp(24px,3vw,34px);margin:0 0 22px;letter-spacing:-.01em">{{ s.creditsTitle }}</h2>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px">
+        <sc-for list="{{ credits }}" as="c" hint-placeholder-count="5"><a href="Talent Profile.dc.html" style="display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:14px" style-hover="border-color:var(--accent);box-shadow:var(--e1)"><span style="width:40px;height:40px;flex-shrink:0;border-radius:var(--r-pill);background:var(--accent-weak);color:var(--accent-ink);display:grid;place-items:center;font-size:13px;font-weight:600">{{ c.initials }}</span><span style="min-width:0"><span style="display:block;font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--subtle)">{{ c.role }}</span><span style="display:block;font-size:15px;font-weight:600;margin-block-start:2px">{{ c.name }}</span></span></a></sc-for>
+      </div>
+    </section>
+
+    <footer style="border-block-start:1px solid var(--line);margin-block-start:clamp(48px,7vw,88px);padding:40px clamp(16px,4vw,44px);display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;max-width:1200px;margin-inline:auto">
+      <div style="display:flex;align-items:baseline;gap:6px"><span style="font-family:var(--font-display);font-weight:600;font-size:18px">Fama</span><span style="color:var(--accent);font-family:var(--font-display);font-weight:600;font-size:18px">.</span><span style="font-size:13px;color:var(--muted);padding-inline-start:8px">{{ s.footer }}</span></div>
+      <span style="font-family:var(--font-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--subtle)">fama.com/work/desert-bloom</span>
+    </footer>
+  </main>
+
+  <sc-if value="{{ lightboxOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeLightbox }}" role="dialog" aria-modal="true" aria-label="Image viewer" style="position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:clamp(16px,5vw,64px);background:color-mix(in srgb,var(--ink) 78%,#000);backdrop-filter:blur(8px);animation:overlayIn var(--dur-2) var(--ease-out) both">
+      <div onClick="{{ stop }}" style="position:relative;display:flex;align-items:center;gap:14px;max-width:100%">
+        <button type="button" onClick="{{ lightboxPrev }}" aria-label="Previous" style="width:44px;height:44px;flex-shrink:0;display:grid;place-items:center;border:1px solid color-mix(in srgb,#fff 30%,transparent);background:transparent;color:#fff;border-radius:var(--r-pill);cursor:pointer;font-size:20px;line-height:1">‹</button>
+        <div style="position:relative;width:min(70vw,760px);max-width:calc(100vw - 180px);aspect-ratio:{{ lbRatio }};border-radius:var(--r-md);overflow:hidden;background:repeating-linear-gradient(135deg,rgba(255,255,255,.14) 0 1px,transparent 1px 14px),#2a241d;box-shadow:var(--e4);animation:sheetIn var(--dur-3) var(--ease-out) both">
+          <span style="position:absolute;inset-block-end:14px;inset-inline-start:16px;font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;color:rgba(255,255,255,.7);text-transform:uppercase">{{ lbLabel }}</span>
+          <span style="position:absolute;inset-block-start:14px;inset-inline-end:16px;font-family:var(--font-mono);font-size:11px;color:rgba(255,255,255,.8)">{{ lightboxNum }} / {{ galleryCount }}</span>
+        </div>
+        <button type="button" onClick="{{ lightboxNext }}" aria-label="Next" style="width:44px;height:44px;flex-shrink:0;display:grid;place-items:center;border:1px solid color-mix(in srgb,#fff 30%,transparent);background:transparent;color:#fff;border-radius:var(--r-pill);cursor:pointer;font-size:20px;line-height:1">›</button>
+        <button type="button" onClick="{{ closeLightbox }}" aria-label="Close" style="position:absolute;inset-block-start:-46px;inset-inline-end:0;width:40px;height:40px;display:grid;place-items:center;border:1px solid color-mix(in srgb,#fff 30%,transparent);background:transparent;color:#fff;border-radius:var(--r-pill);cursor:pointer;font-size:18px;line-height:1">×</button>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:900},&quot;defaultTheme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;'light'|'dark'&quot;,&quot;section&quot;:&quot;Theme&quot;},&quot;defaultLang&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;en&quot;,&quot;ar&quot;],&quot;default&quot;:&quot;en&quot;,&quot;tsType&quot;:&quot;'en'|'ar'&quot;,&quot;section&quot;:&quot;Theme&quot;}}">
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    this.state={ theme:(props&&props.defaultTheme)||'light', lang:(props&&props.defaultLang)||'en', lightbox:null };
+  }
+  strings={
+    en:{
+      themeLabel:'Toggle light / dark', kicker:'Project · Maison Reem · SS26',
+      title:'Desert Bloom', standfirst:'A three-day location editorial between Cairo and the Western Desert — cast, shot and delivered entirely through Fama.',
+      coverLabel:'Cover · 16:9 · hero frame',
+      meta:[['Client','Maison Reem'],['Year','2026'],['Category','Editorial · Campaign'],['Location','Cairo + desert']],
+      lead:'The brief asked for heat, movement and restraint in equal measure — a campaign that felt couture but breathed like the desert.',
+      para1:'Maison Reem approached Fama with a mood board and a tight window. Within four days the full crew was assembled from the platform — model, DoP, stylist and creative director — briefed through a single deal room, with rates and usage agreed before anyone left the city. Shooting began at first light to catch the low, raking sun.',
+      h2:'Making the light do the work',
+      para2:'Rather than fight the midday glare, the team built the schedule around two golden windows and used the flat hours for fittings and digitals. The result is a set of frames that hold their contrast in print and move effortlessly to social — delivered to Maison Reem two days ahead of schedule.',
+      resultsLabel:'Outcome',
+      results:[['2.4M','Campaign reach'],['6','Press features'],['+38%','Sell-through'],['4.9','Talent rating']],
+      creditsLabel:'The team', creditsTitle:'Assembled on Fama',
+      credits:[['Model','Layla Mansour'],['Photographer','Karim Adel'],['Director of Photography','Tarek Mostafa'],['Stylist','Yara Fahmy'],['Creative Director','Dina Saleh']],
+      footer:'A project on Fama.',
+    },
+    ar:{
+      themeLabel:'تبديل الوضع الفاتح / الداكن', kicker:'مشروع · ميزون ريم · SS26',
+      title:'ازدهار الصحراء', standfirst:'عمل تحريري في المواقع على مدى ثلاثة أيام بين القاهرة والصحراء الغربية — اختيار وتصوير وتسليم بالكامل عبر فاما.',
+      coverLabel:'الغلاف · ١٦:٩ · اللقطة الرئيسية',
+      meta:[['العميل','ميزون ريم'],['السنة','٢٠٢٦'],['الفئة','تحريري · حملة'],['الموقع','القاهرة + الصحراء']],
+      lead:'طلب الموجز حرارةً وحركةً وانضباطًا بقدرٍ متساوٍ — حملة تبدو راقية لكنها تتنفّس كالصحراء.',
+      para1:'تواصلت ميزون ريم مع فاما بلوحة مزاج ونافذة زمنية ضيّقة. خلال أربعة أيام اكتمل الفريق من المنصّة — عارضة ومدير تصوير ومصمّمة أزياء ومدير إبداعي — بموجزٍ عبر غرفة صفقة واحدة، مع الاتفاق على الأجور والاستخدام قبل مغادرة المدينة. بدأ التصوير مع أول ضوء لالتقاط الشمس المائلة المنخفضة.',
+      h2:'أن تجعل الضوء يعمل',
+      para2:'بدلًا من مقاومة وهج الظهيرة، بنى الفريق الجدول حول نافذتين ذهبيتين واستغلّ الساعات المسطّحة للبروفات والصور الطبيعية. والنتيجة مجموعة لقطات تحافظ على تباينها في الطباعة وتنتقل بسلاسة إلى وسائل التواصل — سُلّمت لميزون ريم قبل الموعد بيومين.',
+      resultsLabel:'النتيجة',
+      results:[['٢٫٤م','وصول الحملة'],['٦','تغطيات صحفية'],['+٣٨٪','معدّل البيع'],['٤٫٩','تقييم المواهب']],
+      creditsLabel:'الفريق', creditsTitle:'تجمّع عبر فاما',
+      credits:[['عارضة','ليلى منصور'],['مصوّر','كريم عادل'],['مدير تصوير','طارق مصطفى'],['مصمّمة أزياء','يارا فهمي'],['مدير إبداعي','دينا صالح']],
+      footer:'مشروع على فاما.',
+    }
+  };
+  gallery(){
+    const labels=['Look 01 · 3:4','Look 02 · 3:2','Detail · 1:1','Motion · 3:2'];
+    const ratios=['3 / 4','3 / 2','1 / 1','3 / 2'];
+    return labels.map((l,i)=>({l,r:ratios[i]}));
+  }
+  toggleTheme=()=>this.setState(s=>({theme:s.theme==='dark'?'light':'dark'}));
+  setEn=()=>this.setState({lang:'en'});
+  setAr=()=>this.setState({lang:'ar'});
+  stop=(e)=>{ if(e&&e.stopPropagation) e.stopPropagation(); };
+  openLightbox=(i)=>this.setState({lightbox:i});
+  closeLightbox=()=>this.setState({lightbox:null});
+  lightboxNext=()=>this.setState(s=>({lightbox:(s.lightbox+1)%this.gallery().length}));
+  lightboxPrev=()=>this.setState(s=>({lightbox:(s.lightbox+this.gallery().length-1)%this.gallery().length}));
+  renderVals(){
+    const st=this.state, isDark=st.theme==='dark', isAr=st.lang==='ar', isEn=!isAr;
+    const s=this.strings[st.lang];
+    const segOn='border:0;cursor:pointer;font-family:var(--font-ui);font-size:12px;font-weight:600;padding:5px 11px;border-radius:var(--r-pill);background:var(--ink);color:var(--on-primary)';
+    const segOff='border:0;cursor:pointer;font-family:var(--font-ui);font-size:12px;font-weight:500;padding:5px 11px;border-radius:var(--r-pill);background:transparent;color:var(--muted)';
+    const gal=this.gallery();
+    const galleryItems=gal.map((g,i)=>({l:g.l,r:g.r,onClick:()=>this.openLightbox(i)}));
+    const lb=st.lightbox, lbImg=lb!==null?gal[lb]:null;
+    return {
+      theme:st.theme, dir:isAr?'rtl':'ltr', isDark, isAr, isEn, s,
+      enBtnStyle:isEn?segOn:segOff, arBtnStyle:isAr?segOn:segOff,
+      toggleTheme:this.toggleTheme, setEn:this.setEn, setAr:this.setAr, stop:this.stop,
+      metaRows:s.meta.map(x=>({k:x[0],v:x[1]})),
+      resultRows:s.results.map(x=>({v:x[0],k:x[1]})),
+      credits:s.credits.map(x=>({role:x[0],name:x[1],initials:x[1].split(' ').map(w=>w[0]).join('').slice(0,2)})),
+      galleryItems, galleryCount:gal.length,
+      lightboxOpen:st.lightbox!==null, closeLightbox:this.closeLightbox, lightboxNext:this.lightboxNext, lightboxPrev:this.lightboxPrev,
+      lightboxNum:(st.lightbox||0)+1, lbLabel:lbImg?lbImg.l:'', lbRatio:lbImg?lbImg.r:'3 / 2',
+    };
+  }
+}
+</script>
+</body>
+</html>
