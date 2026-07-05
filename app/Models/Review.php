@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\States\Review\ReviewState;
 use Database\Factories\ReviewFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -10,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
+use Spatie\ModelStates\HasStates;
 
 /**
  * Review — a client/peer testimonial (schema-master §2). Moderated via
@@ -19,7 +21,7 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
 class Review extends Model implements HasMedia
 {
     /** @use HasFactory<ReviewFactory> */
-    use HasFactory, InteractsWithMedia;
+    use HasFactory, HasStates, InteractsWithMedia;
 
     /**
      * Mass-assignable attributes.
@@ -28,7 +30,7 @@ class Review extends Model implements HasMedia
      */
     protected $fillable = [
         'talent_id', 'reviewer_name', 'reviewer_role', 'reviewer_company',
-        'rating', 'body', 'project_type', 'is_approved', 'reviewed_at',
+        'rating', 'body', 'project_type', 'is_approved', 'reviewed_at', 'status',
     ];
 
     /**
@@ -42,6 +44,7 @@ class Review extends Model implements HasMedia
             'rating' => 'integer',
             'is_approved' => 'boolean',
             'reviewed_at' => 'datetime',
+            'status' => ReviewState::class,
         ];
     }
 

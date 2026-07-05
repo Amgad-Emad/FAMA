@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\States\PortfolioMedia\MediaState;
 use Database\Factories\PortfolioItemFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -9,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
+use Spatie\ModelStates\HasStates;
 use Spatie\Translatable\HasTranslations;
 
 /**
@@ -19,7 +21,7 @@ use Spatie\Translatable\HasTranslations;
 class PortfolioItem extends Model implements HasMedia
 {
     /** @use HasFactory<PortfolioItemFactory> */
-    use HasFactory, HasTranslations, InteractsWithMedia;
+    use HasFactory, HasStates, HasTranslations, InteractsWithMedia;
 
     /**
      * Mass-assignable attributes.
@@ -27,7 +29,7 @@ class PortfolioItem extends Model implements HasMedia
      * @var list<string>
      */
     protected $fillable = [
-        'talent_id', 'block_id', 'media_type', 'embed_url', 'caption', 'credits', 'tags', 'position',
+        'talent_id', 'block_id', 'media_type', 'embed_url', 'caption', 'credits', 'tags', 'position', 'status',
     ];
 
     /**
@@ -48,6 +50,7 @@ class PortfolioItem extends Model implements HasMedia
             'credits' => 'array',
             'tags' => 'array',
             'position' => 'integer',
+            'status' => MediaState::class,
         ];
     }
 

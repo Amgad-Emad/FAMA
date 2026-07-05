@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\States\Availability\AvailabilityState;
+use App\States\TalentProfile\TalentProfileState;
 use Database\Factories\TalentFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -15,6 +17,7 @@ use Laravel\Sanctum\HasApiTokens;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
+use Spatie\ModelStates\HasStates;
 use Spatie\Translatable\HasTranslations;
 
 /**
@@ -29,7 +32,7 @@ use Spatie\Translatable\HasTranslations;
 class Talent extends Authenticatable implements HasMedia
 {
     /** @use HasFactory<TalentFactory> */
-    use HasApiTokens, HasFactory, HasTranslations, InteractsWithMedia, Notifiable, SoftDeletes;
+    use HasApiTokens, HasFactory, HasStates, HasTranslations, InteractsWithMedia, Notifiable, SoftDeletes;
 
     /**
      * Explicit table — the inflector leaves "talent" unpluralized.
@@ -46,7 +49,7 @@ class Talent extends Authenticatable implements HasMedia
     protected $fillable = [
         'email', 'password', 'email_verified_at', 'phone', 'last_login_at', 'is_active',
         'slug', 'display_name', 'headline', 'bio',
-        'availability_status', 'base_city', 'base_country', 'rate_tier',
+        'availability_status', 'status', 'base_city', 'base_country', 'rate_tier',
         'willing_to_travel', 'travel_regions', 'booking_type', 'booking_value',
         'is_published', 'published_at', 'view_count', 'meta',
     ];
@@ -85,6 +88,8 @@ class Talent extends Authenticatable implements HasMedia
             'travel_regions' => 'array',
             'meta' => 'array',
             'view_count' => 'integer',
+            'status' => TalentProfileState::class,
+            'availability_status' => AvailabilityState::class,
         ];
     }
 

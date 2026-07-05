@@ -2,6 +2,27 @@
 
 Notable changes to the Fama project. Newest first.
 
+## 2026-07-05 — Talent domain logic: block engine, services & state machines
+
+- **Block engine.** Actions `MergeDefaultBlocksForTypes` (merge + de-dupe) and `SeedProfileBlocks`
+  (idempotent seeding, Created → Draft). `ProfileBlockService` with an eligibility-aware picker
+  (active + universal/by-category/by-type − non-repeatable already present) and add/fill/reorder/
+  show-hide/remove; rendering still resolves via `block_type_id` so grandfathered blocks render.
+- **Services.** `ProfessionsService` (add/remove types, primary, reorder; seeds missing blocks; blocks
+  duplicates) and `TalentProfileService` (core fields, hero, availability, publish/unpublish, rate-card
+  CRUD, reviews moderation, affiliations & press). All multi-write ops are `DB::transaction` +
+  fail-logged via the service base.
+- **State machines** (spatie/laravel-model-states) for 7 lifecycles — talent profile, availability,
+  block, review, service, affiliation, portfolio media — with explicit transitions + a guarded `ToLive`
+  publish. Added `status` columns (backfilled); the old booleans (`is_published`/`is_visible`/
+  `is_approved`/`is_active`/`is_current`) are kept as projections synced by `SyncStateProjections`.
+- **Events/listeners** (auto-discovered): `TalentProfileViewed` → view-count; `StateChanged` →
+  projection sync + `published_at`; media added → log (media channel); conversion completed → advance
+  portfolio media state. Controller now dispatches the view event.
+- **Policies:** a talent may only manage its own resources (7 policies via `BasePolicy::owns`).
+- **Tests green:** 101 passed / 294 assertions (+32) — every action, service path, and state transition
+  incl. illegal ones (`CouldNotPerformTransition`), plus events and policy ownership. No git.
+
 ## 2026-07-05 — Design system foundation + live Talent Profile
 
 - **Adopted the Fama design system** (from `public/fama-front`) into the real stack. Ported the design

@@ -109,6 +109,49 @@ of content tables (`app/Models`, schema in `docs/schema.md`).
 > Not yet built: the block-seeding/merge logic will move into an Action + Service in the profile-editor
 > phase (currently expressed inline in `TalentDemoSeeder`).
 
+## Talent domain logic — services, actions & state machines (Phase 1B)
+
+Business logic lives in **services** (orchestration + transactions) and single-purpose **actions**;
+lifecycles are **state machines**; side effects are **events**.
+
+**Actions** (`app/Actions`, invokable):
+- `MergeDefaultBlocksForTypes` — merge + de-dupe the `default_blocks` of a talent's types (ordered).
+- `SeedProfileBlocks` — seed `profile_blocks` from the merged defaults (idempotent; each default block
+  once), then move the profile `Created → Draft`.
+
+**Services** (`app/Services`, extend `Service`; every multi-write op is `runInTransaction` + fail-logged):
+- `ProfileBlockService` — `availableBlockTypes()` (the picker: active + eligible − non-repeatable
+  already present), `addBlock`, `fillBlock`, `reorder`, `setVisibility`, `removeBlock`. Rendering
+  resolves via `block_type_id → block_types`, so deactivated (grandfathered) blocks still render.
+- `ProfessionsService` — `addType` (merges defaults, seeds missing, dedupes), `removeType`,
+  `setPrimary`, `reorderTypes`.
+- `TalentProfileService` — core fields, hero image, availability, publish/unpublish, rate-card CRUD,
+  reviews moderation, affiliations & press.
+
+**State machines** (`app/States`, spatie/laravel-model-states). Each has explicit allowed transitions;
+the state is authoritative and a synced boolean/timestamp **projection** (kept by `SyncStateProjections`)
+serves the Phase 1A queries/views.
+
+| Machine | Column | States | Projection |
+|---|---|---|---|
+| TalentProfile | `talents.status` | created → draft → live ⇄ unpublished → suspended/archived | `is_published` + `published_at` (via guarded `ToLive`) |
+| Availability | `talents.availability_status` | available ⇄ booked ⇄ unavailable | — |
+| Block | `profile_blocks.status` | visible ⇄ hidden | `is_visible` |
+| Review | `reviews.status` | pending → approved \| rejected | `is_approved` |
+| Service | `services.status` | active ⇄ paused | `is_active` |
+| Affiliation | `agency_affiliations.status` | current → past | `is_current` |
+| PortfolioMedia | `portfolio_items.status` | uploaded → processed → ordered → visible → archived | — |
+
+**Events / listeners** (auto-discovered in `app/Listeners` by handle() type-hint):
+- `TalentProfileViewed` → `IncrementProfileViewCount` (bumps `view_count`; controller dispatches it).
+- spatie `StateChanged` → `SyncStateProjections` (projections + published_at stamp).
+- medialibrary `MediaHasBeenAddedEvent` → `LogMediaUploaded` (conversions auto-queue).
+- medialibrary `ConversionHasBeenCompletedEvent` → `AdvancePortfolioMediaState` (uploaded → processed).
+
+**Policies** (`app/Policies`, auto-discovered): a talent may only manage its own resources
+(`TalentPolicy`, `ProfileBlockPolicy`, `ServicePolicy`, `ReviewPolicy`, `AgencyAffiliationPolicy`,
+`PortfolioItemPolicy`, `PressFeaturePolicy`), all via `BasePolicy::owns`.
+
 ## Cross-cutting
 
 - **Logging:** dedicated channels `app`, `auth`, `deals`, `media` (`config/logging.php`). Failure

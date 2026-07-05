@@ -1,6 +1,7 @@
 @props(['status' => 'available'])
 
 @php
+    $status = (string) $status; // accepts an Availability state object or a plain string
     $map = [
         'available' => ['dot' => 'bg-success', 'text' => 'text-success', 'bg' => 'bg-success-weak', 'label' => __('Available')],
         'booked' => ['dot' => 'bg-warn', 'text' => 'text-warn', 'bg' => 'bg-warn-weak', 'label' => __('Booked')],

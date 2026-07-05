@@ -71,5 +71,9 @@ docs/conventions.md); tests green. Dev and tests both run on MySQL (tests use a 
 Front-end foundation: adopted the Fama design system (public/fama-front) — design tokens (light + dark
 via `data-theme`) mapped into Tailwind `@theme`, Bodoni Moda + IBM Plex fonts, base UI components
 (components/ui/*), and a live public Talent Profile at `GET /{slug}` bound to the demo talent
-(light/dark/RTL verified). 69 tests green.
+(light/dark/RTL verified).
+Talent domain logic complete: block engine (MergeDefaultBlocksForTypes + SeedProfileBlocks actions,
+ProfileBlockService with eligible picker), ProfessionsService, TalentProfileService; 7 state machines
+(app/States) with a synced-projection convention; auto-discovered events/listeners (view count,
+published_at, media pipeline); own-resource policies. 101 tests green.
 Next: Phase 1B — brand & satellites schema + models (then the deal engine).

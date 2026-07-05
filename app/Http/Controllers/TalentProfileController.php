@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\TalentProfileViewed;
 use App\Models\Talent;
 use Illuminate\View\View;
 
@@ -41,7 +42,7 @@ class TalentProfileController extends Controller
             ])
             ->firstOrFail();
 
-        $talent->increment('view_count');
+        TalentProfileViewed::dispatch($talent);
 
         return view('talent.profile', ['talent' => $talent]);
     }

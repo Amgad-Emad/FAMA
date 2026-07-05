@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use App\States\ServiceStatus\ServiceStatusState;
 use Database\Factories\ServiceFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Spatie\ModelStates\HasStates;
 use Spatie\Translatable\HasTranslations;
 
 /**
@@ -15,7 +17,7 @@ use Spatie\Translatable\HasTranslations;
 class Service extends Model
 {
     /** @use HasFactory<ServiceFactory> */
-    use HasFactory, HasTranslations;
+    use HasFactory, HasStates, HasTranslations;
 
     /**
      * Mass-assignable attributes.
@@ -24,7 +26,7 @@ class Service extends Model
      */
     protected $fillable = [
         'talent_id', 'name', 'description', 'price', 'currency',
-        'price_unit', 'duration_minutes', 'is_active', 'position',
+        'price_unit', 'duration_minutes', 'is_active', 'position', 'status',
     ];
 
     /**
@@ -46,6 +48,7 @@ class Service extends Model
             'duration_minutes' => 'integer',
             'is_active' => 'boolean',
             'position' => 'integer',
+            'status' => ServiceStatusState::class,
         ];
     }
 

@@ -24,6 +24,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Listeners in app/Listeners are auto-discovered by their handle() type-hint
+        // (Laravel 11+): SyncStateProjections (StateChanged), IncrementProfileViewCount
+        // (TalentProfileViewed), LogMediaUploaded (MediaHasBeenAddedEvent),
+        // AdvancePortfolioMediaState (ConversionHasBeenCompletedEvent).
         $this->configureModels();
         $this->registerResponseMacros();
     }

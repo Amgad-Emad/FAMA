@@ -48,6 +48,7 @@ class TalentFactory extends Factory
             'booking_value' => fake()->safeEmail(),
             'is_published' => true,
             'published_at' => now(),
+            'status' => 'live',
             'view_count' => fake()->numberBetween(0, 5000),
             'meta' => null,
         ];
@@ -61,6 +62,7 @@ class TalentFactory extends Factory
         return $this->state(fn (): array => [
             'is_published' => false,
             'published_at' => null,
+            'status' => 'draft',
         ]);
     }
 

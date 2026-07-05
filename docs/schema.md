@@ -43,6 +43,10 @@ Deviations from the canonical schema (deliberate, per the standing decisions):
   progressively; `slug` is auto-generated if not supplied.
 - `profile_blocks.block_type_id` is **restrict-on-delete** (deactivated block types are grandfathered,
   not deleted); all `talent_id` FKs cascade.
+- **State machine columns (Phase 1B):** `status` added to `talents`, `profile_blocks`, `reviews`,
+  `services`, `agency_affiliations`, `portfolio_items` (spatie/laravel-model-states); `availability_status`
+  is the availability state. The existing booleans are kept as synced projections (see
+  `docs/architecture.md` → state machines table).
 
 ## Not yet built (Phase 1B+)
 

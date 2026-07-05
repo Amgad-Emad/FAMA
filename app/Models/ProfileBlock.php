@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use App\States\Block\BlockState;
 use Database\Factories\ProfileBlockFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Spatie\ModelStates\HasStates;
 use Spatie\Translatable\HasTranslations;
 
 /**
@@ -18,7 +20,7 @@ use Spatie\Translatable\HasTranslations;
 class ProfileBlock extends Model
 {
     /** @use HasFactory<ProfileBlockFactory> */
-    use HasFactory, HasTranslations;
+    use HasFactory, HasStates, HasTranslations;
 
     /**
      * Mass-assignable attributes.
@@ -26,7 +28,7 @@ class ProfileBlock extends Model
      * @var list<string>
      */
     protected $fillable = [
-        'talent_id', 'block_type_id', 'title', 'position', 'is_visible',
+        'talent_id', 'block_type_id', 'title', 'position', 'is_visible', 'status',
         'layout', 'settings', 'content',
     ];
 
@@ -56,6 +58,7 @@ class ProfileBlock extends Model
             'is_visible' => 'boolean',
             'settings' => 'array',
             'content' => 'array',
+            'status' => BlockState::class,
         ];
     }
 
