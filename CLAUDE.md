@@ -63,4 +63,13 @@ transaction pattern, preventLazyLoading, and http.js fetch wrapper in place; doc
 written; docs/specs/ installed as canonical.
 Decisions are logged in docs/decisions.md as an ADR log (10 accepted; open items A–E plus retained
 F–G need owners) — read it before building, and honor the accepted ADRs.
-Next: Phase 1A — talent & block-system schema + models.
+Phase 1A complete: talent side + malleable block system — migrations, 18 Eloquent models (HasMedia +
+translatable + relations), factories, catalog seeders (6 professions + block catalog) and a multi-type
+TalentDemoSeeder; media via medialibrary accessors; translatable content fields (list in
+docs/conventions.md); tests green. Dev and tests both run on MySQL (tests use a dedicated
+`fama_test` database via phpunit.xml + RefreshDatabase).
+Front-end foundation: adopted the Fama design system (public/fama-front) — design tokens (light + dark
+via `data-theme`) mapped into Tailwind `@theme`, Bodoni Moda + IBM Plex fonts, base UI components
+(components/ui/*), and a live public Talent Profile at `GET /{slug}` bound to the demo talent
+(light/dark/RTL verified). 69 tests green.
+Next: Phase 1B — brand & satellites schema + models (then the deal engine).

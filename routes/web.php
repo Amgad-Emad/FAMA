@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\TalentProfileController;
 use App\Support\Auth\Guards;
 use Illuminate\Support\Facades\Route;
 use Mcamara\LaravelLocalization\Facades\LaravelLocalization;
@@ -61,4 +62,11 @@ Route::group([
 
     // Role-aware auth routes (login/register/password/verification/logout).
     require __DIR__.'/auth.php';
+
+    // Public talent profile — fama.com/{slug}. MUST stay last: it is a
+    // single-segment catch-all, so all named routes above take precedence. The
+    // constraint keeps it to slug-shaped paths.
+    Route::get('/{slug}', [TalentProfileController::class, 'show'])
+        ->where('slug', '[A-Za-z0-9\-]+')
+        ->name('talent.public');
 });

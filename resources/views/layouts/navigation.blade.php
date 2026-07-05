@@ -33,10 +33,10 @@
                 <button
                     type="button"
                     x-data="{
-                        dark: document.documentElement.classList.contains('dark'),
+                        dark: document.documentElement.getAttribute('data-theme') === 'dark',
                         toggle() {
                             this.dark = !this.dark;
-                            document.documentElement.classList.toggle('dark', this.dark);
+                            document.documentElement.setAttribute('data-theme', this.dark ? 'dark' : 'light');
                             localStorage.setItem('theme', this.dark ? 'dark' : 'light');
                         }
                     }"

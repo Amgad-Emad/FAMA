@@ -11,15 +11,20 @@ class DatabaseSeeder extends Seeder
     use WithoutModelEvents;
 
     /**
-     * Seed the application's database.
+     * Seed the application's database: an admin user, the talent-side catalogs
+     * (professions + block catalog), then the rich multi-type demo talent.
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
         User::factory()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
+        ]);
+
+        $this->call([
+            TalentTypeSeeder::class,
+            BlockTypeSeeder::class,
+            TalentDemoSeeder::class,
         ]);
     }
 }

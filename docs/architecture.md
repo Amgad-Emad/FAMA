@@ -61,13 +61,53 @@ Three login entities, each its own session guard + Eloquent provider (`config/au
   utilities (inline-start/inline-end) so layouts mirror automatically.
 - `spatie/laravel-translatable` provides per-attribute translations (policy in `docs/conventions.md`).
 
-## Front-end
+## Front-end & design system
 
-- Blade + Alpine, Tailwind v4 (via `@tailwindcss/vite`), Vite. Dark mode is the **class** strategy
-  (`.dark` on `<html>`, persisted to `localStorage`).
+- Blade + Alpine, Tailwind v4 (via `@tailwindcss/vite`), Vite. The **Fama design system** (from
+  `public/fama-front`) is the visual language: `resources/css/app.css` holds the design tokens as CSS
+  variables — light on `:root`, dark on `[data-theme='dark']` — and maps them into Tailwind via
+  `@theme inline` so utilities (`bg-surface`, `text-ink`, `border-line`, `bg-accent`, `font-display`,
+  `rounded-lg`, `shadow-e2`, …) are theme-aware. Fonts: Bodoni Moda (display serif), IBM Plex
+  Sans/Arabic/Mono.
+- **Dark mode** is keyed on the `data-theme` attribute (`<html data-theme="light|dark">`), matching the
+  design system. A no-flash init (`partials/design-head`) sets it before paint; the toggle flips it and
+  persists to `localStorage`. Tailwind's `dark:` variant is remapped to the same attribute.
+- **Reusable UI** lives in `resources/views/components/ui/*` (button, card, chip, badge, avatar,
+  eyebrow, stat, section) — token-bound, dark- and RTL-aware.
+- **RTL**: `<html dir>` comes from the locale; headings swap to the Arabic face via `--font-head`, and
+  logical utilities (`ms-*`, `pe-*`, `text-start`, …) mirror the layout for `/ar`.
+- **Public talent profile** (`GET /{slug}` → `TalentProfileController` → `talent/profile.blade.php`):
+  renders the hero/identity header, then `profile_blocks` in `position` order, each block dispatched to
+  a `talent/blocks/{key}` partial (gallery, comp_card, services, reviews, brand_collabs, looks,
+  digitals, showreel, equipment, …) reading from eager-loaded relations. Missing media falls back to
+  tasteful gradient/initials placeholders.
 - `resources/js/http.js` is the shared fetch wrapper: it attaches CSRF + `X-Requested-With` +
   `Accept: application/json`, parses the envelope, and throws `ApiError` (with the field error bag) so
   pages surface validation errors without reloading.
+
+## Domain model — talent side (Phase 1A)
+
+The talent "living creative passport" is a core (`talents`) plus a **malleable block system** and a set
+of content tables (`app/Models`, schema in `docs/schema.md`).
+
+- **Professions.** `talents` ⇄ `talent_types` many-to-many via `talent_talent_type` (`is_primary` leads
+  the headline, `position` orders). Each `talent_type` carries `default_blocks` (ordered block keys).
+- **Block catalog.** `block_types` is the admin-governed catalog. `availability` gates who can add a
+  block: `universal` | `by_category` (→ `block_type_category`) | `by_type` (→ `block_type_talent_type`).
+  `content_source` says whether the block stores data inline (JSON) or in a rich content table.
+- **Layout layer.** `profile_blocks` is the per-talent arrangement (position, visibility, layout, inline
+  content). On profile creation the merged+deduped `default_blocks` of all linked types seed the blocks;
+  `blockType` is always eager-loaded (rendering needs it). Rich blocks read from the content tables
+  (`portfolio_items`, `comp_cards`, `showreels`, `case_studies`, …).
+- **Media.** Every model holding uploaded files is `HasMedia` with single-file collections + a `thumb`
+  conversion; `*_url` accessors resolve from the library (ADR-5, list in `docs/conventions.md`). External
+  links/embeds stay as plain columns.
+- **Seeders.** `TalentTypeSeeder` (six professions) + `BlockTypeSeeder` (catalog) are the canonical
+  reference data; `TalentDemoSeeder` builds one rich multi-type (model + photographer) talent for later
+  phases to render.
+
+> Not yet built: the block-seeding/merge logic will move into an Action + Service in the profile-editor
+> phase (currently expressed inline in `TalentDemoSeeder`).
 
 ## Cross-cutting
 

@@ -2,6 +2,54 @@
 
 Notable changes to the Fama project. Newest first.
 
+## 2026-07-05 — Design system foundation + live Talent Profile
+
+- **Adopted the Fama design system** (from `public/fama-front`) into the real stack. Ported the design
+  tokens (light + `[data-theme='dark']`) into `resources/css/app.css`, mapped them to Tailwind via
+  `@theme inline` (theme-aware `bg-surface`/`text-ink`/`bg-accent`/`font-display`/`shadow-e2`…), added
+  the Bodoni Moda + IBM Plex Sans/Arabic/Mono fonts, and switched dark mode from the `.dark` class to
+  the `data-theme` attribute (layouts, nav toggle, and the `dark:` variant all reconciled).
+- **Base UI components** (`resources/views/components/ui/*`): button, card, chip, badge, avatar
+  (image/initials), eyebrow, stat, section — token-bound, dark + RTL aware. Plus a public layout,
+  `x-theme-toggle`, and a DS locale switcher.
+- **Live public Talent Profile** — `GET /{slug}` (`TalentProfileController`) renders a published talent
+  (hero, identity header, then `profile_blocks` in order via `talent/blocks/{key}` partials) bound to
+  the seeded demo talent. Verified in light, dark, LTR and Arabic/RTL against the running app; missing
+  media degrades to gradient/initials placeholders.
+- Removed a stray `es` (and duplicate `en`) locale from `config/laravellocalization.php` — supported
+  locales are now **en, ar** only.
+- **Tests green:** 69 passed / 206 assertions (+4 profile tests: published→200, draft/unknown→404,
+  view-count increments). Existing Breeze pages re-themed without breakage. No git.
+
+## 2026-07-05 — Test suite runs on MySQL
+
+- Switched the Pest suite from in-memory SQLite to **MySQL** against a dedicated `fama_test` database
+  (`phpunit.xml`: `DB_CONNECTION=mysql`, `DB_DATABASE=fama_test`), so tests exercise the same engine as
+  dev/prod and never touch the dev `fama` data. Created `fama_test`. Full suite green (65/200) on MySQL.
+
+## 2026-07-05 — Phase 1A: talent side + block system
+
+- **Migrations** (4 files): `talents` (soft deletes); `talent_types` + `talent_talent_type` pivot; the
+  block system (`block_types`, `block_type_category`, `block_type_talent_type`, `profile_blocks`); and
+  13 talent content tables (portfolio_items, brand_collabs, reviews, services, comp_cards[1:1],
+  look_types, digitals, showreels, equipment, case_studies, software_stack, agency_affiliations,
+  press_features).
+- **Models** (18): full `Talent` (SoftDeletes + HasMedia + HasTranslations, slug auto-gen), TalentType,
+  BlockType, BlockTypeCategory, ProfileBlock, and the 13 content models. Relationships both directions,
+  casts, sensible default eager-loads (`ProfileBlock` → `blockType`).
+- **Media** (ADR-5): uploaded-asset `*_url`/`thumbnail_url` columns dropped and replaced by media-library
+  collections + `thumb` conversions + accessors; external links/embeds kept as plain columns (+ new
+  `portfolio_items.embed_url`).
+- **Translatable** (ADR-7): content fields stored as per-locale JSON; final list recorded in
+  `docs/conventions.md`.
+- **Factories** for every model + seeders: `TalentTypeSeeder` (six professions), `BlockTypeSeeder`
+  (block catalog with category gates), and `TalentDemoSeeder` — a multi-type (model + photographer)
+  talent with merged/deduped blocks and populated content, wired into `DatabaseSeeder`.
+- **Notes:** profile fields made nullable for progressive onboarding; `Talent` needs an explicit
+  `$table` (the inflector leaves "talent" unpluralized); dev DB is MySQL, tests run on in-memory SQLite.
+- **Tests green:** 65 passed / 200 assertions (relationships, casts, media collections, translatable,
+  soft deletes, pivot uniqueness, demo seeder). Migrations run clean. No git.
+
 ## 2026-07-05 — Decision log formalized
 
 - **`docs/decisions.md` rewritten as a lightweight ADR log** (Context / Decision / Status /

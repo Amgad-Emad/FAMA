@@ -57,6 +57,26 @@ Any operation that writes to more than one table/row is wrapped in a transaction
 - **External** links/embeds (YouTube/Vimeo, social, brand-collab, press) stay as plain URL columns.
 - See `docs/decisions.md` and `docs/specs/schema-master.md` (implementation note).
 
+**Media collections (Phase 1A).** Each `HasMedia` model registers single-file collections + a `thumb`
+conversion; the dropped `*_url` columns are replaced by accessors that resolve from these collections
+(null when empty):
+
+| Model | Collection(s) → accessor |
+|---|---|
+| `Talent` | `hero` → `hero_image_url`, `avatar` → `avatar_url` |
+| `PortfolioItem` | `gallery` → `media_url` / `thumbnail_url` (embed items use `embed_url`) |
+| `Digital` | `digital` → `media_url` / `thumbnail_url` |
+| `BrandCollab` | `logo` → `brand_logo_url` |
+| `Review` | `avatar` → `reviewer_avatar_url` |
+| `Showreel` | `thumbnail` → `thumbnail_url` (video stays `video_url`) |
+| `CaseStudy` | `cover` → `cover_image_url` |
+| `SoftwareStack` | `icon` → `icon_url` |
+| `AgencyAffiliation` | `logo` → `agency_logo_url` |
+| `PressFeature` | `thumbnail` → `thumbnail_url` |
+
+Accessors call `loadMissing('media')` so they are safe under `preventLazyLoading`; controllers should
+still eager-load `media` on lists.
+
 ## Translatable attributes (spatie/laravel-translatable)
 Fama is bilingual (en/ar). Policy:
 - **Translate** free-text, human-facing copy that a user would reasonably localise: e.g. `headline`,
@@ -69,6 +89,26 @@ Fama is bilingual (en/ar). Policy:
   use `->getTranslation($attr, $locale)` / `->setTranslation(...)` for explicit locales.
 - Validation: validate the submitted locale's value; keep the other locale untouched on partial edits.
 - Fallback: missing translations fall back to `APP_FALLBACK_LOCALE` (en).
+
+**Current translatable attributes (Phase 1A — talent side).** These columns are JSON per-locale:
+
+| Model | Translatable attributes |
+|---|---|
+| `Talent` | `headline`, `bio` |
+| `TalentType` | `name`, `description` |
+| `BlockType` | `name`, `description` |
+| `ProfileBlock` | `title` |
+| `Service` | `name`, `description` |
+| `CaseStudy` | `title`, `role`, `summary`, `body` |
+| `LookType` | `name` |
+| `Showreel` | `title` |
+| `BrandCollab` | `project_title` |
+| `PortfolioItem` | `caption` |
+| `Equipment` | `notes` |
+
+**Deliberately NOT translatable:** identifiers/slugs/enums/keys; proper nouns (`brand_name`,
+`client_name`, `agency_name`, `software_name`, equipment `brand`/`model`/`name`); `Review.body` and
+`PressFeature.title`/`publication` (external text kept in its original language).
 
 ## RTL / i18n in views
 - Set direction from the locale (`<html dir>` in the layouts). Prefer **logical** Tailwind utilities
@@ -85,5 +125,7 @@ Fama is bilingual (en/ar). Policy:
 
 ## Testing (Pest)
 - Feature tests for every route/flow; unit tests for services/actions/support.
-- Assert the envelope shape for JSON endpoints. Tests run on in-memory SQLite (`RefreshDatabase`).
+- Assert the envelope shape for JSON endpoints. Tests run on **MySQL** against a dedicated `fama_test`
+  database (`phpunit.xml`) with `RefreshDatabase`, so they exercise the same engine as dev/prod and
+  never touch the dev `fama` data. Create it once: `mysql -u root -e "CREATE DATABASE IF NOT EXISTS fama_test"`.
 - Definition of Done: tests green, fail-logs + transactions verified, docs updated, no git.

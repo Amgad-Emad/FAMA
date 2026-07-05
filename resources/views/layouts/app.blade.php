@@ -10,15 +10,7 @@
 
         <title>{{ config('app.name', 'Fama') }}</title>
 
-        {{-- Apply the persisted theme before paint to avoid a flash (class strategy). --}}
-        <script>
-            (function () {
-                const stored = localStorage.getItem('theme');
-                if (stored === 'dark' || (!stored && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                    document.documentElement.classList.add('dark');
-                }
-            })();
-        </script>
+        @include('partials.design-head')
 
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])

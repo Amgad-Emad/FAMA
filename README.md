@@ -18,18 +18,19 @@ that walks a brand and a talent through booking, quoting, contracting, payment, 
 - **Domain packages:** `spatie/laravel-medialibrary`, `laravel-model-states`, `laravel-data`,
   `laravel-activitylog`, `laravel-query-builder`
 - **API docs:** `knuckleswtf/scribe` · **Tests:** Pest
-- **DB:** SQLite by default (dev + tests); any Laravel-supported driver in production
+- **DB:** MySQL (dev database `fama`, test database `fama_test`); any Laravel-supported driver works
 
 ## Setup
 
 ```bash
 composer install
-cp .env.example .env          # if you don't have a .env yet
+cp .env.example .env          # if you don't have a .env yet; set the MySQL DB_* values
 php artisan key:generate
-touch database/database.sqlite # default DB (or configure another in .env)
-php artisan migrate            # Phase 0: vendor/auth + infrastructure tables only
+mysql -u root -e "CREATE DATABASE IF NOT EXISTS fama; CREATE DATABASE IF NOT EXISTS fama_test;"
+php artisan migrate           # dev DB (fama)
+php artisan db:seed           # optional: catalogs + demo talent
 npm install
-npm run build                  # or `npm run dev` while developing
+npm run build                 # or `npm run dev` while developing
 ```
 
 ## Run
@@ -39,7 +40,7 @@ composer dev                   # serve + queue + logs + vite (all-in-one)
 # or individually:
 php artisan serve
 npm run dev
-php artisan test               # Pest suite (in-memory SQLite)
+php artisan test               # Pest suite — runs on MySQL (fama_test, per phpunit.xml)
 ```
 
 ## Three-guard auth model
