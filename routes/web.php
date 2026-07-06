@@ -24,7 +24,10 @@ use Mcamara\LaravelLocalization\Facades\LaravelLocalization;
 
 Route::group([
     'prefix' => LaravelLocalization::setLocale(),
-    'middleware' => ['localeSessionRedirect', 'localizationRedirect', 'localeViewPath'],
+    // NOTE: no `localeSessionRedirect`. With hideDefaultLocaleInURL=true it traps
+    // users on a non-default locale (session `ar` bounces the prefix-less EN URL
+    // back to /ar). The URL prefix is the single source of truth for locale.
+    'middleware' => ['localizationRedirect', 'localeViewPath'],
 ], function () {
 
     // --- Public (no login wall) ---------------------------------------------

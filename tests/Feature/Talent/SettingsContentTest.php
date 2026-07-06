@@ -83,6 +83,20 @@ it('manages a gallery content editor: create, list, reorder, remove', function (
     expect(PortfolioItem::find($id))->toBeNull();
 });
 
+it('creates a gallery item from the drop-zone blank payload (null position) and appends', function () {
+    $talent = Talent::factory()->create();
+
+    // The exact payload the upload drop-zone / add form sends from the blank.
+    $this->actingAs($talent, 'talent')
+        ->postJson(route('talent.content.store', ['type' => 'gallery']), ['position' => null, 'caption' => ['en' => '', 'ar' => ''], 'media_type' => 'image', 'embed_url' => ''])
+        ->assertCreated();
+    $this->actingAs($talent, 'talent')
+        ->postJson(route('talent.content.store', ['type' => 'gallery']), ['position' => null, 'media_type' => 'image'])
+        ->assertCreated();
+
+    expect(PortfolioItem::where('talent_id', $talent->id)->orderBy('position')->pluck('position')->all())->toBe([0, 1]);
+});
+
 it('uploads media to a content item through the media library', function () {
     Storage::fake('public');
     $talent = Talent::factory()->create();

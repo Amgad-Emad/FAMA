@@ -301,7 +301,12 @@ document.addEventListener('alpine:init', () => {
             this.saving = true;
             try {
                 for (const file of Array.from(fileList)) {
-                    const { data } = await post(this.endpoint, this.form);
+                    const payload = JSON.parse(JSON.stringify(config.blank || {}));
+                    // Infer the media type from the dropped file (gallery items).
+                    if ('media_type' in payload) {
+                        payload.media_type = file.type.startsWith('video') ? 'video' : 'image';
+                    }
+                    const { data } = await post(this.endpoint, payload);
                     const body = new FormData();
                     body.append('file', file);
                     await post(`${this.endpoint}/${data.id}/media`, body);

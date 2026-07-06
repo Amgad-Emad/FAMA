@@ -58,7 +58,7 @@ class BlockContentController extends TalentController
                 ['name', 'text', ['required']],
                 ['notes', 'translatable', []],
             ]],
-            'case_studies' => ['model' => CaseStudy::class, 'relation' => 'caseStudies', 'label' => 'Case studies', 'labelField' => 'title', 'media' => 'cover', 'thumb' => 'cover_image_url', 'fields' => [
+            'case_studies' => ['model' => CaseStudy::class, 'relation' => 'caseStudies', 'label' => 'Projects', 'labelField' => 'title', 'media' => 'cover', 'thumb' => 'cover_image_url', 'fields' => [
                 ['title', 'translatable', ['required']],
                 ['client_name', 'text', []],
                 ['summary', 'translatable', []],
@@ -117,6 +117,9 @@ class BlockContentController extends TalentController
     {
         $config = $this->config($type);
         $data = $request->validate($this->rules($config));
+        // Append at the end when no position is given (the front-end blank sends
+        // null); `position` is a NOT NULL column, so never insert null.
+        $data['position'] = $data['position'] ?? $this->talent()->{$config['relation']}()->count();
         $item = $this->talent()->{$config['relation']}()->create($data);
 
         return response()->success($this->present($item, $config), __('Added.'), status: 201);

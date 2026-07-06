@@ -2,6 +2,40 @@
 
 Notable changes to the Fama project. Newest first.
 
+## 2026-07-06 — New theme: cloud / graphite / teal + Bricolage + Sora
+
+- Replaced the design-token palette and font pairing across every page (token-only change in
+  `resources/css/app.css` + font `<link>` in `partials/design-head`): cool **cloud** surfaces,
+  **graphite** ink, **teal** accent — for both light (`:root`) and dark (`[data-theme="dark"]`).
+  (Surfaces were briefly peach, then swapped to cool cloud; only the surface/line tokens differ.)
+- Fonts: **Bricolage Grotesque** (display) + **Sora** (UI/body) + **IBM Plex Sans Arabic** + **IBM Plex
+  Mono**. The `font-display` utility now resolves through the dir-aware `--font-head`, so RTL/Arabic
+  headings use IBM Plex Sans Arabic (Bricolage is Latin-only). Derived tokens (primary/on-primary/
+  on-accent) re-tuned to the new palette; radii/shadows/motion unchanged. Verified in light, dark, RTL.
+
+## 2026-07-06 — Content upload fix + "Projects" rename
+
+- **Gallery/content upload broken (fixed):** the drop-zone and add-item form post the blank form which
+  includes `position: null`; `position` is a NOT NULL column, so the insert 500'd. `BlockContentController::store`
+  now appends (`position ?? count()`) instead of inserting null, and `createAndUpload` (dashboard.js)
+  infers `media_type` from the dropped file. Regression test added.
+- **"Case studies" → "Projects":** renamed the user-facing label (content-editor tab) and the
+  `case_studies` block-type catalog name (en "Projects" / ar "المشاريع") + `lang/ar.json`. Internal
+  identifiers (table `case_studies`, model `CaseStudy`, route `talent.work`) are unchanged.
+
+## 2026-07-06 — RTL fixes + Arabic UI translations
+
+- **Sidebar hidden in RTL (fixed):** the talent-layout `<aside>` mixed a static `sm:translate-x-0`
+  desktop override with a dynamic `rtl:translate-x-full`; the `rtl:` rule ordered after `sm:` in the
+  cascade and shoved the sidebar off-screen on desktop RTL. Scoped the off-canvas transform to
+  `max-sm:` (mobile only) + added `start-0`, so desktop always uses the static in-flow column.
+- **Couldn't switch back to EN (fixed):** with `hideDefaultLocaleInURL=true`, the `localeSessionRedirect`
+  middleware bounced the prefix-less EN URL back to `/ar` (session locale trapped). Removed
+  `localeSessionRedirect` from the locale route group — the URL prefix is now the single source of truth.
+- **Arabic UI translations:** added `lang/ar.json` (313 strings — the full talent dashboard + public
+  pages + auth) and `lang/{ar,en}/auth.php` for the dotted `auth.*` keys. `__()` now renders Arabic on
+  `/ar` and English on the default locale.
+
 ## 2026-07-06 — Deal engine (Phase 1E, shared infrastructure)
 
 - **Schema:** `deal_flows`, `deal_flow_steps`, `deals`, `deal_steps`, `deal_messages`, `deal_enquiries`

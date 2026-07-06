@@ -67,8 +67,9 @@ Three login entities, each its own session guard + Eloquent provider (`config/au
   `public/fama-front`) is the visual language: `resources/css/app.css` holds the design tokens as CSS
   variables — light on `:root`, dark on `[data-theme='dark']` — and maps them into Tailwind via
   `@theme inline` so utilities (`bg-surface`, `text-ink`, `border-line`, `bg-accent`, `font-display`,
-  `rounded-lg`, `shadow-e2`, …) are theme-aware. Fonts: Bodoni Moda (display serif), IBM Plex
-  Sans/Arabic/Mono.
+  `rounded-lg`, `shadow-e2`, …) are theme-aware. Palette: cool **cloud** surfaces, **graphite** ink,
+  **teal** accent (light + dark). Fonts: **Bricolage Grotesque** (display), **Sora** (UI/body), **IBM
+  Plex Sans Arabic** (Arabic + RTL headings via the dir-aware `--font-head`), **IBM Plex Mono**.
 - **Dark mode** is keyed on the `data-theme` attribute (`<html data-theme="light|dark">`), matching the
   design system. A no-flash init (`partials/design-head`) sets it before paint; the toggle flips it and
   persists to `localStorage`. Tailwind's `dark:` variant is remapped to the same attribute.

@@ -33,8 +33,8 @@
         <div class="flex min-h-screen">
             {{-- Sidebar --}}
             <aside
-                class="fixed inset-y-0 z-40 w-64 shrink-0 border-e border-line bg-surface transition-transform sm:static sm:translate-x-0"
-                :class="sidebar ? 'translate-x-0' : 'ltr:-translate-x-full rtl:translate-x-full'"
+                class="fixed inset-y-0 start-0 z-40 w-64 shrink-0 border-e border-line bg-surface transition-transform sm:static sm:translate-x-0"
+                :class="sidebar ? 'max-sm:translate-x-0' : 'max-sm:-translate-x-full max-sm:rtl:translate-x-full'"
             >
                 <div class="flex h-16 items-center px-6">
                     <a href="{{ url('/') }}" class="font-display text-2xl text-ink">Fama<span class="text-accent">.</span></a>

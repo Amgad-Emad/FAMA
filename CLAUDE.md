@@ -69,9 +69,11 @@ TalentDemoSeeder; media via medialibrary accessors; translatable content fields 
 docs/conventions.md); tests green. Dev and tests both run on MySQL (tests use a dedicated
 `fama_test` database via phpunit.xml + RefreshDatabase).
 Front-end foundation: adopted the Fama design system (public/fama-front) — design tokens (light + dark
-via `data-theme`) mapped into Tailwind `@theme`, Bodoni Moda + IBM Plex fonts, base UI components
-(components/ui/*), and a live public Talent Profile at `GET /{slug}` bound to the demo talent
-(light/dark/RTL verified).
+via `data-theme`) mapped into Tailwind `@theme`, base UI components (components/ui/*), and a live public
+Talent Profile at `GET /{slug}` bound to the demo talent (light/dark/RTL verified). Theme: cool cloud
+surfaces + graphite ink + teal accent; Bricolage Grotesque (display) + Sora (UI) + IBM Plex Sans Arabic
+(RTL headings via dir-aware `--font-head`) + IBM Plex Mono. All colours/fonts are CSS vars in
+resources/css/app.css — restyling is token-only.
 Talent domain logic complete: block engine (MergeDefaultBlocksForTypes + SeedProfileBlocks actions,
 ProfileBlockService with eligible picker), ProfessionsService, TalentProfileService; 7 state machines
 (app/States) with a synced-projection convention; auto-discovered events/listeners (view count,
