@@ -179,6 +179,57 @@ document.addEventListener('alpine:init', () => {
         },
     }));
 
+    // --- Public discovery / talent search -----------------------------------
+    Alpine.data('talentSearch', (initial) => ({
+        types: initial.types || [],
+        equipmentCategories: initial.equipmentCategories || [],
+        softwareOptions: initial.softwareOptions || [],
+        filters: { type: [], availability: '', city: '', equipment: '', software: '', q: '' },
+        results: [],
+        meta: null,
+        loading: true,
+        t,
+
+        async init() {
+            await this.search();
+        },
+
+        buildQuery(page) {
+            const p = new URLSearchParams();
+            if (this.filters.type.length) p.set('filter[type]', this.filters.type.join(','));
+            if (this.filters.availability) p.set('filter[availability]', this.filters.availability);
+            if (this.filters.city) p.set('filter[city]', this.filters.city);
+            if (this.filters.equipment) p.set('filter[equipment]', this.filters.equipment);
+            if (this.filters.software) p.set('filter[software]', this.filters.software);
+            if (this.filters.q) p.set('filter[q]', this.filters.q);
+            p.set('page', page);
+            return p.toString();
+        },
+
+        async search(page = 1) {
+            this.loading = true;
+            try {
+                const { data, meta } = await get(`/discover/search?${this.buildQuery(page)}`);
+                this.results = data;
+                this.meta = meta;
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        toggleType(slug) {
+            const i = this.filters.type.indexOf(slug);
+            if (i >= 0) this.filters.type.splice(i, 1);
+            else this.filters.type.push(slug);
+            this.search();
+        },
+
+        reset() {
+            this.filters = { type: [], availability: '', city: '', equipment: '', software: '', q: '' };
+            this.search();
+        },
+    }));
+
     // --- Generic list CRUD (services, reviews, affiliations, press, content) -
     Alpine.data('crudList', (config) => ({
         items: [],

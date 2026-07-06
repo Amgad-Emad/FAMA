@@ -174,6 +174,26 @@ endpoints, nothing reloads.
   `CouldNotPerformTransition` as 422 (and `AuthenticationException` as 401) for JSON/Ajax requests, so
   the front-end surfaces them inline.
 
+## Public pages & discovery (Phase 1C)
+
+Unguarded, locale-prefixed pages (`routes/web.php`, controllers in `app/Http/Controllers`), rendered
+through `x-public-layout`. All resolve **published** talents only.
+
+- **Talent profile** (`TalentProfileController` → `talent/profile`) — eager-loads a published talent
+  with everything the profile renders (visible blocks in position order, approved reviews, active
+  services, all content tables + media), bumps `view_count` via the `TalentProfileViewed` event, and
+  stays presentational. Case-study blocks link to their detail page; the header carries a review CTA.
+- **Case study** (`CaseStudyController` → `public/case-study`) — one `case_studies` record expanded,
+  404 unless it belongs to the (published) talent.
+- **Review submission** (`PublicReviewController` + `StoreReviewRequest` → `public/review`) — an Ajax
+  form that writes a pending review; the talent moderates it from the dashboard queue.
+- **Discovery** (`DiscoveryController` → `public/discover`, `talentSearch` Alpine) — a Blade shell whose
+  results come from an Ajax endpoint backed by **`App\Queries\TalentSearch`**, a query object over
+  spatie/laravel-query-builder. Filters (type/category through the pivot, availability, city, country,
+  equipment, software, free-text) map to `filter[...]` params; results are paginated, eager-loaded
+  (`talentTypes` + `media`), and shaped by `TalentCardResource`. Backed by the Phase 1C search indexes
+  (see docs/schema.md).
+
 ## Cross-cutting
 
 - **Logging:** dedicated channels `app`, `auth`, `deals`, `media` (`config/logging.php`). Failure

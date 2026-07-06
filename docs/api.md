@@ -49,6 +49,28 @@ for the mobile developer once API routes exist:
 php artisan scribe:generate   # outputs the /docs UI, OpenAPI spec, and Postman collection
 ```
 
+## Public pages — web endpoints (unguarded)
+
+Locale-prefixed, in `routes/web.php`. GET routes return Blade (public layout); interactive submits use
+the JSON envelope + `http.js`. All resolve **published** talents only (404 otherwise).
+
+| Page | Method + path | Purpose |
+|---|---|---|
+| Talent profile | `GET /{slug}` | header (primary profession leading) + visible blocks in position order; bumps `view_count` via event; eager-loaded |
+| Case study | `GET /{slug}/work/{caseStudy}` | one `case_studies` record expanded (404 if not the talent's) |
+| Review form | `GET /{slug}/review` | public review form |
+| Review submit | `POST /{slug}/review` | writes a **pending** review (`is_approved = false`) — envelope |
+| Discovery | `GET /discover` | search page shell |
+| Discovery search | `GET /discover/search` | paginated talent cards — envelope; filters below |
+
+**Discovery filters** (spatie/laravel-query-builder, `App\Queries\TalentSearch`), passed as
+`filter[...]` query params: `type` & `category` (comma-separated slugs, through the pivot),
+`availability`, `city`, `country`, `equipment` (category), `software` (name), `q` (name search).
+Sorts: `sort=view_count|created_at` (default `-view_count`). 12 per page. Output: `TalentCardResource`.
+
+The `{slug}` profile route is the single-segment catch-all and stays **last**; `/discover` and the
+`/{slug}/...` sub-pages are registered before it.
+
 ## Talent dashboard — web endpoints (session, `auth:talent`)
 
 Defined in `routes/talent.php` (prefix `/talent`, name `talent.`). GET page routes return a Blade shell;

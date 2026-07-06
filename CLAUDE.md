@@ -80,5 +80,10 @@ Talent dashboard complete (talent guard, routes/talent.php + app/Http/Controller
 profile editor (reorderable blocks + eligibility picker + hero upload), professions, block content
 editors (registry-driven + media), rate card, availability, reviews moderation, affiliations & press,
 account. Blade shells + Alpine (resources/js/dashboard.js) on http.js, JSON envelopes, no reloads,
-ownership 403 / domain 422. 124 tests green.
+ownership 403 / domain 422.
+Public pages complete (unguarded, routes/web.php + app/Http/Controllers/*): talent profile GET /{slug}
+(view_count via event, no N+1), case study GET /{slug}/work/{caseStudy}, review submission GET|POST
+/{slug}/review (pending), and discovery GET /discover (+ /discover/search) backed by App\Queries\
+TalentSearch (spatie/laravel-query-builder) with ADR-6 search indexes (migration add_discovery_search_
+indexes). 136 tests green.
 Next: Phase 1B/2 — brand & satellites schema + models (then the deal engine, Phase 1E).

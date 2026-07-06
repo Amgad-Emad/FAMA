@@ -50,8 +50,9 @@
                 </div>
             </div>
 
-            <div class="sm:self-center">
+            <div class="flex flex-col gap-2 sm:self-center">
                 <x-ui.button variant="accent" size="lg" class="w-full sm:w-auto">{{ __('Contact') }}</x-ui.button>
+                <x-ui.button :href="route('talent.review.create', ['slug' => $talent->slug])" variant="outline" size="sm" class="w-full sm:w-auto">{{ __('Leave a review') }}</x-ui.button>
             </div>
         </x-ui.card>
     </div>

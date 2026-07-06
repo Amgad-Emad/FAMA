@@ -1,6 +1,9 @@
 <?php
 
+use App\Http\Controllers\CaseStudyController;
+use App\Http\Controllers\DiscoveryController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PublicReviewController;
 use App\Http\Controllers\TalentProfileController;
 use App\Support\Auth\Guards;
 use Illuminate\Support\Facades\Route;
@@ -61,6 +64,18 @@ Route::group([
 
     // Role-aware auth routes (login/register/password/verification/logout).
     require __DIR__.'/auth.php';
+
+    // --- Public discovery + talent sub-pages (before the {slug} catch-all) ---
+    Route::get('/discover', [DiscoveryController::class, 'index'])->name('discover');
+    Route::get('/discover/search', [DiscoveryController::class, 'search'])->name('discover.search');
+
+    Route::get('/{slug}/review', [PublicReviewController::class, 'create'])
+        ->where('slug', '[A-Za-z0-9\-]+')->name('talent.review.create');
+    Route::post('/{slug}/review', [PublicReviewController::class, 'store'])
+        ->where('slug', '[A-Za-z0-9\-]+')->name('talent.review.store');
+
+    Route::get('/{slug}/work/{caseStudy}', [CaseStudyController::class, 'show'])
+        ->where('slug', '[A-Za-z0-9\-]+')->name('talent.work');
 
     // Public talent profile — fama.com/{slug}. MUST stay last: it is a
     // single-segment catch-all, so all named routes above take precedence. The

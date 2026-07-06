@@ -48,6 +48,22 @@ Deviations from the canonical schema (deliberate, per the standing decisions):
   is the availability state. The existing booleans are kept as synced projections (see
   `docs/architecture.md` → state machines table).
 
+## Discovery search indexes (Phase 1C — migrated, ADR-6)
+
+`2026_07_06_000100_add_discovery_search_indexes` adds the indexes the public discovery/search page
+filters on. The query-critical dimensions were already relational (professions via the
+`talent_talent_type` pivot; gear/tools as the `equipment` and `software_stack` tables), so no arrays
+needed promoting on the talent side — only these indexes:
+
+- `talents`: `availability_status`, `is_published`, `base_city`, `base_country` (single-column).
+- `talent_talent_type`: `talent_type_id` (reverse pivot lookup — "talents who work as type X"; the
+  existing unique index is `talent_id`-first).
+- `equipment`: `category`; `software_stack`: `software_name` (cross-talent gear/tool filters; the
+  existing composite indexes are `talent_id`-first).
+
+Consumed by `App\Queries\TalentSearch` (spatie/laravel-query-builder) via `filter[type|category|
+availability|city|country|equipment|software|q]`.
+
 ## Not yet built (Phase 1B+)
 
 - **Brand & satellites** (Phase 1B): `brands` and its satellites (`brand_aesthetics`, `brand_images`,
@@ -62,5 +78,6 @@ Deviations from the canonical schema (deliberate, per the standing decisions):
 
 ## Open schema items (from the specs / decisions)
 - `deals.campaign_id` — FK deals → campaigns (ADR-F), added when the campaign⇄deal link is finalised.
-- Discovery/search: query-critical arrays promoted to indexed columns/pivots (ADR-6). Equipment and
-  software_stack are already tables with indexes; brand-side promotions land in Phase 1B.
+- Discovery/search (ADR-6): **applied for the talent side** in Phase 1C — see "Discovery search
+  indexes" above. Brand-side promotions (`brand_creative_needs.talent_types`, aesthetic tags) land in
+  Phase 1B.

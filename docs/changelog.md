@@ -2,6 +2,27 @@
 
 Notable changes to the Fama project. Newest first.
 
+## 2026-07-06 — Public pages: profile, case study, reviews, discovery
+
+- **Case-study detail** `GET /{slug}/work/{caseStudy}` (`CaseStudyController` + `public/case-study`
+  view) — one `case_studies` record expanded; 404 unless published & owned. Profile case-study cards now
+  link here.
+- **Public review submission** `GET|POST /{slug}/review` (`PublicReviewController` + `StoreReviewRequest`
+  + Alpine form) — writes a pending review (`is_approved = false`); "Leave a review" CTA added to the
+  profile header.
+- **Discovery / search** (ADR-6 applied, talent side): migration
+  `add_discovery_search_indexes` (talents availability/published/city/country, `talent_talent_type.
+  talent_type_id`, `equipment.category`, `software_stack.software_name`); `App\Queries\TalentSearch`
+  (spatie/laravel-query-builder — filters type/category/availability/city/country/equipment/software/q,
+  paginated, eager-loaded); `DiscoveryController` (page + Ajax) + `public/discover` view with the
+  `talentSearch` Alpine component; `TalentCardResource`. "Discover" link in the public header.
+- **Talent profile** `GET /{slug}` was already live (Phase 1 front-end); confirmed it renders the header
+  from `talent_talent_type` (primary leading), visible blocks in position order, bumps `view_count` via
+  event, and eager-loads everything (no N+1).
+- **Tests green:** 136 passed / 431 assertions (+12) — profile & case-study render (+404s), review
+  submission writes pending (+validation/unpublished 404), discovery filters (type/availability/
+  location/equipment/software) + pagination. docs/schema.md (indexes) + api.md updated. No git.
+
 ## 2026-07-06 — Talent dashboard (talent guard)
 
 - **Full talent dashboard** under `auth:talent` (`routes/talent.php`, `app/Http/Controllers/Talent/*`):

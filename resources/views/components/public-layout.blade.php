@@ -23,6 +23,7 @@
                     Fama<span class="text-accent">.</span>
                 </a>
                 <div class="flex items-center gap-3">
+                    <a href="{{ route('discover') }}" class="hidden text-sm font-medium text-muted hover:text-ink sm:inline">{{ __('Discover') }}</a>
                     <x-public-locale-switcher />
                     <x-theme-toggle />
                 </div>
