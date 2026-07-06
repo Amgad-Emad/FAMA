@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers\Talent;
 
+use App\Models\Deal;
 use Illuminate\View\View;
 
 /**
  * Talent dashboard home — status overview (talent-spec): draft vs live,
- * view_count, pending-reviews count, and the (Phase 1E) deals slot.
+ * view_count, pending-reviews count, and the active deals + whose-turn slot.
  */
 class DashboardController extends TalentController
 {
@@ -27,6 +28,14 @@ class DashboardController extends TalentController
             'professions' => (int) $talent->talent_types_count,
         ];
 
-        return view('talent.dashboard', ['talent' => $talent, 'stats' => $stats]);
+        // Live (non-terminal) deals for the "whose turn" overview.
+        $activeDeals = Deal::forTalent($talent->getKey())
+            ->whereIn('status', ['draft', 'awaiting_brand', 'awaiting_talent', 'awaiting_admin'])
+            ->with(['brand', 'currentStep'])
+            ->latest()
+            ->limit(5)
+            ->get();
+
+        return view('talent.dashboard', ['talent' => $talent, 'stats' => $stats, 'activeDeals' => $activeDeals]);
     }
 }

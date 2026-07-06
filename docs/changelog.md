@@ -2,6 +2,19 @@
 
 Notable changes to the Fama project. Newest first.
 
+## 2026-07-06 — QA pass: discovery filter, dashboard deals, real demo data
+
+- **Discovery profession filter showed `[object Object]`** (fixed): the filter printed the raw
+  translations map; now resolves via `t(type.name)`.
+- **Dashboard "Active deals" was a stale Phase-1E placeholder** (fixed): `DashboardController` loads the
+  talent's live (non-terminal) deals and the home renders them with whose-turn highlighting + links to
+  the deal room; empty state links to the inbox.
+- **`<title>` doubled the suffix** ("Dashboard — Fama — Fama") — fixed in `talent-layout`.
+- **Real demo data:** `TalentDemoSeeder` now seeds curated content (gallery captions, two Projects,
+  rate-card services, four named reviews, brand collaborations) instead of Lorem-ipsum, plus a **live
+  in-progress deal** (brand submitted the brief → talent's turn to quote) so the deal inbox/room and the
+  dashboard demo the full lifecycle. New `ar.json` string for the empty-deals state.
+
 ## 2026-07-06 — New theme: cloud / graphite / teal + Bricolage + Sora
 
 - Replaced the design-token palette and font pairing across every page (token-only change in

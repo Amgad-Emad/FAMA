@@ -23,7 +23,7 @@
                             <button type="button" @click="toggleType(type.slug)"
                                     class="rounded-pill border px-3 py-1 text-xs font-medium transition"
                                     :class="filters.type.includes(type.slug) ? 'border-transparent bg-accent text-on-accent' : 'border-line-strong text-muted hover:text-ink'"
-                                    x-text="type.name"></button>
+                                    x-text="t(type.name)"></button>
                         </template>
                     </div>
                 </div>

@@ -33,13 +33,33 @@
     </div>
 
     <x-ui.section class="mt-10" :title="__('Active deals')" :eyebrow="__('Whose turn')">
-        <x-ui.card class="flex items-center justify-between gap-4">
-            <div>
-                <p class="text-ink">{{ __('Your deals will appear here.') }}</p>
-                <p class="mt-1 text-sm text-muted">{{ __('The deal engine, inbox and “whose turn” live tracking arrive in Phase 1E.') }}</p>
+        @if ($activeDeals->isEmpty())
+            <x-ui.card class="flex items-center justify-between gap-4">
+                <p class="text-muted">{{ __('No active deals yet — enquiries from brands will open here.') }}</p>
+                <a href="{{ route('talent.deals') }}" class="shrink-0 text-xs text-accent-ink underline">{{ __('All deals') }}</a>
+            </x-ui.card>
+        @else
+            <div class="space-y-2">
+                @foreach ($activeDeals as $deal)
+                    <a href="{{ route('talent.deals.show', $deal) }}"
+                       class="flex items-center justify-between gap-3 rounded-lg border border-line bg-surface p-4 transition hover:border-line-strong {{ $deal->status->getValue() === 'awaiting_talent' ? 'ring-1 ring-accent' : '' }}">
+                        <div class="min-w-0">
+                            <div class="font-mono text-[10px] uppercase tracking-wider text-subtle">{{ $deal->reference }}</div>
+                            <div class="font-display text-lg text-ink">{{ $deal->title }}</div>
+                            <div class="text-sm text-muted">{{ $deal->brand?->name }}</div>
+                        </div>
+                        <div class="shrink-0 text-end">
+                            <span class="rounded-pill px-2 py-1 text-[10px] font-medium {{ $deal->status->getValue() === 'awaiting_talent' ? 'bg-accent text-on-accent' : 'border border-line bg-surface text-muted' }}">
+                                {{ $deal->status->getValue() === 'awaiting_talent' ? __('Your turn') : str_replace('_', ' ', $deal->status->getValue()) }}
+                            </span>
+                            @if ($deal->currentStep)
+                                <div class="mt-1 text-xs text-subtle">{{ $deal->currentStep->name }}</div>
+                            @endif
+                        </div>
+                    </a>
+                @endforeach
             </div>
-            <span class="shrink-0 font-mono text-[11px] uppercase tracking-wider text-subtle">{{ __('Coming soon') }}</span>
-        </x-ui.card>
+        @endif
     </x-ui.section>
 
     <x-ui.section class="mt-10" :title="__('Manage your profile')">
