@@ -51,7 +51,7 @@ Fama has **three login entities**, each with its own session guard + Eloquent pr
 | Guard | Provider → Model | Table | Web home |
 |---|---|---|---|
 | `admin` (default) | `users` → `App\Models\User` | `users` (migrated) | `/admin/dashboard` |
-| `brand` | `brands` → `App\Models\Brand` | `brands` (Phase 1) | `/brand/dashboard` |
+| `brand` | `brands` → `App\Models\Brand` | `brands` (minimal stub — Phase 1E; extended Phase 1B) | `/brand/dashboard` |
 | `talent` | `talents` → `App\Models\Talent` | `talents` (Phase 1A) | `/talent/dashboard` |
 
 - **Login** is a single, role-aware form: the submitted `role` selects the guard; absent `role`
@@ -66,6 +66,9 @@ Fama has **three login entities**, each with its own session guard + Eloquent pr
 ```
 app/
   Actions/Contracts/Action.php     # single-purpose action contract
+  Actions/Deals/…                  # snapshot / initiate / advance / reject / convert
+  Deals/                           # deal engine: StepHandler strategy + factory + progression
+  States/{Deal,DealStep,DealMessage}/…  # deal lifecycle state machines
   Data/BaseData.php                # base DTO (spatie/laravel-data)
   Enums/UserRole.php               # role ⇄ guard source of truth
   Http/

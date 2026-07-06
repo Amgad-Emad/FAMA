@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\CaseStudyController;
 use App\Http\Controllers\DiscoveryController;
+use App\Http\Controllers\EnquiryController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicReviewController;
 use App\Http\Controllers\TalentProfileController;
@@ -76,6 +77,12 @@ Route::group([
 
     Route::get('/{slug}/work/{caseStudy}', [CaseStudyController::class, 'show'])
         ->where('slug', '[A-Za-z0-9\-]+')->name('talent.work');
+
+    // Deal initiation — booking CTA (no-login enquiry capture).
+    Route::get('/{slug}/enquire', [EnquiryController::class, 'create'])
+        ->where('slug', '[A-Za-z0-9\-]+')->name('talent.enquire');
+    Route::post('/{slug}/enquire', [EnquiryController::class, 'store'])
+        ->where('slug', '[A-Za-z0-9\-]+')->name('talent.enquire.store');
 
     // Public talent profile — fama.com/{slug}. MUST stay last: it is a
     // single-segment catch-all, so all named routes above take precedence. The

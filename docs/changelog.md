@@ -2,6 +2,28 @@
 
 Notable changes to the Fama project. Newest first.
 
+## 2026-07-06 — Deal engine (Phase 1E, shared infrastructure)
+
+- **Schema:** `deal_flows`, `deal_flow_steps`, `deals`, `deal_steps`, `deal_messages`, `deal_enquiries`
+  (+ models, factories, `DealFlowSeeder` "Standard Booking"). A **minimal `brands` stub** table lands
+  too (auth + name/slug + `is_complete` gate) so `deals.brand_id` FKs; Phase 1B extends it. `deal_steps`
+  snapshots `settings`/`is_required`/`is_skippable` (ADR-4).
+- **Engine:** StepHandler Strategy + `StepHandlerFactory` — one handler per step_type
+  (form/approval/upload/payment/contract/message/schedule/info); `PaymentStepHandler` manual-vs-auto
+  per ADR-B (default **manual**). Actions `SnapshotDealFlowSteps` / `InitiateDeal` / `AdvanceDeal` /
+  `RejectStep` (loop-back) / `ConvertEnquiryToDeal`, sharing the `DealProgression` engine (one active
+  step, status mirrors actor, auto system steps, system_events). State machines Deal / DealStep /
+  DealMessage. `DealService` orchestrates in transactions with `deals`-channel fail-logging.
+- **Booking CTA:** public `/{slug}/enquire` → `deal_enquiries` (availability-checked, no login),
+  replacing the fire-and-forget enquiry; converts to a deal after brand auth (Phase 2).
+- **Talent UI:** deal room (turn-aware stepper + `step_type` action panel + chat/system-event timeline
+  + free messaging) and deals inbox (status/current-step/whose-turn, filter, paginate) — Blade shells +
+  Alpine (`resources/js/deals.js`) on http.js, JSON envelopes, ownership 403 / out-of-turn 422.
+- **Tests green:** 165 passed / 493 assertions (+29) — handlers, deal/step/message transitions (incl.
+  illegal, reject-loop, skip), full initiate→advance→complete loop, convert, and the talent deal room
+  (render, thread, advance, out-of-turn, message, ownership, inbox filter). docs (architecture engine +
+  handler map, schema, api) updated. No git.
+
 ## 2026-07-06 — Public pages: profile, case study, reviews, discovery
 
 - **Case-study detail** `GET /{slug}/work/{caseStudy}` (`CaseStudyController` + `public/case-study`

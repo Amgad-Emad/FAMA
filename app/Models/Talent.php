@@ -211,6 +211,26 @@ class Talent extends Authenticatable implements HasMedia
     }
 
     /**
+     * Deals this talent is party to.
+     *
+     * @return HasMany<Deal, $this>
+     */
+    public function deals(): HasMany
+    {
+        return $this->hasMany(Deal::class);
+    }
+
+    /**
+     * Pre-auth booking enquiries for this talent.
+     *
+     * @return HasMany<DealEnquiry, $this>
+     */
+    public function dealEnquiries(): HasMany
+    {
+        return $this->hasMany(DealEnquiry::class);
+    }
+
+    /**
      * The 1:1 model comp card.
      *
      * @return HasOne<CompCard, $this>

@@ -2,6 +2,10 @@
 
 namespace App\Models;
 
+use Database\Factories\BrandFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -9,52 +13,59 @@ use Laravel\Sanctum\HasApiTokens;
 /**
  * Brand login entity (the `brand` guard, `brands` provider).
  *
- * Phase 0 stub: this Authenticatable exists so the `brand` guard resolves and
- * the mobile API can issue tokens against it. The full `brands` table, its
- * satellites, and the rich model (per docs/specs/schema-master.md §4) are built
- * in Phase 1. Do NOT add feature columns/relations here yet.
+ * MINIMAL stub extended for the Phase 1E deal engine: the auth surface plus the
+ * public identity (name/slug) and the `is_complete` deal-flow gate. The full
+ * brand core — industry, stage, location, reach, aesthetics & satellites
+ * (schema-master §4) — is built in Phase 1B and adds to this model; keep new
+ * feature columns out until then.
  */
 class Brand extends Authenticatable
 {
-    use HasApiTokens, Notifiable;
+    /** @use HasFactory<BrandFactory> */
+    use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
 
-    /**
-     * The database table backing the model (created in Phase 1).
-     *
-     * @var string
-     */
     protected $table = 'brands';
 
     /**
-     * Mass-assignable attributes for the Phase 0 auth surface.
-     *
      * @var list<string>
      */
     protected $fillable = [
-        'email',
-        'password',
+        'email', 'password', 'phone', 'name', 'slug',
+        'is_complete', 'is_active', 'is_verified', 'is_published', 'meta',
     ];
 
     /**
-     * Attributes hidden from serialization.
-     *
      * @var list<string>
      */
     protected $hidden = [
-        'password',
-        'remember_token',
+        'password', 'remember_token',
     ];
 
     /**
-     * Attribute casts.
-     *
      * @return array<string, string>
      */
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
+            'last_login_at' => 'datetime',
             'password' => 'hashed',
+            'is_complete' => 'boolean',
+            'is_active' => 'boolean',
+            'is_verified' => 'boolean',
+            'is_published' => 'boolean',
+            'view_count' => 'integer',
+            'meta' => 'array',
         ];
+    }
+
+    /**
+     * Deals this brand is party to.
+     *
+     * @return HasMany<Deal, $this>
+     */
+    public function deals(): HasMany
+    {
+        return $this->hasMany(Deal::class);
     }
 }

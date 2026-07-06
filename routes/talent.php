@@ -5,6 +5,7 @@ use App\Http\Controllers\Talent\AffiliationController;
 use App\Http\Controllers\Talent\AvailabilityController;
 use App\Http\Controllers\Talent\BlockContentController;
 use App\Http\Controllers\Talent\DashboardController;
+use App\Http\Controllers\Talent\DealController;
 use App\Http\Controllers\Talent\PressController;
 use App\Http\Controllers\Talent\ProfessionController;
 use App\Http\Controllers\Talent\ProfileEditorController;
@@ -78,6 +79,16 @@ Route::delete('/press/{press}', [PressController::class, 'destroy'])->name('pres
 Route::get('/account', [AccountController::class, 'index'])->name('account');
 Route::patch('/account', [AccountController::class, 'update'])->name('account.update');
 Route::patch('/account/publish', [AccountController::class, 'publish'])->name('account.publish');
+
+// --- Deal room + inbox ------------------------------------------------------
+Route::get('/deals', [DealController::class, 'index'])->name('deals');
+Route::get('/deals/data', [DealController::class, 'data'])->name('deals.data');
+Route::get('/deals/{deal}', [DealController::class, 'show'])->name('deals.show');
+Route::get('/deals/{deal}/thread', [DealController::class, 'thread'])->name('deals.thread');
+Route::post('/deals/{deal}/advance', [DealController::class, 'advance'])->name('deals.advance');
+Route::post('/deals/{deal}/reject', [DealController::class, 'reject'])->name('deals.reject');
+Route::post('/deals/{deal}/skip', [DealController::class, 'skip'])->name('deals.skip');
+Route::post('/deals/{deal}/message', [DealController::class, 'message'])->name('deals.message');
 
 // --- Block content editors (child tables; content_source-aware) -------------
 Route::get('/content/{type}', [BlockContentController::class, 'index'])->name('content');

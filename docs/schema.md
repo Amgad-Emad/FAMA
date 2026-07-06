@@ -64,17 +64,40 @@ needed promoting on the talent side — only these indexes:
 Consumed by `App\Queries\TalentSearch` (spatie/laravel-query-builder) via `filter[type|category|
 availability|city|country|equipment|software|q]`.
 
+## Deal engine (Phase 1E — migrated)
+
+**Templates:** `deal_flows` (named, `applies_to` category scope, `is_default`), `deal_flow_steps`
+(ordered; `actor`, `step_type`, `is_required`/`is_skippable`, `settings` JSON).
+
+**Instances:** `deals` (soft deletes; `reference` unique, FK brand/talent/service?/deal_flow;
+`current_step_id` → deal_steps; `status` state machine; headline brief/amount/dates; `initiated_by`),
+`deal_steps` (per-deal snapshot; `status` state machine; `payload` JSON; polymorphic `completed_by`),
+`deal_messages` (thread; `type` message/system_event/action_summary; polymorphic `sender`; `status`
+sent→read state machine + `read_at` projection), `deal_enquiries` (pre-auth Contact capture; converts
+to a deal, `converted_deal_id`).
+
+Deviations (deliberate):
+
+- **`brands` is a MINIMAL stub** (`create_brands_stub_table`): auth surface + `name`/`slug` +
+  `is_complete` deal gate + flags, so `deals.brand_id` can FK and tests can seed brands. The full brand
+  core & satellites (schema-master §4) are Phase 1B and **extend** this table.
+- **`deal_steps` snapshots `settings` + `is_required` + `is_skippable`** (not in schema-master's column
+  list). Required by ADR-4 — the handler config must be frozen at creation so template edits never
+  change an in-flight deal. `settings.instructions` carries the step's help text.
+- **`deal_messages.status`** (sent/read) is the DealMessage state-machine column; `read_at` is its
+  synced projection (same convention as the Phase 1B state columns).
+- **`campaign_id`** on deals is still deferred (ADR-F), added with campaigns.
+
 ## Not yet built (Phase 1B+)
 
-- **Brand & satellites** (Phase 1B): `brands` and its satellites (`brand_aesthetics`, `brand_images`,
-  `brand_creative_needs`, `brand_credibility`, `brand_reviews`, `brand_social_handles`,
-  `brand_signals`).
-- **Deal engine:** `deal_flows`, `deal_flow_steps`, `deals`, `deal_steps`, `deal_messages`,
-  `deal_enquiries`.
+- **Brand core & satellites** (Phase 1B): extend `brands` (industry, stage, location, reach, …) and add
+  `brand_aesthetics`, `brand_images`, `brand_creative_needs`, `brand_credibility`, `brand_reviews`,
+  `brand_social_handles`, `brand_signals`.
 - **Campaigns:** `campaigns`, `campaign_talent_types`, `campaign_media`.
 - **Platform:** `settings`.
 
-> `App\Models\Brand` remains a Phase 0 Authenticatable stub until Phase 1B.
+> `App\Models\Brand` is now a minimal deal-engine model (auth + identity + `is_complete`); Phase 1B
+> fills out the rich brand profile.
 
 ## Open schema items (from the specs / decisions)
 - `deals.campaign_id` — FK deals → campaigns (ADR-F), added when the campaign⇄deal link is finalised.

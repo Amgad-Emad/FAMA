@@ -85,5 +85,13 @@ Public pages complete (unguarded, routes/web.php + app/Http/Controllers/*): tale
 (view_count via event, no N+1), case study GET /{slug}/work/{caseStudy}, review submission GET|POST
 /{slug}/review (pending), and discovery GET /discover (+ /discover/search) backed by App\Queries\
 TalentSearch (spatie/laravel-query-builder) with ADR-6 search indexes (migration add_discovery_search_
-indexes). 136 tests green.
-Next: Phase 1B/2 — brand & satellites schema + models (then the deal engine, Phase 1E).
+indexes).
+Deal engine complete (Phase 1E, shared infra — app/Deals, app/Actions/Deals, app/Services/DealService,
+app/States/Deal|DealStep|DealMessage): deal_flows/deal_flow_steps/deals/deal_steps/deal_messages/
+deal_enquiries + a MINIMAL brands stub table (Phase 1B extends). StepHandler Strategy+Factory (8 types;
+PaymentStepHandler manual-vs-auto per ADR-B, default manual); Actions Snapshot/Initiate/Advance/
+RejectStep(loop-back)/ConvertEnquiry sharing DealProgression; state machines; DealService in
+transactions (deals channel). Booking CTA GET|POST /{slug}/enquire → deal_enquiries. Talent deal room +
+inbox (routes/talent.php, resources/js/deals.js). 165 tests green.
+Next: Phase 1B/2 — brand core & satellites (extend brands) + brand deal room; then Admin (Phase 3:
+flow authoring + intervention). deals.campaign_id (ADR-F) lands with campaigns.

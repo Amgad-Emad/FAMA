@@ -194,6 +194,57 @@ through `x-public-layout`. All resolve **published** talents only.
   (`talentTypes` + `media`), and shaped by `TalentCardResource`. Backed by the Phase 1C search indexes
   (see docs/schema.md).
 
+## Deal engine (Phase 1E — shared infrastructure)
+
+The configurable brand ↔ talent deal loop. Admin-authored flows (`deal_flows` +
+`deal_flow_steps`) are **snapshotted** into a deal's `deal_steps` at creation (ADR-4), so template
+edits never affect in-flight deals. Brand (Phase 2) and Admin (Phase 3) extend the same engine.
+
+**Strategy + Factory — one handler per `step_type`** (`app/Deals/Steps`, resolved by
+`App\Deals\StepHandlerFactory`). Each handler `validate()`s the actor's input, `apply()`s side effects
+to the deal, declares `isAutomatic()`, and returns a `summary()` for the timeline:
+
+| step_type | handler | behaviour |
+|---|---|---|
+| form | FormStepHandler | validates `fields`; an `amount_field` sets `deal.agreed_amount` |
+| approval | ApprovalStepHandler | approve → advance; reject → loop back (separate path) |
+| upload | UploadStepHandler | requires ≥1 `attachments` reference |
+| payment | PaymentStepHandler | **ADR-B**: `settings.confirmation` = manual \| auto (default **manual**); auto (or system actor) auto-completes |
+| contract | ContractStepHandler | records a signature |
+| message | MessageStepHandler | requires a body; echoes it into the thread |
+| schedule | ScheduleStepHandler | writes `start_date`/`end_date` onto the deal |
+| info | InfoStepHandler | system-actor → auto-complete; human → acknowledge |
+
+**Actions** (`app/Actions/Deals`, single-purpose invokables): `SnapshotDealFlowSteps`, `InitiateDeal`
+(create + snapshot + activate first), `AdvanceDeal` (validate/apply → complete → advance), `RejectStep`
+(loop back — reopen the disputed step, reset the tail to pending), `ConvertEnquiryToDeal`.
+
+**DealProgression** (`app/Deals`) is the engine the actions share. It holds the invariants: exactly one
+step active/awaiting_action at a time, `deal.status` mirrors the current step's actor
+(awaiting_brand ⇄ awaiting_talent ⇄ awaiting_admin), automatic steps complete themselves and recurse,
+every completion posts a `system_event`, and running out of pending steps completes the deal.
+
+**State machines** (`app/States/Deal|DealStep|DealMessage`, spatie/laravel-model-states):
+- **Deal**: draft → awaiting_* (interchangeable) → completed; terminal cancelled/declined/expired; soft-delete.
+- **DealStep**: pending → active → awaiting_action → completed; side exits skipped/rejected; reject-loop
+  uses completed→rejected→awaiting_action (redo) and completed/awaiting_action→pending (tail reset).
+- **DealMessage**: sent → read (`read_at` is the projection); system_event/action_summary are immutable
+  (never marked read).
+
+**DealService** (`app/Services/DealService`, `deals` log channel) is the single façade controllers call:
+`initiate`, `advance`, `reject`, `skip`, `convertEnquiry`, `postMessage`, `markThreadRead` — each wraps
+its action(s) in a transaction with fail-logging.
+
+**Booking CTA / deal initiation**: the public profile Contact button → `EnquiryController` writes a
+`deal_enquiries` row (availability-checked, no login); it converts to a deal after the visitor
+authenticates as a brand (Phase 2). Talent deal UI: `Talent\DealController` (deal room + inbox) acts as
+the `talent` role; the Alpine `dealRoom`/`dealsInbox` components (`resources/js/deals.js`) render a
+turn-aware action panel by `step_type` and the interleaved message/system_event timeline.
+
+> **Brands stub**: `deals.brand_id` needs a `brands` table, which is Phase 1B. Phase 1E ships a
+> **minimal** brands table (auth surface + name/slug + `is_complete` gate) so the engine references and
+> tests can seed brands; Phase 1B adds the full brand core (see docs/schema.md).
+
 ## Cross-cutting
 
 - **Logging:** dedicated channels `app`, `auth`, `deals`, `media` (`config/logging.php`). Failure

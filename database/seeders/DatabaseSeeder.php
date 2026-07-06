@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             TalentTypeSeeder::class,
             BlockTypeSeeder::class,
+            DealFlowSeeder::class,
             TalentDemoSeeder::class,
         ]);
     }

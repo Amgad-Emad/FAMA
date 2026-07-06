@@ -62,6 +62,8 @@ the JSON envelope + `http.js`. All resolve **published** talents only (404 other
 | Review submit | `POST /{slug}/review` | writes a **pending** review (`is_approved = false`) — envelope |
 | Discovery | `GET /discover` | search page shell |
 | Discovery search | `GET /discover/search` | paginated talent cards — envelope; filters below |
+| Booking CTA | `GET /{slug}/enquire` | booking/enquiry form (services + brief) |
+| Enquiry submit | `POST /{slug}/enquire` | writes a `deal_enquiries` row (availability-checked) — envelope |
 
 **Discovery filters** (spatie/laravel-query-builder, `App\Queries\TalentSearch`), passed as
 `filter[...]` query params: `type` & `category` (comma-separated slugs, through the pivot),
@@ -94,6 +96,15 @@ profession) and illegal state transitions (bad publish) return **422** envelopes
 | Affiliations | `GET /talent/affiliations` (+ `/data`, `POST`, `PATCH {id}`, `PATCH {id}/end`, `DELETE {id}`) | agency representation |
 | Press | `GET /talent/press/data` · `POST /talent/press` · `DELETE /talent/press/{press}` | press features |
 | Account | `GET /talent/account` · `PATCH /talent/account` · `PATCH /talent/account/publish` | slug/prefs · publish toggle |
+| Deals inbox | `GET /talent/deals` · `GET /talent/deals/data?status=` | list, whose-turn, filter, paginated |
+| Deal room | `GET /talent/deals/{deal}` · `GET /talent/deals/{deal}/thread` | room shell · header+stepper+timeline payload (marks read) |
+| Deal actions | `POST /talent/deals/{deal}/advance` · `/reject` · `/skip` · `/message` | act on the current step / loop back / skip / chat — envelope |
+
+The talent acts as the `talent` role; the current step's `step_type` selects the action shape
+(`advance` body: `{fields}` for form, `{note}` for approval, `{attachments}` for upload, `{confirmed}`
+for payment, `{signed,signatory}` for contract, `{start_date,end_date}` for schedule, `{body}` for
+message, `{}` for info). Acting out of turn → **422**; a foreign deal → **403**. All deal mutations go
+through `App\Services\DealService`.
 
 Controllers are thin and delegate to the Phase 1B services (ProfileBlockService, ProfessionsService,
 TalentProfileService); validation via Form Requests (`app/Http/Requests/Talent`), output via Resources
