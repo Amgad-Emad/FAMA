@@ -47,9 +47,8 @@ Route::group([
         Route::view('/dashboard', 'dashboard')->name('dashboard');
     });
 
-    Route::middleware('auth:talent')->prefix('talent')->name('talent.')->group(function () {
-        Route::view('/dashboard', 'dashboard')->name('dashboard');
-    });
+    Route::middleware('auth:talent')->prefix('talent')->name('talent.')
+        ->group(base_path('routes/talent.php'));
 
     // --- Admin profile (Breeze) ---------------------------------------------
     // Runs on the admin guard; brand/talent profile editors are dedicated

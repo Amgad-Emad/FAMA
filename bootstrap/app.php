@@ -12,6 +12,7 @@ use Mcamara\LaravelLocalization\Middleware\LaravelLocalizationRoutes;
 use Mcamara\LaravelLocalization\Middleware\LaravelLocalizationViewPath;
 use Mcamara\LaravelLocalization\Middleware\LocaleCookieRedirect;
 use Mcamara\LaravelLocalization\Middleware\LocaleSessionRedirect;
+use Spatie\ModelStates\Exceptions\CouldNotPerformTransition;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -53,6 +54,21 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->render(function (AuthenticationException $e, Request $request) use ($wantsJson) {
             if ($wantsJson($request)) {
                 return ApiResponse::error(message: $e->getMessage(), status: 401);
+            }
+        });
+
+        // Domain-rule violations from the service layer (e.g. ineligible block,
+        // duplicate profession) surface as 422 envelopes.
+        $exceptions->render(function (InvalidArgumentException $e, Request $request) use ($wantsJson) {
+            if ($wantsJson($request)) {
+                return ApiResponse::error(message: $e->getMessage(), status: 422);
+            }
+        });
+
+        // Illegal state-machine transition (e.g. publishing from an invalid state).
+        $exceptions->render(function (CouldNotPerformTransition $e, Request $request) use ($wantsJson) {
+            if ($wantsJson($request)) {
+                return ApiResponse::error(message: $e->getMessage(), status: 422);
             }
         });
     })->create();

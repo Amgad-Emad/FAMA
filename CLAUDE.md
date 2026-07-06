@@ -75,5 +75,10 @@ via `data-theme`) mapped into Tailwind `@theme`, Bodoni Moda + IBM Plex fonts, b
 Talent domain logic complete: block engine (MergeDefaultBlocksForTypes + SeedProfileBlocks actions,
 ProfileBlockService with eligible picker), ProfessionsService, TalentProfileService; 7 state machines
 (app/States) with a synced-projection convention; auto-discovered events/listeners (view count,
-published_at, media pipeline); own-resource policies. 101 tests green.
-Next: Phase 1B — brand & satellites schema + models (then the deal engine).
+published_at, media pipeline); own-resource policies.
+Talent dashboard complete (talent guard, routes/talent.php + app/Http/Controllers/Talent/*): home,
+profile editor (reorderable blocks + eligibility picker + hero upload), professions, block content
+editors (registry-driven + media), rate card, availability, reviews moderation, affiliations & press,
+account. Blade shells + Alpine (resources/js/dashboard.js) on http.js, JSON envelopes, no reloads,
+ownership 403 / domain 422. 124 tests green.
+Next: Phase 1B/2 — brand & satellites schema + models (then the deal engine, Phase 1E).

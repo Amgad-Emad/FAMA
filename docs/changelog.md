@@ -2,6 +2,24 @@
 
 Notable changes to the Fama project. Newest first.
 
+## 2026-07-06 — Talent dashboard (talent guard)
+
+- **Full talent dashboard** under `auth:talent` (`routes/talent.php`, `app/Http/Controllers/Talent/*`):
+  home (draft/live, view_count, pending reviews, deals slot), profile editor (core fields + reorderable
+  blocks + eligibility picker + hero upload), professions manager, block content editors (registry-driven
+  controller for gallery/digitals/showreel/equipment/case-studies/software/brand-collabs/looks with
+  medialibrary upload), rate card, availability & travel, reviews moderation, affiliations & press, and
+  account/settings (slug + publish toggle).
+- **Thin controllers → Phase 1B services**; Form Requests (`app/Http/Requests/Talent`) validate,
+  Resources (`app/Http/Resources`) shape output, everything returns the JSON envelope. Own-resource
+  access enforced (403 on foreign); domain-rule/illegal-transition errors return 422 envelopes
+  (`bootstrap/app.php` renders).
+- **Front-end**: Blade shells + Alpine (`resources/js/dashboard.js`: `profileEditor`, `professionsManager`,
+  `crudList`) on the shared `http.js` wrapper — no page reloads, optimistic drag-reorder, inline
+  validation errors, medialibrary uploads with skeleton/loading, dark/light + RTL. New `x-talent-layout`.
+- **Tests green:** 124 passed / 400 assertions (+23) — each page's happy path, guest→login, admin
+  rejection, ownership 403s, eligibility/duplicate 422s, and a media upload. No git.
+
 ## 2026-07-05 — Talent domain logic: block engine, services & state machines
 
 - **Block engine.** Actions `MergeDefaultBlocksForTypes` (merge + de-dupe) and `SeedProfileBlocks`

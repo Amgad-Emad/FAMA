@@ -5,4 +5,7 @@ import './http';
 
 window.Alpine = Alpine;
 
+// Talent dashboard Alpine components (register on alpine:init before start()).
+import './dashboard';
+
 Alpine.start();

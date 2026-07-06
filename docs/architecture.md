@@ -152,6 +152,28 @@ serves the Phase 1A queries/views.
 (`TalentPolicy`, `ProfileBlockPolicy`, `ServicePolicy`, `ReviewPolicy`, `AgencyAffiliationPolicy`,
 `PortfolioItemPolicy`, `PressFeaturePolicy`), all via `BasePolicy::owns`.
 
+## Talent dashboard (Phase 1C)
+
+The authenticated talent-guard dashboard (`routes/talent.php`, controllers in
+`app/Http/Controllers/Talent`, all extending `TalentController`). It is Blade shells + Alpine driven by
+the shared `http.js` wrapper — pages render a shell, every interaction is Ajax against JSON-envelope
+endpoints, nothing reloads.
+
+- **Thin controllers → services.** Controllers validate (Form Requests in `app/Http/Requests/Talent`),
+  call the Phase 1B services (ProfileBlockService / ProfessionsService / TalentProfileService), and
+  return Resources (`app/Http/Resources`) wrapped in the envelope. `TalentController::ensureOwns()`
+  enforces own-resource access (403); `BlockContentController` resolves the model then `ensureOwns`.
+- **Pages.** Home (stats + deals slot), Profile editor (core fields + reorderable blocks + eligibility
+  picker + hero upload), Professions, Block content editors (a registry-driven controller serving every
+  "table" block — gallery/digitals/showreel/equipment/case-studies/software/brand-collabs/looks — with
+  medialibrary upload), Rate card, Availability, Reviews moderation, Affiliations & press, Account.
+- **Front-end** (`resources/js/dashboard.js`, Alpine): `profileEditor` (optimistic drag-reorder,
+  inline errors, hero upload), `professionsManager`, and a generic `crudList` (paginated load,
+  create/remove/act, media quick-add, drag-reorder). `x-talent-layout` is the sidebar shell (dark + RTL).
+- **Error envelopes.** `bootstrap/app.php` renders `ValidationException`/`InvalidArgumentException`/
+  `CouldNotPerformTransition` as 422 (and `AuthenticationException` as 401) for JSON/Ajax requests, so
+  the front-end surfaces them inline.
+
 ## Cross-cutting
 
 - **Logging:** dedicated channels `app`, `auth`, `deals`, `media` (`config/logging.php`). Failure
