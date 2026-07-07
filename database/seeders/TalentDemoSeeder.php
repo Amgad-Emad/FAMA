@@ -18,6 +18,7 @@ use App\Models\Showreel;
 use App\Models\Talent;
 use App\Models\TalentType;
 use App\Services\DealService;
+use Database\Seeders\Concerns\GeneratesCoverImages;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -32,6 +33,8 @@ use Illuminate\Support\Facades\Hash;
  */
 class TalentDemoSeeder extends Seeder
 {
+    use GeneratesCoverImages;
+
     private const EMAIL = 'demo.talent@fama.test';
 
     public function run(): void
@@ -60,6 +63,10 @@ class TalentDemoSeeder extends Seeder
                 $model->id => ['is_primary' => true, 'position' => 0],
                 $photographer->id => ['is_primary' => false, 'position' => 1],
             ]);
+
+            // Hero + avatar images.
+            $talent->addMedia($this->cover('layla-hero', 1280, 860))->toMediaCollection('hero');
+            $talent->addMedia($this->cover('layla-avatar', 640, 640))->toMediaCollection('avatar');
 
             // Merge + dedupe the default blocks of both types, preserving order.
             $keys = collect($model->default_blocks)
@@ -102,9 +109,10 @@ class TalentDemoSeeder extends Seeder
                 ['en' => 'Linen campaign still', 'ar' => 'لقطة حملة الكتان'],
             ];
             foreach ($captions as $i => $caption) {
-                PortfolioItem::factory()->for($talent)->create([
+                $item = PortfolioItem::factory()->for($talent)->create([
                     'block_id' => $galleryBlock?->id, 'media_type' => 'image', 'caption' => $caption, 'position' => $i,
                 ]);
+                $item->addMedia($this->cover('layla-g'.$i, 900, 1120))->toMediaCollection('gallery');
             }
 
             CompCard::factory()->for($talent)->create();               // model

@@ -2,6 +2,18 @@
 
 Notable changes to the Fama project. Newest first.
 
+## 2026-07-07 — Showcase demo data: 10 talents with images
+
+- **`TalentShowcaseSeeder`** — ten published talents spanning all six professions (single- and
+  multi-type: model, photographer, cinematographer, creative director, stylist, graphic designer, plus
+  combinations), each with curated headline/bio/city/services/reviews and category-appropriate content,
+  so discovery and profiles render with varied structures (5–9 blocks, rich vs lean).
+- **Real images** — hero, avatar and gallery covers are generated locally with GD (deterministic
+  gradient covers, no external assets/CDN) via the shared `Concerns\GeneratesCoverImages` trait, and
+  attached through medialibrary. `TalentDemoSeeder` (Layla) now gets images too. Registered in
+  `DatabaseSeeder`. Verified in-browser: discovery lists 11 talents with images; profiles show
+  hero/avatar/gallery.
+
 ## 2026-07-06 — QA pass: discovery filter, dashboard deals, real demo data
 
 - **Discovery profession filter showed `[object Object]`** (fixed): the filter printed the raw
