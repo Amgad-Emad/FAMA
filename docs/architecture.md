@@ -359,6 +359,20 @@ each action to the activity log with the admin as causer. Everything is transact
 > services log explicit action entries (`moderation` / `catalog` / `media` / `deal_intervention` log
 > names) with `causedBy($admin)` + ad-hoc `properties` (reason, from/to, etc.).
 
+### Admin dashboard (Phase 3B)
+
+The admin-guard dashboard (`routes/admin.php`, `app/Http/Controllers/Admin/*`, `<x-admin-layout>`,
+`resources/js/admin.js`) wires the 3A services into a UI, following the same conventions as the talent/brand
+dashboards (Blade shells + Alpine on `http.js`, JSON envelopes, no reloads, eager-load + paginate).
+**Authorization is two-layered:** `can:` middleware gates each route group per permission (a powerless admin
+gets 403 before the controller runs), and the service re-authorizes + audits the action. Screens: the
+**flow builder** (drag-reorder steps, configure actor/type/flags/settings, set default, scope, activate/
+archive), tabbed **moderation queues** (talents / reviews / brands / brand-reviews / campaigns with batch
+approve/reject + suspend/verify/cancel), the **profession/template manager** (visual `default_blocks`
+editor), the **deal intervention console** (override / advance-as-admin / nudge / cancel with a live
+timeline), a searchable **activity-log viewer**, the **settings** screen, and **admin-user** management
+(create + role assignment). Controllers stay thin — every mutation delegates to a Phase 3A service.
+
 ## Cross-cutting
 
 - **Logging:** dedicated channels `app`, `auth`, `deals`, `media` (`config/logging.php`). Failure

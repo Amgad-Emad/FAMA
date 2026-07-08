@@ -152,6 +152,34 @@ Form Requests (`app/Http/Requests/Brand`) + inline rules, output via Resources (
 `CampaignResource`, `BrandReviewResource`, `TalentCardResource`, shared `DealResource`). Front-end
 components live in `resources/js/brand.js`.
 
+## Admin dashboard — web endpoints (session, `auth:admin`)
+
+Defined in `routes/admin.php` (prefix `/admin`, name `admin.`). Same conventions as the other dashboards
+(Blade shells + JSON envelope + `http.js`, no reloads, eager-load + paginate). **Page access is gated per
+capability by `can:` middleware** (spatie permissions on the admin guard) — a powerless admin gets **403**;
+every action also re-authorizes + audits inside the Phase 3A service.
+
+| Area | Method + path | Perm | Purpose |
+|---|---|---|---|
+| Home | `GET /admin/dashboard` | — | governance overview (pending queues, deals awaiting admin) |
+| Flows | `GET /admin/flows` · `GET …/data` · `POST …` | manage-flows | list · paginated · create (draft) |
+| Flow | `GET /admin/flows/{f}` · `GET …/data` · `PATCH …` | manage-flows | workspace · payload (steps) · edit meta/scope |
+| Flow lifecycle | `PATCH …/{f}/{default,activate,archive}` | manage-flows | set default · activate · archive |
+| Flow steps | `POST …/{f}/steps` · `PATCH …/steps/reorder` · `PATCH …/steps/{s}` · `DELETE …/steps/{s}` | manage-flows | add · drag-reorder · edit · remove |
+| Professions | `GET /admin/professions` · `GET …/data` · `POST …` · `PATCH …/{type}/blocks` | manage-flows | catalog · list · add profession · edit default_blocks |
+| Moderation | `GET /admin/moderation` + `/{talents,reviews,brands,brand-reviews,campaigns}` | moderate-content | queues (paginated JSON) |
+| Moderation actions | `PATCH …/{queue}/{id}/{action}` · `POST …/reviews/batch` | moderate-content | suspend/verify/approve/cancel… · batch approve/reject |
+| Deal console | `GET /admin/deals` · `GET …/data?status=` · `GET …/{deal}` · `GET …/thread` | intervene-deals | list · filter · console · payload |
+| Deal intervene | `POST /admin/deals/{deal}/{override,advance,nudge,reassign,cancel}` | intervene-deals | override stuck step / act as admin / nudge / reassign / cancel |
+| Activity | `GET /admin/activity` · `GET …/data?q=&log=` | manage-settings | searchable audit trail |
+| Settings | `GET /admin/settings` · `PATCH /admin/settings` | manage-settings | platform globals + feature flags |
+| Admin users | `GET /admin/users` · `GET …/data` · `POST …` · `PATCH …/{u}` · `PATCH …/{u}/roles` · `DELETE …/{u}` | manage-users | staff CRUD + role assignment |
+
+Controllers are thin (`app/Http/Controllers/Admin/*`) and delegate every mutation to the Phase 3A admin
+services; validation via Form Requests (`app/Http/Requests/Admin`) + inline rules; output via Resources
+(`DealFlowResource`, `ActivityResource`, `AdminUserResource`, shared `DealResource`, etc.). Front-end
+components live in `resources/js/admin.js`.
+
 ## Mobile API endpoints
 None yet — the Sanctum token API lands in Phase 4; each endpoint will document its request/response
 against the envelope above.

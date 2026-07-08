@@ -157,7 +157,15 @@ ReviewModerationService incl. batch + brand reviews, CampaignOversightService). 
 (advance-as-admin / override stuck step / nudge / reassign / cancel, reusing the 1E engine). Policies for
 every capability (auto-discovered, gating spatie permissions on the admin guard). All transactional,
 fail-logged, activitylog-audited. 258 tests green.
-Next: Phase 3A UI — the admin dashboard (admin guard) wiring these services: flow builder, moderation/
-approval queues, deal intervention screens, activity-log viewer, settings editor — gated on the seeded
-permissions (@can). Then brand↔talent deal initiation (brand discovers talent → enquiry→deal on the shared
-engine), then the Sanctum mobile API (Phase 4).
+Phase 3B complete (admin dashboard UI, admin guard, routes/admin.php + app/Http/Controllers/Admin/*):
+flow builder (drag-order steps, configure, set default, scope, activate/archive), tabbed moderation queues
+(talents/reviews/brands/brand-reviews/campaigns — batch + suspend/verify/cancel), profession/template
+manager (visual default_blocks editor + add profession), deal intervention console (override/advance-as-
+admin/nudge/reassign/cancel + timeline), searchable activity-log viewer, settings screen, admin-users
+management. x-admin-layout + resources/js/admin.js on http.js, JSON envelopes, no reloads. Two-layer authz:
+can: middleware gates pages (403 for powerless admin) + the 3A service re-authorizes/audits each action.
+268 tests green.
+
+ADMIN PHASE COMPLETE (3A foundation + 3A domain logic + 3B UI). Next: brand↔talent deal initiation (brand
+discovers a talent → enquiry→deal on the shared engine, the reverse of the talent-side booking CTA), then
+the Sanctum mobile API (Phase 4 — talents/brands/admins already have HasApiTokens).

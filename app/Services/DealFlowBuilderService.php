@@ -40,6 +40,22 @@ class DealFlowBuilderService extends AdminService
     }
 
     /**
+     * Edit a flow's metadata (name / description / applies_to scope).
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public function updateFlow(User $admin, DealFlow $flow, array $data): DealFlow
+    {
+        $this->authorizeAdmin($admin, 'manage', $flow);
+
+        return $this->runInTransaction(function () use ($flow, $data): DealFlow {
+            $flow->update(Arr::only($data, ['name', 'description', 'applies_to']));
+
+            return $flow->refresh();
+        }, ['flow_id' => $flow->getKey()]);
+    }
+
+    /**
      * @param  array<string, mixed>  $data
      */
     public function addStep(User $admin, DealFlow $flow, array $data): DealFlowStep

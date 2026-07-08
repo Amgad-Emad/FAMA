@@ -12,4 +12,7 @@ import './deals';
 // Brand dashboard Alpine components.
 import './brand';
 
+// Admin dashboard Alpine components.
+import './admin';
+
 Alpine.start();

@@ -32,6 +32,24 @@ Notable changes to the Fama project. Newest first.
   Regression test in `MultiGuardTest`.
 - 224 tests green.
 
+## 2026-07-09 — Phase 3B: admin dashboard UI
+
+- **Admin guard dashboard** — `routes/admin.php` (permission-gated `can:` groups), 8 thin controllers
+  under `Admin\*` delegating to the 3A services, `<x-admin-layout>`, `resources/js/admin.js`; resources
+  `DealFlowResource`/`DealFlowStepResource`/`ActivityResource`/`AdminUserResource`.
+- **Flow builder UI** (drag-order steps, configure actor/step_type/required/skippable/settings, set
+  default, scope by category, activate/archive); **moderation queues** (tabbed: talents/reviews/brands/
+  brand-reviews/campaigns — batch approve/reject, suspend/verify/unpublish/delete/cancel/force-private);
+  **profession/template manager** (visual default_blocks editor + add profession); **deal intervention
+  console** (override / advance-as-admin / nudge / reassign / cancel + timeline); searchable
+  **activity-log viewer**; **settings** screen; **admin-users** management (+ role assignment).
+- **Two-layer authz:** `can:` middleware gates pages (403 for a powerless admin) + the service
+  re-authorizes/audits each action.
+- **Tests +10 (268 green):** every admin page renders for a super-admin + 403 for a powerless admin;
+  flow build/activate, moderation actions (incl. batch), template edits, deal override/cancel, settings +
+  admin-user create — each with a non-admin policy-rejection case. Docs (api + architecture) + CLAUDE
+  updated. No git.
+
 ## 2026-07-09 — Phase 3A: admin domain logic (flow builder, moderation, intervention)
 
 - **`AdminService` base** — admin log channel + `authorizeAdmin()`/`authorizePermission()` (policy/permission

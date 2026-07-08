@@ -47,9 +47,8 @@ Route::group([
     })->name('dashboard');
 
     // --- Guarded dashboards (one group per guard) ---------------------------
-    Route::middleware('auth:admin')->prefix('admin')->name('admin.')->group(function () {
-        Route::view('/dashboard', 'dashboard')->name('dashboard');
-    });
+    Route::middleware('auth:admin')->prefix('admin')->name('admin.')
+        ->group(base_path('routes/admin.php'));
 
     Route::middleware('auth:brand')->prefix('brand')->name('brand.')
         ->group(base_path('routes/brand.php'));
