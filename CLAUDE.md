@@ -148,7 +148,16 @@ intervene-deals/manage-settings/manage-users (RolesAndPermissionsSeeder); settin
 SettingsService (cached, typed globals, admin log channel) + SettingsSeeder; activity_log confirmed
 recording subject/causer/changes (DealFlow/DealFlowStep now LogsActivity, log name deal_flow; this
 activitylog version stores model old/new under attribute_changes). 237 tests green.
-Next: Phase 3A UI — the admin dashboard (admin guard) on this foundation: deal-flow builder (writes
-deal_flows/deal_flow_steps), moderation/approval queues, deal-step intervention/override, activity-log
-viewer — gated on the seeded permissions. Then brand↔talent deal initiation (brand discovers talent →
-enquiry→deal on the shared engine), then the Sanctum mobile API (Phase 4).
+Phase 3A domain logic complete (admin governance services): AdminService base (admin channel + policy/
+permission gating + activity-log record with admin causer). DealFlowBuilderService + DealFlowState machine
+(draft→active→archived, is_active synced, is_default unique per applies_to); edits affect future deals only
+(snapshot isolation). Moderation services (TalentModerationService, BrandModerationService,
+ReviewModerationService incl. batch + brand reviews, CampaignOversightService). ProfessionCatalogService
+(default_blocks + add professions), MediaOversightService (retry conversions), DealInterventionService
+(advance-as-admin / override stuck step / nudge / reassign / cancel, reusing the 1E engine). Policies for
+every capability (auto-discovered, gating spatie permissions on the admin guard). All transactional,
+fail-logged, activitylog-audited. 258 tests green.
+Next: Phase 3A UI — the admin dashboard (admin guard) wiring these services: flow builder, moderation/
+approval queues, deal intervention screens, activity-log viewer, settings editor — gated on the seeded
+permissions (@can). Then brand↔talent deal initiation (brand discovers talent → enquiry→deal on the shared
+engine), then the Sanctum mobile API (Phase 4).

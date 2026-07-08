@@ -32,6 +32,28 @@ Notable changes to the Fama project. Newest first.
   Regression test in `MultiGuardTest`.
 - 224 tests green.
 
+## 2026-07-09 — Phase 3A: admin domain logic (flow builder, moderation, intervention)
+
+- **`AdminService` base** — admin log channel + `authorizeAdmin()`/`authorizePermission()` (policy/permission
+  gating) + `record()` (activity log, admin as causer). Every action transactional + fail-logged.
+- **Deal-flow builder** (`DealFlowBuilderService`) + **template state machine** (`DealFlowState`:
+  draft → active → archived, `is_active` synced via `SyncStateProjections`, `is_default` unique per
+  `applies_to`). Author flows + ordered steps, reorder, mark default, activate/archive. Edits affect
+  future deals only (snapshot isolation, tested). `DealFlow`/`DealFlowStep` audited via `LogsActivity`.
+- **Moderation services:** `TalentModerationService` (suspend/unpublish/soft-delete/restore),
+  `BrandModerationService` (verify one-way + suspend/unpublish/soft-delete), `ReviewModerationService`
+  (approve/reject talent reviews incl. batch + brand reviews), `CampaignOversightService`
+  (filter/cancel/force-private).
+- **`ProfessionCatalogService`** — edit `talent_types.default_blocks` (new seeds only) + add professions
+  without code. **`MediaOversightService`** — surface + re-queue ungenerated conversions.
+- **`DealInterventionService`** — reuses the 1E engine: advance as admin actor, override a stuck step,
+  nudge, reassign, cancel — all logged + posting system events.
+- **Policies (auto-discovered)** for every capability (DealFlow/TalentType/Deal/Brand/BrandReview/Campaign
+  + Talent/Review `moderate`), each gating a spatie permission on the admin guard.
+- **Tests +21 (258 green):** flow builder (+ state machine + snapshot isolation), each moderation path,
+  profession-template edits, media retry, deal intervention/override — each with activitylog assertions
+  and a policy-denied case. Docs (architecture) + CLAUDE updated. No git.
+
 ## 2026-07-09 — Phase 3A: admin foundation (RBAC + settings + audit)
 
 - **users refined** for admin (schema-master §6): `phone`, `avatar_url`, `locale` enum(en, ar),

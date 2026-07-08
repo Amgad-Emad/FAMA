@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\States\DealFlow\DealFlowState;
 use Database\Factories\DealFlowFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -9,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
+use Spatie\ModelStates\HasStates;
 
 /**
  * Deal flow (schema-master §3) — a named, reusable, admin-authored step
@@ -20,7 +22,7 @@ use Spatie\Activitylog\Support\LogOptions;
 class DealFlow extends Model
 {
     /** @use HasFactory<DealFlowFactory> */
-    use HasFactory, LogsActivity;
+    use HasFactory, HasStates, LogsActivity;
 
     /**
      * Audit flow edits (admin-governed) — subject + causer + changed attributes.
@@ -29,7 +31,7 @@ class DealFlow extends Model
     {
         return LogOptions::defaults()
             ->useLogName('deal_flow')
-            ->logOnly(['name', 'slug', 'description', 'applies_to', 'is_active', 'is_default'])
+            ->logOnly(['name', 'slug', 'description', 'applies_to', 'is_active', 'is_default', 'status'])
             ->logOnlyDirty()
             ->dontLogEmptyChanges();
     }
@@ -38,7 +40,7 @@ class DealFlow extends Model
      * @var list<string>
      */
     protected $fillable = [
-        'name', 'slug', 'description', 'applies_to', 'is_active', 'is_default',
+        'name', 'slug', 'description', 'applies_to', 'is_active', 'is_default', 'status',
     ];
 
     /**
@@ -49,6 +51,7 @@ class DealFlow extends Model
         return [
             'is_active' => 'boolean',
             'is_default' => 'boolean',
+            'status' => DealFlowState::class,
         ];
     }
 

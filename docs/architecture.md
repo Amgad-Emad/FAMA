@@ -324,6 +324,41 @@ room** (the `brand` side of the shared engine — `awaiting_brand` highlighted, 
 `step_type`), read-only **reviews received**, and **account** (settings + publish toggle). An incomplete
 brand is redirected into onboarding by the dashboard.
 
+## Admin domain logic — governance (Phase 3A)
+
+The platform-governance layer sits on the Phase 3A foundation (admin guard + spatie RBAC + settings +
+activitylog). Every admin service extends **`App\Services\AdminService`** (base `Service`): it runs on the
+`admin` log channel, **authorizes** the acting admin against a policy/permission (`authorizeAdmin()` →
+`Gate::forUser($admin)->authorize()`, or `authorizePermission()` for bare permissions), and **records**
+each action to the activity log with the admin as causer. Everything is transactional + fail-logged.
+
+**Policies** (auto-discovered) map each capability to a spatie permission on the admin guard:
+`DealFlowPolicy@manage` / `TalentTypePolicy@manage` → `manage-flows`; `TalentPolicy@moderate` /
+`ReviewPolicy@moderate` / `BrandPolicy@moderate` / `BrandReviewPolicy@moderate` / `CampaignPolicy@oversee`
+→ `moderate-content`; `DealPolicy@intervene` → `intervene-deals`; media/settings → `manage-settings`.
+
+**Services:**
+- **`DealFlowBuilderService`** — author `deal_flows` + ordered `deal_flow_steps`, reorder, and drive the
+  **template state machine** (draft → active → archived; `is_active` synced, `is_default` an orthogonal
+  flag kept unique per `applies_to` scope). Edits touch **future deals only** — deals snapshot their steps
+  at creation (Phase 1E), proven by test. Flow/step changes are audited by their `LogsActivity` traits.
+- **`TalentModerationService`** (suspend / unpublish / soft-delete / restore) and
+  **`BrandModerationService`** (verify one-way + suspend / unpublish / soft-delete) drive the existing
+  state machines with `canTransitionTo` guards.
+- **`ReviewModerationService`** — approve/reject talent reviews (incl. **batch**) and brand reviews.
+- **`CampaignOversightService`** — filter by status, cancel, force-private.
+- **`ProfessionCatalogService`** — edit a talent type's `default_blocks` (affects only NEW seeds) and add
+  professions without code.
+- **`MediaOversightService`** — surface media with ungenerated conversions and re-queue them
+  (`media-library:regenerate`).
+- **`DealInterventionService`** — reuses the 1E engine: act as the **admin actor** on admin steps,
+  **override** a stuck step (`DealProgression::finishStep` + `activateNext`), nudge (system event),
+  reassign, or cancel (`moveDealTo`). Every override posts a system event + activity log.
+
+> Audit: `DealFlow`/`DealFlowStep` self-log field changes (`attribute_changes`); moderation/intervention
+> services log explicit action entries (`moderation` / `catalog` / `media` / `deal_intervention` log
+> names) with `causedBy($admin)` + ad-hoc `properties` (reason, from/to, etc.).
+
 ## Cross-cutting
 
 - **Logging:** dedicated channels `app`, `auth`, `deals`, `media` (`config/logging.php`). Failure
