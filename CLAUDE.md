@@ -166,6 +166,16 @@ management. x-admin-layout + resources/js/admin.js on http.js, JSON envelopes, n
 can: middleware gates pages (403 for powerless admin) + the 3A service re-authorizes/audits each action.
 268 tests green.
 
-ADMIN PHASE COMPLETE (3A foundation + 3A domain logic + 3B UI). Next: brand↔talent deal initiation (brand
-discovers a talent → enquiry→deal on the shared engine, the reverse of the talent-side booking CTA), then
-the Sanctum mobile API (Phase 4 — talents/brands/admins already have HasApiTokens).
+ADMIN PHASE COMPLETE (production-grade: 3A foundation + 3A domain logic + 3B UI). Full Pest suite green
+(275 tests); every admin mutation activity-logged with the admin as causer (verified — flow lifecycle via
+LogsActivity, moderation/intervention/settings/users explicit); every governance op in runInTransaction
+with fail-logging to the admin channel (rollback verified); N+1 clean (moderation queues / deal console /
+activity log stay flat, query-count tested); every list paginated + eager-loaded; two-layer authz (can:
+middleware gates pages 403 + the 3A service re-authorizes/audits); all colours/fonts are CSS tokens,
+dark+light+RTL verified on every admin page (token-only, dir-aware, logical props); every interaction is
+Ajax (no reload). Demo data: two extra deal flows (draft + active), pending-moderation items (talent +
+brand reviews), and real audit entries (AdminDemoSeeder). Manual QA checklist in docs/conventions.md
+("QA checklist — admin slice").
+Next: Phase 4A — the Sanctum mobile API (token auth for talents/brands/admins — all already HasApiTokens;
+versioned JSON endpoints reusing the domain services + DTOs/Resources; Scribe OpenAPI/Postman docs), plus
+brand↔talent deal initiation (brand discovers a talent → enquiry→deal on the shared engine).

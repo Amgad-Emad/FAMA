@@ -30,6 +30,7 @@ class DatabaseSeeder extends Seeder
             TalentDemoSeeder::class,
             TalentShowcaseSeeder::class,
             BrandDemoSeeder::class,
+            AdminDemoSeeder::class,
         ]);
     }
 }

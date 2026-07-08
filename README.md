@@ -25,11 +25,20 @@ workspace, discovery feed, reviews received, account) and the **brand side of th
 transactions + fail-logs verified; demo brand (Nomad Coffee) with two campaigns + a deal under a campaign.
 QA checklist: [`docs/conventions.md`](docs/conventions.md#qa-checklist--brand-slice-manual).
 
-Both slices: Blade + Alpine on the shared `http.js` (no page reloads), JSON envelope, i18n (EN/AR + RTL),
+**Admin slice — complete (production-grade).** Admin foundation (spatie/laravel-permission RBAC on the
+admin guard, `settings` + `SettingsService`, activity-log audit), the governance domain services
+(deal-flow builder + template state machine, talent/brand/review/campaign moderation, profession/catalog,
+media oversight, deal intervention), and the **admin dashboard** (flow builder, moderation queues,
+profession manager, deal intervention console, activity-log viewer, settings, admin-user management).
+Two-layer authz (`can:` middleware + service re-check); **every mutation is activity-logged**; N+1 clean;
+demo flows + pending-moderation items + audit entries seeded. QA checklist:
+[`docs/conventions.md`](docs/conventions.md#qa-checklist--admin-slice-manual).
+
+All slices: Blade + Alpine on the shared `http.js` (no page reloads), JSON envelope, i18n (EN/AR + RTL),
 light/dark. Full Pest suite green; demo data seeded (`php artisan migrate:fresh --seed`).
 
-**Next — Phase 3A:** Admin — deal-flow authoring, moderation/approval queues, deal-step
-intervention/override, and the activity-log audit trail.
+**Next — Phase 4A:** the **Sanctum mobile API** (token auth for talents/brands/admins, versioned JSON
+endpoints, Scribe docs) — and brand↔talent deal initiation on the shared engine.
 
 ## Stack
 

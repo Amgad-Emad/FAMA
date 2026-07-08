@@ -32,6 +32,21 @@ Notable changes to the Fama project. Newest first.
   Regression test in `MultiGuardTest`.
 - 224 tests green.
 
+## 2026-07-09 — Admin slice: production-grade sign-off
+
+- **Every admin mutation audited** (verified): flow lifecycle transitions (activate/archive/markDefault →
+  LogsActivity), settings updates, admin-user create/roles/delete, and the 3A moderation/intervention
+  services — all with the admin as causer.
+- **Transactions + fail-logs verified** (rollback + fail-log to the `admin` channel on a forced service
+  failure). **N+1 clean** — moderation queues, deal console, and activity log stay flat as rows grow
+  (query-count tests); every list paginated + eager-loaded (brand/talent/step/causer/roles).
+- **Admin demo data:** `AdminDemoSeeder` — two extra deal flows (draft + active with steps), items pending
+  moderation (talent review + brand review), and real audit entries (the seeder mutes model events, so
+  authoring is recorded explicitly + a moderation action logs).
+- **Dark/light + RTL verified** on all admin pages (token-only colours, `dir`-aware layout, logical
+  props); no Blade reloads (Ajax only). QA checklist — admin slice added to `docs/conventions.md`.
+- **+7 tests (275 green).** README + CLAUDE updated (admin phase COMPLETE → Phase 4A). No git.
+
 ## 2026-07-09 — Phase 3B: admin dashboard UI
 
 - **Admin guard dashboard** — `routes/admin.php` (permission-gated `can:` groups), 8 thin controllers

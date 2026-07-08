@@ -226,3 +226,46 @@ logout. Toggle theme + locale on each page and confirm both render (all colours 
       publish → 422.
 - [ ] No `LazyLoadingViolationException`; every list is paginated + eager-loaded (query counts stay flat
       as campaigns/images/talents grow — see `BrandHardeningTest`).
+
+## QA checklist — admin slice (manual)
+
+Run against the seeded demo (`php artisan migrate:fresh --seed`; admin `test@example.com` / `password`,
+super-admin). Every interaction is Ajax — **no full page reload** except logout. Toggle theme + locale on
+each page (all colours are tokens; the layout is `dir`-aware — verified: no hardcoded colours in
+`resources/views/admin`, logical props used). **Every mutation is activity-logged with the admin as
+causer** (see `AdminHardeningTest`); **page access is gated per capability** (`can:` middleware → 403).
+
+**Access control**
+- [ ] The nav only shows sections the admin has permission for; a moderator can't reach `/admin/flows`,
+      `/admin/settings`, or `/admin/users` (403). A super-admin reaches everything.
+
+**Deal-flow builder** (`manage-flows`)
+- [ ] Create a flow (draft), add steps, **drag to reorder** (persists), edit/remove a step, set
+      actor/step_type/required/skippable. Activate → status `active`; Set default (unique per scope);
+      Archive → `archived` + default cleared. Editing a flow does **not** change in-flight deals.
+
+**Professions** (`manage-flows`)
+- [ ] Toggle a talent type's default blocks and save; add a profession — it appears and seeds new talents
+      of that type (existing profiles untouched).
+
+**Moderation queues** (`moderate-content`)
+- [ ] Talents — suspend / unpublish / soft-delete / restore. Reviews — approve/reject, **batch** select +
+      approve/reject. Brands — verify (one-way) / suspend / delete. Brand reviews — approve/reject.
+      Campaigns — make private / cancel. Each action clears from the queue + writes an audit entry.
+
+**Deal console** (`intervene-deals`)
+- [ ] Filter by status; open a deal; **override** a stuck step (advances), **advance as admin** on an
+      admin step, **nudge** (system event), **cancel**. Timeline updates live; each is audited.
+
+**Activity log** (`manage-settings`)
+- [ ] Searchable by text + log name; rows show subject + causer + action.
+
+**Settings / Admins**
+- [ ] Save default currency / default deal flow / feature flags (`manage-settings`).
+- [ ] Create an admin, assign a role, remove one (`manage-users`); cannot remove your own account (422).
+
+**Cross-cutting**
+- [ ] Dark ⇄ light toggle persists; RTL (`/ar`) mirrors layout + shows Arabic strings.
+- [ ] A powerless admin gets **403** on every gated page/action; a service failure rolls back + fail-logs
+      to the `admin` channel. No `LazyLoadingViolationException`; lists paginated + eager-loaded (flat
+      query counts — see `AdminHardeningTest`).
