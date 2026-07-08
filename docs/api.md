@@ -64,14 +64,18 @@ the JSON envelope + `http.js`. All resolve **published** talents only (404 other
 | Discovery search | `GET /discover/search` | paginated talent cards — envelope; filters below |
 | Booking CTA | `GET /{slug}/enquire` | booking/enquiry form (services + brief) |
 | Enquiry submit | `POST /{slug}/enquire` | writes a `deal_enquiries` row (availability-checked) — envelope |
+| Brand profile | `GET /brands/{slug}` | **published** brand header + credibility + approved reviews + public campaigns + social handles; eager-loaded, no N+1 |
+| Campaign detail | `GET /brands/{slug}/campaigns/{campaign-slug}` | one **public** campaign (title/description/cover/budget/location/dates + roles sought + gallery); binding scoped to the brand |
 
 **Discovery filters** (spatie/laravel-query-builder, `App\Queries\TalentSearch`), passed as
 `filter[...]` query params: `type` & `category` (comma-separated slugs, through the pivot),
 `availability`, `city`, `country`, `equipment` (category), `software` (name), `q` (name search).
 Sorts: `sort=view_count|created_at` (default `-view_count`). 12 per page. Output: `TalentCardResource`.
 
-The `{slug}` profile route is the single-segment catch-all and stays **last**; `/discover` and the
-`/{slug}/...` sub-pages are registered before it.
+The `{slug}` profile route is the single-segment catch-all and stays **last**; `/discover`, the
+`/{slug}/...` sub-pages, and the two-segment `/brands/{slug}[/campaigns/{campaign-slug}]` routes are
+registered before it. Brand pages resolve a **published** brand only (404 otherwise), campaign detail a
+**public** campaign only, and the campaign binding is scoped so it must belong to the brand in the path.
 
 ## Talent dashboard — web endpoints (session, `auth:talent`)
 

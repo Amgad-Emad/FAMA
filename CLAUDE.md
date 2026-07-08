@@ -126,7 +126,12 @@ media + lifecycle + deals under deals.campaign_id), discovery feed (BrandTalentF
 signals), deals inbox + brand deal room (brand side of the shared engine, awaiting_brand highlighted),
 reviews-received (approved-only, read-only), account (settings + publish toggle). x-brand-layout + Alpine
 (resources/js/brand.js) on http.js, JSON envelopes, no reloads, ownership 403 / domain 422. 202 tests green.
+Public brand pages complete (unguarded, routes/web.php + app/Http/Controllers/BrandProfileController):
+brand profile GET /brands/{slug} (published-only; header + credibility + approved reviews + public
+campaigns + social/aesthetic, eager-loaded no N+1) and campaign detail GET /brands/{slug}/campaigns/
+{campaign-slug} (public-only; description/cover/budget/location/dates + roles sought + gallery; nested
+binding scoped to the brand). Registered before the /{slug} talent catch-all. 208 tests green.
 Next: Admin (Phase 3 — flow authoring, moderation/approval queues, deal-step intervention/override,
-activity log), then the public brand profile page + brand↔talent deal initiation (enquiry→deal), then
-the Sanctum mobile API (Phase 4).
+activity log), then brand↔talent deal initiation (brand discovers talent → enquiry→deal on the shared
+engine), then the Sanctum mobile API (Phase 4).
 deals.campaign_id (ADR-F) lands with campaigns.

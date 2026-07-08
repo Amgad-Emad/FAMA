@@ -2,6 +2,19 @@
 
 Notable changes to the Fama project. Newest first.
 
+## 2026-07-09 — Public brand pages (profile + campaign detail)
+
+- **Brand profile** `GET /brands/{slug}` (`BrandProfileController@show`) — published brands only (404
+  otherwise); header from `brands`, credibility block, **approved** brand reviews, "Campaigns on FAMA"
+  (public, non-cancelled campaigns), social handles + aesthetic moods. Fully eager-loaded (no N+1).
+- **Campaign detail** `GET /brands/{slug}/campaigns/{campaign-slug}` (`@campaign`) — public campaigns
+  only; title/description/cover/budget/location/dates + roles sought (`campaign_talent_types`) + gallery
+  (`campaign_media`). Nested binding `->scopeBindings()` so the campaign must belong to the brand.
+- Routes registered before the single-segment `/{slug}` talent catch-all; views on `<x-public-layout>`.
+- **Tests +6 (208 green):** profile renders with only approved reviews + only public campaigns;
+  unpublished brand 404; campaign detail renders roles + facts; private campaign 404; cross-brand
+  campaign 404 (scoped); public campaign under unpublished brand 404. Docs (api) updated. No git.
+
 ## 2026-07-09 — Phase 2C: brand dashboard (onboarding + deal room + discovery)
 
 - **Brand guard dashboard** — `routes/brand.php` (47 routes), 9 controllers under `Brand\*` (thin,
