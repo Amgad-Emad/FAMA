@@ -18,7 +18,7 @@
 @endphp
 
 <x-brand-layout :title="__('Welcome to Fama')">
-    <div x-data="brandOnboarding(@js($initial))" class="mx-auto max-w-2xl">
+    <div x-data="brandOnboarding(@js($initial))">
         {{-- Progress --}}
         <ol class="mb-8 flex items-center justify-between gap-2 text-xs">
             @foreach ($steps as $i => $label)

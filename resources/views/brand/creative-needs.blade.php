@@ -8,7 +8,7 @@
 @endphp
 
 <x-brand-layout :title="__('Creative needs')">
-    <div x-data="brandCreativeNeeds(@js($initial))" class="mx-auto max-w-2xl space-y-6">
+    <div x-data="brandCreativeNeeds(@js($initial))" class="space-y-6">
         <p class="text-sm text-muted">{{ __('These preferences shape your discovery feed.') }}</p>
 
         <section class="rounded-xl border border-line bg-surface p-6">

@@ -12,7 +12,7 @@
 @endphp
 
 <x-brand-layout :title="__('Account')">
-    <div x-data="brandAccount(@js($initial))" class="mx-auto max-w-2xl space-y-6">
+    <div x-data="brandAccount(@js($initial))" class="space-y-6">
         {{-- Publish toggle --}}
         <section class="flex items-center justify-between rounded-xl border border-line bg-surface p-6">
             <div>
