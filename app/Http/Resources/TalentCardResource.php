@@ -19,6 +19,7 @@ class TalentCardResource extends BaseResource
             ?? $this->talentTypes->first();
 
         return [
+            'id' => $this->id,
             'slug' => $this->slug,
             'display_name' => $this->display_name,
             'headline' => $this->headline,

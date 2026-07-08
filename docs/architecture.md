@@ -311,6 +311,19 @@ selection.
 > Update-in-place satellites (aesthetics, creative needs, images, social handles) have no terminal state
 > of their own; `brand_signals` is append-only. Deals link to a campaign via `deals.campaign_id` (ADR-F).
 
+### Brand dashboard (Phase 2C)
+
+The brand-guard dashboard (`routes/brand.php`, `app/Http/Controllers/Brand/*`, `<x-brand-layout>`,
+`resources/js/brand.js`) mirrors the talent dashboard: Blade shells + Alpine on `http.js`, JSON envelopes,
+no reloads, ownership 403 / domain 422. Controllers are thin and delegate to the Phase 2B services — the
+6-step **onboarding wizard** (persists per step, flips `is_complete`, then drops the brand into its first
+feed), **profile editor** (core + aesthetic + images + social), **creative-needs** editor, **campaigns**
+manager + workspace (roles, media, lifecycle buttons, the deals running under the campaign), the
+**discovery feed** (infinite/paginated via `BrandTalentFeed`, save/brief write signals), the **brand deal
+room** (the `brand` side of the shared engine — `awaiting_brand` highlighted, action panel keyed by
+`step_type`), read-only **reviews received**, and **account** (settings + publish toggle). An incomplete
+brand is redirected into onboarding by the dashboard.
+
 ## Cross-cutting
 
 - **Logging:** dedicated channels `app`, `auth`, `deals`, `media` (`config/logging.php`). Failure

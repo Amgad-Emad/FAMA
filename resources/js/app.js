@@ -9,4 +9,7 @@ window.Alpine = Alpine;
 import './dashboard';
 import './deals';
 
+// Brand dashboard Alpine components.
+import './brand';
+
 Alpine.start();

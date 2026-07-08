@@ -50,9 +50,8 @@ Route::group([
         Route::view('/dashboard', 'dashboard')->name('dashboard');
     });
 
-    Route::middleware('auth:brand')->prefix('brand')->name('brand.')->group(function () {
-        Route::view('/dashboard', 'dashboard')->name('dashboard');
-    });
+    Route::middleware('auth:brand')->prefix('brand')->name('brand.')
+        ->group(base_path('routes/brand.php'));
 
     Route::middleware('auth:talent')->prefix('talent')->name('talent.')
         ->group(base_path('routes/talent.php'));

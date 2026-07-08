@@ -2,6 +2,26 @@
 
 Notable changes to the Fama project. Newest first.
 
+## 2026-07-09 — Phase 2C: brand dashboard (onboarding + deal room + discovery)
+
+- **Brand guard dashboard** — `routes/brand.php` (47 routes), 9 controllers under `Brand\*` (thin,
+  delegating to the 2B services), `<x-brand-layout>`, and `resources/js/brand.js` (Alpine on http.js,
+  no reloads, JSON envelopes, ownership 403 / domain 422).
+- **Onboarding wizard** (6 steps, step-by-step Ajax → BrandOnboardingService; flips `is_complete`);
+  **dashboard home** (completion, active deals + whose-turn, recent campaigns, feed entry); **profile
+  editor** (core + aesthetic + mood tags + images CRUD + social handles); **creative-needs** editor.
+- **Campaigns** manager + single-campaign workspace (roles-with-quantity, media, lifecycle transitions,
+  public toggle, and the deals running under `deals.campaign_id`); `Store/UpdateCampaignRequest`.
+- **Discovery feed** — paginated via `BrandTalentFeed`; save/brief write `save`/`brief_sent` signals
+  (added `id` to `TalentCardResource`).
+- **Brand deal room + inbox** — the `brand` side of the shared engine wired (submit brief, accept/return
+  quotes, sign, pay), `awaiting_brand` highlighted; added `is_brand_turn` + `talent` to `DealResource`.
+- **Reviews received** (approved-only, read-only) + **account/settings** (slug, settings fields,
+  publish ⇄ unpublish toggle).
+- **Tests +12 (202 green):** onboarding completion, every dashboard page renders, discovery feed +
+  signal, campaign create/lifecycle, approved-only reviews, brand deal actions + ownership 403. Docs
+  (api + architecture) + CLAUDE updated. No git.
+
 ## 2026-07-09 — Phase 2B: brand domain logic (services, states, accrual)
 
 - **State machines** (status authoritative, flags synced via `SyncStateProjections`): Brand

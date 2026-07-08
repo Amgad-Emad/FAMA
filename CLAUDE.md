@@ -119,7 +119,14 @@ no brand edit), BrandSignalService (append-only), BrandCredibilityService. Event
 DealProgression fires DealCompleted → AccrueBrandCredibility listener → RecalculateBrandCredibility
 (monotonic). Discovery feed App\Queries\BrandTalentFeed (needs pivot + geographic_reach; aesthetic
 weighting deferred). 190 tests green.
-Next: Phase 2C — brand dashboard UI (onboarding wizard, profile editor, campaigns manager, discovery
-feed, deals inbox + brand deal room on the shared engine, reviews-received); then Admin (Phase 3:
-flow authoring, moderation, intervention).
+Phase 2C complete (brand dashboard UI, brand guard, routes/brand.php + app/Http/Controllers/Brand/*):
+6-step onboarding wizard (flips is_complete → first feed), dashboard home, profile editor (core +
+aesthetic + mood tags + images + social), creative-needs editor, campaigns manager + workspace (roles +
+media + lifecycle + deals under deals.campaign_id), discovery feed (BrandTalentFeed, paginated, save/brief
+signals), deals inbox + brand deal room (brand side of the shared engine, awaiting_brand highlighted),
+reviews-received (approved-only, read-only), account (settings + publish toggle). x-brand-layout + Alpine
+(resources/js/brand.js) on http.js, JSON envelopes, no reloads, ownership 403 / domain 422. 202 tests green.
+Next: Admin (Phase 3 — flow authoring, moderation/approval queues, deal-step intervention/override,
+activity log), then the public brand profile page + brand↔talent deal initiation (enquiry→deal), then
+the Sanctum mobile API (Phase 4).
 deals.campaign_id (ADR-F) lands with campaigns.
