@@ -2,6 +2,64 @@
 
 Notable changes to the Fama project. Newest first.
 
+## 2026-07-09 — Brand i18n completion + dashboard width
+
+- **Arabic translations completed:** extracted every `__()` string across views/JS (410 used) and added the
+  **166 missing** keys to `lang/ar.json` (now 481, 0 missing) — the whole brand dashboard/onboarding +
+  public brand/campaign pages, plus runtime enum labels (industries, stages, company sizes, reach, moods,
+  project types, deal/campaign statuses, frequency). Verified on `/ar/brand/*`; only user data
+  (campaign/deal titles, proper nouns) stays in its source language.
+- **Dashboard content width:** brand + talent layouts widened `max-w-5xl → max-w-7xl` so content fills the
+  space instead of leaving large gaps beside the sidebar.
+- **Full-surface QA:** every authenticated page for both guards returns 200 on a live session; the 224
+  feature tests cover all mutations.
+
+## 2026-07-09 — Auth fixes: single active identity + explicit login role
+
+- **Single active identity per session:** `LoginRequest::authenticate()` now logs the session out of every
+  *other* Fama guard after a successful login. Previously a session could hold multiple guards at once, so
+  the priority-ordered `Guards::current()` kept resolving a stale higher-priority guard (e.g. logging in as
+  a talent while a brand session was live landed you back on the brand dashboard). Regression test in
+  `MultiGuardTest` (brand → talent switch → talent wins, brand dropped).
+- **Login role is required:** the "I am a" selector no longer defaults to Admin (`old('role','admin')`),
+  which silently authenticated brand/talent credentials against the admin guard and failed. It now shows a
+  disabled "Select…" placeholder and is `required`, so the guard is always an explicit choice. (The
+  role-less API/`LoginRequest` default stays admin for Breeze test compatibility.)
+- **No cross-guard intended-URL bounce:** the login redirect no longer follows `session('url.intended')`.
+  A guest touching a `/brand/*` route captures it as the intended URL; logging in as a *talent* then
+  redirected there → the brand guard rejected the talent → bounced back to login ("talent login doesn't
+  work"). Login now always lands on the authenticated guard's own dashboard via `route('dashboard')`.
+  Regression test in `MultiGuardTest`.
+- 224 tests green.
+
+## 2026-07-09 — Public brand pages restyled to the Fama design system
+
+- Rebuilt `brand/public-profile` and `brand/public-campaign` to match the `public/fama-front`
+  reference designs (Brand Profile + Campaign Detail), the same way the talent public profile was done:
+  cover + floating identity card, mono eyebrows, credibility stat cards, an aggregated three-axis rating
+  visual, campaign cards, and a snapshot/handles sidebar (profile); overlay title on the gradient cover,
+  meta strip, brief, role cards, mood-board gallery, and brand mini-card sidebar (campaign).
+- Composed from the shared `x-ui.*` components (`card`, `stat`, `chip`, `eyebrow`, `avatar`, `button`)
+  and design tokens — no new colours. Verified in-browser: **light + dark + RTL** on the profile and the
+  campaign detail (assets rebuilt). 222 tests green.
+
+## 2026-07-09 — Brand slice: production-grade sign-off
+
+- **N+1 audit clean:** eager-loaded `media` everywhere a media accessor renders in a list/loop — public
+  profile (`media`, `images.media`, `campaigns.media`), campaign detail (`media`, `gallery.media`),
+  campaigns list + workspace, profile-editor images. Proven with query-count tests (flat as
+  campaigns/images grow; ≤10 queries for a 10-talent feed).
+- **Coverage raised** (`BrandHardeningTest` + `BrandDemoSeederTest` + deal-room message tests): N+1
+  proofs, transaction rollback + fail-log to the `brands` channel, publish gate (422 before complete),
+  illegal campaign transition (422), showcase scope, brief signal, free deal-room message + validation.
+- **Realistic demo:** `BrandDemoSeeder` now seeds two campaigns at different statuses (open + a completed
+  showcase) and a **deal under a campaign** (`deals.campaign_id`), alongside the existing aesthetic /
+  creative-needs / credibility / reviews / images graph. Idempotent; locked by `BrandDemoSeederTest`.
+- **Dark/light + RTL verified** on all brand pages (token-only colours, `dir`-aware layouts, logical
+  props); no Blade reloads (Ajax only, logout aside). QA checklist — brand slice added to
+  `docs/conventions.md`.
+- **222 tests green.** README + CLAUDE updated (brand phase COMPLETE → Phase 3A). No git.
+
 ## 2026-07-09 — Public brand pages (profile + campaign detail)
 
 - **Brand profile** `GET /brands/{slug}` (`BrandProfileController@show`) — published brands only (404

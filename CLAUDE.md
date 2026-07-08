@@ -127,11 +127,21 @@ signals), deals inbox + brand deal room (brand side of the shared engine, awaiti
 reviews-received (approved-only, read-only), account (settings + publish toggle). x-brand-layout + Alpine
 (resources/js/brand.js) on http.js, JSON envelopes, no reloads, ownership 403 / domain 422. 202 tests green.
 Public brand pages complete (unguarded, routes/web.php + app/Http/Controllers/BrandProfileController):
-brand profile GET /brands/{slug} (published-only; header + credibility + approved reviews + public
-campaigns + social/aesthetic, eager-loaded no N+1) and campaign detail GET /brands/{slug}/campaigns/
-{campaign-slug} (public-only; description/cover/budget/location/dates + roles sought + gallery; nested
-binding scoped to the brand). Registered before the /{slug} talent catch-all. 208 tests green.
-Next: Admin (Phase 3 — flow authoring, moderation/approval queues, deal-step intervention/override,
-activity log), then brand↔talent deal initiation (brand discovers talent → enquiry→deal on the shared
-engine), then the Sanctum mobile API (Phase 4).
+brand profile GET /brands/{slug} (published-only) and campaign detail GET /brands/{slug}/campaigns/
+{campaign-slug} (public-only; nested binding scoped to the brand). Registered before the /{slug} catch-all.
+
+BRAND PHASE COMPLETE (production-grade). Full Pest suite green (222 tests); preventLazyLoading +
+preventSilentlyDiscardingAttributes on; N+1 audit clean — media eager-loaded wherever an accessor renders
+in a list/loop, proven by query-count tests (flat as campaigns/images/talents grow); every list paginated
++ eager-loaded; every multi-write op in runInTransaction with fail-logging to the brands channel
+(rollback + fail-log verified); state machines (Brand/Campaign/BrandReview) with synced projections;
+credibility accrues via the DealCompleted event; all colours/fonts are CSS tokens (cloud/graphite/teal +
+Bricolage/Sora), dark+light+RTL verified on every brand page (token-only, dir-aware, logical props);
+every dashboard interaction is Ajax (no reload). Demo data: fully onboarded Nomad Coffee brand (aesthetic/
+needs/credibility/reviews/images + social), two campaigns at different statuses (open + completed
+showcase), and a deal under a campaign (deals.campaign_id). Manual QA checklist in docs/conventions.md
+("QA checklist — brand slice").
+Next: Phase 3A — Admin (deal-flow authoring, moderation/approval queues, deal-step intervention/override,
+spatie/laravel-activitylog audit), then brand↔talent deal initiation (brand discovers talent →
+enquiry→deal on the shared engine), then the Sanctum mobile API (Phase 4).
 deals.campaign_id (ADR-F) lands with campaigns.

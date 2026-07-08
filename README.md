@@ -14,13 +14,22 @@ that walks a brand and a talent through booking, quoting, contracting, payment, 
 **Talent slice — complete (production-grade).** Public pages (profile, project detail, review, enquiry,
 discovery/search), the full talent dashboard (profile/blocks, professions, content editors, rate card,
 availability, reviews, affiliations & press, account), and the shared **deal engine** (flows → steps →
-deals, StepHandler strategy, state machines) with the talent deal room + inbox. Blade + Alpine on the
-shared `http.js` (no page reloads), JSON envelope, i18n (EN/AR + RTL), light/dark. Full Pest suite
-green; demo data seeded (`php artisan migrate:fresh --seed`). Manual QA checklist:
+deals, StepHandler strategy, state machines) with the talent deal room + inbox. QA checklist:
 [`docs/conventions.md`](docs/conventions.md#qa-checklist--talent-slice-manual).
 
-**Next — Phase 2A:** brand core & satellites, then the brand-side deal room (Phase 2C) on the same
-engine; Admin authoring/intervention is Phase 3.
+**Brand slice — complete (production-grade).** Public brand profile + campaign detail pages; the full
+brand dashboard (6-step onboarding wizard, home, profile editor, creative-needs, campaigns manager +
+workspace, discovery feed, reviews received, account) and the **brand side of the shared deal engine**
+(deal room + inbox, `deals.campaign_id`). Domain logic in services with state machines
+(Brand/Campaign/BrandReview) and event-driven credibility accrual. N+1 audit clean (query-count tested);
+transactions + fail-logs verified; demo brand (Nomad Coffee) with two campaigns + a deal under a campaign.
+QA checklist: [`docs/conventions.md`](docs/conventions.md#qa-checklist--brand-slice-manual).
+
+Both slices: Blade + Alpine on the shared `http.js` (no page reloads), JSON envelope, i18n (EN/AR + RTL),
+light/dark. Full Pest suite green; demo data seeded (`php artisan migrate:fresh --seed`).
+
+**Next — Phase 3A:** Admin — deal-flow authoring, moderation/approval queues, deal-step
+intervention/override, and the activity-log audit trail.
 
 ## Stack
 
@@ -64,7 +73,7 @@ Fama has **three login entities**, each with its own session guard + Eloquent pr
 | Guard | Provider → Model | Table | Web home |
 |---|---|---|---|
 | `admin` (default) | `users` → `App\Models\User` | `users` (migrated) | `/admin/dashboard` |
-| `brand` | `brands` → `App\Models\Brand` | `brands` (minimal stub — Phase 1E; extended Phase 1B) | `/brand/dashboard` |
+| `brand` | `brands` → `App\Models\Brand` | `brands` + satellites & campaigns (Phase 2A–2C) | `/brand/dashboard` |
 | `talent` | `talents` → `App\Models\Talent` | `talents` (Phase 1A) | `/talent/dashboard` |
 
 - **Login** is a single, role-aware form: the submitted `role` selects the guard; absent `role`

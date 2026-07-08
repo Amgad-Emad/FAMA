@@ -30,7 +30,7 @@ class CampaignController extends BrandController
 
     public function data(): JsonResponse
     {
-        $paginator = $this->brand()->campaigns()->withCount('deals')->latest()->paginate(12);
+        $paginator = $this->brand()->campaigns()->with('media')->withCount('deals')->latest()->paginate(12);
 
         return response()->paginated($paginator, CampaignResource::collection($paginator->getCollection()));
     }
@@ -59,7 +59,7 @@ class CampaignController extends BrandController
     public function showData(Campaign $campaign): JsonResponse
     {
         $this->ensureOwns($campaign);
-        $campaign->load(['talentTypes', 'gallery'])->loadCount('deals');
+        $campaign->load(['media', 'talentTypes', 'gallery.media'])->loadCount('deals');
         $deals = $campaign->deals()->with(['talent', 'currentStep'])->latest()->get();
 
         return response()->success([

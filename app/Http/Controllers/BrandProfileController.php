@@ -21,12 +21,13 @@ class BrandProfileController extends Controller
         abort_unless((bool) $brand->is_published, 404);
 
         $brand->load([
+            'media', // brand logo + cover
             'credibility',
             'aesthetic.moodTags',
-            'images',
+            'images.media',
             'socialHandles',
             'brandReviews' => fn ($query) => $query->where('is_approved', true)->with('talent')->latest(),
-            'campaigns' => fn ($query) => $query->where('is_public', true)->where('status', '!=', 'cancelled')->latest(),
+            'campaigns' => fn ($query) => $query->where('is_public', true)->where('status', '!=', 'cancelled')->with('media')->latest(),
         ]);
 
         return view('brand.public-profile', ['brand' => $brand]);
@@ -40,7 +41,7 @@ class BrandProfileController extends Controller
     {
         abort_unless((bool) $brand->is_published && (bool) $campaign->is_public, 404);
 
-        $campaign->load(['talentTypes', 'gallery']);
+        $campaign->load(['media', 'talentTypes', 'gallery.media']);
 
         return view('brand.public-campaign', ['brand' => $brand, 'campaign' => $campaign]);
     }

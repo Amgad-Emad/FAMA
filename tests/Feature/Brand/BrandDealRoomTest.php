@@ -76,3 +76,23 @@ it('lists the brand’s deals in its inbox', function () {
         ->assertOk()
         ->assertJsonCount(1, 'data');
 });
+
+it('lets the owning brand post a free message in the deal room', function () {
+    $brand = Brand::factory()->create();
+    $deal = initiateBrandDeal($brand);
+
+    $this->actingAs($brand, 'brand')
+        ->postJson("/brand/deals/{$deal->id}/message", ['body' => 'Looking forward to it.'])
+        ->assertOk();
+
+    expect($deal->messages()->where('body', 'Looking forward to it.')->where('sender_role', 'brand')->exists())->toBeTrue();
+});
+
+it('validates the message body (422 on empty)', function () {
+    $brand = Brand::factory()->create();
+    $deal = initiateBrandDeal($brand);
+
+    $this->actingAs($brand, 'brand')
+        ->postJson("/brand/deals/{$deal->id}/message", ['body' => ''])
+        ->assertStatus(422);
+});

@@ -89,7 +89,7 @@ class ProfileEditorController extends BrandController
 
     public function images(): JsonResponse
     {
-        $images = $this->brand()->images()->get()->map(fn (BrandImage $image) => [
+        $images = $this->brand()->images()->with('media')->get()->map(fn (BrandImage $image) => [
             'id' => $image->id,
             'image_url' => $image->image_url,
             'thumbnail_url' => $image->thumbnail_url,

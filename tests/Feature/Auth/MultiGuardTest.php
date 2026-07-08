@@ -44,6 +44,39 @@ it('authenticates on the guard chosen by the submitted role', function () {
     $this->assertAuthenticated('admin');
 });
 
+it('switching login to another guard replaces the active identity (no stale session wins)', function () {
+    $brand = Brand::factory()->create();
+    $talent = Talent::factory()->create();
+
+    // Sign in as the brand first.
+    $this->post('/login', ['email' => $brand->email, 'password' => 'password', 'role' => 'brand']);
+    $this->assertAuthenticated('brand');
+
+    // Then sign in as a talent in the same browser session.
+    $this->post('/login', ['email' => $talent->email, 'password' => 'password', 'role' => 'talent']);
+
+    // The talent is the single active identity; the stale brand session is gone.
+    $this->assertAuthenticated('talent');
+    $this->assertGuest('brand');
+
+    // The shared dispatcher lands on the talent dashboard, not the brand one.
+    $this->get('/dashboard')->assertRedirect(route('talent.dashboard'));
+});
+
+it('ignores a cross-guard intended URL so a talent login is not bounced to a brand route', function () {
+    $talent = Talent::factory()->create();
+
+    // A guest touching a brand route captures /brand/discover as the intended URL.
+    $this->get('/brand/discover')->assertRedirect(route('login'));
+
+    // Logging in as a talent must land on the talent dashboard, not the brand page.
+    $this->post('/login', ['email' => $talent->email, 'password' => 'password', 'role' => 'talent'])
+        ->assertRedirect(route('dashboard'));
+
+    $this->assertAuthenticated('talent');
+    $this->get('/dashboard')->assertRedirect(route('talent.dashboard'));
+});
+
 it('rejects an unknown role', function () {
     $user = User::factory()->create();
 

@@ -3,136 +3,214 @@
     $cover = $brand->cover_image_url;
     $credibility = $brand->credibility;
     $moods = $brand->aesthetic?->moodTags ?? collect();
+    $reviews = $brand->brandReviews;
     $location = collect([$brand->base_city, $brand->base_country])->filter()->implode(', ');
+    $initials = collect(preg_split('/\s+/', trim($brand->name)))->filter()->take(2)->map(fn ($w) => mb_strtoupper(mb_substr($w, 0, 1)))->implode('');
+
+    // Aggregate the three rating axes across approved reviews.
+    $axes = [];
+    if ($reviews->isNotEmpty()) {
+        foreach (['communication_rating' => __('Communication'), 'fairness_rating' => __('Fairness'), 'creative_respect_rating' => __('Creative respect')] as $col => $label) {
+            $avg = round($reviews->avg($col), 1);
+            $axes[] = ['label' => $label, 'val' => $avg, 'pct' => ($avg / 5) * 100];
+        }
+    }
+    $overall = $reviews->isNotEmpty() ? round($reviews->avg(fn ($r) => $r->average_rating), 1) : null;
+
+    $snapshot = collect([
+        ['k' => __('Industry'), 'v' => $brand->industry ? __(ucfirst(str_replace('_', ' ', $brand->industry))) : null],
+        ['k' => __('Stage'), 'v' => $brand->brand_stage ? __(ucfirst($brand->brand_stage)) : null],
+        ['k' => __('Founded'), 'v' => $brand->founded_year],
+        ['k' => __('HQ'), 'v' => $location ?: null],
+        ['k' => __('Team size'), 'v' => $brand->company_size ? __(ucfirst($brand->company_size)) : null],
+        ['k' => __('Reach'), 'v' => $brand->geographic_reach ? __(ucfirst(str_replace('_', ' ', $brand->geographic_reach))) : null],
+    ])->filter(fn ($r) => filled($r['v']));
 @endphp
 
 <x-public-layout :title="$brand->name">
-    {{-- Header --}}
-    <div class="mx-auto max-w-6xl px-4 pt-8 sm:px-6">
+    {{-- COVER + IDENTITY --}}
+    <section class="mx-auto max-w-6xl px-4 pt-6 sm:px-6">
         <div class="relative overflow-hidden rounded-lg border border-line"
              @style([
                  "background-image:url('$cover');background-size:cover;background-position:center" => $cover,
-                 'background-color:var(--surface);background-image:repeating-linear-gradient(135deg, var(--line) 0 1px, transparent 1px 16px)' => ! $cover,
+                 'background-color:var(--surface);background-image:repeating-linear-gradient(135deg, var(--line) 0 1px, transparent 1px 15px)' => ! $cover,
              ])>
-            <div class="h-[220px] sm:h-[300px]"></div>
+            <div class="h-[180px] sm:h-[240px]"></div>
         </div>
 
-        <div class="relative z-10 -mt-14 flex flex-col gap-6 rounded-lg border border-line bg-surface p-6 shadow-e2 sm:-mt-16 sm:flex-row sm:items-end">
-            <div class="-mt-20 h-24 w-24 shrink-0 overflow-hidden rounded-lg border border-line bg-elevated bg-cover bg-center shadow-e2 sm:mt-0"
-                 @style(["background-image:url('$logo')" => $logo])></div>
-
-            <div class="flex-1">
-                @if ($brand->industry)
-                    <p class="font-mono text-[11px] uppercase tracking-[0.18em] text-subtle">{{ __(ucfirst(str_replace('_', ' ', $brand->industry))) }}</p>
-                @endif
-                <div class="mt-1 flex flex-wrap items-center gap-3">
-                    <h1 class="font-display text-4xl leading-[0.95] text-ink sm:text-5xl">{{ $brand->name }}</h1>
-                    @if ($brand->is_verified)
-                        <span class="rounded-pill bg-accent-weak px-2.5 py-1 text-xs font-medium text-accent-ink">✓ {{ __('Verified') }}</span>
-                    @endif
-                </div>
-                @if ($location)
-                    <p class="mt-2 text-sm text-muted">{{ $location }}</p>
-                @endif
-                @if ($brand->description)
-                    <p class="mt-3 max-w-2xl text-sm leading-relaxed text-muted">{{ $brand->getTranslation('description', app()->getLocale()) }}</p>
-                @endif
-                <div class="mt-4 flex flex-wrap items-center gap-2">
-                    @if ($brand->website)
-                        <a href="{{ $brand->website }}" target="_blank" rel="noopener nofollow" class="rounded-pill border border-line-strong px-3 py-1.5 text-xs font-medium text-muted hover:text-ink">{{ __('Website') }} ↗</a>
-                    @endif
-                    @foreach ($brand->socialHandles as $handle)
-                        <a href="{{ $handle->url ?: '#' }}" @if ($handle->url) target="_blank" rel="noopener nofollow" @endif
-                           class="rounded-pill border border-line px-3 py-1.5 text-xs text-muted hover:text-ink">{{ ucfirst($handle->platform) }}</a>
-                    @endforeach
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="mx-auto mt-10 grid max-w-6xl gap-8 px-4 sm:px-6 lg:grid-cols-3">
-        {{-- Left column --}}
-        <div class="space-y-8 lg:col-span-2">
-            {{-- Talent ratings --}}
-            <section>
-                <h2 class="mb-4 font-display text-2xl text-ink">{{ __('How talent rate this brand') }}</h2>
-                @forelse ($brand->brandReviews as $review)
-                    <div class="mb-3 rounded-lg border border-line bg-surface p-5">
-                        <div class="flex items-center justify-between">
-                            <span class="text-sm font-medium text-ink">{{ $review->talent?->display_name ?? __('A talent') }}</span>
-                            <span class="font-display text-lg text-accent">★ {{ $review->average_rating }}</span>
-                        </div>
-                        <div class="mt-3 grid grid-cols-3 gap-2 text-center text-xs text-muted">
-                            <div><div class="font-display text-base text-ink">{{ $review->communication_rating }}</div>{{ __('Communication') }}</div>
-                            <div><div class="font-display text-base text-ink">{{ $review->fairness_rating }}</div>{{ __('Fairness') }}</div>
-                            <div><div class="font-display text-base text-ink">{{ $review->creative_respect_rating }}</div>{{ __('Creative respect') }}</div>
-                        </div>
-                        @if ($review->body)
-                            <p class="mt-3 text-sm leading-relaxed text-ink">{{ $review->body }}</p>
+        <x-ui.card elevated class="relative z-10 -mt-12 mx-0 flex flex-wrap items-end justify-between gap-6 sm:-mt-14 sm:mx-6">
+            <div class="flex min-w-0 items-end gap-5">
+                <span class="grid h-20 w-20 shrink-0 place-items-center overflow-hidden rounded-md bg-primary font-display text-3xl text-on-primary shadow-[0_0_0_4px_var(--elevated)] sm:h-24 sm:w-24"
+                      @style(["background-image:url('$logo');background-size:cover;background-position:center" => $logo])>
+                    @unless ($logo) {{ $initials !== '' ? $initials : '—' }} @endunless
+                </span>
+                <div class="min-w-0">
+                    <div class="mb-2 flex flex-wrap items-center gap-3">
+                        @if ($brand->industry)
+                            <x-ui.eyebrow>{{ __(ucfirst(str_replace('_', ' ', $brand->industry))) }}</x-ui.eyebrow>
+                        @endif
+                        @if ($brand->is_verified)
+                            <span class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-success">
+                                <span class="grid h-3.5 w-3.5 place-items-center rounded-pill bg-accent text-[8px] font-bold text-on-accent">✓</span>{{ __('Verified business') }}
+                            </span>
                         @endif
                     </div>
-                @empty
-                    <p class="rounded-lg border border-dashed border-line py-10 text-center text-sm text-muted">{{ __('No reviews yet.') }}</p>
-                @endforelse
+                    <h1 class="font-display text-4xl leading-[0.95] tracking-tight text-ink sm:text-5xl">{{ $brand->name }}</h1>
+                    <div class="mt-3 flex flex-wrap items-center gap-3 text-sm text-muted">
+                        @if ($brand->brand_stage)<span>{{ __(ucfirst($brand->brand_stage)) }} {{ __('stage') }}</span>@endif
+                        @if ($location)
+                            <span class="h-1 w-1 rounded-pill bg-line-strong"></span>
+                            <span class="inline-flex items-center gap-1.5"><span class="h-1.5 w-1.5 rounded-pill bg-accent"></span>{{ $location }}</span>
+                        @endif
+                    </div>
+                </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+                @if ($brand->website)
+                    <x-ui.button :href="$brand->website" variant="outline" size="sm" target="_blank" rel="noopener nofollow">{{ __('Website') }} ↗</x-ui.button>
+                @endif
+                <x-ui.button href="#campaigns" variant="primary" size="sm">{{ __('View campaigns') }}</x-ui.button>
+            </div>
+        </x-ui.card>
+    </section>
+
+    {{-- BODY --}}
+    <div class="mx-auto mt-6 grid max-w-6xl gap-8 px-4 sm:px-6 lg:grid-cols-[1fr_320px]">
+        <div class="flex min-w-0 flex-col gap-6">
+            {{-- ABOUT --}}
+            @if ($brand->description || $moods->isNotEmpty())
+                <section>
+                    <x-ui.eyebrow>{{ __('About') }}</x-ui.eyebrow>
+                    @if ($brand->description)
+                        <p class="mt-3 max-w-2xl font-display text-2xl leading-snug tracking-tight text-ink sm:text-[28px]">{{ $brand->getTranslation('description', app()->getLocale()) }}</p>
+                    @endif
+                    @if ($moods->isNotEmpty())
+                        <div class="mt-5 flex flex-wrap gap-2">
+                            @foreach ($moods as $mood)
+                                <x-ui.chip>{{ __(ucfirst($mood->tag)) }}</x-ui.chip>
+                            @endforeach
+                        </div>
+                    @endif
+                </section>
+            @endif
+
+            {{-- CREDIBILITY --}}
+            <section>
+                <x-ui.eyebrow>{{ __('Credibility') }}</x-ui.eyebrow>
+                <div class="mt-4 grid grid-cols-2 gap-3.5 sm:grid-cols-3">
+                    <x-ui.stat :label="__('Completed projects')" :value="$credibility?->completed_projects_count ?? 0" />
+                    @if ($credibility?->response_rate_pct !== null)
+                        <x-ui.stat :label="__('Response rate')" :value="$credibility->response_rate_pct.'%'" />
+                    @endif
+                    @if ($credibility?->avg_response_time_hours !== null)
+                        <x-ui.stat :label="__('Avg. response')" :value="(int) round($credibility->avg_response_time_hours).'h'" />
+                    @endif
+                </div>
             </section>
 
-            {{-- Campaigns on FAMA --}}
+            {{-- TALENT RATINGS --}}
             <section>
-                <h2 class="mb-4 font-display text-2xl text-ink">{{ __('Campaigns on FAMA') }}</h2>
+                <x-ui.eyebrow>{{ __('Accountability') }}</x-ui.eyebrow>
+                <h2 class="mt-1 font-display text-2xl tracking-tight text-ink sm:text-3xl">{{ __('How talent rate this brand') }}</h2>
+                @if ($reviews->isNotEmpty())
+                    <x-ui.card class="mt-5">
+                        <div class="mb-5 flex flex-wrap items-baseline gap-3">
+                            <span class="font-display text-4xl leading-none text-ink">{{ $overall }}</span>
+                            <span class="tracking-[2px] text-gold">★★★★★</span>
+                            <span class="text-sm text-muted">{{ trans_choice('based on :count talent review|based on :count talent reviews', $reviews->count(), ['count' => $reviews->count()]) }}</span>
+                        </div>
+                        <div class="mb-6 flex flex-col gap-3">
+                            @foreach ($axes as $i => $axis)
+                                <div class="flex items-center gap-3">
+                                    <span class="w-32 shrink-0 text-sm text-muted">{{ $axis['label'] }}</span>
+                                    <div class="h-1.5 flex-1 overflow-hidden rounded-pill bg-line">
+                                        <div class="h-full rounded-pill {{ $i === 2 ? 'bg-gold' : 'bg-accent' }}" style="width: {{ $axis['pct'] }}%"></div>
+                                    </div>
+                                    <span class="w-8 text-end font-mono text-xs text-ink">{{ $axis['val'] }}</span>
+                                </div>
+                            @endforeach
+                        </div>
+                        <div class="grid gap-3.5 sm:grid-cols-2">
+                            @foreach ($reviews as $review)
+                                @if ($review->body)
+                                    <div class="flex flex-col gap-3 rounded-md border border-line bg-elevated p-4">
+                                        <p class="font-display text-base leading-snug text-ink">“{{ $review->body }}”</p>
+                                        <div class="mt-auto flex items-center gap-2.5">
+                                            <x-ui.avatar :name="$review->talent?->display_name ?? '—'" size="sm" />
+                                            <span>
+                                                <span class="block text-xs font-semibold text-ink">{{ $review->talent?->display_name ?? __('A talent') }}</span>
+                                                <span class="block text-[11px] text-muted">★ {{ $review->average_rating }}</span>
+                                            </span>
+                                        </div>
+                                    </div>
+                                @endif
+                            @endforeach
+                        </div>
+                    </x-ui.card>
+                @else
+                    <x-ui.card class="mt-5 text-center text-sm text-muted">{{ __('No reviews yet.') }}</x-ui.card>
+                @endif
+            </section>
+
+            {{-- CAMPAIGNS --}}
+            <section id="campaigns" class="scroll-mt-24">
+                <x-ui.eyebrow>{{ __('On Fama') }}</x-ui.eyebrow>
+                <h2 class="mt-1 font-display text-2xl tracking-tight text-ink sm:text-3xl">{{ __('Campaigns on FAMA') }}</h2>
                 @if ($brand->campaigns->isNotEmpty())
-                    <div class="grid gap-4 sm:grid-cols-2">
+                    <div class="mt-5 grid gap-4 sm:grid-cols-2">
                         @foreach ($brand->campaigns as $campaign)
+                            @php $budget = collect([$campaign->budget_min, $campaign->budget_max])->filter(fn ($v) => $v !== null); @endphp
                             <a href="{{ route('brand.campaign.public', [$brand, $campaign]) }}"
-                               class="group block overflow-hidden rounded-lg border border-line bg-surface hover:border-line-strong">
-                                <div class="h-36 bg-elevated bg-cover bg-center" @style(["background-image:url('{$campaign->cover_image_url}')" => $campaign->cover_image_url])></div>
-                                <div class="p-4">
-                                    <h3 class="font-display text-lg text-ink group-hover:text-accent">{{ $campaign->title }}</h3>
-                                    <p class="mt-1 text-xs text-muted">{{ __(ucfirst(str_replace('_', ' ', $campaign->status->getValue()))) }}</p>
+                               class="group block overflow-hidden rounded-md border border-line bg-elevated shadow-e1 transition hover:-translate-y-0.5 hover:shadow-e3">
+                                <div class="relative aspect-[16/10] bg-surface bg-cover bg-center"
+                                     @style([
+                                         "background-image:url('{$campaign->cover_image_url}')" => $campaign->cover_image_url,
+                                         'background-image:repeating-linear-gradient(135deg, var(--line) 0 1px, transparent 1px 12px)' => ! $campaign->cover_image_url,
+                                     ])>
+                                    @if ($budget->isNotEmpty())
+                                        <span class="absolute start-2.5 top-2.5 rounded-pill bg-surface/90 px-2.5 py-1 font-mono text-[10px] text-accent-ink backdrop-blur">{{ $budget->map(fn ($v) => number_format((float) $v))->implode('–') }} {{ $campaign->currency }}</span>
+                                    @endif
+                                </div>
+                                <div class="flex flex-col gap-2 p-4">
+                                    <div class="font-display text-lg leading-tight text-ink group-hover:text-accent-ink">{{ $campaign->title }}</div>
+                                    <div class="flex items-center gap-1.5 border-t border-line pt-2 font-mono text-[11px] text-subtle">
+                                        <span class="h-1.5 w-1.5 rounded-pill bg-accent"></span>{{ $campaign->location_city ?: __(ucfirst(str_replace('_', ' ', $campaign->status->getValue()))) }}
+                                    </div>
                                 </div>
                             </a>
                         @endforeach
                     </div>
                 @else
-                    <p class="rounded-lg border border-dashed border-line py-10 text-center text-sm text-muted">{{ __('No public campaigns yet.') }}</p>
+                    <x-ui.card class="mt-5 text-center text-sm text-muted">{{ __('No public campaigns yet.') }}</x-ui.card>
                 @endif
             </section>
         </div>
 
-        {{-- Right column --}}
-        <aside class="space-y-6">
-            {{-- Credibility --}}
-            <section class="rounded-lg border border-line bg-surface p-5">
-                <h3 class="mb-4 font-mono text-[11px] uppercase tracking-[0.18em] text-subtle">{{ __('Track record') }}</h3>
-                <dl class="space-y-3 text-sm">
-                    <div class="flex items-center justify-between">
-                        <dt class="text-muted">{{ __('Completed projects') }}</dt>
-                        <dd class="font-display text-lg text-ink">{{ $credibility?->completed_projects_count ?? 0 }}</dd>
-                    </div>
-                    @if ($credibility?->response_rate_pct !== null)
-                        <div class="flex items-center justify-between">
-                            <dt class="text-muted">{{ __('Response rate') }}</dt>
-                            <dd class="font-display text-lg text-ink">{{ $credibility->response_rate_pct }}%</dd>
+        {{-- SIDEBAR --}}
+        <aside class="flex flex-col gap-4 lg:sticky lg:top-20 lg:self-start">
+            @if ($snapshot->isNotEmpty())
+                <x-ui.card elevated class="flex flex-col gap-3.5">
+                    <div class="font-mono text-[10px] uppercase tracking-[0.16em] text-subtle">{{ __('Snapshot') }}</div>
+                    @foreach ($snapshot as $row)
+                        <div class="flex justify-between gap-3 text-sm">
+                            <span class="text-muted">{{ $row['k'] }}</span>
+                            <span class="text-end font-semibold text-ink">{{ $row['v'] }}</span>
                         </div>
-                    @endif
-                    @if ($credibility?->avg_response_time_hours !== null)
-                        <div class="flex items-center justify-between">
-                            <dt class="text-muted">{{ __('Avg. response') }}</dt>
-                            <dd class="font-display text-lg text-ink">{{ (int) round($credibility->avg_response_time_hours) }}h</dd>
-                        </div>
-                    @endif
-                </dl>
-            </section>
+                    @endforeach
+                </x-ui.card>
+            @endif
 
-            {{-- Aesthetic --}}
-            @if ($moods->isNotEmpty())
-                <section class="rounded-lg border border-line bg-surface p-5">
-                    <h3 class="mb-3 font-mono text-[11px] uppercase tracking-[0.18em] text-subtle">{{ __('Aesthetic') }}</h3>
-                    <div class="flex flex-wrap gap-2">
-                        @foreach ($moods as $mood)
-                            <span class="rounded-pill bg-elevated px-3 py-1 text-xs text-muted">{{ __(ucfirst($mood->tag)) }}</span>
-                        @endforeach
-                    </div>
-                </section>
+            @if ($brand->socialHandles->isNotEmpty())
+                <x-ui.card elevated class="flex flex-col gap-3">
+                    <div class="font-mono text-[10px] uppercase tracking-[0.16em] text-subtle">{{ __('Handles') }}</div>
+                    @foreach ($brand->socialHandles as $handle)
+                        <a href="{{ $handle->url ?: '#' }}" @if ($handle->url) target="_blank" rel="noopener nofollow" @endif
+                           class="flex items-center justify-between gap-2.5 rounded-sm border border-line px-3 py-2 transition hover:border-accent hover:bg-accent-weak">
+                            <span class="text-sm font-semibold text-ink">{{ ucfirst($handle->platform) }}</span>
+                            <span class="font-mono text-xs text-muted">{{ $handle->handle }}</span>
+                        </a>
+                    @endforeach
+                </x-ui.card>
             @endif
         </aside>
     </div>

@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Brand;
+use App\Models\DealFlow;
 use App\Models\Talent;
 use App\Models\TalentType;
 use Database\Seeders\Concerns\GeneratesCoverImages;
@@ -105,6 +106,34 @@ class BrandDemoSeeder extends Seeder
             foreach (['Behind the scenes', 'Menu stills', 'Café interior'] as $i => $caption) {
                 $item = $campaign->gallery()->create(['media_type' => 'image', 'caption' => ['en' => $caption, 'ar' => $caption], 'position' => $i]);
                 $item->addMedia($this->cover('autumn-g'.$i, 1200, 800))->toMediaCollection('media');
+            }
+
+            // A second campaign — a completed showcase (different status).
+            $showcase = $brand->campaigns()->updateOrCreate(['slug' => 'ramadan-lantern-series'], [
+                'title' => 'Ramadan Lantern Series', 'type' => 'shoot',
+                'description' => ['en' => 'A completed editorial series shot across old Cairo.', 'ar' => 'سلسلة تحريرية مكتملة صُوّرت في القاهرة القديمة.'],
+                'status' => 'completed', 'budget_min' => 15000, 'budget_max' => 35000, 'currency' => 'EGP',
+                'location_city' => 'Cairo', 'location_country' => 'Egypt', 'is_public' => true, 'positions_count' => 1,
+            ]);
+            $showcase->clearMediaCollection('cover');
+            $showcase->addMedia($this->cover('ramadan-cover', 1600, 900))->toMediaCollection('cover');
+            $showcase->talentTypes()->sync([
+                TalentType::where('slug', 'photographer')->value('id') => ['quantity' => 1],
+            ]);
+
+            // A deal running under the open campaign (deals.campaign_id), so the
+            // campaign workspace and deals inbox line up. Uses a seeded flow.
+            $flow = DealFlow::query()->first();
+            if ($flow !== null && isset($talent)) {
+                $brand->deals()->updateOrCreate(['reference' => 'NOMAD-AUTUMN-01'], [
+                    'talent_id' => $talent->id,
+                    'deal_flow_id' => $flow->id,
+                    'campaign_id' => $campaign->id,
+                    'status' => 'completed',
+                    'title' => 'Autumn Menu — lead photographer',
+                    'initiated_by' => 'brand',
+                    'agreed_amount' => 28000, 'currency' => 'EGP',
+                ]);
             }
         });
     }
