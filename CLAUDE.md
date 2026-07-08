@@ -141,7 +141,14 @@ every dashboard interaction is Ajax (no reload). Demo data: fully onboarded Noma
 needs/credibility/reviews/images + social), two campaigns at different statuses (open + completed
 showcase), and a deal under a campaign (deals.campaign_id). Manual QA checklist in docs/conventions.md
 ("QA checklist — brand slice").
-Next: Phase 3A — Admin (deal-flow authoring, moderation/approval queues, deal-step intervention/override,
-spatie/laravel-activitylog audit), then brand↔talent deal initiation (brand discovers talent →
+Phase 3A foundation complete (admin platform layer): users refined for admin (locale en/ar, phone,
+avatar_url, last_login_at, is_active, soft deletes); Admin RBAC via spatie/laravel-permission on the admin
+guard (ADR-H) — roles super-admin/moderator/support + permissions manage-flows/moderate-content/
+intervene-deals/manage-settings/manage-users (RolesAndPermissionsSeeder); settings table (key→JSON) +
+SettingsService (cached, typed globals, admin log channel) + SettingsSeeder; activity_log confirmed
+recording subject/causer/changes (DealFlow/DealFlowStep now LogsActivity, log name deal_flow; this
+activitylog version stores model old/new under attribute_changes). 237 tests green.
+Next: Phase 3A UI — the admin dashboard (admin guard) on this foundation: deal-flow builder (writes
+deal_flows/deal_flow_steps), moderation/approval queues, deal-step intervention/override, activity-log
+viewer — gated on the seeded permissions. Then brand↔talent deal initiation (brand discovers talent →
 enquiry→deal on the shared engine), then the Sanctum mobile API (Phase 4).
-deals.campaign_id (ADR-F) lands with campaigns.

@@ -120,9 +120,28 @@ completed/cancelled, budget min/max + currency, location, dates, `is_public`, `p
 UNIQUE(campaign_id, talent_type_id), `quantity`), `campaign_media` (gallery; uploads via medialibrary,
 `embed_url` external, `caption` translatable).
 
+## Platform & admin (Phase 3A — migrated)
+
+- **`users` refined** (schema-master §6): added `phone`, `avatar_url`, `locale` enum(en, ar),
+  `last_login_at`, `is_active` (default true), and **soft deletes** (`deleted_at`). No `role` column —
+  admin roles are modelled with spatie/laravel-permission (ADR-H).
+- **RBAC via spatie/laravel-permission** on the **`admin`** guard: `roles`, `permissions`,
+  `model_has_roles`, `model_has_permissions`, `role_has_permissions`. Seeded roles **super-admin /
+  moderator / support** and permissions **manage-flows, moderate-content, intervene-deals,
+  manage-settings, manage-users** (`RolesAndPermissionsSeeder`). `User` uses `HasRoles` with
+  `$guard_name = 'admin'`.
+- **`settings`** — key (unique) → value (JSON), read/written through `App\Services\SettingsService`
+  (cached key→value map; typed globals: default currency, default deal flow, feature flags). Seeded by
+  `SettingsSeeder`.
+- **`activity_log`** (already installed, Phase 0) — confirmed recording **subject + causer + changes**;
+  `DealFlow`/`DealFlowStep` now use `LogsActivity` (log name `deal_flow`) so the coming admin authoring
+  layer is audited. Note: this activitylog version stores model old/new under **`attribute_changes`**
+  (collection); `properties` holds ad-hoc custom data.
+
 ## Not yet built
 
-- **Platform:** `settings` (key-value config).
+- **Admin authoring/moderation UI** (Phase 3A cont.) — the flow-builder, moderation queues, and deal-step
+  intervention screens sit on top of the schema above.
 
 ## Open schema items (from the specs / decisions)
 - `deals.campaign_id` — FK deals → campaigns (ADR-F), added when the campaign⇄deal link is finalised

@@ -111,3 +111,17 @@
 - **Decision:** TBD — dedicated per-entity reset tables vs. shared, decided when those auth flows are built.
 - **Status:** OPEN.
 - **Consequences:** Affects Phase 1 auth flow migrations for brand/talent.
+
+### ADR-H — Admin RBAC: role enum vs. spatie/laravel-permission
+- **Context:** schema-master §6 lists `users.role` as "ENUM(talent, brand, admin) — or use a roles
+  table". Admin governance (flow authoring, moderation, deal-step intervention, settings, staff
+  management) needs *granular, per-capability* authorization, not a single coarse label.
+- **Decision:** **Accepted — spatie/laravel-permission**, bound to the **`admin`** guard. No `role`
+  enum column on `users`. Roles (super-admin / moderator / support) compose granular permissions
+  (manage-flows, moderate-content, intervene-deals, manage-settings, manage-users); `User` uses
+  `HasRoles` with `$guard_name = 'admin'`.
+- **Status:** **Resolved (Accepted)** — Phase 3A. Package installed, tables migrated,
+  `RolesAndPermissionsSeeder` seeds the roles/permissions and grants the demo admin super-admin.
+- **Consequences:** Admin screens gate on permissions (e.g. `@can('manage-flows')`), so new capabilities
+  are added as permissions without schema changes. Talent/brand entities keep their own guards and are
+  unaffected (their "role" is their guard/table, not a spatie role).

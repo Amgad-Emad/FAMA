@@ -64,7 +64,9 @@ test('user can delete their account', function () {
         ->assertRedirect('/');
 
     $this->assertGuest();
-    $this->assertNull($user->fresh());
+    // Admin accounts soft-delete (schema-master §6 gives users `deleted_at`),
+    // so the row is retained but excluded from normal queries.
+    $this->assertSoftDeleted($user);
 });
 
 test('correct password must be provided to delete account', function () {

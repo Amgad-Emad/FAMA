@@ -32,6 +32,25 @@ Notable changes to the Fama project. Newest first.
   Regression test in `MultiGuardTest`.
 - 224 tests green.
 
+## 2026-07-09 — Phase 3A: admin foundation (RBAC + settings + audit)
+
+- **users refined** for admin (schema-master §6): `phone`, `avatar_url`, `locale` enum(en, ar),
+  `last_login_at`, `is_active`, and **soft deletes**. `User` gains `SoftDeletes` + spatie `HasRoles`
+  (guard `admin`). (Breeze self-delete now soft-deletes — `ProfileTest` updated.)
+- **Admin RBAC (ADR-H):** installed **spatie/laravel-permission** on the `admin` guard;
+  `RolesAndPermissionsSeeder` seeds roles **super-admin/moderator/support** + permissions
+  **manage-flows, moderate-content, intervene-deals, manage-settings, manage-users**, and grants the demo
+  admin super-admin.
+- **settings** table (key→JSON) + **`SettingsService`** — cached key→value map, transactional writes
+  (fail-log to a new `admin` channel), typed globals (default currency, default deal flow, feature flags).
+  `SettingsSeeder` seeds the defaults.
+- **activity_log confirmed** recording subject + causer + changes; `DealFlow`/`DealFlowStep` now log
+  activity (name `deal_flow`) for the coming authoring layer. This version stores model old/new under
+  `attribute_changes`.
+- **Tests +13 (237 green):** admin user (soft delete, admin-guard roles, granular permissions, locale/
+  is_active), SettingsService (get/set/default/cache/typed/forget), activitylog (subject/causer/changes,
+  logOnlyDirty). Docs (schema + decisions ADR-H) + CLAUDE updated. No git.
+
 ## 2026-07-09 — Public brand pages restyled to the Fama design system
 
 - Rebuilt `brand/public-profile` and `brand/public-campaign` to match the `public/fama-front`

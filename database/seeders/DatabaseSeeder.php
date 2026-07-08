@@ -25,6 +25,8 @@ class DatabaseSeeder extends Seeder
             TalentTypeSeeder::class,
             BlockTypeSeeder::class,
             DealFlowSeeder::class,
+            RolesAndPermissionsSeeder::class,
+            SettingsSeeder::class,
             TalentDemoSeeder::class,
             TalentShowcaseSeeder::class,
             BrandDemoSeeder::class,

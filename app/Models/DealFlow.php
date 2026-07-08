@@ -7,16 +7,32 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 
 /**
  * Deal flow (schema-master §3) — a named, reusable, admin-authored step
  * sequence. Snapshotted into `deal_steps` at deal creation, so editing a flow
  * only affects future deals. `applies_to` scopes it to a talent category.
+ * Admin edits are audited via spatie/laravel-activitylog (subject + causer +
+ * old/new properties) for the coming authoring layer.
  */
 class DealFlow extends Model
 {
     /** @use HasFactory<DealFlowFactory> */
-    use HasFactory;
+    use HasFactory, LogsActivity;
+
+    /**
+     * Audit flow edits (admin-governed) — subject + causer + changed attributes.
+     */
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->useLogName('deal_flow')
+            ->logOnly(['name', 'slug', 'description', 'applies_to', 'is_active', 'is_default'])
+            ->logOnlyDirty()
+            ->dontLogEmptyChanges();
+    }
 
     /**
      * @var list<string>
