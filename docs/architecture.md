@@ -246,6 +246,31 @@ turn-aware action panel by `step_type` and the interleaved message/system_event 
 > **minimal** brands table (auth surface + name/slug + `is_complete` gate) so the engine references and
 > tests can seed brands; Phase 1B adds the full brand core (see docs/schema.md).
 
+## Domain model — brand side (Phase 2A)
+
+The brand core (`brands`, extended from the Phase 1E stub) plus its satellites and campaigns
+(`app/Models`, schema in `docs/schema.md`). Schema layer only — services + state machines + the brand
+dashboard are Phase 2B/2C (same split as talent 1A → 1B).
+
+- **Identity & gates.** `brands` holds the public identity; onboarding fills it progressively (nullable
+  fields). `is_complete` gates transacting, `is_published` gates talent-visibility, `is_verified` is a
+  one-way admin trust upgrade. `description` is translatable; logo + cover are medialibrary collections.
+- **1:1 satellites.** `aesthetic` (`BrandAesthetic`), `creativeNeed` (`BrandCreativeNeed`), `credibility`
+  (`BrandCredibility`) — created once, updated in place.
+- **Child collections.** `images` (medialibrary), `brandReviews` (three sub-ratings, `average_rating`
+  accessor), `socialHandles`, `signals` (append-only), `campaigns`.
+- **ADR-6 discovery pivots.** Mood tags → `brand_mood_tags` (via the aesthetic); creative-need talent
+  types → `brand_creative_need_talent_type` (M:N with `talent_types`); project types →
+  `brand_creative_need_project_type`. All indexed so the feed can filter "brands needing photographers /
+  with an editorial mood / running campaign videos".
+- **Campaigns.** `Campaign` (translatable description, cover media, soft-delete, `status` lifecycle)
+  `belongsToMany` `TalentType` via `campaign_talent_types` (roles + `quantity`) and `hasMany`
+  `CampaignMedia` (`gallery()`, uploads via medialibrary). A campaign groups many deals (the
+  `deals.campaign_id` FK lands in Phase 2C, ADR-F).
+- **Demo data.** `BrandDemoSeeder` builds a full brand (Nomad Coffee) — aesthetic + moods, creative
+  needs + pivots, credibility, images, social handles, a talent review, and a public campaign with roles
+  + gallery — enriching the same brand the deal seeder uses.
+
 ## Cross-cutting
 
 - **Logging:** dedicated channels `app`, `auth`, `deals`, `media` (`config/logging.php`). Failure

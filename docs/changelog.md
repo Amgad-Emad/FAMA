@@ -2,6 +2,25 @@
 
 Notable changes to the Fama project. Newest first.
 
+## 2026-07-08 — Phase 2A: brand core & satellites + campaigns (schema)
+
+- **ADR-E resolved:** brand-spec confirmed complete (no gaps) — Phase 2 unblocked.
+- **Migrations:** extended the `brands` stub into the full identity (nullable onboarding/settings fields
+  + discovery indexes; logo/cover via medialibrary); satellites `brand_aesthetics`, `brand_images`,
+  `brand_creative_needs`, `brand_credibility`, `brand_reviews` (three sub-ratings), `brand_social_handles`,
+  `brand_signals` (append-only); `campaigns` + `campaign_talent_types` + `campaign_media`.
+- **ADR-6 applied (brand side):** `mood_tags` → `brand_mood_tags`; creative-need `talent_types` →
+  `brand_creative_need_talent_type` (M:N); `project_types` → `brand_creative_need_project_type` — all
+  indexed for discovery. Free-text references + internal `budget_tier`/`brief_quality_score` kept.
+- **Models + factories** for all of the above (Brand extended: media, translatable `description`,
+  full relations; Campaign: roles-with-quantity pivot + `gallery()`; append-only `BrandSignal`).
+- **`BrandDemoSeeder`** — a full demo brand (Nomad Coffee: aesthetic+moods, needs+pivots, credibility,
+  images, social handles, a talent review, a public campaign with roles + gallery), with generated
+  images, enriching the deal seeder's brand.
+- **Tests +8 (176 green):** relationships, translatable, media accessors, both ADR-6 pivots
+  (discovery-shaped queries), brand-review average + pending, campaign roles/quantity/gallery,
+  append-only signals. Docs (schema/architecture/conventions) + CLAUDE updated. No git.
+
 ## 2026-07-08 — Talent slice: production-grade sign-off
 
 - **Audit (no defects found):** `preventLazyLoading` + `preventSilentlyDiscardingAttributes` on (suite

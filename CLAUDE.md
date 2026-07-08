@@ -104,7 +104,14 @@ talent page; every dashboard interaction is Ajax (no reload). Demo data: multi-t
 full blocks/content/images + three deals at different steps (awaiting_talent / awaiting_brand /
 completed), plus 10 showcase talents across all six professions. Manual QA checklist in
 docs/conventions.md ("QA checklist — talent slice").
-Next: Phase 2A — brand core & satellites (extend the brands stub: industry/stage/location/reach +
-brand_aesthetics/images/creative_needs/credibility/reviews/social_handles/signals), then the brand
-deal room (Phase 2C) reusing the shared deal engine; Admin authoring/intervention is Phase 3.
+Phase 2A complete (brand schema): ADR-E resolved (brand-spec confirmed complete). brands extended to the
+full identity (media logo/cover, translatable description); satellites brand_aesthetics (+brand_mood_tags
+pivot), brand_images, brand_creative_needs (+talent_type/project_type pivots), brand_credibility,
+brand_reviews (3 sub-ratings), brand_social_handles, brand_signals (append-only); campaigns +
+campaign_talent_types + campaign_media. ADR-6 applied brand-side. 12 models + factories, BrandDemoSeeder
+(full Nomad Coffee brand + campaign with images). 176 tests green. State machines/services for the brand
+side are NOT built yet (schema layer only, mirroring talent 1A→1B).
+Next: Phase 2B — brand domain logic (Campaign + BrandReview state machines, brand services/actions,
+credibility recalculation events, brand dashboard + profile editor + campaigns manager + discovery
+feed), then Phase 2C brand deal room (+ deals.campaign_id, ADR-F) on the shared engine; Admin is Phase 3.
 deals.campaign_id (ADR-F) lands with campaigns.

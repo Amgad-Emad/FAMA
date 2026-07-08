@@ -27,6 +27,7 @@ class DatabaseSeeder extends Seeder
             DealFlowSeeder::class,
             TalentDemoSeeder::class,
             TalentShowcaseSeeder::class,
+            BrandDemoSeeder::class,
         ]);
     }
 }

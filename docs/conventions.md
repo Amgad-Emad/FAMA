@@ -80,8 +80,8 @@ still eager-load `media` on lists.
 ## Translatable attributes (spatie/laravel-translatable)
 Fama is bilingual (en/ar). Policy:
 - **Translate** free-text, human-facing copy that a user would reasonably localise: e.g. `headline`,
-  `bio`, block `title`, service `name`/`description`, project `title`/`summary`/`body`, campaign
-  `title`/`description`, deal-flow step `name`/`instructions`.
+  `bio`, block `title`, service `name`/`description`, project `title`/`summary`/`body`, brand
+  `description`, campaign `description`, campaign-media `caption`, deal-flow step `name`/`instructions`.
 - **Do NOT translate:** identifiers, slugs, enums, emails, numbers, dates, URLs, foreign keys, or
   machine keys (`block_types.key`, `deal_flow_steps.key`).
 - Storage: translatable columns are `JSON`, declared via `use HasTranslations;` +
@@ -90,7 +90,7 @@ Fama is bilingual (en/ar). Policy:
 - Validation: validate the submitted locale's value; keep the other locale untouched on partial edits.
 - Fallback: missing translations fall back to `APP_FALLBACK_LOCALE` (en).
 
-**Current translatable attributes (Phase 1A — talent side).** These columns are JSON per-locale:
+**Current translatable attributes.** These columns are JSON per-locale:
 
 | Model | Translatable attributes |
 |---|---|
@@ -105,10 +105,14 @@ Fama is bilingual (en/ar). Policy:
 | `BrandCollab` | `project_title` |
 | `PortfolioItem` | `caption` |
 | `Equipment` | `notes` |
+| `Brand` (Phase 2A) | `description` |
+| `Campaign` (Phase 2A) | `description` |
+| `CampaignMedia` (Phase 2A) | `caption` |
 
 **Deliberately NOT translatable:** identifiers/slugs/enums/keys; proper nouns (`brand_name`,
-`client_name`, `agency_name`, `software_name`, equipment `brand`/`model`/`name`); `Review.body` and
-`PressFeature.title`/`publication` (external text kept in its original language).
+`client_name`, `agency_name`, `software_name`, equipment `brand`/`model`/`name`, brand/campaign `name`
+&amp; `title`); `Review.body` / `BrandReview.body` and `PressFeature.title`/`publication` (external text
+kept in its original language).
 
 ## RTL / i18n in views
 - Set direction from the locale (`<html dir>` in the layouts). Prefer **logical** Tailwind utilities
