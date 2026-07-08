@@ -36,6 +36,7 @@ class BrandDemoSeeder extends Seeder
                 'company_size' => 'small',
                 'website' => 'https://nomadcoffee.example',
                 'is_complete' => true, 'is_active' => true, 'is_verified' => true, 'is_published' => true,
+                'status' => 'published',
             ]);
 
             $brand->clearMediaCollection('logo');

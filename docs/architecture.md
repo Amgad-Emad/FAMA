@@ -271,6 +271,46 @@ dashboard are Phase 2B/2C (same split as talent 1A → 1B).
   needs + pivots, credibility, images, social handles, a talent review, and a public campaign with roles
   + gallery — enriching the same brand the deal seeder uses.
 
+## Brand domain logic — services, state machines & events (Phase 2B)
+
+Business logic in **services**; lifecycles are **state machines**; accrual is **event-driven**. Every
+multi-write op runs in `runInTransaction` with fail-logging to the **`brands`** channel.
+
+**State machines** (`app/States/Brand|Campaign|BrandReview`, spatie/laravel-model-states — `status`
+authoritative, flags are synced projections via `SyncStateProjections`):
+- **Brand**: registered → onboarding → complete → published ⇄ unpublished; suspended from any complete
+  state; soft-delete removes it. `is_complete`/`is_published`/`is_active` are projected from status;
+  **`is_verified` is orthogonal** — a one-way admin flag, not a status.
+- **Campaign**: draft → open → in_progress → completed; cancellable from any active state. `is_public`
+  toggles independently of status; `Campaign::showcase()` = completed + public.
+- **BrandReview**: pending → approved | rejected (mirrors talent reviews); `is_approved` synced.
+
+**Services** (`app/Services`):
+- `BrandOnboardingService` — the 6-step wizard (identity → location → creative needs → aesthetic+images
+  → budget → complete). Step 1 moves registered → onboarding; step 6 flips `is_complete`. Idempotent
+  per step.
+- `CampaignService` — create/edit, `syncRoles` (talent types + quantity), `addMedia`, and the status
+  transitions (open/start/complete/cancel, `setPublic`).
+- `BrandReviewService` — talent `submit` (guards deal completed + one-per-deal → pending), admin
+  `approve`/`reject`. No edit path (the brand can never edit a review).
+- `BrandSignalService` — append-only view/save/brief_sent/profile_open writes.
+- `BrandCredibilityService` — wraps the `RecalculateBrandCredibility` action.
+
+**Accrual (event-driven).** `DealProgression` fires **`DealCompleted`** when a deal reaches `completed`;
+the auto-discovered **`AccrueBrandCredibility`** listener recomputes the brand's credibility
+(`RecalculateBrandCredibility`): monotonic `completed_projects_count`, `response_rate_pct`,
+`avg_response_time_hours`, internal `brief_quality_score`. Automatic — the brand takes no action. The
+same completion opens the talent's brand-review window (talent-initiated).
+
+**Discovery feed** (`App\Queries\BrandTalentFeed`) — a personalised talent feed seeded from the brand's
+creative-need talent types (the ADR-6 pivot) + `geographic_reach`, on spatie/laravel-query-builder;
+paginated + eager-loaded; browsing writes a `view` signal. Aesthetic (mood) weighting is deferred — a
+hard filter needs a talent-side aesthetic signal, so `brand_aesthetics` informs later ranking, not
+selection.
+
+> Update-in-place satellites (aesthetics, creative needs, images, social handles) have no terminal state
+> of their own; `brand_signals` is append-only. Deals link to a campaign via `deals.campaign_id` (ADR-F).
+
 ## Cross-cutting
 
 - **Logging:** dedicated channels `app`, `auth`, `deals`, `media` (`config/logging.php`). Failure

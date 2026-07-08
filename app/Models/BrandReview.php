@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use App\States\BrandReview\BrandReviewState;
 use Database\Factories\BrandReviewFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Spatie\ModelStates\HasStates;
 
 /**
  * Brand review (schema-master §4) — a talent rating a brand on three axes
@@ -17,7 +19,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class BrandReview extends Model
 {
     /** @use HasFactory<BrandReviewFactory> */
-    use HasFactory;
+    use HasFactory, HasStates;
 
     /**
      * @var list<string>
@@ -37,6 +39,7 @@ class BrandReview extends Model
             'fairness_rating' => 'integer',
             'creative_respect_rating' => 'integer',
             'is_approved' => 'boolean',
+            'status' => BrandReviewState::class,
         ];
     }
 

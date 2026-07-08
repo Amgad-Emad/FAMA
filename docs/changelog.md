@@ -2,6 +2,27 @@
 
 Notable changes to the Fama project. Newest first.
 
+## 2026-07-09 — Phase 2B: brand domain logic (services, states, accrual)
+
+- **State machines** (status authoritative, flags synced via `SyncStateProjections`): Brand
+  (registered→onboarding→complete→published⇄unpublished→suspended; `is_verified` orthogonal one-way),
+  Campaign (draft→open→in_progress→completed; cancellable; `is_public` independent; `showcase()` scope),
+  BrandReview (pending→approved/rejected). Migration adds `brands.status` + **`deals.campaign_id`**
+  (ADR-F resolved) with `Deal::campaign()`/`Campaign::deals()`.
+- **Services** (transactional, `brands` log channel): `BrandOnboardingService` (6-step wizard, flips
+  `is_complete`), `CampaignService` (create/edit/roles/media/transitions), `BrandReviewService`
+  (submit-pending/approve/reject, no brand edit path), `BrandSignalService` (append-only),
+  `BrandCredibilityService`.
+- **Credibility accrual (event-driven):** `DealProgression` fires **`DealCompleted`** → auto-discovered
+  `AccrueBrandCredibility` listener → `RecalculateBrandCredibility` (monotonic project count, response
+  metrics, internal brief score). Brand takes no action.
+- **Discovery feed:** `App\Queries\BrandTalentFeed` (spatie/laravel-query-builder) — personalised by the
+  brand's creative-need talent types (pivot) + geographic_reach; paginated + eager-loaded; writes a
+  browse signal. Aesthetic weighting deferred (documented).
+- **Tests +14 (190 green):** onboarding (6 steps + idempotency), credibility accrual (+ monotonic),
+  review flow (submit/guard/approve/no-edit), campaign transitions (+ illegal + showcase), discovery
+  feed (needs/geo/pagination + signal). Docs (architecture) + ADR-F resolved + CLAUDE updated. No git.
+
 ## 2026-07-08 — Phase 2A: brand core & satellites + campaigns (schema)
 
 - **ADR-E resolved:** brand-spec confirmed complete (no gaps) — Phase 2 unblocked.

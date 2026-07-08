@@ -101,9 +101,10 @@
 
 ### ADR-F — `deals.campaign_id` FK *(retained from Phase 0)*
 - **Context:** Brand/campaign workflows reference a deal running under a campaign, but the FK isn't in the `deals` definition.
-- **Decision:** TBD — add `campaign_id → campaigns (nullable)` when the campaign⇄deal link is finalised.
-- **Status:** OPEN.
-- **Consequences:** Update `docs/specs/schema-master.md` §3 at the same time.
+- **Decision:** Add `campaign_id → campaigns (nullable, nullOnDelete)` on `deals`.
+- **Status:** **Resolved (Accepted)** — added in Phase 2B (`add_brand_state_and_campaign_link`) once
+  `campaigns` existed. `Deal::campaign()` / `Campaign::deals()` relations wired.
+- **Consequences:** A campaign groups many deals; a completed public campaign is a profile showcase.
 
 ### ADR-G — Brand/talent password-reset tables *(retained from Phase 0)*
 - **Context:** Phase 0 points the `brands`/`talents` password brokers at the shared `password_reset_tokens` table (inert — unused yet).

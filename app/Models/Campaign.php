@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\States\Campaign\CampaignState;
 use Database\Factories\CampaignFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -12,6 +14,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
+use Spatie\ModelStates\HasStates;
 use Spatie\Translatable\HasTranslations;
 
 /**
@@ -23,7 +26,7 @@ use Spatie\Translatable\HasTranslations;
 class Campaign extends Model implements HasMedia
 {
     /** @use HasFactory<CampaignFactory> */
-    use HasFactory, HasTranslations, InteractsWithMedia, SoftDeletes;
+    use HasFactory, HasStates, HasTranslations, InteractsWithMedia, SoftDeletes;
 
     /**
      * @var list<string>
@@ -44,6 +47,7 @@ class Campaign extends Model implements HasMedia
     protected function casts(): array
     {
         return [
+            'status' => CampaignState::class,
             'budget_min' => 'decimal:2',
             'budget_max' => 'decimal:2',
             'start_date' => 'date',
@@ -96,5 +100,25 @@ class Campaign extends Model implements HasMedia
     public function gallery(): HasMany
     {
         return $this->hasMany(CampaignMedia::class)->orderBy('position');
+    }
+
+    /**
+     * Deals running under this campaign (deals.campaign_id).
+     *
+     * @return HasMany<Deal, $this>
+     */
+    public function deals(): HasMany
+    {
+        return $this->hasMany(Deal::class);
+    }
+
+    /**
+     * Completed, public campaigns — the showcases on the brand profile.
+     *
+     * @param  Builder<Campaign>  $query
+     */
+    public function scopeShowcase(Builder $query): void
+    {
+        $query->where('status', 'completed')->where('is_public', true);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\States\Brand\BrandState;
 use Database\Factories\BrandFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -13,6 +14,7 @@ use Laravel\Sanctum\HasApiTokens;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
+use Spatie\ModelStates\HasStates;
 use Spatie\Translatable\HasTranslations;
 
 /**
@@ -25,7 +27,7 @@ use Spatie\Translatable\HasTranslations;
 class Brand extends Authenticatable implements HasMedia
 {
     /** @use HasFactory<BrandFactory> */
-    use HasApiTokens, HasFactory, HasTranslations, InteractsWithMedia, Notifiable, SoftDeletes;
+    use HasApiTokens, HasFactory, HasStates, HasTranslations, InteractsWithMedia, Notifiable, SoftDeletes;
 
     protected $table = 'brands';
 
@@ -35,7 +37,7 @@ class Brand extends Authenticatable implements HasMedia
     protected $fillable = [
         'email', 'password', 'phone', 'name', 'slug', 'description', 'industry', 'brand_stage',
         'base_city', 'base_country', 'geographic_reach', 'founded_year', 'company_size', 'website',
-        'is_complete', 'is_active', 'is_verified', 'is_published', 'meta',
+        'is_complete', 'is_active', 'is_verified', 'is_published', 'status', 'meta',
     ];
 
     /**
@@ -61,6 +63,7 @@ class Brand extends Authenticatable implements HasMedia
             'is_active' => 'boolean',
             'is_verified' => 'boolean',
             'is_published' => 'boolean',
+            'status' => BrandState::class,
             'founded_year' => 'integer',
             'view_count' => 'integer',
             'meta' => 'array',

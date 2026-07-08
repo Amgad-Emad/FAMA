@@ -85,7 +85,7 @@ it('averages the three brand-review sub-ratings and defaults to pending', functi
 
     expect($review->average_rating)->toBe(4.0);
     expect((bool) $review->is_approved)->toBeFalse();
-    expect($review->status)->toBe('pending');
+    expect($review->status->getValue())->toBe('pending');
 });
 
 it('links a campaign to its roles (with quantity) and gallery', function () {
@@ -99,7 +99,7 @@ it('links a campaign to its roles (with quantity) and gallery', function () {
     expect($campaign->talentTypes)->toHaveCount(1);
     expect((int) $campaign->talentTypes->first()->pivot->quantity)->toBe(2);
     expect($campaign->gallery)->toHaveCount(1);
-    expect($campaign->status)->toBe('open');
+    expect($campaign->status->getValue())->toBe('open');
 });
 
 it('keeps brand_signals append-only (no updated_at column)', function () {

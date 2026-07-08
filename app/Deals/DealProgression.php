@@ -2,6 +2,7 @@
 
 namespace App\Deals;
 
+use App\Events\DealCompleted as DealCompletedEvent;
 use App\Models\Deal;
 use App\Models\DealMessage;
 use App\Models\DealStep;
@@ -129,5 +130,8 @@ class DealProgression
         $deal->save();
         $deal->status->transitionTo(DealCompleted::class);
         $this->postSystemEvent($deal, null, 'Deal completed.');
+
+        // Off-critical-path side effects (credibility accrual, review window).
+        DealCompletedEvent::dispatch($deal->refresh());
     }
 }

@@ -111,7 +111,15 @@ brand_reviews (3 sub-ratings), brand_social_handles, brand_signals (append-only)
 campaign_talent_types + campaign_media. ADR-6 applied brand-side. 12 models + factories, BrandDemoSeeder
 (full Nomad Coffee brand + campaign with images). 176 tests green. State machines/services for the brand
 side are NOT built yet (schema layer only, mirroring talent 1A→1B).
-Next: Phase 2B — brand domain logic (Campaign + BrandReview state machines, brand services/actions,
-credibility recalculation events, brand dashboard + profile editor + campaigns manager + discovery
-feed), then Phase 2C brand deal room (+ deals.campaign_id, ADR-F) on the shared engine; Admin is Phase 3.
+Phase 2B complete (brand domain logic): state machines Brand/Campaign/BrandReview (status authoritative,
+flags synced via SyncStateProjections; is_verified orthogonal; deals.campaign_id added — ADR-F resolved).
+Services (brands log channel): BrandOnboardingService (6-step wizard, flips is_complete), CampaignService
+(create/edit/roles/media/transitions + showcase scope), BrandReviewService (submit-pending/approve/reject,
+no brand edit), BrandSignalService (append-only), BrandCredibilityService. Event-driven accrual:
+DealProgression fires DealCompleted → AccrueBrandCredibility listener → RecalculateBrandCredibility
+(monotonic). Discovery feed App\Queries\BrandTalentFeed (needs pivot + geographic_reach; aesthetic
+weighting deferred). 190 tests green.
+Next: Phase 2C — brand dashboard UI (onboarding wizard, profile editor, campaigns manager, discovery
+feed, deals inbox + brand deal room on the shared engine, reviews-received); then Admin (Phase 3:
+flow authoring, moderation, intervention).
 deals.campaign_id (ADR-F) lands with campaigns.

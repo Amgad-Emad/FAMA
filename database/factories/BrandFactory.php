@@ -38,18 +38,19 @@ class BrandFactory extends Factory
             'is_active' => true,
             'is_verified' => false,
             'is_published' => true,
+            'status' => 'published',
         ];
     }
 
     /** Onboarding not finished — cannot transact and is hidden. */
     public function incomplete(): static
     {
-        return $this->state(fn () => ['is_complete' => false, 'is_published' => false]);
+        return $this->state(fn () => ['is_complete' => false, 'is_published' => false, 'status' => 'onboarding']);
     }
 
     public function unpublished(): static
     {
-        return $this->state(fn () => ['is_published' => false]);
+        return $this->state(fn () => ['is_published' => false, 'status' => 'unpublished']);
     }
 
     public function verified(): static
