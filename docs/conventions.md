@@ -129,3 +129,49 @@ Fama is bilingual (en/ar). Policy:
   database (`phpunit.xml`) with `RefreshDatabase`, so they exercise the same engine as dev/prod and
   never touch the dev `fama` data. Create it once: `mysql -u root -e "CREATE DATABASE IF NOT EXISTS fama_test"`.
 - Definition of Done: tests green, fail-logs + transactions verified, docs updated, no git.
+
+## QA checklist — talent slice (manual)
+
+Run against the seeded demo (`php artisan migrate:fresh --seed`; talent `demo.talent@fama.test`,
+slug `demo-talent`). Every dashboard interaction is Ajax — **no full page reload** should occur except
+logout. Toggle theme + locale on each page and confirm both render.
+
+**Public pages** (no login)
+- [ ] `/{slug}` profile — hero/avatar images, primary profession leads the headline, availability badge,
+      visible blocks in order, `view_count` increments on reload. Contact + Leave-a-review CTAs work.
+- [ ] `/{slug}/work/{project}` — one project expands (cover, client/role/year, summary, results, body).
+      A foreign/unpublished project 404s.
+- [ ] `/{slug}/review` — submit writes a **pending** review (shows in the talent's moderation queue).
+- [ ] `/{slug}/enquire` — submit lands in `deal_enquiries`; an unavailable talent is blocked (422).
+- [ ] `/discover` — 11 talents, images, availability badges. Filters (profession, availability, city,
+      equipment, software) narrow results; pagination works; "Reset filters" clears.
+
+**Talent dashboard** (`auth:talent`)
+- [ ] Home — status (draft/live), views, pending-reviews count, **active deals with whose-turn**
+      (awaiting_talent highlighted), quick links.
+- [ ] Profile editor — edit core fields (inline save), add block from the eligibility picker, drag to
+      reorder (persists), toggle visibility, remove, upload hero. Ineligible block → 422 inline.
+- [ ] Professions — add/remove/reorder, set primary; duplicate → 422.
+- [ ] Content editors (gallery/projects/digitals/…) — upload image (appears in grid), add via fields,
+      reorder, remove. Switch content types via the tabs.
+- [ ] Rate card — create/pause/remove a service.
+- [ ] Availability — change status + travel + rate tier; saved inline.
+- [ ] Reviews — approve/reject in the moderation queue; filter by status.
+- [ ] Affiliations & press — add/end/remove.
+- [ ] Account — change slug, publish/unpublish toggle.
+
+**Deals**
+- [ ] Inbox — deals listed with status + current step; `awaiting_talent` highlighted; status filter works;
+      paginated.
+- [ ] Deal room — stepper reflects progress; the action panel matches the current `step_type`
+      (form/approval/upload/payment/contract/schedule/message/info); timeline interleaves messages +
+      system events; free messaging works. When it's not the talent's turn the panel is read-only.
+- [ ] The seeded deals cover three states: **awaiting_talent** (quote), **awaiting_brand** (approval),
+      **completed** (full loop).
+
+**Cross-cutting**
+- [ ] Dark ⇄ light toggle persists across pages; RTL (`/ar`) mirrors layout and shows Arabic strings;
+      EN switch returns to the default locale.
+- [ ] Acting on another talent's resource → 403; acting out of turn on a deal → 422.
+- [ ] No `LazyLoadingViolationException` on any page (preventLazyLoading is on outside production);
+      every list is paginated + eager-loaded.

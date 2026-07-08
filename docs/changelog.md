@@ -2,6 +2,19 @@
 
 Notable changes to the Fama project. Newest first.
 
+## 2026-07-08 — Talent slice: production-grade sign-off
+
+- **Audit (no defects found):** `preventLazyLoading` + `preventSilentlyDiscardingAttributes` on (suite
+  green = no N+1); every list endpoint paginated + eager-loaded; every service multi-write wrapped in
+  `runInTransaction` with fail-logging to the right channel (deals → `deals`, hero upload → `media`,
+  rest → `app`).
+- **Coverage +2:** dashboard active-deals/whose-turn render test; engine auto-completes an automatic
+  (auto-confirm payment) step with no human turn. Suite: 168 green.
+- **Demo dataset:** the demo talent now carries **three deals at different steps** (awaiting_talent /
+  awaiting_brand / completed) alongside full blocks/content/images; 10 showcase talents unchanged.
+- **Docs:** manual QA checklist added to `docs/conventions.md`; README gains a Status section; CLAUDE.md
+  marks the **talent phase COMPLETE** and points to **Phase 2A**.
+
 ## 2026-07-08 — Rename case studies → projects (full)
 
 - Completed the earlier label-only change into a full identifier rename across the codebase: model

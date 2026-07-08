@@ -9,6 +9,19 @@ that walks a brand and a talent through booking, quoting, contracting, payment, 
 > model, pages, workflows, and lifecycles. Read the relevant spec before building anything. Project
 > laws live in [`CLAUDE.md`](CLAUDE.md); architecture/decisions in [`docs/`](docs/).
 
+## Status
+
+**Talent slice — complete (production-grade).** Public pages (profile, project detail, review, enquiry,
+discovery/search), the full talent dashboard (profile/blocks, professions, content editors, rate card,
+availability, reviews, affiliations & press, account), and the shared **deal engine** (flows → steps →
+deals, StepHandler strategy, state machines) with the talent deal room + inbox. Blade + Alpine on the
+shared `http.js` (no page reloads), JSON envelope, i18n (EN/AR + RTL), light/dark. Full Pest suite
+green; demo data seeded (`php artisan migrate:fresh --seed`). Manual QA checklist:
+[`docs/conventions.md`](docs/conventions.md#qa-checklist--talent-slice-manual).
+
+**Next — Phase 2A:** brand core & satellites, then the brand-side deal room (Phase 2C) on the same
+engine; Admin authoring/intervention is Phase 3.
+
 ## Stack
 
 - **PHP 8.3+ / Laravel 13**

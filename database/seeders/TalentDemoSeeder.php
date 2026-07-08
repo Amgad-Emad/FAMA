@@ -165,22 +165,41 @@ class TalentDemoSeeder extends Seeder
                 'reviewer_name' => 'Hana Mostafa', 'reviewer_role' => 'Producer', 'reviewer_company' => 'Cairo Films', 'rating' => 5, 'body' => 'Professional and warm — a pleasure from call sheet to wrap.', 'project_type' => 'Commercial',
             ]);
 
-            // A live deal in progress so the deal room + inbox demo the lifecycle
-            // (brand submitted the brief → now it's the talent's turn to quote).
+            // A couple of deals at different steps so the inbox, room and
+            // dashboard demo the whole lifecycle for manual QA.
             $flow = DealFlow::where('slug', 'standard-booking')->first();
             if ($flow !== null) {
-                $brand = Brand::firstOrCreate(['email' => 'demo.brand@fama.test'], [
-                    'password' => Hash::make('password'), 'name' => 'Nomad Coffee Co.', 'slug' => 'nomad-coffee',
-                    'is_complete' => true, 'is_active' => true,
-                ]);
-
                 $deals = app(DealService::class);
-                $deal = $deals->initiate([
-                    'brand_id' => $brand->id, 'talent_id' => $talent->id,
-                    'title' => 'Autumn campaign shoot', 'initiated_by' => 'brand',
-                    'brief' => 'Two-day lifestyle shoot for the autumn menu launch across three Cairo locations.',
-                ], $flow);
-                $deals->advance($deal, ['fields' => ['scope' => '2-day lifestyle shoot', 'dates' => 'Oct 12–13', 'budget' => 'EGP 40,000']], 'brand', $brand);
+                $brand = fn (string $slug, string $name) => Brand::firstOrCreate(
+                    ['email' => $slug.'@fama.test'],
+                    ['password' => Hash::make('password'), 'name' => $name, 'slug' => $slug, 'is_complete' => true, 'is_active' => true],
+                );
+                $start = fn (Brand $b, string $title, string $brief) => $deals->initiate(
+                    ['brand_id' => $b->id, 'talent_id' => $talent->id, 'title' => $title, 'initiated_by' => 'brand', 'brief' => $brief],
+                    $flow,
+                );
+                $brief = ['fields' => ['scope' => 'Lifestyle shoot', 'dates' => 'Oct 12–13', 'budget' => 'EGP 40,000']];
+
+                // 1) awaiting_talent — brand submitted the brief; talent must quote.
+                $nomad = $brand('nomad-coffee', 'Nomad Coffee Co.');
+                $d1 = $start($nomad, 'Autumn campaign shoot', 'Two-day lifestyle shoot for the autumn menu launch across three Cairo locations.');
+                $deals->advance($d1, $brief, 'brand', $nomad);
+
+                // 2) awaiting_brand — talent quoted; brand must approve.
+                $nefertari = $brand('nefertari-cosmetics', 'Nefertari Cosmetics');
+                $d2 = $start($nefertari, 'Spring beauty campaign', 'Studio beauty campaign for the spring colour range.');
+                $deals->advance($d2, $brief, 'brand', $nefertari);
+                $deals->advance($d2, ['fields' => ['amount' => 32000, 'note' => 'Includes light retouching']], 'talent', $talent);
+
+                // 3) completed — the full loop, front to back.
+                $gouna = $brand('el-gouna-resorts', 'El Gouna Resorts');
+                $d3 = $start($gouna, 'Resort lookbook', 'On-location lookbook across the marina and beach.');
+                $deals->advance($d3, $brief, 'brand', $gouna);
+                $deals->advance($d3, ['fields' => ['amount' => 25000]], 'talent', $talent);
+                $deals->advance($d3, ['note' => 'Approved'], 'brand', $gouna);
+                $deals->skip($d3, 'brand', $gouna);
+                $deals->advance($d3, ['attachments' => ['final-delivery.zip']], 'talent', $talent);
+                $deals->advance($d3, ['note' => 'Beautiful work'], 'brand', $gouna);
             }
         });
     }

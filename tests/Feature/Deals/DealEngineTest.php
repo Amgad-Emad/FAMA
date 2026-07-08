@@ -17,6 +17,26 @@ function newDeal(): Deal
     ], DealFlow::factory()->standard()->create());
 }
 
+it('auto-completes an automatic (auto-confirm payment) step, no human turn', function () {
+    // brief (brand) → auto payment (brand, confirmation=auto) → done (system).
+    $flow = DealFlow::factory()->create();
+    $flow->steps()->createMany([
+        ['key' => 'brief', 'name' => 'Brief', 'actor' => 'brand', 'step_type' => 'form', 'position' => 0, 'is_required' => true, 'is_skippable' => false, 'settings' => ['fields' => ['scope']]],
+        ['key' => 'deposit', 'name' => 'Auto deposit', 'actor' => 'brand', 'step_type' => 'payment', 'position' => 1, 'is_required' => true, 'is_skippable' => false, 'settings' => ['confirmation' => 'auto', 'percentage' => 50]],
+        ['key' => 'done', 'name' => 'Complete', 'actor' => 'system', 'step_type' => 'info', 'position' => 2, 'is_required' => true, 'is_skippable' => false, 'settings' => []],
+    ]);
+
+    $svc = app(DealService::class);
+    $deal = $svc->initiate(['brand_id' => Brand::factory()->create()->id, 'talent_id' => Talent::factory()->create()->id, 'title' => 'Auto', 'initiated_by' => 'brand'], $flow);
+
+    // Completing the brief activates the auto-payment, which completes itself,
+    // then the system step completes itself → the whole deal completes.
+    $deal = $svc->advance($deal, ['fields' => ['scope' => 'x']], 'brand', $deal->brand);
+
+    expect($deal->status::$name)->toBe('completed');
+    expect($deal->steps()->where('key', 'deposit')->where('status', 'completed')->exists())->toBeTrue();
+});
+
 it('initiates a deal: snapshots the flow and activates the first step', function () {
     $deal = newDeal();
 

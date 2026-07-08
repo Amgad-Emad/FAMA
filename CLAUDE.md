@@ -94,6 +94,17 @@ deal_enquiries + a MINIMAL brands stub table (Phase 1B extends). StepHandler Str
 PaymentStepHandler manual-vs-auto per ADR-B, default manual); Actions Snapshot/Initiate/Advance/
 RejectStep(loop-back)/ConvertEnquiry sharing DealProgression; state machines; DealService in
 transactions (deals channel). Booking CTA GET|POST /{slug}/enquire → deal_enquiries. Talent deal room +
-inbox (routes/talent.php, resources/js/deals.js). 165 tests green.
-Next: Phase 1B/2 — brand core & satellites (extend brands) + brand deal room; then Admin (Phase 3:
-flow authoring + intervention). deals.campaign_id (ADR-F) lands with campaigns.
+inbox (routes/talent.php, resources/js/deals.js).
+
+TALENT PHASE COMPLETE (production-grade). Full Pest suite green; preventLazyLoading +
+preventSilentlyDiscardingAttributes on (no N+1); every list paginated + eager-loaded; every multi-write
+op wrapped in runInTransaction with fail-logging to the right channel (deals / media / app); all
+colours/fonts are CSS tokens (cloud/graphite/teal + Bricolage/Sora), dark+light+RTL verified on every
+talent page; every dashboard interaction is Ajax (no reload). Demo data: multi-type demo talent with
+full blocks/content/images + three deals at different steps (awaiting_talent / awaiting_brand /
+completed), plus 10 showcase talents across all six professions. Manual QA checklist in
+docs/conventions.md ("QA checklist — talent slice").
+Next: Phase 2A — brand core & satellites (extend the brands stub: industry/stage/location/reach +
+brand_aesthetics/images/creative_needs/credibility/reviews/social_handles/signals), then the brand
+deal room (Phase 2C) reusing the shared deal engine; Admin authoring/intervention is Phase 3.
+deals.campaign_id (ADR-F) lands with campaigns.
