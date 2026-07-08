@@ -257,7 +257,7 @@ A crew member's kit (cameras, lenses, lighting). One row per item, grouped by ca
 | position | UNSIGNED INT |
 | created_at / updated_at | timestamps |
 
-### `case_studies`
+### `projects`
 Long-form project write-ups for creatives. Each is a substantial content object (summary, full body, cover image, measurable results). The `results` JSON holds flexible metrics per case without needing fixed columns.
 
 | Column | Type / constraints |
@@ -665,7 +665,7 @@ Key-value store for admin-tunable global settings (default currency, default dea
 - **talents** ⇄ **talent_types** via `talent_talent_type` (M:N; `is_primary`, `position`).
 - **talents** → many `profile_blocks`; each `profile_blocks` → one `block_types`.
 - **block_types** → many `block_type_category` (when `availability = by_category`).
-- **talents** → many of every content table (`portfolio_items`, `brand_collabs`, `reviews`, `services`, `look_types`, `digitals`, `showreels`, `equipment`, `case_studies`, `software_stack`, `agency_affiliations`, `press_features`); 1:1 `comp_cards`.
+- **talents** → many of every content table (`portfolio_items`, `brand_collabs`, `reviews`, `services`, `look_types`, `digitals`, `showreels`, `equipment`, `projects`, `software_stack`, `agency_affiliations`, `press_features`); 1:1 `comp_cards`.
 - **deal_flows** → many `deal_flow_steps`.
 - **deals** belongs to `brands`, `talents`, `deal_flows` (+ optional `service`, future `campaign`); has many `deal_steps` and `deal_messages`; `current_step_id` → `deal_steps`.
 - **deal_steps** snapshot from `deal_flow_steps` (`flow_step_id`).

@@ -11,8 +11,8 @@
 **Talent profile page — `fama.com/{slug}`**
 The core product. Reads `talents` for the header (display name, headline, hero/avatar, availability badge, location, booking CTA), then renders blocks from `profile_blocks` in `position` order, skipping `is_visible = false`. The headline combines the talent's professions from `talent_talent_type`, with `is_primary` leading. Block bodies pull from their tables: gallery (`portfolio_items`), brand collabs, reviews, services rate card, and type-specific sections gated by the `block_types` catalog (a block's `availability` matched against the talent's categories/types) — so a model-photographer shows comp card + looks + digitals **and** showreel + equipment + software. Each view bumps `view_count`. Blocks resolve through `block_type_id → block_types` for rendering; grandfathered blocks (deactivated but kept) still render here.
 
-**Project detail page — `fama.com/{slug}/work/{case-study}`**
-One `case_studies` record expanded: title, client, role, cover image, full body, results metrics. The one block rich enough to warrant its own URL.
+**Project detail page — `fama.com/{slug}/work/{project}`**
+One `projects` record expanded: title, client, role, cover image, full body, results metrics. The one block rich enough to warrant its own URL.
 
 **Deal initiation (booking CTA) — now starts a deal**
 The booking CTA no longer just sends an enquiry. Driven by `booking_type`/`booking_value`, it now creates a `deals` row: the brand picks the service and the applicable `deal_flow`, which snapshots into `deal_steps` and opens the deal room. Checks `availability_status` first. (This is the old "booking/enquiry page," upgraded.)
@@ -35,7 +35,7 @@ Live, reorderable view of `profile_blocks` — add, fill, drag (`position`), tog
 Add/remove talent types, mark one `is_primary`, order them (`position`). Adding a type merges its `default_blocks` and seeds any missing blocks.
 
 **Block content editors** *(surfaced by the talent's types/categories)*
-Gallery (`portfolio_items`), Comp card (`comp_cards`), Looks (`look_types`), Digitals (`digitals`), Showreel (`showreels`), Equipment (`equipment`), Case studies (`case_studies`), Software (`software_stack`), Brand collabs / Press list management. Which editor opens is informed by `block_types.content_source` (inline JSON vs. linked child table).
+Gallery (`portfolio_items`), Comp card (`comp_cards`), Looks (`look_types`), Digitals (`digitals`), Showreel (`showreels`), Equipment (`equipment`), Projects (`projects`), Software (`software_stack`), Brand collabs / Press list management. Which editor opens is informed by `block_types.content_source` (inline JSON vs. linked child table).
 
 **Services / rate card manager**
 Create, price, toggle services (`is_active`); set price, currency, `price_unit`, duration.
@@ -90,7 +90,7 @@ Slug, publish/unpublish (`is_published`), account prefs.
 12. **Build the profile (blocks)** — add block → pick `block_type` → fill content → set `position` → toggle `is_visible`. Repeated: add, fill, drag, hide, delete.
 13. **Add portfolio work** — open gallery → upload → thumbnail generated → attach credits/tags → order. Same shape for digitals (own section, `shot_type`).
 14. **Model setup** *(any model-category type)* — fill the single `comp_cards` record → add `look_types` → upload `digitals`.
-15. **Crew/creative setup** *(any crew/creative-category type)* — add `showreels` → list `equipment` by category → write `case_studies` → add `software_stack`. A model-photographer runs 14 **and** 15.
+15. **Crew/creative setup** *(any crew/creative-category type)* — add `showreels` → list `equipment` by category → write `projects` → add `software_stack`. A model-photographer runs 14 **and** 15.
 16. **Services / rate card** — create service → set price, currency, `price_unit` → toggle `is_active` → edit/remove.
 17. **Update availability** — flip `availability_status` (available → booked → unavailable); drives the hero block and CTA.
 18. **Work the deal (talent turn)** — when a step's actor is talent/both → perform the action in the deal room (send quote, accept brief, upload deliverables, sign) → step completed, payload saved, `system_event` posted → deal advances.

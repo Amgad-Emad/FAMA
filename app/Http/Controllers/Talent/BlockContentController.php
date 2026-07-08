@@ -3,11 +3,11 @@
 namespace App\Http\Controllers\Talent;
 
 use App\Models\BrandCollab;
-use App\Models\CaseStudy;
 use App\Models\Digital;
 use App\Models\Equipment;
 use App\Models\LookType;
 use App\Models\PortfolioItem;
+use App\Models\Project;
 use App\Models\Showreel;
 use App\Models\SoftwareStack;
 use Illuminate\Database\Eloquent\Model;
@@ -20,7 +20,7 @@ use Illuminate\View\View;
 /**
  * Block content editors (talent-spec) — the child content tables surfaced from
  * the profile editor. Driven by a per-type registry so one controller serves
- * every "table" block (gallery, digitals, showreel, equipment, case studies,
+ * every "table" block (gallery, digitals, showreel, equipment, projects,
  * software, brand collabs, looks). Uploaded assets go through medialibrary.
  * (Inline-JSON blocks are edited on the profile editor via ProfileBlockService;
  * comp_card is a 1:1 singleton handled separately.)
@@ -58,7 +58,7 @@ class BlockContentController extends TalentController
                 ['name', 'text', ['required']],
                 ['notes', 'translatable', []],
             ]],
-            'case_studies' => ['model' => CaseStudy::class, 'relation' => 'caseStudies', 'label' => 'Projects', 'labelField' => 'title', 'media' => 'cover', 'thumb' => 'cover_image_url', 'fields' => [
+            'projects' => ['model' => Project::class, 'relation' => 'projects', 'label' => 'Projects', 'labelField' => 'title', 'media' => 'cover', 'thumb' => 'cover_image_url', 'fields' => [
                 ['title', 'translatable', ['required']],
                 ['client_name', 'text', []],
                 ['summary', 'translatable', []],

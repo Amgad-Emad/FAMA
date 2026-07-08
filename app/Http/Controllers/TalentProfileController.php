@@ -35,7 +35,7 @@ class TalentProfileController extends Controller
                 'digitals.media',
                 'showreels.media',
                 'equipment',
-                'caseStudies.media',
+                'projects.media',
                 'softwareStack.media',
                 'agencyAffiliations.media',
                 'pressFeatures.media',

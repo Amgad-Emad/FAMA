@@ -1,9 +1,9 @@
 <?php
 
-use App\Http\Controllers\CaseStudyController;
 use App\Http\Controllers\DiscoveryController;
 use App\Http\Controllers\EnquiryController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\PublicReviewController;
 use App\Http\Controllers\TalentProfileController;
 use App\Support\Auth\Guards;
@@ -78,7 +78,7 @@ Route::group([
     Route::post('/{slug}/review', [PublicReviewController::class, 'store'])
         ->where('slug', '[A-Za-z0-9\-]+')->name('talent.review.store');
 
-    Route::get('/{slug}/work/{caseStudy}', [CaseStudyController::class, 'show'])
+    Route::get('/{slug}/work/{project}', [ProjectController::class, 'show'])
         ->where('slug', '[A-Za-z0-9\-]+')->name('talent.work');
 
     // Deal initiation — booking CTA (no-login enquiry capture).

@@ -281,13 +281,13 @@ class Talent extends Authenticatable implements HasMedia
     }
 
     /**
-     * Creative case studies.
+     * Creative projects.
      *
-     * @return HasMany<CaseStudy, $this>
+     * @return HasMany<Project, $this>
      */
-    public function caseStudies(): HasMany
+    public function projects(): HasMany
     {
-        return $this->hasMany(CaseStudy::class)->orderBy('position');
+        return $this->hasMany(Project::class)->orderBy('position');
     }
 
     /**

@@ -5,13 +5,13 @@ namespace Database\Seeders;
 use App\Models\BlockType;
 use App\Models\Brand;
 use App\Models\BrandCollab;
-use App\Models\CaseStudy;
 use App\Models\CompCard;
 use App\Models\DealFlow;
 use App\Models\Digital;
 use App\Models\Equipment;
 use App\Models\LookType;
 use App\Models\PortfolioItem;
+use App\Models\Project;
 use App\Models\Review;
 use App\Models\Service;
 use App\Models\Showreel;
@@ -121,15 +121,15 @@ class TalentDemoSeeder extends Seeder
             Equipment::factory()->count(6)->for($talent)->create();    // photographer
             Showreel::factory()->count(2)->for($talent)->create();     // photographer
 
-            // Projects (case studies) — curated.
-            CaseStudy::factory()->for($talent)->create([
+            // Projects — curated.
+            Project::factory()->for($talent)->create([
                 'title' => ['en' => 'Nomad Coffee — Autumn launch', 'ar' => 'نوماد كوفي — إطلاق الخريف'],
                 'client_name' => 'Nomad Coffee Co.', 'year' => 2025, 'position' => 0,
                 'role' => ['en' => 'Lead model & stills', 'ar' => 'عارضة رئيسية وتصوير ثابت'],
                 'summary' => ['en' => 'A two-day lifestyle shoot introducing the autumn menu across three Cairo locations.', 'ar' => 'تصوير لايف ستايل على مدار يومين لتقديم قائمة الخريف في ثلاثة مواقع بالقاهرة.'],
                 'results' => ['Reach' => '2.4M', 'Engagement' => '+38%', 'Assets' => '60+'],
             ]);
-            CaseStudy::factory()->for($talent)->create([
+            Project::factory()->for($talent)->create([
                 'title' => ['en' => 'Nefertari Cosmetics — SS26', 'ar' => 'مستحضرات نفرتاري — ربيع/صيف ٢٦'],
                 'client_name' => 'Nefertari Cosmetics', 'year' => 2026, 'position' => 1,
                 'role' => ['en' => 'Beauty model', 'ar' => 'عارضة جمال'],

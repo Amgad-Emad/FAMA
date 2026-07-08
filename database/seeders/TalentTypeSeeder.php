@@ -25,11 +25,11 @@ class TalentTypeSeeder extends Seeder
             ],
             [
                 'slug' => 'cinematographer', 'en' => 'Cinematographer (DOP)', 'ar' => 'مدير تصوير', 'category' => 'crew',
-                'default_blocks' => ['hero', 'showreel', 'equipment', 'case_studies', 'reviews', 'services'],
+                'default_blocks' => ['hero', 'showreel', 'equipment', 'projects', 'reviews', 'services'],
             ],
             [
                 'slug' => 'creative-director', 'en' => 'Creative Director', 'ar' => 'مدير إبداعي', 'category' => 'creative',
-                'default_blocks' => ['hero', 'gallery', 'case_studies', 'brand_collabs', 'reviews', 'services'],
+                'default_blocks' => ['hero', 'gallery', 'projects', 'brand_collabs', 'reviews', 'services'],
             ],
             [
                 'slug' => 'stylist', 'en' => 'Stylist', 'ar' => 'ستايليست', 'category' => 'creative',
@@ -37,7 +37,7 @@ class TalentTypeSeeder extends Seeder
             ],
             [
                 'slug' => 'graphic-designer', 'en' => 'Graphic Designer', 'ar' => 'مصمم جرافيك', 'category' => 'creative',
-                'default_blocks' => ['hero', 'gallery', 'case_studies', 'software_stack', 'reviews', 'services'],
+                'default_blocks' => ['hero', 'gallery', 'projects', 'software_stack', 'reviews', 'services'],
             ],
         ];
 

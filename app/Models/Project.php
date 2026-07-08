@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use Database\Factories\CaseStudyFactory;
+use Database\Factories\ProjectFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -12,13 +12,13 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Spatie\Translatable\HasTranslations;
 
 /**
- * CaseStudy — a long-form creative project write-up (schema-master §2). Cover is
+ * Project — a long-form creative project write-up (schema-master §2). Cover is
  * an uploaded asset; `url` is the external project link. title/role/summary/body
  * are translatable; `results` holds flexible metrics.
  */
-class CaseStudy extends Model implements HasMedia
+class Project extends Model implements HasMedia
 {
-    /** @use HasFactory<CaseStudyFactory> */
+    /** @use HasFactory<ProjectFactory> */
     use HasFactory, HasTranslations, InteractsWithMedia;
 
     /**

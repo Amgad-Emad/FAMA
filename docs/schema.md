@@ -23,7 +23,7 @@
 `profile_blocks`.
 
 **Content tables:** `portfolio_items`, `brand_collabs`, `reviews`, `services`, `comp_cards`
-(1:1, unique `talent_id`), `look_types`, `digitals`, `showreels`, `equipment`, `case_studies`,
+(1:1, unique `talent_id`), `look_types`, `digitals`, `showreels`, `equipment`, `projects`,
 `software_stack`, `agency_affiliations`, `press_features`.
 
 Deviations from the canonical schema (deliberate, per the standing decisions):
@@ -32,7 +32,7 @@ Deviations from the canonical schema (deliberate, per the standing decisions):
   `media_url`/`thumbnail_url`, `brand_logo_url`, `reviewer_avatar_url`, showreel/press `thumbnail_url`,
   `cover_image_url`, `icon_url`, `agency_logo_url` are **not** columns — they are media-library
   accessors on the models (ADR-5). Plain URL columns are kept only for EXTERNAL links/embeds:
-  `showreels.video_url`, `brand_collabs.url`, `case_studies.url`, `agency_affiliations.agency_url`,
+  `showreels.video_url`, `brand_collabs.url`, `projects.url`, `agency_affiliations.agency_url`,
   `press_features.url`, and a new `portfolio_items.embed_url` (for `media_type = embed`).
 - **Translatable columns are JSON** (per-locale), not VARCHAR/TEXT — see the list in
   `docs/conventions.md`.

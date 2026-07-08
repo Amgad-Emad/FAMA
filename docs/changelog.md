@@ -2,6 +2,17 @@
 
 Notable changes to the Fama project. Newest first.
 
+## 2026-07-08 — Rename case studies → projects (full)
+
+- Completed the earlier label-only change into a full identifier rename across the codebase: model
+  `CaseStudy` → `Project`, table `case_studies` → `projects`, relation `Talent::caseStudies()` →
+  `projects()`, block-catalog key `case_studies` → `projects` (+ partial `talent/blocks/projects.blade.php`),
+  content-type key + registry, public controller `CaseStudyController` → `ProjectController`, route param
+  `{caseStudy}` → `{project}` (URL `/{slug}/work/{project}`), factory, seeders (`default_blocks`,
+  `BlockTypeSeeder` key), the public view, and the feature test. Docs (schema/architecture/api/conventions/
+  specs) updated to match. Route name `talent.work` and the `/work/` segment kept. Full DB rebuilt +
+  re-seeded; suite green.
+
 ## 2026-07-07 — Showcase demo data: 10 talents with images
 
 - **`TalentShowcaseSeeder`** — ten published talents spanning all six professions (single- and

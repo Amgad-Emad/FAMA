@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Schema;
  * Media rule applied throughout: uploaded-asset `*_url` / `thumbnail_url`
  * columns are dropped (served from the media library via accessors); only
  * EXTERNAL links/embeds keep plain URL columns — portfolio embeds, showreel
- * video_url, brand-collab url, case-study url, agency url, press url.
+ * video_url, brand-collab url, project url, agency url, press url.
  * Translatable copy is stored as JSON per locale (see docs/conventions.md).
  */
 return new class extends Migration
@@ -135,8 +135,8 @@ return new class extends Migration
             $table->index(['talent_id', 'category']);
         });
 
-        // Long-form creative case studies (cover uploaded → media; url external).
-        Schema::create('case_studies', function (Blueprint $table) {
+        // Long-form creative projects (cover uploaded → media; url external).
+        Schema::create('projects', function (Blueprint $table) {
             $table->id();
             $table->foreignId('talent_id')->constrained('talents')->cascadeOnDelete();
             $table->json('title');                   // translatable
@@ -192,7 +192,7 @@ return new class extends Migration
         Schema::dropIfExists('press_features');
         Schema::dropIfExists('agency_affiliations');
         Schema::dropIfExists('software_stack');
-        Schema::dropIfExists('case_studies');
+        Schema::dropIfExists('projects');
         Schema::dropIfExists('equipment');
         Schema::dropIfExists('showreels');
         Schema::dropIfExists('digitals');

@@ -99,7 +99,7 @@ of content tables (`app/Models`, schema in `docs/schema.md`).
 - **Layout layer.** `profile_blocks` is the per-talent arrangement (position, visibility, layout, inline
   content). On profile creation the merged+deduped `default_blocks` of all linked types seed the blocks;
   `blockType` is always eager-loaded (rendering needs it). Rich blocks read from the content tables
-  (`portfolio_items`, `comp_cards`, `showreels`, `case_studies`, …).
+  (`portfolio_items`, `comp_cards`, `showreels`, `projects`, …).
 - **Media.** Every model holding uploaded files is `HasMedia` with single-file collections + a `thumb`
   conversion; `*_url` accessors resolve from the library (ADR-5, list in `docs/conventions.md`). External
   links/embeds stay as plain columns.
@@ -166,7 +166,7 @@ endpoints, nothing reloads.
   enforces own-resource access (403); `BlockContentController` resolves the model then `ensureOwns`.
 - **Pages.** Home (stats + deals slot), Profile editor (core fields + reorderable blocks + eligibility
   picker + hero upload), Professions, Block content editors (a registry-driven controller serving every
-  "table" block — gallery/digitals/showreel/equipment/case-studies/software/brand-collabs/looks — with
+  "table" block — gallery/digitals/showreel/equipment/projects/software/brand-collabs/looks — with
   medialibrary upload), Rate card, Availability, Reviews moderation, Affiliations & press, Account.
 - **Front-end** (`resources/js/dashboard.js`, Alpine): `profileEditor` (optimistic drag-reorder,
   inline errors, hero upload), `professionsManager`, and a generic `crudList` (paginated load,
@@ -183,8 +183,8 @@ through `x-public-layout`. All resolve **published** talents only.
 - **Talent profile** (`TalentProfileController` → `talent/profile`) — eager-loads a published talent
   with everything the profile renders (visible blocks in position order, approved reviews, active
   services, all content tables + media), bumps `view_count` via the `TalentProfileViewed` event, and
-  stays presentational. Case-study blocks link to their detail page; the header carries a review CTA.
-- **Case study** (`CaseStudyController` → `public/case-study`) — one `case_studies` record expanded,
+  stays presentational. Project blocks link to their detail page; the header carries a review CTA.
+- **Project** (`ProjectController` → `public/project`) — one `projects` record expanded,
   404 unless it belongs to the (published) talent.
 - **Review submission** (`PublicReviewController` + `StoreReviewRequest` → `public/review`) — an Ajax
   form that writes a pending review; the talent moderates it from the dashboard queue.

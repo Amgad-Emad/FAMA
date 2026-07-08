@@ -25,7 +25,7 @@ class BlockTypeSeeder extends Seeder
             ['key' => 'digitals', 'en' => 'Digitals', 'ar' => 'الصور الأولية', 'availability' => 'by_category', 'content_source' => 'table', 'layout' => 'grid', 'repeatable' => false, 'categories' => ['model']],
             ['key' => 'showreel', 'en' => 'Showreel', 'ar' => 'العرض المرئي', 'availability' => 'by_category', 'content_source' => 'table', 'layout' => 'carousel', 'repeatable' => true, 'categories' => ['crew', 'creative']],
             ['key' => 'equipment', 'en' => 'Equipment', 'ar' => 'المعدات', 'availability' => 'by_category', 'content_source' => 'table', 'layout' => 'list', 'repeatable' => false, 'categories' => ['crew']],
-            ['key' => 'case_studies', 'en' => 'Projects', 'ar' => 'المشاريع', 'availability' => 'by_category', 'content_source' => 'table', 'layout' => 'list', 'repeatable' => true, 'categories' => ['crew', 'creative']],
+            ['key' => 'projects', 'en' => 'Projects', 'ar' => 'المشاريع', 'availability' => 'by_category', 'content_source' => 'table', 'layout' => 'list', 'repeatable' => true, 'categories' => ['crew', 'creative']],
             ['key' => 'software_stack', 'en' => 'Software', 'ar' => 'البرمجيات', 'availability' => 'by_category', 'content_source' => 'table', 'layout' => 'grid', 'repeatable' => false, 'categories' => ['creative']],
             ['key' => 'agency_affiliations', 'en' => 'Agencies', 'ar' => 'الوكالات', 'availability' => 'universal', 'content_source' => 'table', 'layout' => 'list', 'repeatable' => false, 'categories' => []],
             ['key' => 'press_features', 'en' => 'Press', 'ar' => 'الصحافة', 'availability' => 'universal', 'content_source' => 'table', 'layout' => 'grid', 'repeatable' => false, 'categories' => []],

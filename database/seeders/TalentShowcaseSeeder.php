@@ -4,12 +4,12 @@ namespace Database\Seeders;
 
 use App\Models\BlockType;
 use App\Models\BrandCollab;
-use App\Models\CaseStudy;
 use App\Models\CompCard;
 use App\Models\Digital;
 use App\Models\Equipment;
 use App\Models\LookType;
 use App\Models\ProfileBlock;
+use App\Models\Project;
 use App\Models\Review;
 use App\Models\Service;
 use App\Models\Showreel;
@@ -173,7 +173,7 @@ class TalentShowcaseSeeder extends Seeder
 
         if ($category === 'creative') {
             SoftwareStack::factory()->count($rich ? 5 : 3)->for($talent)->create();
-            CaseStudy::factory()->count($rich ? 2 : 1)->for($talent)->create();
+            Project::factory()->count($rich ? 2 : 1)->for($talent)->create();
             BrandCollab::factory()->count($rich ? 4 : 2)->for($talent)->create();
         }
     }

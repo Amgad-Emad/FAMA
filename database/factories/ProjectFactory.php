@@ -2,16 +2,16 @@
 
 namespace Database\Factories;
 
-use App\Models\CaseStudy;
+use App\Models\Project;
 use App\Models\Talent;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends Factory<CaseStudy>
+ * @extends Factory<Project>
  */
-class CaseStudyFactory extends Factory
+class ProjectFactory extends Factory
 {
-    protected $model = CaseStudy::class;
+    protected $model = Project::class;
 
     /**
      * @return array<string, mixed>
@@ -20,7 +20,7 @@ class CaseStudyFactory extends Factory
     {
         return [
             'talent_id' => Talent::factory(),
-            'title' => ['en' => fake()->catchPhrase(), 'ar' => 'دراسة حالة'],
+            'title' => ['en' => fake()->catchPhrase(), 'ar' => 'مشروع'],
             'client_name' => fake()->company(),
             'role' => ['en' => fake()->jobTitle(), 'ar' => 'الدور'],
             'summary' => ['en' => fake()->sentence(), 'ar' => 'ملخص'],

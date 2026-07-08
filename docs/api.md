@@ -57,7 +57,7 @@ the JSON envelope + `http.js`. All resolve **published** talents only (404 other
 | Page | Method + path | Purpose |
 |---|---|---|
 | Talent profile | `GET /{slug}` | header (primary profession leading) + visible blocks in position order; bumps `view_count` via event; eager-loaded |
-| Case study | `GET /{slug}/work/{caseStudy}` | one `case_studies` record expanded (404 if not the talent's) |
+| Project | `GET /{slug}/work/{project}` | one `projects` record expanded (404 if not the talent's) |
 | Review form | `GET /{slug}/review` | public review form |
 | Review submit | `POST /{slug}/review` | writes a **pending** review (`is_approved = false`) — envelope |
 | Discovery | `GET /discover` | search page shell |
@@ -89,7 +89,7 @@ profession) and illegal state transitions (bad publish) return **422** envelopes
 | Blocks | `GET /talent/profile/blocks` · `GET /talent/profile/block-picker` | list blocks · eligibility-filtered picker |
 | Blocks | `POST /talent/profile/blocks` · `PATCH …/{block}` · `PATCH …/reorder` · `PATCH …/{block}/visibility` · `DELETE …/{block}` | add · fill · drag-reorder · show/hide · remove |
 | Professions | `GET/POST /talent/professions` · `PATCH …/{type}/primary` · `PATCH …/reorder` · `DELETE …/{type}` | manage types (seeds blocks) |
-| Content | `GET /talent/content/{type}` (+ `/data`, `POST`, `PATCH {id}`, `DELETE {id}`, `PATCH reorder`, `POST {id}/media`) | child-table editors (gallery, digitals, showreel, equipment, case studies, software, brand collabs, looks) |
+| Content | `GET /talent/content/{type}` (+ `/data`, `POST`, `PATCH {id}`, `DELETE {id}`, `PATCH reorder`, `POST {id}/media`) | child-table editors (gallery, digitals, showreel, equipment, projects, software, brand collabs, looks) |
 | Rate card | `GET /talent/services` (+ `/data`, `POST`, `PATCH {service}`, `PATCH {service}/toggle`, `DELETE {service}`) | services CRUD + pause/activate |
 | Availability | `GET /talent/availability` · `PATCH /talent/availability` | status + travel + rate tier |
 | Reviews | `GET /talent/reviews` (+ `/data?status=`, `PATCH {review}/approve`, `PATCH {review}/reject`) | moderation queue |

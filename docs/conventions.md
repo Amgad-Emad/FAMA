@@ -69,7 +69,7 @@ conversion; the dropped `*_url` columns are replaced by accessors that resolve f
 | `BrandCollab` | `logo` → `brand_logo_url` |
 | `Review` | `avatar` → `reviewer_avatar_url` |
 | `Showreel` | `thumbnail` → `thumbnail_url` (video stays `video_url`) |
-| `CaseStudy` | `cover` → `cover_image_url` |
+| `Project` | `cover` → `cover_image_url` |
 | `SoftwareStack` | `icon` → `icon_url` |
 | `AgencyAffiliation` | `logo` → `agency_logo_url` |
 | `PressFeature` | `thumbnail` → `thumbnail_url` |
@@ -80,7 +80,7 @@ still eager-load `media` on lists.
 ## Translatable attributes (spatie/laravel-translatable)
 Fama is bilingual (en/ar). Policy:
 - **Translate** free-text, human-facing copy that a user would reasonably localise: e.g. `headline`,
-  `bio`, block `title`, service `name`/`description`, case-study `title`/`summary`/`body`, campaign
+  `bio`, block `title`, service `name`/`description`, project `title`/`summary`/`body`, campaign
   `title`/`description`, deal-flow step `name`/`instructions`.
 - **Do NOT translate:** identifiers, slugs, enums, emails, numbers, dates, URLs, foreign keys, or
   machine keys (`block_types.key`, `deal_flow_steps.key`).
@@ -99,7 +99,7 @@ Fama is bilingual (en/ar). Policy:
 | `BlockType` | `name`, `description` |
 | `ProfileBlock` | `title` |
 | `Service` | `name`, `description` |
-| `CaseStudy` | `title`, `role`, `summary`, `body` |
+| `Project` | `title`, `role`, `summary`, `body` |
 | `LookType` | `name` |
 | `Showreel` | `title` |
 | `BrandCollab` | `project_title` |
