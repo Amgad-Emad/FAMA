@@ -66,6 +66,27 @@
 - **Status:** Accepted.
 - **Consequences:** v3 config files removed; `app.css` uses `@import 'tailwindcss'` + `@plugin '@tailwindcss/forms'` + `@custom-variant dark` + `@source`/`@theme`; `@tailwindcss/vite` restored in `vite.config.js`.
 
+### ADR-I — Mobile API: versioning, ability-scoped tokens, no admin self-signup
+- **Context:** Phase 4A builds the Sanctum mobile API. ADR-1/ADR-2 fix the guards and the shared
+  envelope/services; the remaining calls are how to version, how to scope tokens, and whether every
+  guard gets an open `register`.
+- **Decision:** **Accepted.** (a) **Versioned** under `/api/v1` (a sibling `v2` prefix group later, so
+  v1 never shifts). (b) **Stateless** token auth — credentials checked against the entity model directly,
+  no session; one `AbstractAuthController` parameterised by guard. (c) **Ability-scoped tokens** — the
+  token carries the guard name as its ability (`talent`/`brand`/`admin`); admin tokens additionally carry
+  the admin's spatie permissions, so admin API routes gate with `abilities:<permission>`. (d) `refresh`
+  **rotates** (revoke + reissue), `logout` **revokes**. (e) **No public admin sign-up** — `admin/register`
+  requires an authenticated admin holding `manage-users` (mirrors the web `AdminUserController`); talent
+  and brand sign-up are open (talent admission gate is still ADR-C). (f) Reuse existing services, queries
+  and Resources; API-only response shapes (locale-resolved translatables) live in
+  `app/Http/Resources/Api/V1`.
+- **Status:** **Resolved (Accepted)** — Phase 4A. `routes/api.php`, Sanctum ability middleware aliased,
+  `SetApiLocale`, `api`/`auth` throttlers, central API exception handler + `api` log channel, Scribe
+  (OpenAPI + Postman + `/docs`).
+- **Consequences:** New API versions are additive; adding an admin API capability is a permission on the
+  token, not a schema change. Deal-step *actions* over the API (advance/reject/message) are a later slice —
+  v1 deals are read-only. Password-reset over the API remains unbuilt (ADR-G still open).
+
 ## Open — needs owner (surface every session)
 
 ### ADR-A — Three brand-side user modes

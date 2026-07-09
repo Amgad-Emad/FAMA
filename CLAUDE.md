@@ -176,6 +176,20 @@ dark+light+RTL verified on every admin page (token-only, dir-aware, logical prop
 Ajax (no reload). Demo data: two extra deal flows (draft + active), pending-moderation items (talent +
 brand reviews), and real audit entries (AdminDemoSeeder). Manual QA checklist in docs/conventions.md
 ("QA checklist — admin slice").
-Next: Phase 4A — the Sanctum mobile API (token auth for talents/brands/admins — all already HasApiTokens;
-versioned JSON endpoints reusing the domain services + DTOs/Resources; Scribe OpenAPI/Postman docs), plus
-brand↔talent deal initiation (brand discovers a talent → enquiry→deal on the shared engine).
+Phase 4A complete (Sanctum mobile API — routes/api.php, /api/v1): stateless token auth for all three
+entities via AbstractAuthController + talent/brand/admin controllers (register/login/logout/refresh/me;
+ability-scoped tokens — guard name, admin tokens also carry spatie permissions; refresh rotates, logout
+revokes; NO public admin signup — admin/register gated by abilities:manage-users, mirroring the web
+AdminUserController). Sanctum abilities/ability middleware aliased in bootstrap/app.php; SetApiLocale
+negotiates Accept-Language (en/ar, echoes Content-Language) so translatable fields resolve per-locale;
+named throttlers api (60/min) + auth (10/min). Read endpoints REUSE existing infra: GET /api/v1/talents
+(TalentSearch, paginated) + /talents/{slug} + /brands/{slug} (public) and GET /api/v1/deals[/{deal}]
+(auth, scoped to the token's entity). API Resources in app/Http/Resources/Api/V1 (locale-resolved);
+existing TalentCardResource/DealResource reused. Central API exception handler shapes 401/403/404/422/429
+into the envelope and fail-logs unexpected 5xx to a new `api` log channel. Scribe configured (bearer auth,
+grouped/ordered) → /docs + OpenAPI + Postman. ADR-I logged. 291 tests green (+15 in tests/Feature/Api/V1:
+auth across all three guards + envelope/pagination/locale/throttle contract); Pint clean; docs updated. NO
+git. (ADR-2 honored: web-Ajax and API share the envelope, services, queries and — where shape/locale
+matches — Resources; controllers stay thin.)
+Next: brand↔talent deal initiation (brand discovers a talent → enquiry→deal on the shared engine), and the
+deal-step ACTION slice over the API (advance/reject/message — v1 deals are currently read-only).

@@ -3,8 +3,11 @@
 namespace App\Providers;
 
 use App\Support\ApiResponse;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\ServiceProvider;
 
@@ -30,6 +33,22 @@ class AppServiceProvider extends ServiceProvider
         // AdvancePortfolioMediaState (ConversionHasBeenCompletedEvent).
         $this->configureModels();
         $this->registerResponseMacros();
+        $this->configureRateLimiting();
+    }
+
+    /**
+     * Named rate limiters for the mobile API (routes/api.php):
+     *   - `api`  general per-minute budget, keyed by token user or client IP;
+     *   - `auth` a stricter budget guarding the credential endpoints
+     *     (login/register/refresh) against brute force, keyed by email + IP.
+     */
+    private function configureRateLimiting(): void
+    {
+        RateLimiter::for('api', fn (Request $request): Limit => Limit::perMinute(60)
+            ->by($request->user()?->getAuthIdentifier() ?: $request->ip()));
+
+        RateLimiter::for('auth', fn (Request $request): Limit => Limit::perMinute(10)
+            ->by(strtolower((string) $request->input('email')).'|'.$request->ip()));
     }
 
     /**

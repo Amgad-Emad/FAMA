@@ -31,9 +31,13 @@ and authentication exceptions are auto-rendered into this envelope for JSON/Ajax
 
 ## Auth
 - **Web:** session guards (`admin` / `brand` / `talent`) via Breeze.
-- **Mobile API (Phase 4):** Sanctum bearer tokens. All three models use `HasApiTokens`; the
-  `personal_access_tokens` table is migrated. `config/sanctum.php` `guard` falls back to the three
-  session guards for stateful (SPA) requests.
+- **Mobile API (Phase 4A — built):** stateless Sanctum bearer tokens. All three models use
+  `HasApiTokens`. Login/register verify credentials against the entity model directly (no session) and
+  issue an **ability-scoped** personal access token; the token's abilities are the guard name
+  (`talent` / `brand` / `admin`) — admin tokens additionally carry the admin's granular spatie
+  permissions so future admin API routes gate with `abilities:<permission>`. Protected routes use
+  `auth:sanctum` + the `abilities`/`ability` middleware. `refresh` rotates the token (revoke + reissue);
+  `logout` revokes the presented token.
 
 ## Client wrapper
 `resources/js/http.js` (`window.fama` / ES exports) wraps `fetch`: attaches CSRF +
@@ -42,12 +46,22 @@ and authentication exceptions are auto-rendered into this envelope for JSON/Ajax
 inline.
 
 ## Generated docs (Scribe)
-`knuckleswtf/scribe` is installed (`config/scribe.php`) and will produce OpenAPI + a Postman collection
-for the mobile developer once API routes exist:
+`knuckleswtf/scribe` (`config/scribe.php`) documents the `api/*` routes with grouped endpoints, bearer
+auth, "try it out", a Postman collection and an OpenAPI export:
 
 ```bash
-php artisan scribe:generate   # outputs the /docs UI, OpenAPI spec, and Postman collection
+php artisan scribe:generate   # regenerate after changing API routes/annotations
 ```
+
+| Artifact | URL / path |
+|---|---|
+| HTML docs (try-it-out) | `GET /docs` (Blade — `resources/views/scribe/`) |
+| OpenAPI 3 spec | `GET /docs.openapi` → `storage/app/private/scribe/openapi.yaml` |
+| Postman collection | `GET /docs.postman` → `storage/app/private/scribe/collection.json` |
+
+Endpoints are grouped and ordered (Talent → Brand → Admin authentication → Discovery → Deals) via
+`@group` docblocks; `@authenticated` / `@unauthenticated` mark each endpoint's auth. Regenerate whenever
+API routes or their annotations change.
 
 ## Public pages — web endpoints (unguarded)
 
@@ -180,6 +194,60 @@ services; validation via Form Requests (`app/Http/Requests/Admin`) + inline rule
 (`DealFlowResource`, `ActivityResource`, `AdminUserResource`, shared `DealResource`, etc.). Front-end
 components live in `resources/js/admin.js`.
 
-## Mobile API endpoints
-None yet — the Sanctum token API lands in Phase 4; each endpoint will document its request/response
-against the envelope above.
+## Mobile API — `/api/v1` (Phase 4A)
+
+Defined in `routes/api.php` (registered under the `api` prefix by `bootstrap/app.php`, so every path is
+`/api/v1/...`). Stateless Sanctum token auth, the shared JSON envelope, and the same domain services the
+web layer uses (controllers stay thin). A new API version gets its own `Route::prefix('v2')` group so the
+v1 contract never shifts under existing clients.
+
+**Conventions**
+- **Locale:** send `Accept-Language: ar` (or `en`); `SetApiLocale` negotiates it (quality-weighted,
+  primary-subtag match, en/ar only) and echoes `Content-Language`. Translatable fields (talent
+  headline/bio, brand description, profession names) come back as a single string in that locale.
+- **Throttling:** every route is throttled by the `api` limiter (60/min, keyed by token user or IP); the
+  credential endpoints add the stricter `auth` limiter (10/min, keyed by email+IP). A trip returns a
+  **429** envelope with `meta.retry_after`.
+- **Errors → envelope:** the central handler (`bootstrap/app.php`) shapes validation (**422**),
+  auth (**401**), authorization/ability (**403**), not-found (**404**), throttle (**429**), domain-rule
+  and illegal-transition (**422**) into the envelope; unexpected 5xx are fail-logged to the `api`
+  channel and returned as a clean **500**.
+- **Tokens:** `data.token` (`{id}|{plain}`) + `token_type: "Bearer"` + `abilities`. Send as
+  `Authorization: Bearer {token}`.
+
+### Authentication (per guard)
+
+| Guard | Method + path | Auth | Purpose |
+|---|---|---|---|
+| Talent | `POST /api/v1/talent/register` | — | public sign-up → talent-scoped token (201) |
+| Talent | `POST /api/v1/talent/login` | — | credentials → token |
+| Talent | `GET /api/v1/talent/me` · `POST …/refresh` · `POST …/logout` | `abilities:talent` | current talent · rotate token · revoke token |
+| Brand | `POST /api/v1/brand/register` | — | public sign-up → brand-scoped token (201) |
+| Brand | `POST /api/v1/brand/login` | — | credentials → token |
+| Brand | `GET /api/v1/brand/me` · `POST …/refresh` · `POST …/logout` | `abilities:brand` | current brand · rotate · revoke |
+| Admin | `POST /api/v1/admin/login` | — | credentials → token (abilities = `admin` + spatie permissions) |
+| Admin | `GET /api/v1/admin/me` · `POST …/refresh` · `POST …/logout` | `abilities:admin` | current admin · rotate · revoke |
+| Admin | `POST /api/v1/admin/register` | `abilities:manage-users` | **provision** a staff account (no public admin sign-up) |
+
+Admin accounts are never self-registered — an open admin-signup endpoint would be a privilege-escalation
+hole. `admin/register` mirrors the web `AdminUserController`: an existing admin holding `manage-users`
+creates the account (audited, `admin_users` log), and the new admin logs in themselves.
+
+### Discovery (public, read-only)
+
+| Method + path | Purpose |
+|---|---|
+| `GET /api/v1/talents` | paginated discovery feed — reuses `App\Queries\TalentSearch`; same `filter[...]` + `sort` params as the web feed; `TalentCardResource` |
+| `GET /api/v1/talents/{talent:slug}` | full published talent passport (`Api\V1\TalentResource`: types + services + approved reviews, locale-resolved); 404 if unpublished |
+| `GET /api/v1/brands/{brand:slug}` | published brand profile (`Api\V1\BrandResource`, locale-resolved); 404 if unpublished |
+
+### Deals (authenticated, talent **or** brand token)
+
+| Method + path | Auth | Purpose |
+|---|---|---|
+| `GET /api/v1/deals` | `ability:talent,brand` | paginated inbox scoped to the token's entity (talent's or brand's deals); `DealResource` |
+| `GET /api/v1/deals/{deal}` | `ability:talent,brand` | one deal the caller is a party to (**403** otherwise) |
+
+Read-only for now; deal-step actions (advance/reject/message) stay on the web deal room and are a later
+API slice. Controllers (`app/Http/Controllers/Api/V1`) delegate to the same services/queries/Resources as
+the web layer; API-specific response shapes live in `app/Http/Resources/Api/V1`.

@@ -2,6 +2,29 @@
 
 Notable changes to the Fama project. Newest first.
 
+## 2026-07-09 — Phase 4A: Sanctum mobile API (`/api/v1`)
+
+- **Versioned API surface:** `routes/api.php` registered via `bootstrap/app.php` (`/api/v1/...`), the same
+  JSON envelope + `meta.pagination` as the web layer, `SetApiLocale` (Accept-Language → en/ar, echoes
+  `Content-Language`), and named throttlers (`api` 60/min, `auth` 10/min).
+- **Token auth for all three guards:** `AbstractAuthController` + talent/brand/admin controllers —
+  register/login/logout/refresh/me, stateless credential checks, **ability-scoped** tokens (guard name;
+  admin tokens also carry spatie permissions). `refresh` rotates, `logout` revokes. No public admin
+  sign-up: `admin/register` is gated by `abilities:manage-users` (mirrors the web AdminUserController).
+  Sanctum `abilities`/`ability` middleware aliased in `bootstrap/app.php`.
+- **Read endpoints (reuse):** public discovery `GET /api/v1/talents` (reuses `TalentSearch`, paginated),
+  `GET /api/v1/talents/{slug}`, `GET /api/v1/brands/{slug}`; authenticated `GET /api/v1/deals[/{deal}]`
+  scoped to the token's entity. New API Resources (`app/Http/Resources/Api/V1/{Talent,Brand}Resource`)
+  return translatable fields in the request locale; existing `TalentCardResource`/`DealResource` reused.
+- **Central API exception handler:** 401/403/404/422/429 shaped into the envelope; unexpected 5xx
+  fail-logged to a new `api` log channel, returned as a clean 500.
+- **Scribe:** auth enabled (bearer), grouped/ordered endpoints, intro/description; generates `/docs`
+  (try-it-out) + OpenAPI (`storage/app/private/scribe/openapi.yaml`) + Postman collection.
+- **Tests:** `tests/Feature/Api/V1` — auth lifecycle across all three guards (register/login/refresh/
+  logout/me, ability scoping, provisioning authz) + the envelope/pagination/locale/throttle/404 contract.
+  **291 tests green** (was 276; +15). Pint clean. A shared `api()` Pest helper forgets guards between
+  sub-requests so token rotation/revocation is assertable (a test-only Sanctum RequestGuard caching quirk).
+
 ## 2026-07-09 — Brand i18n completion + dashboard width
 
 - **Arabic translations completed:** extracted every `__()` string across views/JS (410 used) and added the

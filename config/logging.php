@@ -172,6 +172,17 @@ return [
             'replace_placeholders' => true,
         ],
 
+        // Mobile API failures — unhandled exceptions surfaced through the central
+        // API exception handler (bootstrap/app.php) are fail-logged here with the
+        // request method/path/entity context before the 500 envelope is returned.
+        'api' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/api.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => env('LOG_DAILY_DAYS', 90),
+            'replace_placeholders' => true,
+        ],
+
         'null' => [
             'driver' => 'monolog',
             'handler' => NullHandler::class,

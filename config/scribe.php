@@ -14,14 +14,19 @@ return [
     'title' => config('app.name').' API Documentation',
 
     // A short description of your API. Will be included in the docs webpage, Postman collection and OpenAPI spec.
-    'description' => '',
+    'description' => 'The Fama mobile API (v1) — token-authenticated endpoints for talents, brands and admins, sharing the same services and JSON envelope as the web app.',
 
     // Text to place in the "Introduction" section, right after the `description`. Markdown and HTML are supported.
     'intro_text' => <<<'INTRO'
-            This documentation aims to provide all the information you need to work with our API.
+            All endpoints live under `/api/v1` and return Fama's single JSON envelope:
 
-            <aside>As you scroll, you'll see code examples for working with the API in different programming languages in the dark area to the right (or as part of the content on mobile).
-            You can switch the language used with the tabs at the top right (or from the nav menu at the top left on mobile).</aside>
+            ```json
+            { "success": true, "data": {}, "message": null, "errors": null, "meta": null }
+            ```
+
+            Paginated lists put page info at `meta.pagination`. Send `Accept-Language: ar` (or `en`)
+            to receive translatable fields in that locale. Authenticate by sending the bearer token
+            returned from a login/register endpoint as `Authorization: Bearer {token}`.
         INTRO,
 
     // The base URL displayed in the docs.
@@ -105,7 +110,7 @@ return [
     // How is your API authenticated? This information will be used in the displayed docs, generated examples and response calls.
     'auth' => [
         // Set this to true if ANY endpoints in your API use authentication.
-        'enabled' => false,
+        'enabled' => true,
 
         // Set this to true if your API should be authenticated by default. If so, you must also set `enabled` (above) to true.
         // You can then use @unauthenticated or @authenticated on individual endpoints to change their status from the default.
@@ -115,7 +120,7 @@ return [
         'in' => AuthIn::BEARER->value,
 
         // The name of the auth parameter (e.g. token, key, apiKey) or header (e.g. Authorization, Api-Key).
-        'name' => 'key',
+        'name' => 'Authorization',
 
         // The value of the parameter to be used by Scribe to authenticate response calls.
         // This will NOT be included in the generated documentation. If empty, Scribe will use a random value.
@@ -123,10 +128,10 @@ return [
 
         // Placeholder your users will see for the auth parameter in the example requests.
         // Set this to null if you want Scribe to use a random value as placeholder instead.
-        'placeholder' => '{YOUR_AUTH_KEY}',
+        'placeholder' => '{YOUR_TOKEN}',
 
         // Any extra authentication-related info for your users. Markdown and HTML are supported.
-        'extra_info' => 'You can retrieve your token by visiting your dashboard and clicking <b>Generate API token</b>.',
+        'extra_info' => 'Obtain a token from one of the <b>login</b> or <b>register</b> endpoints, then send it as <code>Authorization: Bearer {token}</code>. Tokens are ability-scoped to the entity (talent / brand / admin) they belong to.',
     ],
 
     // Example requests for each endpoint will be shown in each of these languages.
@@ -179,7 +184,13 @@ return [
         // You can override this by listing the groups, subgroups and endpoints here in the order you want them.
         // See https://scribe.knuckles.wtf/blog/laravel-v4#easier-sorting and https://scribe.knuckles.wtf/laravel/reference/config#order for details
         // Note: does not work for `external` docs types
-        'order' => [],
+        'order' => [
+            'Talent authentication',
+            'Brand authentication',
+            'Admin authentication',
+            'Discovery',
+            'Deals',
+        ],
     ],
 
     // Custom logo path. This will be used as the value of the src attribute for the <img> tag,

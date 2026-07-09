@@ -373,11 +373,38 @@ editor), the **deal intervention console** (override / advance-as-admin / nudge 
 timeline), a searchable **activity-log viewer**, the **settings** screen, and **admin-user** management
 (create + role assignment). Controllers stay thin — every mutation delegates to a Phase 3A service.
 
+## Mobile API (Phase 4A)
+
+The Sanctum token API lives under `/api/v1` (`routes/api.php`, registered by `bootstrap/app.php`). It is
+a **thin token-auth + read layer over the existing services and Resources** — the web layer and the API
+never drift because they share the same envelope, the same query objects (`TalentSearch`), the same
+services and (where the shape/locale matches) the same Resources (ADR-2).
+
+- **Versioning:** a `Route::prefix('v1')` group under the `api` prefix ⇒ `/api/v1/...`. A future v2 is a
+  sibling prefix group, so v1 clients are never disturbed.
+- **Auth (stateless):** `App\Http\Controllers\Api\V1\Auth\AbstractAuthController` implements
+  login/logout/refresh/me once, parameterised by guard; three concrete controllers (talent/brand/admin)
+  declare their model, resource and token abilities. Credentials are checked against the entity model
+  directly (no session); the issued personal access token is **ability-scoped** to the guard name
+  (admin tokens also carry the admin's spatie permissions as abilities). `refresh` rotates the token,
+  `logout` revokes it. Protected routes use `auth:sanctum` + the `abilities`/`ability` middleware
+  (aliased in `bootstrap/app.php`; Sanctum does not auto-register them). **No public admin sign-up** —
+  staff are provisioned by an admin holding `manage-users` (mirrors the web `AdminUserController`).
+- **Locale:** `App\Http\Middleware\SetApiLocale` negotiates `Accept-Language` (quality-weighted,
+  primary-subtag, en/ar) → Laravel + mcamara locale, echoes `Content-Language`; translatable attributes
+  resolve in that locale via the API Resources (`app/Http/Resources/Api/V1`).
+- **Throttling:** named limiters in `AppServiceProvider` — `api` (60/min, token-user or IP) on the whole
+  group, `auth` (10/min, email+IP) on the credential endpoints.
+- **Errors:** the central handler (`bootstrap/app.php`) shapes 401/403/404/422/429 into the envelope and
+  fail-logs unexpected 5xx to the `api` channel before returning a clean 500.
+- **Docs:** Scribe generates `/docs` (try-it-out), an OpenAPI spec and a Postman collection from `@group`
+  / `@authenticated` docblocks. `docs/api.md` is the human index.
+
 ## Cross-cutting
 
-- **Logging:** dedicated channels `app`, `auth`, `deals`, `media` (`config/logging.php`). Failure
-  convention: catch → log to channel with context → rethrow / return error envelope
-  (`Service::runInTransaction`).
+- **Logging:** dedicated channels `app`, `auth`, `deals`, `media`, `brands`, `admin`, `api`
+  (`config/logging.php`). Failure convention: catch → log to channel with context → rethrow / return
+  error envelope (`Service::runInTransaction`; the API's unhandled-exception catch-all logs to `api`).
 - **Transactions:** multi-write operations run through `Service::runInTransaction()` /
   `DB::transaction()`.
 - **Strict models:** `preventLazyLoading` + `preventSilentlyDiscardingAttributes` in non-production

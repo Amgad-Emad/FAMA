@@ -34,11 +34,19 @@ Two-layer authz (`can:` middleware + service re-check); **every mutation is acti
 demo flows + pending-moderation items + audit entries seeded. QA checklist:
 [`docs/conventions.md`](docs/conventions.md#qa-checklist--admin-slice-manual).
 
-All slices: Blade + Alpine on the shared `http.js` (no page reloads), JSON envelope, i18n (EN/AR + RTL),
-light/dark. Full Pest suite green; demo data seeded (`php artisan migrate:fresh --seed`).
+**Mobile API (Phase 4A) — built.** Versioned Sanctum token API at **`/api/v1`** (`routes/api.php`):
+register/login/logout/refresh/me for all three guards with **ability-scoped tokens** (admin provisioning
+gated by `manage-users`, no public admin sign-up); public discovery (`/talents`, `/talents/{slug}`,
+`/brands/{slug}`) and an authenticated deal inbox (`/deals`) — all reusing the web layer's services,
+queries and the shared JSON envelope + `meta.pagination`. `Accept-Language` locale negotiation, per-route
+throttling, a central envelope exception handler, and **Scribe** docs at **`/docs`** (OpenAPI + Postman).
+See [`docs/api.md`](docs/api.md).
 
-**Next — Phase 4A:** the **Sanctum mobile API** (token auth for talents/brands/admins, versioned JSON
-endpoints, Scribe docs) — and brand↔talent deal initiation on the shared engine.
+All slices: Blade + Alpine on the shared `http.js` (no page reloads), JSON envelope, i18n (EN/AR + RTL),
+light/dark. Full Pest suite green (291 tests); demo data seeded (`php artisan migrate:fresh --seed`).
+
+**Next:** brand↔talent deal initiation on the shared engine, and the deal-step **action** slice over the
+API (advance/reject/message — v1 deals are read-only).
 
 ## Stack
 
@@ -90,7 +98,8 @@ Fama has **three login entities**, each with its own session guard + Eloquent pr
   active guard's dashboard.
 - **Dashboards** are guarded route groups (`auth:admin` / `auth:brand` / `auth:talent`). Public pages
   (home now; public talent/brand profiles in Phase 1) are unguarded.
-- **Mobile API** authenticates with **Sanctum** tokens (Phase 4); all three models use `HasApiTokens`.
+- **Mobile API** authenticates with **Sanctum** tokens at `/api/v1` (Phase 4A — built); all three models
+  use `HasApiTokens`, and tokens are ability-scoped to their guard.
 
 ## Folder structure (Fama additions)
 
@@ -118,7 +127,7 @@ resources/
   css/app.css                      # Tailwind v4 entry (dark = class strategy)
   js/http.js                       # shared fetch wrapper (parses the envelope)
   views/…                          # Blade layouts, components, auth
-routes/    web.php (locale group + guards) · auth.php · console.php
+routes/    web.php (locale group + guards) · auth.php · api.php (/api/v1) · admin/brand/talent.php · console.php
 docs/
   specs/                           # ← canonical: schema-master, talent-spec, brand-spec
   architecture · schema · api · conventions · decisions · changelog

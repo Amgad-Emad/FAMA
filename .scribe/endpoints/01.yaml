@@ -1,0 +1,283 @@
+name: 'Brand authentication'
+description: |-
+
+  Token auth for the `brand` guard: public sign-up plus the shared
+  login/logout/refresh/me flow. Issued tokens carry the `brand` ability.
+endpoints:
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/v1/brand/register
+    metadata:
+      custom: []
+      groupName: 'Brand authentication'
+      groupDescription: |-
+
+        Token auth for the `brand` guard: public sign-up plus the shared
+        login/logout/refresh/me flow. Issued tokens carry the `brand` ability.
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Register a brand'
+      description: |-
+        Create a new brand account and return an ability-scoped token. The account
+        starts incomplete (onboarding gates the discovery feed) and unpublished.
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      name:
+        custom: []
+        name: name
+        description: 'Must not be greater than 255 characters.'
+        required: true
+        example: b
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      email:
+        custom: []
+        name: email
+        description: 'Must be a valid email address. Must not be greater than 255 characters.'
+        required: true
+        example: zbailey@example.net
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      password:
+        custom: []
+        name: password
+        description: ''
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      device_name:
+        custom: []
+        name: device_name
+        description: 'Must not be greater than 255 characters.'
+        required: false
+        example: 'n'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      name: b
+      email: zbailey@example.net
+      password: architecto
+      device_name: 'n'
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 201
+        content: '{"success":true,"data":{"token":"1|xxxx","token_type":"Bearer","abilities":["brand"],"brand":{"id":1,"slug":"nomad-coffee-ab12cd","name":"Nomad Coffee"}},"message":null,"errors":null,"meta":null}'
+        headers: []
+        description: Created
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/v1/brand/login
+    metadata:
+      custom: []
+      groupName: 'Brand authentication'
+      groupDescription: |-
+
+        Token auth for the `brand` guard: public sign-up plus the shared
+        login/logout/refresh/me flow. Issued tokens carry the `brand` ability.
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Authenticate credentials and issue an ability-scoped token.'
+      description: |-
+        Throttled by the route middleware; credentials are verified against the
+        entity model (constant-time hash check) with a single generic error to
+        avoid leaking which half was wrong.
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      email:
+        custom: []
+        name: email
+        description: 'Must be a valid email address.'
+        required: true
+        example: gbailey@example.net
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      password:
+        custom: []
+        name: password
+        description: ''
+        required: true
+        example: '|]|{+-'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      device_name:
+        custom: []
+        name: device_name
+        description: 'Must not be greater than 255 characters.'
+        required: false
+        example: v
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      email: gbailey@example.net
+      password: '|]|{+-'
+      device_name: v
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/v1/brand/me
+    metadata:
+      custom: []
+      groupName: 'Brand authentication'
+      groupDescription: |-
+
+        Token auth for the `brand` guard: public sign-up plus the shared
+        login/logout/refresh/me flow. Issued tokens carry the `brand` ability.
+      subgroup: ''
+      subgroupDescription: ''
+      title: "Return the authenticated entity (the token's tokenable)."
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"success":false,"data":null,"message":"Unauthenticated.","errors":null,"meta":null}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/v1/brand/refresh
+    metadata:
+      custom: []
+      groupName: 'Brand authentication'
+      groupDescription: |-
+
+        Token auth for the `brand` guard: public sign-up plus the shared
+        login/logout/refresh/me flow. Issued tokens carry the `brand` ability.
+      subgroup: ''
+      subgroupDescription: ''
+      title: |-
+        Rotate the caller's token: revoke the one presented and issue a fresh
+        ability-scoped replacement. Sanctum tokens don't expire on their own, so
+        rotation is how a client renews a credential it wants to cycle.
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/v1/brand/logout
+    metadata:
+      custom: []
+      groupName: 'Brand authentication'
+      groupDescription: |-
+
+        Token auth for the `brand` guard: public sign-up plus the shared
+        login/logout/refresh/me flow. Issued tokens carry the `brand` ability.
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Revoke the token presented with the request (single-device logout).'
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null

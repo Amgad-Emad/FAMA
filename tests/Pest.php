@@ -48,3 +48,18 @@ function something()
 {
     // ..
 }
+
+/**
+ * Start an API request with a clean auth state. Sanctum's RequestGuard caches
+ * the first user it resolves for the application's lifetime — which, in tests,
+ * spans every sub-request of a single test (in production each request is its
+ * own process, so this never bites). Forgetting guards first makes each request
+ * re-resolve the bearer token from scratch, so token scoping, rotation and
+ * revocation can be asserted across requests within one test.
+ */
+function api()
+{
+    app('auth')->forgetGuards();
+
+    return test();
+}

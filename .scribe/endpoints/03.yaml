@@ -1,0 +1,249 @@
+name: Discovery
+description: |-
+
+  Public, read-only talent discovery for the mobile app — the same
+  spatie/laravel-query-builder search the web feed uses, so filters and sorting
+  stay identical across web and API. Published talents only.
+endpoints:
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/v1/talents
+    metadata:
+      custom: []
+      groupName: Discovery
+      groupDescription: |-
+
+        Public, read-only talent discovery for the mobile app — the same
+        spatie/laravel-query-builder search the web feed uses, so filters and sorting
+        stay identical across web and API. Published talents only.
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'List talents'
+      description: |-
+        Paginated, filterable discovery feed. Supply `filter[...]` params
+        (type, category, availability, city, country, equipment, software, q) and
+        `sort` (view_count, created_at) exactly as the web feed does.
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters:
+      'filter[type]':
+        custom: []
+        name: 'filter[type]'
+        description: 'Comma-separated profession slugs.'
+        required: false
+        example: photographer
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      'filter[city]':
+        custom: []
+        name: 'filter[city]'
+        description: 'Partial city match.'
+        required: false
+        example: Cairo
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      'filter[availability]':
+        custom: []
+        name: 'filter[availability]'
+        description: 'One of available, booked, unavailable.'
+        required: false
+        example: available
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      'filter[q]':
+        custom: []
+        name: 'filter[q]'
+        description: 'Free-text display-name match.'
+        required: false
+        example: amgad
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      sort:
+        custom: []
+        name: sort
+        description: 'view_count or created_at (prefix with - for descending).'
+        required: false
+        example: '-view_count'
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      page:
+        custom: []
+        name: page
+        description: 'The page number.'
+        required: false
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanQueryParameters:
+      'filter[type]': photographer
+      'filter[city]': Cairo
+      'filter[availability]': available
+      'filter[q]': amgad
+      sort: '-view_count'
+      page: 1
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: '{"success":true,"data":[{"id":11,"slug":"adham-yousef","display_name":"Adham Yousef","headline":"Model & creative director \u2014 Giza","avatar_url":"https:\/\/fama.test\/storage\/59\/fama_23df95601ca70b95e05e2478c1a7e9ef.jpg","city":"Giza","country":"Egypt","availability":"available","view_count":4894,"primary_type":{"slug":"model","name":"Model","category":"model"}},{"id":8,"slug":"farida-nabil","display_name":"Farida Nabil","headline":"Commercial model \u2014 Alexandria","avatar_url":"https:\/\/fama.test\/storage\/43\/fama_a5ba6cf9e24223bc005ee9c156f6362f.jpg","city":"Alexandria","country":"Egypt","availability":"booked","view_count":4759,"primary_type":{"slug":"model","name":"Model","category":"model"}},{"id":5,"slug":"omar-khaled","display_name":"Omar Khaled","headline":"Cinematographer \/ DOP \u2014 Giza","avatar_url":"https:\/\/fama.test\/storage\/27\/fama_c2262b1fb08ddc053d60f43edbdddb77.jpg","city":"Giza","country":"Egypt","availability":"available","view_count":3693,"primary_type":{"slug":"cinematographer","name":"Cinematographer (DOP)","category":"crew"}},{"id":3,"slug":"karim-mansour","display_name":"Karim Mansour","headline":"Fashion & commercial photographer \u2014 Alexandria","avatar_url":"https:\/\/fama.test\/storage\/16\/fama_8dce61690bc37a9e8e27dc24c2a8b102.jpg","city":"Alexandria","country":"Egypt","availability":"available","view_count":2942,"primary_type":{"slug":"photographer","name":"Photographer","category":"crew"}},{"id":2,"slug":"nour-elsherif","display_name":"Nour El-Sherif","headline":"Editorial & runway model \u2014 Cairo","avatar_url":"https:\/\/fama.test\/storage\/10\/fama_bb26d0eea69aa81f0d000dcd5ef700a4.jpg","city":"Cairo","country":"Egypt","availability":"available","view_count":2489,"primary_type":{"slug":"model","name":"Model","category":"model"}},{"id":1,"slug":"demo-talent","display_name":"Layla Hassan","headline":"Model & Photographer \u2014 Cairo","avatar_url":"https:\/\/fama.test\/storage\/2\/fama_452592f6ef73ef3537814895ad921aea.jpg","city":"Cairo","country":"Egypt","availability":"available","view_count":2448,"primary_type":{"slug":"model","name":"Model","category":"model"}},{"id":9,"slug":"tarek-sobhy","display_name":"Tarek Sobhy","headline":"Photographer & DOP \u2014 Cairo","avatar_url":"https:\/\/fama.test\/storage\/48\/fama_2b74c7e3e7b9092d50871144e50c6364.jpg","city":"Cairo","country":"Egypt","availability":"available","view_count":2241,"primary_type":{"slug":"photographer","name":"Photographer","category":"crew"}},{"id":7,"slug":"ziad-rahman","display_name":"Ziad Rahman","headline":"Graphic designer \u2014 Cairo","avatar_url":"https:\/\/fama.test\/storage\/38\/fama_8289292746bec7c9e10d7bff7b684e7a.jpg","city":"Cairo","country":"Egypt","availability":"available","view_count":1886,"primary_type":{"slug":"graphic-designer","name":"Graphic Designer","category":"creative"}},{"id":6,"slug":"hana-fahmy","display_name":"Hana Fahmy","headline":"Creative director \u2014 Dubai","avatar_url":"https:\/\/fama.test\/storage\/33\/fama_60c7821fdbb46d3d3745c262079b366c.jpg","city":"Dubai","country":"UAE","availability":"available","view_count":1434,"primary_type":{"slug":"creative-director","name":"Creative Director","category":"creative"}},{"id":4,"slug":"yasmin-adel","display_name":"Yasmin Adel","headline":"Model & stylist \u2014 Cairo","avatar_url":"https:\/\/fama.test\/storage\/22\/fama_f6b78ebcdedbf4990a3b07b1384067ec.jpg","city":"Cairo","country":"Egypt","availability":"booked","view_count":1370,"primary_type":{"slug":"model","name":"Model","category":"model"}},{"id":10,"slug":"salma-ibrahim","display_name":"Salma Ibrahim","headline":"Fashion stylist \u2014 Cairo","avatar_url":"https:\/\/fama.test\/storage\/54\/fama_eab3b627b8acc1d1de623d08835247dc.jpg","city":"Cairo","country":"Egypt","availability":"unavailable","view_count":1210,"primary_type":{"slug":"stylist","name":"Stylist","category":"creative"}}],"message":null,"errors":null,"meta":{"pagination":{"current_page":1,"last_page":1,"per_page":12,"total":11,"from":1,"to":11}}}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          content-language: en
+          x-ratelimit-limit: '60'
+          x-ratelimit-remaining: '59'
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: 'api/v1/talents/{talent_slug}'
+    metadata:
+      custom: []
+      groupName: Discovery
+      groupDescription: |-
+
+        Public, read-only talent discovery for the mobile app — the same
+        spatie/laravel-query-builder search the web feed uses, so filters and sorting
+        stay identical across web and API. Published talents only.
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Show a talent'
+      description: |-
+        The full public passport for one published talent, resolved by slug, with
+        profession(s), rate-card services and approved reviews. Translatable
+        fields come back in the request locale (Accept-Language).
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      talent_slug:
+        custom: []
+        name: talent_slug
+        description: 'The slug of the talent.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      talent_slug: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 404
+        content: '{"success":false,"data":null,"message":"Resource not found.","errors":null,"meta":null}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          x-ratelimit-limit: '60'
+          x-ratelimit-remaining: '59'
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: 'api/v1/brands/{brand_slug}'
+    metadata:
+      custom: []
+      groupName: Discovery
+      groupDescription: |-
+
+        Public, read-only brand profiles for the mobile app. Published brands only,
+        resolved by slug.
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Show a brand'
+      description: |-
+        The public brand profile, resolved by slug. `description` comes back in the
+        request locale (Accept-Language).
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      brand_slug:
+        custom: []
+        name: brand_slug
+        description: 'The slug of the brand.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      brand_slug: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 404
+        content: '{"success":false,"data":null,"message":"Resource not found.","errors":null,"meta":null}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          x-ratelimit-limit: '60'
+          x-ratelimit-remaining: '59'
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
