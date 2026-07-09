@@ -3,6 +3,7 @@
 namespace App\Http\Resources\Api\V1;
 
 use App\Http\Resources\BaseResource;
+use App\Http\Resources\ProfileBlockResource;
 use App\Http\Resources\ReviewResource;
 use App\Http\Resources\ServiceResource;
 use App\Models\Talent;
@@ -51,6 +52,10 @@ class TalentResource extends BaseResource
             ])->values()),
             'services' => ServiceResource::collection($this->whenLoaded('services')),
             'reviews' => ReviewResource::collection($this->whenLoaded('reviews')),
+            'blocks' => ProfileBlockResource::collection($this->whenLoaded('profileBlocks')),
+            'comp_card' => $this->whenLoaded('compCard', fn () => $this->compCard
+                ? new CompCardResource($this->compCard)
+                : null),
         ];
     }
 }

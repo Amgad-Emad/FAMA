@@ -2,6 +2,28 @@
 
 Notable changes to the Fama project. Newest first.
 
+## 2026-07-09 — Phase 4B: talent API surface (`/api/v1/talent`)
+
+- **Full talent management over the API** — thin controllers (`app/Http/Controllers/Api/V1/Talent/*`) over
+  the **same** services, Form Requests and Resources the web dashboard uses (ADR-2): profile core + hero,
+  profile blocks CRUD + reorder + eligibility picker, professions, the eight content child tables
+  (gallery / look_types / digitals / showreel / equipment / projects / software_stack / brand_collabs),
+  comp card (1:1 upsert), services/rate-card, availability & travel, reviews moderation, affiliations,
+  press, account + publish, the deal room (inbox filter/paginate, room = steps+messages+whose-turn, step
+  actions via the engine) and incoming enquiries.
+- **Public profile interactions** — `GET /talents/{slug}` enriched (visible blocks + comp card),
+  `GET /talents/{slug}/projects/{project}` (case study), and public `POST …/reviews` + `POST …/enquiries`.
+- **Shared content registry** — extracted `App\Support\Talent\BlockContentRegistry` (field sets,
+  validation, present/serialize) as the single source of truth; the web `BlockContentController` now uses
+  it too, and two slug-uniqueness Form Requests were made guard-agnostic (talent session **or** sanctum).
+- **Media** — hero + per-content multipart uploads through medialibrary, responses carry the conversion URL.
+- **Scribe** regenerated (grouped `Talent · …` endpoints, `@authenticated`). **docs/api.md** gains the full
+  talent workspace tables.
+- **Tests** — `tests/Feature/Api/V1/Talent/*` (47): auth (401), ability scoping + ownership (403),
+  validation (422), pagination (`meta.pagination`), media upload, locale, and the deal engine happy paths.
+  **339 tests green** (was 292; +47). Pint clean. No web regressions (registry extraction + request tweaks
+  covered by the existing 21 content tests).
+
 ## 2026-07-09 — Phase 4A: Sanctum mobile API (`/api/v1`)
 
 - **Versioned API surface:** `routes/api.php` registered via `bootstrap/app.php` (`/api/v1/...`), the same

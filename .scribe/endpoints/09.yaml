@@ -1,0 +1,139 @@
+name: 'Talent · Availability'
+description: ''
+endpoints:
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/v1/talent/availability
+    metadata:
+      custom: []
+      groupName: 'Talent · Availability'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Get my availability'
+      description: ''
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"success":false,"data":null,"message":"Unauthenticated.","errors":null,"meta":null}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PATCH
+    uri: api/v1/talent/availability
+    metadata:
+      custom: []
+      groupName: 'Talent · Availability'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Update my availability & travel'
+      description: ''
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      availability_status:
+        custom: []
+        name: availability_status
+        description: ''
+        required: true
+        example: available
+        type: string
+        enumValues:
+          - available
+          - booked
+          - unavailable
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      willing_to_travel:
+        custom: []
+        name: willing_to_travel
+        description: ''
+        required: false
+        example: false
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      travel_regions:
+        custom: []
+        name: travel_regions
+        description: 'Must not be greater than 100 characters.'
+        required: false
+        example:
+          - b
+        type: 'string[]'
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      rate_tier:
+        custom: []
+        name: rate_tier
+        description: ''
+        required: false
+        example: established
+        type: string
+        enumValues:
+          - emerging
+          - established
+          - premium
+          - elite
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+    cleanBodyParameters:
+      availability_status: available
+      willing_to_travel: false
+      travel_regions:
+        - b
+      rate_tier: established
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null

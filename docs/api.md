@@ -233,21 +233,50 @@ Admin accounts are never self-registered — an open admin-signup endpoint would
 hole. `admin/register` mirrors the web `AdminUserController`: an existing admin holding `manage-users`
 creates the account (audited, `admin_users` log), and the new admin logs in themselves.
 
-### Discovery (public, read-only)
+### Discovery + public profile interactions (public)
 
 | Method + path | Purpose |
 |---|---|
 | `GET /api/v1/talents` | paginated discovery feed — reuses `App\Queries\TalentSearch`; same `filter[...]` + `sort` params as the web feed; `TalentCardResource` |
-| `GET /api/v1/talents/{talent:slug}` | full published talent passport (`Api\V1\TalentResource`: types + services + approved reviews, locale-resolved); 404 if unpublished |
+| `GET /api/v1/talents/{talent:slug}` | full published talent passport (`Api\V1\TalentResource`: visible blocks + comp card + types + services + approved reviews, locale-resolved); bumps view count; 404 if unpublished |
+| `GET /api/v1/talents/{talent:slug}/projects/{project}` | one published talent's case study (scoped to the talent; 404 otherwise) |
+| `POST /api/v1/talents/{talent:slug}/reviews` | submit a review → lands pending (`StoreReviewRequest`) |
+| `POST /api/v1/talents/{talent:slug}/enquiries` | submit a booking enquiry → `deal_enquiries` (availability-checked; `StoreEnquiryRequest`) |
 | `GET /api/v1/brands/{brand:slug}` | published brand profile (`Api\V1\BrandResource`, locale-resolved); 404 if unpublished |
 
-### Deals (authenticated, talent **or** brand token)
+### Deals — cross-entity read (authenticated, talent **or** brand token)
 
 | Method + path | Auth | Purpose |
 |---|---|---|
-| `GET /api/v1/deals` | `ability:talent,brand` | paginated inbox scoped to the token's entity (talent's or brand's deals); `DealResource` |
+| `GET /api/v1/deals` | `ability:talent,brand` | paginated inbox scoped to the token's entity; `DealResource` |
 | `GET /api/v1/deals/{deal}` | `ability:talent,brand` | one deal the caller is a party to (**403** otherwise) |
 
-Read-only for now; deal-step actions (advance/reject/message) stay on the web deal room and are a later
-API slice. Controllers (`app/Http/Controllers/Api/V1`) delegate to the same services/queries/Resources as
-the web layer; API-specific response shapes live in `app/Http/Resources/Api/V1`.
+### Talent workspace (Phase 4B — `abilities:talent`)
+
+The full talent management surface under `/api/v1/talent`, thin controllers
+(`app/Http/Controllers/Api/V1/Talent`) over the **same services, Form Requests and Resources** the web
+dashboard uses. Every list is eager-loaded + paginated (`meta.pagination`); a foreign resource → **403**;
+domain-rule / illegal-transition → **422**. Translatable fields are returned as per-locale maps (the owner
+edits both languages).
+
+| Area | Method + path | Purpose |
+|---|---|---|
+| Profile | `GET /talent/profile` · `PATCH /talent/profile` · `POST /talent/profile/hero` | own profile (core + blocks) · update core · hero upload (multipart → URL) |
+| Blocks | `GET /talent/profile/blocks` · `GET …/block-picker` · `POST …/blocks` · `PATCH …/blocks/reorder` · `PATCH …/blocks/{block}` · `PATCH …/blocks/{block}/visibility` · `DELETE …/blocks/{block}` | list · eligibility picker · add · reorder · fill · show/hide · remove |
+| Professions | `GET /talent/professions` · `POST …` · `PATCH …/reorder` · `PATCH …/{type}/primary` · `DELETE …/{type}` | manage types (adding seeds blocks) |
+| Content | `GET/POST /talent/content/{type}` · `PATCH …/{type}/reorder` · `PATCH …/{type}/{id}` · `DELETE …/{type}/{id}` · `POST …/{type}/{id}/media` | child tables (gallery, look_types, digitals, showreel, equipment, projects, software_stack, brand_collabs) via the shared `BlockContentRegistry`; media returns the conversion URL |
+| Comp card | `GET /talent/comp-card` · `PUT …` · `DELETE …` | 1:1 model stats (show null / upsert / remove) |
+| Services | `GET /talent/services` · `POST …` · `PATCH …/{service}` · `PATCH …/{service}/toggle` · `DELETE …/{service}` | rate card CRUD + pause/activate |
+| Availability | `GET /talent/availability` · `PATCH …` | status (state machine) + travel + rate tier |
+| Reviews | `GET /talent/reviews?status=` · `PATCH …/{review}/approve` · `PATCH …/{review}/reject` | own moderation queue |
+| Affiliations | `GET /talent/affiliations` · `POST …` · `PATCH …/{affiliation}` · `PATCH …/{affiliation}/end` · `DELETE …/{affiliation}` | agency representation |
+| Press | `GET /talent/press` · `POST …` · `DELETE …/{press}` | press features |
+| Account | `GET /talent/account` · `PATCH …` · `PATCH …/publish` | slug/prefs · publish toggle |
+| Deals | `GET /talent/deals?status=` · `GET …/{deal}` · `POST …/{deal}/{advance,reject,skip,message}` | inbox (filter, paginated) · room (steps + messages + whose-turn) · step actions via the engine |
+| Enquiries | `GET /talent/enquiries` · `GET …/{enquiry}` | incoming booking enquiries (read-only) |
+
+Step actions (send quote, accept, upload, sign, pay) are all `advance` with the body the current step's
+`step_type` expects (`{fields}` / `{note}` / `{attachments}` / `{confirmed}` / …), routed through
+`DealService` exactly like the web deal room. The registry (`App\Support\Talent\BlockContentRegistry`) is
+the single source of truth for content field sets, validation and serialization — shared by the web
+dashboard and this API.

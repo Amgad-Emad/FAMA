@@ -191,5 +191,21 @@ grouped/ordered) → /docs + OpenAPI + Postman. ADR-I logged. 291 tests green (+
 auth across all three guards + envelope/pagination/locale/throttle contract); Pint clean; docs updated. NO
 git. (ADR-2 honored: web-Ajax and API share the envelope, services, queries and — where shape/locale
 matches — Resources; controllers stay thin.)
+Phase 4B complete (talent API surface — app/Http/Controllers/Api/V1/Talent/*, routes/api.php under
+/api/v1/talent, abilities:talent): the FULL talent management surface as thin controllers over the SAME
+services + Form Requests + Resources the web dashboard uses (ADR-2) — profile core + hero upload, profile
+blocks CRUD/reorder/eligibility-picker, professions, the 8 content child tables (gallery/look_types/
+digitals/showreel/equipment/projects/software_stack/brand_collabs) via a NEW shared
+App\Support\Talent\BlockContentRegistry (single source of truth; web BlockContentController refactored to
+use it), comp card (1:1 upsert), services/rate-card, availability & travel, reviews moderation,
+affiliations, press, account+publish, the deal room (inbox filter/paginate + room steps+messages+whose-turn
++ step actions via DealService) and incoming enquiries. Public interactions added to Api\V1\TalentController:
+enriched GET /talents/{slug} (visible blocks + comp card), GET /talents/{slug}/projects/{project} (case
+study), public POST /talents/{slug}/reviews (pending) + POST /talents/{slug}/enquiries. Media via
+medialibrary multipart (hero + per-content) returning conversion URLs. New TalentApiController base
+(talent()=sanctum tokenable, ensureOwns 403). Two slug-uniqueness Form Requests made guard-agnostic
+(talent OR sanctum). 339 tests green (+47 in tests/Feature/Api/V1/Talent: auth/ownership/validation/
+pagination/media/locale/deal-engine); web content tests still green after the registry extraction; Pint
+clean; Scribe regenerated (Talent · … groups); docs/api.md + changelog + CLAUDE updated. NO git.
 Next: brand↔talent deal initiation (brand discovers a talent → enquiry→deal on the shared engine), and the
-deal-step ACTION slice over the API (advance/reject/message — v1 deals are currently read-only).
+brand API surface (mirror 4B for the brand guard — onboarding, campaigns, discovery feed, brand deal room).

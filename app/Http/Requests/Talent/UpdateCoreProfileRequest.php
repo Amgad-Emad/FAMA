@@ -17,7 +17,8 @@ class UpdateCoreProfileRequest extends FormRequest
      */
     public function rules(): array
     {
-        $talentId = $this->user('talent')?->getKey();
+        // Resolve the talent from the web (talent) guard or the API (sanctum) token.
+        $talentId = $this->user('talent')?->getKey() ?? $this->user('sanctum')?->getKey();
 
         return [
             'display_name' => ['nullable', 'string', 'max:255'],
