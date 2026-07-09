@@ -207,5 +207,21 @@ medialibrary multipart (hero + per-content) returning conversion URLs. New Talen
 (talent OR sanctum). 339 tests green (+47 in tests/Feature/Api/V1/Talent: auth/ownership/validation/
 pagination/media/locale/deal-engine); web content tests still green after the registry extraction; Pint
 clean; Scribe regenerated (Talent · … groups); docs/api.md + changelog + CLAUDE updated. NO git.
-Next: brand↔talent deal initiation (brand discovers a talent → enquiry→deal on the shared engine), and the
-brand API surface (mirror 4B for the brand guard — onboarding, campaigns, discovery feed, brand deal room).
+Phase 4C complete (brand API surface — app/Http/Controllers/Api/V1/Brand/*, routes/api.php under
+/api/v1/brand, abilities:brand): the FULL brand management surface as thin controllers over the SAME
+services the web dashboard uses — profile core + logo/cover/aesthetic/images/social, the 6-step onboarding
+(BrandOnboardingService), creative-needs, campaigns (CRUD + roles + media + status transitions +
+single-campaign deals via CampaignService), the personalised discovery feed (BrandTalentFeed) with
+save/brief signal writes (BrandSignalService), the brand deal room (inbox filter/paginate + room +
+brand-side step actions brief/accept/sign/pay via DealService), reviews received (read-only) and
+credibility (read), account settings-stage fields + publish. Public reads in Api\V1\BrandController:
+enriched GET /brands/{slug} (Api\V1\BrandResource now carries credibility/aesthetic/social/images/approved
+reviews/public campaigns) + GET /brands/{slug}/campaigns/{slug} (scope-bound public campaign). New
+Api\V1\CredibilityResource; new shared App\Support\Brand\BrandOptions (single source of truth for brand
+enum Rule::in lists). New BrandApiController base (brand()=sanctum tokenable, ensureOwns 403). Media via
+medialibrary multipart returning URLs. 381 tests green (+42 in tests/Feature/Api/V1/Brand: auth/ownership/
+validation/pagination/discovery-filters/signals/campaign-lifecycle/deal-engine); no web regressions; Pint
+clean; Scribe regenerated (Brand · … groups); docs/api.md + changelog + CLAUDE updated. NO git.
+The mobile API now covers all three guards end to end (4A auth + 4B talent + 4C brand).
+Next: brand↔talent deal initiation (brand discovers a talent → enquiry→deal on the shared engine), and an
+admin API surface (mirror for the admin guard — governance/moderation/deal intervention over the API).

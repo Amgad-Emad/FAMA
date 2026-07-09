@@ -2,6 +2,27 @@
 
 Notable changes to the Fama project. Newest first.
 
+## 2026-07-09 — Phase 4C: brand API surface (`/api/v1/brand`)
+
+- **Full brand management over the API** — thin controllers (`app/Http/Controllers/Api/V1/Brand/*`) over
+  the **same** services the web dashboard uses: profile core + logo/cover + aesthetic + images + social,
+  the 6-step onboarding, creative-needs, campaigns (CRUD + roles + media + status transitions +
+  single-campaign deals), the personalised discovery feed (`BrandTalentFeed`) with save/brief signal
+  writes, the brand deal room (inbox filter/paginate, room, brand-side step actions — brief/accept/sign/
+  pay), reviews received (read-only) and credibility (read), account settings-stage fields + publish.
+- **Public brand reads** — `GET /brands/{slug}` enriched (`Api\V1\BrandResource` now carries credibility,
+  aesthetic, social, images, approved reviews, public campaigns) + `GET /brands/{slug}/campaigns/{slug}`
+  (scope-bound public campaign). New `Api\V1\CredibilityResource`.
+- **Shared enum options** — extracted `App\Support\Brand\BrandOptions` as the single source of truth for the
+  brand-side `Rule::in(...)` lists (industries, stages, reach, frequency, project types, moods, budgets,
+  platforms, company sizes).
+- **Media** — logo/cover/image/campaign multipart uploads through medialibrary, responses carry URLs.
+- **Scribe** regenerated (grouped `Brand · …` endpoints, `@authenticated`). **docs/api.md** gains the brand
+  workspace tables + the public campaign route.
+- **Tests** — `tests/Feature/Api/V1/Brand/*` (42): auth (401), ability scoping + ownership (403), validation
+  (422), pagination (`meta.pagination`), **discovery filters**, signal writes, campaign lifecycle, and the
+  deal engine. **381 tests green** (was 339; +42). Pint clean. No web regressions.
+
 ## 2026-07-09 — Phase 4B: talent API surface (`/api/v1/talent`)
 
 - **Full talent management over the API** — thin controllers (`app/Http/Controllers/Api/V1/Talent/*`) over

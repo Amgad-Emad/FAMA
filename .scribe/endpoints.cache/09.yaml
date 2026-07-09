@@ -76,7 +76,7 @@ endpoints:
         name: availability_status
         description: ''
         required: true
-        example: available
+        example: booked
         type: string
         enumValues:
           - available
@@ -90,7 +90,7 @@ endpoints:
         name: willing_to_travel
         description: ''
         required: false
-        example: false
+        example: true
         type: boolean
         enumValues: []
         exampleWasSpecified: false
@@ -113,7 +113,7 @@ endpoints:
         name: rate_tier
         description: ''
         required: false
-        example: established
+        example: emerging
         type: string
         enumValues:
           - emerging
@@ -124,11 +124,11 @@ endpoints:
         nullable: true
         deprecated: false
     cleanBodyParameters:
-      availability_status: available
-      willing_to_travel: false
+      availability_status: booked
+      willing_to_travel: true
       travel_regions:
         - b
-      rate_tier: established
+      rate_tier: emerging
     fileParameters: []
     responses: []
     responseFields: []

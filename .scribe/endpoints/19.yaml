@@ -1,18 +1,18 @@
-name: 'Talent · Press'
+name: 'Brand · Creative needs'
 description: ''
 endpoints:
   -
     custom: []
     httpMethods:
       - GET
-    uri: api/v1/talent/press
+    uri: api/v1/brand/creative-needs
     metadata:
       custom: []
-      groupName: 'Talent · Press'
+      groupName: 'Brand · Creative needs'
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
-      title: 'List my press features'
+      title: 'Get my creative needs'
       description: ''
       authenticated: true
       deprecated: false
@@ -48,15 +48,15 @@ endpoints:
   -
     custom: []
     httpMethods:
-      - POST
-    uri: api/v1/talent/press
+      - PATCH
+    uri: api/v1/brand/creative-needs
     metadata:
       custom: []
-      groupName: 'Talent · Press'
+      groupName: 'Brand · Creative needs'
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
-      title: 'Add a press feature'
+      title: 'Update my creative needs'
       description: ''
       authenticated: true
       deprecated: false
@@ -69,102 +69,54 @@ endpoints:
     queryParameters: []
     cleanQueryParameters: []
     bodyParameters:
-      publication:
+      talent_type_ids:
         custom: []
-        name: publication
-        description: 'Must not be greater than 255 characters.'
-        required: true
-        example: b
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-      title:
-        custom: []
-        name: title
-        description: 'Must not be greater than 255 characters.'
-        required: true
-        example: 'n'
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-      url:
-        custom: []
-        name: url
-        description: 'Must be a valid URL. Must not be greater than 255 characters.'
+        name: talent_type_ids
+        description: 'Must match an existing stored value.'
         required: false
-        example: 'http://crooks.biz/et-fugiat-sunt-nihil-accusantium'
+        example:
+          - 16
+        type: 'integer[]'
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      project_types:
+        custom: []
+        name: project_types
+        description: ''
+        required: false
+        example: null
+        type: 'string[]'
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      project_frequency:
+        custom: []
+        name: project_frequency
+        description: ''
+        required: false
+        example: null
         type: string
         enumValues: []
         exampleWasSpecified: false
         nullable: true
         deprecated: false
-      published_date:
+      budget_tier:
         custom: []
-        name: published_date
-        description: 'Must be a valid date.'
+        name: budget_tier
+        description: ''
         required: false
-        example: '2026-07-09T08:34:04'
+        example: null
         type: string
         enumValues: []
         exampleWasSpecified: false
         nullable: true
         deprecated: false
     cleanBodyParameters:
-      publication: b
-      title: 'n'
-      url: 'http://crooks.biz/et-fugiat-sunt-nihil-accusantium'
-      published_date: '2026-07-09T08:34:04'
-    fileParameters: []
-    responses: []
-    responseFields: []
-    auth:
-      - headers
-      - Authorization
-      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - DELETE
-    uri: 'api/v1/talent/press/{press_id}'
-    metadata:
-      custom: []
-      groupName: 'Talent · Press'
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: 'Remove a press feature'
-      description: ''
-      authenticated: true
-      deprecated: false
-    headers:
-      Authorization: 'Bearer {YOUR_TOKEN}'
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters:
-      press_id:
-        custom: []
-        name: press_id
-        description: 'The ID of the press.'
-        required: true
-        example: 16
-        type: integer
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-    cleanUrlParameters:
-      press_id: 16
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters: []
-    cleanBodyParameters: []
+      talent_type_ids:
+        - 16
     fileParameters: []
     responses: []
     responseFields: []

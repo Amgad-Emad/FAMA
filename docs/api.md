@@ -242,7 +242,8 @@ creates the account (audited, `admin_users` log), and the new admin logs in them
 | `GET /api/v1/talents/{talent:slug}/projects/{project}` | one published talent's case study (scoped to the talent; 404 otherwise) |
 | `POST /api/v1/talents/{talent:slug}/reviews` | submit a review → lands pending (`StoreReviewRequest`) |
 | `POST /api/v1/talents/{talent:slug}/enquiries` | submit a booking enquiry → `deal_enquiries` (availability-checked; `StoreEnquiryRequest`) |
-| `GET /api/v1/brands/{brand:slug}` | published brand profile (`Api\V1\BrandResource`, locale-resolved); 404 if unpublished |
+| `GET /api/v1/brands/{brand:slug}` | published brand profile (`Api\V1\BrandResource`: credibility + aesthetic + social + images + approved reviews + public campaigns, locale-resolved); 404 if unpublished |
+| `GET /api/v1/brands/{brand:slug}/campaigns/{campaign:slug}` | one public campaign under a published brand (scope-bound to the brand; 404 otherwise) |
 
 ### Deals — cross-entity read (authenticated, talent **or** brand token)
 
@@ -280,3 +281,30 @@ Step actions (send quote, accept, upload, sign, pay) are all `advance` with the 
 `DealService` exactly like the web deal room. The registry (`App\Support\Talent\BlockContentRegistry`) is
 the single source of truth for content field sets, validation and serialization — shared by the web
 dashboard and this API.
+
+### Brand workspace (Phase 4C — `abilities:brand`)
+
+The full brand management surface under `/api/v1/brand`, thin controllers
+(`app/Http/Controllers/Api/V1/Brand`) over the **same services** the web dashboard uses
+(`BrandOnboardingService`, `CampaignService`, `BrandSignalService`, `BrandTalentFeed`, `DealService`).
+Lists are eager-loaded + paginated; foreign resource → **403**; domain-rule / illegal-transition → **422**.
+Translatable `description` is a per-locale map for the owner. Enum option lists come from the shared
+`App\Support\Brand\BrandOptions`.
+
+| Area | Method + path | Purpose |
+|---|---|---|
+| Onboarding | `GET /brand/onboarding` · `POST …/{identity,location,creative-needs,aesthetic,budget,complete}` | resume status · the 6 steps (complete flips `is_complete`) |
+| Profile | `GET /brand/profile` · `PATCH …` · `POST …/logo` · `POST …/cover` · `PATCH …/aesthetic` | own profile (core + aesthetic + social + images) · update · logo/cover upload · aesthetic |
+| Images | `GET /brand/profile/images` · `POST …` · `DELETE …/{image}` | gallery CRUD (multipart) |
+| Social | `GET /brand/social` · `POST …` · `DELETE …/{handle}` | social handles |
+| Creative needs | `GET /brand/creative-needs` · `PATCH …` | talent types + project types + frequency + budget tier (drives the feed) |
+| Campaigns | `GET /brand/campaigns` · `POST …` · `GET …/{campaign}` · `PATCH …/{campaign}` · `PATCH …/{campaign}/status` · `PATCH …/{campaign}/public` · `POST …/{campaign}/media` · `DELETE …/{campaign}` | CRUD + roles + media + lifecycle; `show` includes the deals under the campaign |
+| Discovery | `GET /brand/discover` · `POST …/save` · `POST …/brief` | personalised feed (filter + sort) · save/brief signal writes |
+| Deals | `GET /brand/deals?status=` · `GET …/{deal}` · `POST …/{deal}/{advance,reject,skip,message}` | inbox (filter, paginated) · room · brand-side step actions (brief, accept quote, sign, pay) |
+| Reviews | `GET /brand/reviews` | reviews received (approved-only, read-only) |
+| Credibility | `GET /brand/credibility` | accrued credibility (read; null until first completed deal) |
+| Account | `GET /brand/account` · `PATCH …` · `PATCH …/publish` | settings-stage fields + slug · publish toggle (requires completion) |
+
+The brand acts as the `brand` role on the shared deal engine (same `advance` body shapes as the talent
+side). `App\Support\Brand\BrandOptions` is the single source of truth for the brand enum option lists,
+shared with the web controllers' validation.
