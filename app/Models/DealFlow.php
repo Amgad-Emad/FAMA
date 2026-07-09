@@ -66,6 +66,16 @@ class DealFlow extends Model
     }
 
     /**
+     * Deals that were snapshotted from this flow.
+     *
+     * @return HasMany<Deal, $this>
+     */
+    public function deals(): HasMany
+    {
+        return $this->hasMany(Deal::class, 'deal_flow_id');
+    }
+
+    /**
      * @param  Builder<DealFlow>  $query
      */
     public function scopeActive(Builder $query): void

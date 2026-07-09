@@ -43,6 +43,27 @@ it('renders every admin page for a super-admin', function () {
     }
 });
 
+it('serves every admin data endpoint (JSON)', function () {
+    $this->seed(TalentTypeSeeder::class);
+    $flow = DealFlow::factory()->create();
+    $flow->steps()->create(['key' => 'brief', 'name' => 'Brief', 'actor' => 'brand', 'step_type' => 'form', 'position' => 0, 'is_required' => true, 'is_skippable' => false, 'settings' => []]);
+    Talent::factory()->create(['status' => 'live']);
+    Review::factory()->pending()->create();
+
+    foreach ([
+        '/admin/flows/data', '/admin/professions/data', '/admin/moderation/talents',
+        '/admin/moderation/reviews', '/admin/moderation/brands', '/admin/moderation/brand-reviews',
+        '/admin/moderation/campaigns', '/admin/deals/data', '/admin/activity/data', '/admin/users/data',
+    ] as $url) {
+        $this->actingAs($this->admin, 'admin')->getJson($url)->assertOk();
+    }
+
+    // The flow list surfaces its step + deal counts.
+    $this->actingAs($this->admin, 'admin')->getJson('/admin/flows/data')
+        ->assertJsonPath('data.0.steps_count', 1)
+        ->assertJsonPath('data.0.deals_count', 0);
+});
+
 it('gates admin pages by permission — a powerless admin is forbidden', function () {
     foreach (['/admin/flows', '/admin/moderation', '/admin/deals', '/admin/settings', '/admin/users', '/admin/professions', '/admin/activity'] as $url) {
         $this->actingAs($this->powerless, 'admin')->get($url)->assertForbidden();

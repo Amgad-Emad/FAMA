@@ -26,6 +26,7 @@ class DealFlowResource extends BaseResource
             'is_default' => (bool) $this->is_default,
             'steps' => $this->whenLoaded('steps', fn () => DealFlowStepResource::collection($this->steps)),
             'steps_count' => $this->whenCounted('steps'),
+            'deals_count' => $this->whenCounted('deals'),
         ];
     }
 }
