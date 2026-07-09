@@ -1,21 +1,19 @@
-name: 'Brand · Discovery'
+name: 'Brand · Profile'
 description: ''
 endpoints:
   -
     custom: []
     httpMethods:
       - GET
-    uri: api/v1/brand/discover
+    uri: api/v1/brand/profile
     metadata:
       custom: []
-      groupName: 'Brand · Discovery'
+      groupName: 'Brand · Profile'
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
-      title: 'Discovery feed'
-      description: |-
-        Paginated, personalised talents. Ad-hoc narrowing via `filter[...]`
-        (availability, city, type) and `sort` (view_count, created_at).
+      title: 'Get my profile'
+      description: ''
       authenticated: true
       deprecated: false
     headers:
@@ -24,56 +22,216 @@ endpoints:
       Accept: application/json
     urlParameters: []
     cleanUrlParameters: []
-    queryParameters:
-      'filter[availability]':
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
         custom: []
-        name: 'filter[availability]'
-        description: ''
-        required: false
-        example: available
-        type: string
+        status: 401
+        content: '{"success":false,"data":null,"message":"Unauthenticated.","errors":null,"meta":null}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PATCH
+    uri: api/v1/brand/profile
+    metadata:
+      custom: []
+      groupName: 'Brand · Profile'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Update my core profile'
+      description: ''
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/v1/brand/profile/logo
+    metadata:
+      custom: []
+      groupName: 'Brand · Profile'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Upload my logo'
+      description: 'Multipart `file`. Returns the resolved logo URL.'
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_TOKEN}'
+      Content-Type: multipart/form-data
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      file:
+        custom: []
+        name: file
+        description: 'Must be an image. Must not be greater than 5120 kilobytes.'
+        required: true
+        example: null
+        type: file
         enumValues: []
-        exampleWasSpecified: true
+        exampleWasSpecified: false
         nullable: false
         deprecated: false
-      'filter[city]':
+    cleanBodyParameters: []
+    fileParameters:
+      file: null
+    responses: []
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/v1/brand/profile/cover
+    metadata:
+      custom: []
+      groupName: 'Brand · Profile'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Upload my cover image'
+      description: 'Multipart `file`. Returns the resolved cover URL.'
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_TOKEN}'
+      Content-Type: multipart/form-data
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      file:
         custom: []
-        name: 'filter[city]'
-        description: 'Partial city match.'
-        required: false
-        example: Cairo
-        type: string
+        name: file
+        description: 'Must be an image. Must not be greater than 5120 kilobytes.'
+        required: true
+        example: null
+        type: file
         enumValues: []
-        exampleWasSpecified: true
+        exampleWasSpecified: false
         nullable: false
         deprecated: false
-      'filter[type]':
-        custom: []
-        name: 'filter[type]'
-        description: 'Comma-separated profession slugs.'
-        required: false
-        example: model
-        type: string
-        enumValues: []
-        exampleWasSpecified: true
-        nullable: false
-        deprecated: false
-      sort:
-        custom: []
-        name: sort
-        description: 'view_count or created_at (prefix - for desc).'
-        required: false
-        example: '-view_count'
-        type: string
-        enumValues: []
-        exampleWasSpecified: true
-        nullable: false
-        deprecated: false
-    cleanQueryParameters:
-      'filter[availability]': available
-      'filter[city]': Cairo
-      'filter[type]': model
-      sort: '-view_count'
+    cleanBodyParameters: []
+    fileParameters:
+      file: null
+    responses: []
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PATCH
+    uri: api/v1/brand/profile/aesthetic
+    metadata:
+      custom: []
+      groupName: 'Brand · Profile'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Update my aesthetic'
+      description: 'References + mood tags. Reuses the transactional onboarding service.'
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/v1/brand/profile/images
+    metadata:
+      custom: []
+      groupName: 'Brand · Profile'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'List my images'
+      description: ''
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
     bodyParameters: []
     cleanBodyParameters: []
     fileParameters: []
@@ -99,14 +257,61 @@ endpoints:
     custom: []
     httpMethods:
       - POST
-    uri: api/v1/brand/discover/save
+    uri: api/v1/brand/profile/images
     metadata:
       custom: []
-      groupName: 'Brand · Discovery'
+      groupName: 'Brand · Profile'
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
-      title: 'Save a talent'
+      title: 'Add an image'
+      description: 'Multipart `file`. Returns the created row + its URL.'
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_TOKEN}'
+      Content-Type: multipart/form-data
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      file:
+        custom: []
+        name: file
+        description: 'Must be an image. Must not be greater than 5120 kilobytes.'
+        required: true
+        example: null
+        type: file
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanBodyParameters: []
+    fileParameters:
+      file: null
+    responses: []
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - DELETE
+    uri: 'api/v1/brand/profile/images/{image_id}'
+    metadata:
+      custom: []
+      groupName: 'Brand · Profile'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Remove an image'
       description: ''
       authenticated: true
       deprecated: false
@@ -114,24 +319,24 @@ endpoints:
       Authorization: 'Bearer {YOUR_TOKEN}'
       Content-Type: application/json
       Accept: application/json
-    urlParameters: []
-    cleanUrlParameters: []
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters:
-      talent_id:
+    urlParameters:
+      image_id:
         custom: []
-        name: talent_id
-        description: 'The talent to save.'
+        name: image_id
+        description: 'The ID of the image.'
         required: true
         example: 1
         type: integer
         enumValues: []
-        exampleWasSpecified: true
+        exampleWasSpecified: false
         nullable: false
         deprecated: false
-    cleanBodyParameters:
-      talent_id: 1
+    cleanUrlParameters:
+      image_id: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
     fileParameters: []
     responses: []
     responseFields: []
@@ -145,15 +350,59 @@ endpoints:
   -
     custom: []
     httpMethods:
-      - POST
-    uri: api/v1/brand/discover/brief
+      - GET
+    uri: api/v1/brand/social
     metadata:
       custom: []
-      groupName: 'Brand · Discovery'
+      groupName: 'Brand · Profile'
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
-      title: 'Send a brief to a talent'
+      title: 'List my social handles'
+      description: ''
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"success":false,"data":null,"message":"Unauthenticated.","errors":null,"meta":null}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/v1/brand/social
+    metadata:
+      custom: []
+      groupName: 'Brand · Profile'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Add a social handle'
       description: ''
       authenticated: true
       deprecated: false
@@ -166,19 +415,90 @@ endpoints:
     queryParameters: []
     cleanQueryParameters: []
     bodyParameters:
-      talent_id:
+      platform:
         custom: []
-        name: talent_id
-        description: 'The talent to brief.'
+        name: platform
+        description: ''
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      handle:
+        custom: []
+        name: handle
+        description: 'Must not be greater than 255 characters.'
+        required: true
+        example: 'n'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      url:
+        custom: []
+        name: url
+        description: 'Must be a valid URL. Must not be greater than 255 characters.'
+        required: false
+        example: 'http://crooks.biz/et-fugiat-sunt-nihil-accusantium'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+    cleanBodyParameters:
+      platform: architecto
+      handle: 'n'
+      url: 'http://crooks.biz/et-fugiat-sunt-nihil-accusantium'
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - DELETE
+    uri: 'api/v1/brand/social/{handle_id}'
+    metadata:
+      custom: []
+      groupName: 'Brand · Profile'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Remove a social handle'
+      description: ''
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      handle_id:
+        custom: []
+        name: handle_id
+        description: 'The ID of the handle.'
         required: true
         example: 1
         type: integer
         enumValues: []
-        exampleWasSpecified: true
+        exampleWasSpecified: false
         nullable: false
         deprecated: false
-    cleanBodyParameters:
-      talent_id: 1
+    cleanUrlParameters:
+      handle_id: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
     fileParameters: []
     responses: []
     responseFields: []

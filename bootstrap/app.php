@@ -19,6 +19,7 @@ use Mcamara\LaravelLocalization\Middleware\LaravelLocalizationViewPath;
 use Mcamara\LaravelLocalization\Middleware\LocaleCookieRedirect;
 use Mcamara\LaravelLocalization\Middleware\LocaleSessionRedirect;
 use Spatie\ModelStates\Exceptions\CouldNotPerformTransition;
+use Spatie\QueryBuilder\Exceptions\InvalidQuery;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -102,6 +103,14 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->render(function (AuthorizationException|AccessDeniedHttpException $e, Request $request) use ($wantsJson) {
             if ($wantsJson($request)) {
                 return ApiResponse::error(message: $e->getMessage() ?: __('This action is unauthorized.'), status: 403);
+            }
+        });
+
+        // A bad discovery/search query (unknown filter or sort) → 400 envelope,
+        // instead of the framework's bare HttpException JSON (spatie/query-builder).
+        $exceptions->render(function (InvalidQuery $e, Request $request) use ($wantsJson) {
+            if ($wantsJson($request)) {
+                return ApiResponse::error(message: $e->getMessage(), status: $e->getStatusCode());
             }
         });
 

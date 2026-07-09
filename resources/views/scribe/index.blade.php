@@ -158,6 +158,9 @@ rotation is how a client renews a credential it wants to cycle.</a>
                                                                                 <li class="tocify-item level-2" data-unique="discovery-POSTapi-v1-talents--talent_slug--enquiries">
                                 <a href="#discovery-POSTapi-v1-talents--talent_slug--enquiries">Send a booking enquiry</a>
                             </li>
+                                                                                <li class="tocify-item level-2" data-unique="discovery-GETapi-v1-brands">
+                                <a href="#discovery-GETapi-v1-brands">List brands</a>
+                            </li>
                                                                                 <li class="tocify-item level-2" data-unique="discovery-GETapi-v1-brands--brand_slug-">
                                 <a href="#discovery-GETapi-v1-brands--brand_slug-">Show a brand</a>
                             </li>
@@ -176,6 +179,19 @@ rotation is how a client renews a credential it wants to cycle.</a>
                             </li>
                                                                                 <li class="tocify-item level-2" data-unique="deals-GETapi-v1-deals--deal_id-">
                                 <a href="#deals-GETapi-v1-deals--deal_id-">Show a deal</a>
+                            </li>
+                                                                        </ul>
+                            </ul>
+                    <ul id="tocify-header-admin-lite" class="tocify-header">
+                <li class="tocify-item level-1" data-unique="admin-lite">
+                    <a href="#admin-lite">Admin (lite)</a>
+                </li>
+                                    <ul id="tocify-subheader-admin-lite" class="tocify-subheader">
+                                                    <li class="tocify-item level-2" data-unique="admin-lite-GETapi-v1-admin-overview">
+                                <a href="#admin-lite-GETapi-v1-admin-overview">Governance overview</a>
+                            </li>
+                                                                                <li class="tocify-item level-2" data-unique="admin-lite-GETapi-v1-admin-activity">
+                                <a href="#admin-lite-GETapi-v1-admin-activity">Recent activity</a>
                             </li>
                                                                         </ul>
                             </ul>
@@ -365,6 +381,44 @@ rotation is how a client renews a credential it wants to cycle.</a>
                                     <ul id="tocify-subheader-brand-reviews" class="tocify-subheader">
                                                     <li class="tocify-item level-2" data-unique="brand-reviews-GETapi-v1-brand-reviews">
                                 <a href="#brand-reviews-GETapi-v1-brand-reviews">List reviews received</a>
+                            </li>
+                                                                        </ul>
+                            </ul>
+                    <ul id="tocify-header-notifications" class="tocify-header">
+                <li class="tocify-item level-1" data-unique="notifications">
+                    <a href="#notifications">Notifications</a>
+                </li>
+                                    <ul id="tocify-subheader-notifications" class="tocify-subheader">
+                                                    <li class="tocify-item level-2" data-unique="notifications-GETapi-v1-notifications">
+                                <a href="#notifications-GETapi-v1-notifications">List my notifications</a>
+                            </li>
+                                                                                <li class="tocify-item level-2" data-unique="notifications-GETapi-v1-notifications-unread-count">
+                                <a href="#notifications-GETapi-v1-notifications-unread-count">Unread count</a>
+                            </li>
+                                                                                <li class="tocify-item level-2" data-unique="notifications-POSTapi-v1-notifications-read-all">
+                                <a href="#notifications-POSTapi-v1-notifications-read-all">Mark all read</a>
+                            </li>
+                                                                                <li class="tocify-item level-2" data-unique="notifications-POSTapi-v1-notifications--id--read">
+                                <a href="#notifications-POSTapi-v1-notifications--id--read">Mark one read</a>
+                            </li>
+                                                                        </ul>
+                            </ul>
+                    <ul id="tocify-header-reference-lookups" class="tocify-header">
+                <li class="tocify-item level-1" data-unique="reference-lookups">
+                    <a href="#reference-lookups">Reference / lookups</a>
+                </li>
+                                    <ul id="tocify-subheader-reference-lookups" class="tocify-subheader">
+                                                    <li class="tocify-item level-2" data-unique="reference-lookups-GETapi-v1-lookups-talent-types">
+                                <a href="#reference-lookups-GETapi-v1-lookups-talent-types">Talent types</a>
+                            </li>
+                                                                                <li class="tocify-item level-2" data-unique="reference-lookups-GETapi-v1-lookups-block-types">
+                                <a href="#reference-lookups-GETapi-v1-lookups-block-types">Block types</a>
+                            </li>
+                                                                                <li class="tocify-item level-2" data-unique="reference-lookups-GETapi-v1-lookups-deal-flows">
+                                <a href="#reference-lookups-GETapi-v1-lookups-deal-flows">Deal flows</a>
+                            </li>
+                                                                                <li class="tocify-item level-2" data-unique="reference-lookups-GETapi-v1-lookups-options">
+                                <a href="#reference-lookups-GETapi-v1-lookups-options">Option lists</a>
                             </li>
                                                                         </ul>
                             </ul>
@@ -3972,6 +4026,291 @@ You can check the Dev Tools console for debugging information.</code></pre>
         </div>
         </form>
 
+                    <h2 id="discovery-GETapi-v1-brands">List brands</h2>
+
+<p>
+</p>
+
+<p>Paginated, filterable public brand directory (published brands only).
+Whitelisted filters and sorts mirror the web search contract.</p>
+
+<span id="example-requests-GETapi-v1-brands">
+<blockquote>Example request:</blockquote>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request GET \
+    --get "https://fama.test/api/v1/brands?filter%5Bindustry%5D=food_beverage&amp;filter%5Bstage%5D=growing&amp;filter%5Breach%5D=mena&amp;filter%5Bcity%5D=Cairo&amp;filter%5Bverified%5D=1&amp;filter%5Bq%5D=nomad&amp;sort=-created_at&amp;page=1" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json"</code></pre></div>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "https://fama.test/api/v1/brands"
+);
+
+const params = {
+    "filter[industry]": "food_beverage",
+    "filter[stage]": "growing",
+    "filter[reach]": "mena",
+    "filter[city]": "Cairo",
+    "filter[verified]": "1",
+    "filter[q]": "nomad",
+    "sort": "-created_at",
+    "page": "1",
+};
+Object.keys(params)
+    .forEach(key =&gt; url.searchParams.append(key, params[key]));
+
+const headers = {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+
+fetch(url, {
+    method: "GET",
+    headers,
+}).then(response =&gt; response.json());</code></pre></div>
+
+</span>
+
+<span id="example-responses-GETapi-v1-brands">
+            <blockquote>
+            <p>Example response (200):</p>
+        </blockquote>
+                <details class="annotation">
+            <summary style="cursor: pointer;">
+                <small onclick="textContent = parentElement.parentElement.open ? 'Show headers' : 'Hide headers'">Show headers</small>
+            </summary>
+            <pre><code class="language-http">cache-control: no-cache, private
+content-type: application/json
+content-language: en
+x-ratelimit-limit: 60
+x-ratelimit-remaining: 59
+access-control-allow-origin: *
+ </code></pre></details>         <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;success&quot;: true,
+    &quot;data&quot;: [
+        {
+            &quot;id&quot;: 1,
+            &quot;name&quot;: &quot;Nomad Coffee Co.&quot;,
+            &quot;slug&quot;: &quot;nomad-coffee&quot;,
+            &quot;description&quot;: &quot;Specialty coffee roasters based in Cairo.&quot;,
+            &quot;industry&quot;: &quot;food_beverage&quot;,
+            &quot;brand_stage&quot;: &quot;growing&quot;,
+            &quot;base_city&quot;: &quot;Cairo&quot;,
+            &quot;base_country&quot;: &quot;Egypt&quot;,
+            &quot;geographic_reach&quot;: &quot;mena&quot;,
+            &quot;founded_year&quot;: null,
+            &quot;company_size&quot;: &quot;small&quot;,
+            &quot;website&quot;: &quot;https://nomadcoffee.example&quot;,
+            &quot;logo_url&quot;: &quot;https://fama.test/storage/64/fama_d600005f59d82bdf62bab01894e7fd87.jpg&quot;,
+            &quot;cover_image_url&quot;: &quot;https://fama.test/storage/65/fama_053fababdf158426331a72b0bf6f6d85.jpg&quot;,
+            &quot;is_complete&quot;: true,
+            &quot;is_published&quot;: true,
+            &quot;is_verified&quot;: true,
+            &quot;status&quot;: &quot;published&quot;
+        }
+    ],
+    &quot;message&quot;: null,
+    &quot;errors&quot;: null,
+    &quot;meta&quot;: {
+        &quot;pagination&quot;: {
+            &quot;current_page&quot;: 1,
+            &quot;last_page&quot;: 1,
+            &quot;per_page&quot;: 12,
+            &quot;total&quot;: 1,
+            &quot;from&quot;: 1,
+            &quot;to&quot;: 1
+        }
+    }
+}</code>
+ </pre>
+    </span>
+<span id="execution-results-GETapi-v1-brands" hidden>
+    <blockquote>Received response<span
+                id="execution-response-status-GETapi-v1-brands"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-GETapi-v1-brands"
+      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-GETapi-v1-brands" hidden>
+    <blockquote>Request failed with error:</blockquote>
+    <pre><code id="execution-error-message-GETapi-v1-brands">
+
+Tip: Check that you&#039;re properly connected to the network.
+If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
+You can check the Dev Tools console for debugging information.</code></pre>
+</span>
+<form id="form-GETapi-v1-brands" data-method="GET"
+      data-path="api/v1/brands"
+      data-authed="0"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('GETapi-v1-brands', this);">
+    <h3>
+        Request&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-GETapi-v1-brands"
+                    onclick="tryItOut('GETapi-v1-brands');">Try it out ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-GETapi-v1-brands"
+                    onclick="cancelTryOut('GETapi-v1-brands');" hidden>Cancel 🛑
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-GETapi-v1-brands"
+                    data-initial-text="Send Request 💥"
+                    data-loading-text="⏱ Sending..."
+                    hidden>Send Request 💥
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-green">GET</small>
+            <b><code>api/v1/brands</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="GETapi-v1-brands"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="GETapi-v1-brands"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                            <h4 class="fancy-heading-panel"><b>Query Parameters</b></h4>
+                                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>filter[industry]</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="filter[industry]"                data-endpoint="GETapi-v1-brands"
+               value="food_beverage"
+               data-component="query">
+    <br>
+<p>Exact industry. Example: <code>food_beverage</code></p>
+            </div>
+                                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>filter[stage]</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="filter[stage]"                data-endpoint="GETapi-v1-brands"
+               value="growing"
+               data-component="query">
+    <br>
+<p>Exact brand stage. Example: <code>growing</code></p>
+            </div>
+                                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>filter[reach]</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="filter[reach]"                data-endpoint="GETapi-v1-brands"
+               value="mena"
+               data-component="query">
+    <br>
+<p>Exact geographic reach. Example: <code>mena</code></p>
+            </div>
+                                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>filter[city]</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="filter[city]"                data-endpoint="GETapi-v1-brands"
+               value="Cairo"
+               data-component="query">
+    <br>
+<p>Partial city match. Example: <code>Cairo</code></p>
+            </div>
+                                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>filter[verified]</code></b>&nbsp;&nbsp;
+<small>boolean</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <label data-endpoint="GETapi-v1-brands" style="display: none">
+            <input type="radio" name="filter[verified]"
+                   value="1"
+                   data-endpoint="GETapi-v1-brands"
+                   data-component="query"             >
+            <code>true</code>
+        </label>
+        <label data-endpoint="GETapi-v1-brands" style="display: none">
+            <input type="radio" name="filter[verified]"
+                   value="0"
+                   data-endpoint="GETapi-v1-brands"
+                   data-component="query"             >
+            <code>false</code>
+        </label>
+    <br>
+<p>Only verified brands. Example: <code>true</code></p>
+            </div>
+                                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>filter[q]</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="filter[q]"                data-endpoint="GETapi-v1-brands"
+               value="nomad"
+               data-component="query">
+    <br>
+<p>Free-text name match. Example: <code>nomad</code></p>
+            </div>
+                                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>sort</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="sort"                data-endpoint="GETapi-v1-brands"
+               value="-created_at"
+               data-component="query">
+    <br>
+<p>created_at or name (prefix - for descending). Example: <code>-created_at</code></p>
+            </div>
+                                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>page</code></b>&nbsp;&nbsp;
+<small>integer</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="number" style="display: none"
+               step="any"               name="page"                data-endpoint="GETapi-v1-brands"
+               value="1"
+               data-component="query">
+    <br>
+<p>The page number. Example: <code>1</code></p>
+            </div>
+                </form>
+
                     <h2 id="discovery-GETapi-v1-brands--brand_slug-">Show a brand</h2>
 
 <p>
@@ -4591,6 +4930,334 @@ You can check the Dev Tools console for debugging information.</code></pre>
 <p>The ID of the deal. Example: <code>1</code></p>
             </div>
                     </form>
+
+                <h1 id="admin-lite">Admin (lite)</h1>
+
+    
+
+                                <h2 id="admin-lite-GETapi-v1-admin-overview">Governance overview</h2>
+
+<p>
+<small class="badge badge-darkred">requires authentication</small>
+</p>
+
+<p>Pending queues, deals awaiting admin, and flow/catalog counts.</p>
+
+<span id="example-requests-GETapi-v1-admin-overview">
+<blockquote>Example request:</blockquote>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request GET \
+    --get "https://fama.test/api/v1/admin/overview" \
+    --header "Authorization: Bearer {YOUR_TOKEN}" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json"</code></pre></div>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "https://fama.test/api/v1/admin/overview"
+);
+
+const headers = {
+    "Authorization": "Bearer {YOUR_TOKEN}",
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+
+fetch(url, {
+    method: "GET",
+    headers,
+}).then(response =&gt; response.json());</code></pre></div>
+
+</span>
+
+<span id="example-responses-GETapi-v1-admin-overview">
+            <blockquote>
+            <p>Example response (401):</p>
+        </blockquote>
+                <details class="annotation">
+            <summary style="cursor: pointer;">
+                <small onclick="textContent = parentElement.parentElement.open ? 'Show headers' : 'Hide headers'">Show headers</small>
+            </summary>
+            <pre><code class="language-http">cache-control: no-cache, private
+content-type: application/json
+access-control-allow-origin: *
+ </code></pre></details>         <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;success&quot;: false,
+    &quot;data&quot;: null,
+    &quot;message&quot;: &quot;Unauthenticated.&quot;,
+    &quot;errors&quot;: null,
+    &quot;meta&quot;: null
+}</code>
+ </pre>
+    </span>
+<span id="execution-results-GETapi-v1-admin-overview" hidden>
+    <blockquote>Received response<span
+                id="execution-response-status-GETapi-v1-admin-overview"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-GETapi-v1-admin-overview"
+      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-GETapi-v1-admin-overview" hidden>
+    <blockquote>Request failed with error:</blockquote>
+    <pre><code id="execution-error-message-GETapi-v1-admin-overview">
+
+Tip: Check that you&#039;re properly connected to the network.
+If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
+You can check the Dev Tools console for debugging information.</code></pre>
+</span>
+<form id="form-GETapi-v1-admin-overview" data-method="GET"
+      data-path="api/v1/admin/overview"
+      data-authed="1"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('GETapi-v1-admin-overview', this);">
+    <h3>
+        Request&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-GETapi-v1-admin-overview"
+                    onclick="tryItOut('GETapi-v1-admin-overview');">Try it out ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-GETapi-v1-admin-overview"
+                    onclick="cancelTryOut('GETapi-v1-admin-overview');" hidden>Cancel 🛑
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-GETapi-v1-admin-overview"
+                    data-initial-text="Send Request 💥"
+                    data-loading-text="⏱ Sending..."
+                    hidden>Send Request 💥
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-green">GET</small>
+            <b><code>api/v1/admin/overview</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Authorization</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Authorization" class="auth-value"               data-endpoint="GETapi-v1-admin-overview"
+               value="Bearer {YOUR_TOKEN}"
+               data-component="header">
+    <br>
+<p>Example: <code>Bearer {YOUR_TOKEN}</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="GETapi-v1-admin-overview"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="GETapi-v1-admin-overview"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        </form>
+
+                    <h2 id="admin-lite-GETapi-v1-admin-activity">Recent activity</h2>
+
+<p>
+<small class="badge badge-darkred">requires authentication</small>
+</p>
+
+
+
+<span id="example-requests-GETapi-v1-admin-activity">
+<blockquote>Example request:</blockquote>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request GET \
+    --get "https://fama.test/api/v1/admin/activity?log=moderation&amp;q=verified" \
+    --header "Authorization: Bearer {YOUR_TOKEN}" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json"</code></pre></div>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "https://fama.test/api/v1/admin/activity"
+);
+
+const params = {
+    "log": "moderation",
+    "q": "verified",
+};
+Object.keys(params)
+    .forEach(key =&gt; url.searchParams.append(key, params[key]));
+
+const headers = {
+    "Authorization": "Bearer {YOUR_TOKEN}",
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+
+fetch(url, {
+    method: "GET",
+    headers,
+}).then(response =&gt; response.json());</code></pre></div>
+
+</span>
+
+<span id="example-responses-GETapi-v1-admin-activity">
+            <blockquote>
+            <p>Example response (401):</p>
+        </blockquote>
+                <details class="annotation">
+            <summary style="cursor: pointer;">
+                <small onclick="textContent = parentElement.parentElement.open ? 'Show headers' : 'Hide headers'">Show headers</small>
+            </summary>
+            <pre><code class="language-http">cache-control: no-cache, private
+content-type: application/json
+access-control-allow-origin: *
+ </code></pre></details>         <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;success&quot;: false,
+    &quot;data&quot;: null,
+    &quot;message&quot;: &quot;Unauthenticated.&quot;,
+    &quot;errors&quot;: null,
+    &quot;meta&quot;: null
+}</code>
+ </pre>
+    </span>
+<span id="execution-results-GETapi-v1-admin-activity" hidden>
+    <blockquote>Received response<span
+                id="execution-response-status-GETapi-v1-admin-activity"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-GETapi-v1-admin-activity"
+      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-GETapi-v1-admin-activity" hidden>
+    <blockquote>Request failed with error:</blockquote>
+    <pre><code id="execution-error-message-GETapi-v1-admin-activity">
+
+Tip: Check that you&#039;re properly connected to the network.
+If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
+You can check the Dev Tools console for debugging information.</code></pre>
+</span>
+<form id="form-GETapi-v1-admin-activity" data-method="GET"
+      data-path="api/v1/admin/activity"
+      data-authed="1"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('GETapi-v1-admin-activity', this);">
+    <h3>
+        Request&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-GETapi-v1-admin-activity"
+                    onclick="tryItOut('GETapi-v1-admin-activity');">Try it out ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-GETapi-v1-admin-activity"
+                    onclick="cancelTryOut('GETapi-v1-admin-activity');" hidden>Cancel 🛑
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-GETapi-v1-admin-activity"
+                    data-initial-text="Send Request 💥"
+                    data-loading-text="⏱ Sending..."
+                    hidden>Send Request 💥
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-green">GET</small>
+            <b><code>api/v1/admin/activity</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Authorization</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Authorization" class="auth-value"               data-endpoint="GETapi-v1-admin-activity"
+               value="Bearer {YOUR_TOKEN}"
+               data-component="header">
+    <br>
+<p>Example: <code>Bearer {YOUR_TOKEN}</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="GETapi-v1-admin-activity"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="GETapi-v1-admin-activity"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                            <h4 class="fancy-heading-panel"><b>Query Parameters</b></h4>
+                                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>log</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="log"                data-endpoint="GETapi-v1-admin-activity"
+               value="moderation"
+               data-component="query">
+    <br>
+<p>Filter by log name (e.g. deal_flow, moderation). Example: <code>moderation</code></p>
+            </div>
+                                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>q</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="q"                data-endpoint="GETapi-v1-admin-activity"
+               value="verified"
+               data-component="query">
+    <br>
+<p>Free-text description search. Example: <code>verified</code></p>
+            </div>
+                </form>
 
                 <h1 id="brand-account">Brand · Account</h1>
 
@@ -5280,7 +5947,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     \"currency\": \"iyv\",
     \"location_city\": \"d\",
     \"location_country\": \"l\",
-    \"start_date\": \"2026-07-09T08:34:04\",
+    \"start_date\": \"2026-07-09T09:16:36\",
     \"end_date\": \"2052-08-01\",
     \"is_public\": true,
     \"positions_count\": 39,
@@ -5317,7 +5984,7 @@ let body = {
     "currency": "iyv",
     "location_city": "d",
     "location_country": "l",
-    "start_date": "2026-07-09T08:34:04",
+    "start_date": "2026-07-09T09:16:36",
     "end_date": "2052-08-01",
     "is_public": true,
     "positions_count": 39,
@@ -5552,10 +6219,10 @@ Must be one of:
  &nbsp;
                 <input type="text" style="display: none"
                               name="start_date"                data-endpoint="POSTapi-v1-brand-campaigns"
-               value="2026-07-09T08:34:04"
+               value="2026-07-09T09:16:36"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-07-09T08:34:04</code></p>
+<p>Must be a valid date. Example: <code>2026-07-09T09:16:36</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>end_date</code></b>&nbsp;&nbsp;
@@ -5820,7 +6487,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     --header "Accept: application/json" \
     --data "{
     \"title\": \"b\",
-    \"type\": \"campaign\",
+    \"type\": \"shoot\",
     \"description\": {
         \"en\": \"n\",
         \"ar\": \"g\"
@@ -5830,9 +6497,9 @@ You can check the Dev Tools console for debugging information.</code></pre>
     \"currency\": \"iyv\",
     \"location_city\": \"d\",
     \"location_country\": \"l\",
-    \"start_date\": \"2026-07-09T08:34:04\",
+    \"start_date\": \"2026-07-09T09:16:36\",
     \"end_date\": \"2052-08-01\",
-    \"is_public\": false,
+    \"is_public\": true,
     \"positions_count\": 39,
     \"roles\": [
         {
@@ -5857,7 +6524,7 @@ const headers = {
 
 let body = {
     "title": "b",
-    "type": "campaign",
+    "type": "shoot",
     "description": {
         "en": "n",
         "ar": "g"
@@ -5867,9 +6534,9 @@ let body = {
     "currency": "iyv",
     "location_city": "d",
     "location_country": "l",
-    "start_date": "2026-07-09T08:34:04",
+    "start_date": "2026-07-09T09:16:36",
     "end_date": "2052-08-01",
-    "is_public": false,
+    "is_public": true,
     "positions_count": 39,
     "roles": [
         {
@@ -6005,10 +6672,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="type"                data-endpoint="PATCHapi-v1-brand-campaigns--campaign_id-"
-               value="campaign"
+               value="shoot"
                data-component="body">
     <br>
-<p>Example: <code>campaign</code></p>
+<p>Example: <code>shoot</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>campaign</code></li> <li><code>shoot</code></li></ul>
         </div>
@@ -6115,10 +6782,10 @@ Must be one of:
  &nbsp;
                 <input type="text" style="display: none"
                               name="start_date"                data-endpoint="PATCHapi-v1-brand-campaigns--campaign_id-"
-               value="2026-07-09T08:34:04"
+               value="2026-07-09T09:16:36"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-07-09T08:34:04</code></p>
+<p>Must be a valid date. Example: <code>2026-07-09T09:16:36</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>end_date</code></b>&nbsp;&nbsp;
@@ -6152,7 +6819,7 @@ Must be one of:
             <code>false</code>
         </label>
     <br>
-<p>Example: <code>false</code></p>
+<p>Example: <code>true</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>positions_count</code></b>&nbsp;&nbsp;
@@ -6552,7 +7219,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     --header "Authorization: Bearer {YOUR_TOKEN}" \
     --header "Content-Type: multipart/form-data" \
     --header "Accept: application/json" \
-    --form "file=@/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/phprtdki84iqs0s57tydzr" </code></pre></div>
+    --form "file=@/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/php1penfeleonm80b8a2Yf" </code></pre></div>
 
 
 <div class="javascript-example">
@@ -6686,7 +7353,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
                value=""
                data-component="body">
     <br>
-<p>Must be an image. Must not be greater than 5120 kilobytes. Example: <code>/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/phprtdki84iqs0s57tydzr</code></p>
+<p>Must be an image. Must not be greater than 5120 kilobytes. Example: <code>/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/php1penfeleonm80b8a2Yf</code></p>
         </div>
         </form>
 
@@ -9973,7 +10640,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     --header "Authorization: Bearer {YOUR_TOKEN}" \
     --header "Content-Type: multipart/form-data" \
     --header "Accept: application/json" \
-    --form "file=@/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/phpmjgo5lergovfbfR5bvH" </code></pre></div>
+    --form "file=@/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/php4o89pcj6ujljdIX0n7J" </code></pre></div>
 
 
 <div class="javascript-example">
@@ -10094,7 +10761,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
                value=""
                data-component="body">
     <br>
-<p>Must be an image. Must not be greater than 5120 kilobytes. Example: <code>/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/phpmjgo5lergovfbfR5bvH</code></p>
+<p>Must be an image. Must not be greater than 5120 kilobytes. Example: <code>/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/php4o89pcj6ujljdIX0n7J</code></p>
         </div>
         </form>
 
@@ -10116,7 +10783,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     --header "Authorization: Bearer {YOUR_TOKEN}" \
     --header "Content-Type: multipart/form-data" \
     --header "Accept: application/json" \
-    --form "file=@/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/phptenvvv556hc15czf88z" </code></pre></div>
+    --form "file=@/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/php0qcjh1r09qued0lXBU6" </code></pre></div>
 
 
 <div class="javascript-example">
@@ -10237,7 +10904,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
                value=""
                data-component="body">
     <br>
-<p>Must be an image. Must not be greater than 5120 kilobytes. Example: <code>/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/phptenvvv556hc15czf88z</code></p>
+<p>Must be an image. Must not be greater than 5120 kilobytes. Example: <code>/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/php0qcjh1r09qued0lXBU6</code></p>
         </div>
         </form>
 
@@ -10531,7 +11198,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     --header "Authorization: Bearer {YOUR_TOKEN}" \
     --header "Content-Type: multipart/form-data" \
     --header "Accept: application/json" \
-    --form "file=@/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/phpfalavd84eg0vdorc6qx" </code></pre></div>
+    --form "file=@/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/php6k96pk8d7fd3bi42VzT" </code></pre></div>
 
 
 <div class="javascript-example">
@@ -10652,7 +11319,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
                value=""
                data-component="body">
     <br>
-<p>Must be an image. Must not be greater than 5120 kilobytes. Example: <code>/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/phpfalavd84eg0vdorc6qx</code></p>
+<p>Must be an image. Must not be greater than 5120 kilobytes. Example: <code>/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/php6k96pk8d7fd3bi42VzT</code></p>
         </div>
         </form>
 
@@ -11405,6 +12072,1571 @@ You can check the Dev Tools console for debugging information.</code></pre>
             </div>
                         </form>
 
+                <h1 id="notifications">Notifications</h1>
+
+    
+
+                                <h2 id="notifications-GETapi-v1-notifications">List my notifications</h2>
+
+<p>
+<small class="badge badge-darkred">requires authentication</small>
+</p>
+
+<p>Paginated, newest first.</p>
+
+<span id="example-requests-GETapi-v1-notifications">
+<blockquote>Example request:</blockquote>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request GET \
+    --get "https://fama.test/api/v1/notifications" \
+    --header "Authorization: Bearer {YOUR_TOKEN}" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json"</code></pre></div>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "https://fama.test/api/v1/notifications"
+);
+
+const headers = {
+    "Authorization": "Bearer {YOUR_TOKEN}",
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+
+fetch(url, {
+    method: "GET",
+    headers,
+}).then(response =&gt; response.json());</code></pre></div>
+
+</span>
+
+<span id="example-responses-GETapi-v1-notifications">
+            <blockquote>
+            <p>Example response (401):</p>
+        </blockquote>
+                <details class="annotation">
+            <summary style="cursor: pointer;">
+                <small onclick="textContent = parentElement.parentElement.open ? 'Show headers' : 'Hide headers'">Show headers</small>
+            </summary>
+            <pre><code class="language-http">cache-control: no-cache, private
+content-type: application/json
+access-control-allow-origin: *
+ </code></pre></details>         <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;success&quot;: false,
+    &quot;data&quot;: null,
+    &quot;message&quot;: &quot;Unauthenticated.&quot;,
+    &quot;errors&quot;: null,
+    &quot;meta&quot;: null
+}</code>
+ </pre>
+    </span>
+<span id="execution-results-GETapi-v1-notifications" hidden>
+    <blockquote>Received response<span
+                id="execution-response-status-GETapi-v1-notifications"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-GETapi-v1-notifications"
+      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-GETapi-v1-notifications" hidden>
+    <blockquote>Request failed with error:</blockquote>
+    <pre><code id="execution-error-message-GETapi-v1-notifications">
+
+Tip: Check that you&#039;re properly connected to the network.
+If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
+You can check the Dev Tools console for debugging information.</code></pre>
+</span>
+<form id="form-GETapi-v1-notifications" data-method="GET"
+      data-path="api/v1/notifications"
+      data-authed="1"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('GETapi-v1-notifications', this);">
+    <h3>
+        Request&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-GETapi-v1-notifications"
+                    onclick="tryItOut('GETapi-v1-notifications');">Try it out ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-GETapi-v1-notifications"
+                    onclick="cancelTryOut('GETapi-v1-notifications');" hidden>Cancel 🛑
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-GETapi-v1-notifications"
+                    data-initial-text="Send Request 💥"
+                    data-loading-text="⏱ Sending..."
+                    hidden>Send Request 💥
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-green">GET</small>
+            <b><code>api/v1/notifications</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Authorization</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Authorization" class="auth-value"               data-endpoint="GETapi-v1-notifications"
+               value="Bearer {YOUR_TOKEN}"
+               data-component="header">
+    <br>
+<p>Example: <code>Bearer {YOUR_TOKEN}</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="GETapi-v1-notifications"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="GETapi-v1-notifications"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        </form>
+
+                    <h2 id="notifications-GETapi-v1-notifications-unread-count">Unread count</h2>
+
+<p>
+<small class="badge badge-darkred">requires authentication</small>
+</p>
+
+<p>The number of unread notifications (for a badge).</p>
+
+<span id="example-requests-GETapi-v1-notifications-unread-count">
+<blockquote>Example request:</blockquote>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request GET \
+    --get "https://fama.test/api/v1/notifications/unread-count" \
+    --header "Authorization: Bearer {YOUR_TOKEN}" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json"</code></pre></div>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "https://fama.test/api/v1/notifications/unread-count"
+);
+
+const headers = {
+    "Authorization": "Bearer {YOUR_TOKEN}",
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+
+fetch(url, {
+    method: "GET",
+    headers,
+}).then(response =&gt; response.json());</code></pre></div>
+
+</span>
+
+<span id="example-responses-GETapi-v1-notifications-unread-count">
+            <blockquote>
+            <p>Example response (401):</p>
+        </blockquote>
+                <details class="annotation">
+            <summary style="cursor: pointer;">
+                <small onclick="textContent = parentElement.parentElement.open ? 'Show headers' : 'Hide headers'">Show headers</small>
+            </summary>
+            <pre><code class="language-http">cache-control: no-cache, private
+content-type: application/json
+access-control-allow-origin: *
+ </code></pre></details>         <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;success&quot;: false,
+    &quot;data&quot;: null,
+    &quot;message&quot;: &quot;Unauthenticated.&quot;,
+    &quot;errors&quot;: null,
+    &quot;meta&quot;: null
+}</code>
+ </pre>
+    </span>
+<span id="execution-results-GETapi-v1-notifications-unread-count" hidden>
+    <blockquote>Received response<span
+                id="execution-response-status-GETapi-v1-notifications-unread-count"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-GETapi-v1-notifications-unread-count"
+      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-GETapi-v1-notifications-unread-count" hidden>
+    <blockquote>Request failed with error:</blockquote>
+    <pre><code id="execution-error-message-GETapi-v1-notifications-unread-count">
+
+Tip: Check that you&#039;re properly connected to the network.
+If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
+You can check the Dev Tools console for debugging information.</code></pre>
+</span>
+<form id="form-GETapi-v1-notifications-unread-count" data-method="GET"
+      data-path="api/v1/notifications/unread-count"
+      data-authed="1"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('GETapi-v1-notifications-unread-count', this);">
+    <h3>
+        Request&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-GETapi-v1-notifications-unread-count"
+                    onclick="tryItOut('GETapi-v1-notifications-unread-count');">Try it out ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-GETapi-v1-notifications-unread-count"
+                    onclick="cancelTryOut('GETapi-v1-notifications-unread-count');" hidden>Cancel 🛑
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-GETapi-v1-notifications-unread-count"
+                    data-initial-text="Send Request 💥"
+                    data-loading-text="⏱ Sending..."
+                    hidden>Send Request 💥
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-green">GET</small>
+            <b><code>api/v1/notifications/unread-count</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Authorization</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Authorization" class="auth-value"               data-endpoint="GETapi-v1-notifications-unread-count"
+               value="Bearer {YOUR_TOKEN}"
+               data-component="header">
+    <br>
+<p>Example: <code>Bearer {YOUR_TOKEN}</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="GETapi-v1-notifications-unread-count"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="GETapi-v1-notifications-unread-count"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        </form>
+
+                    <h2 id="notifications-POSTapi-v1-notifications-read-all">Mark all read</h2>
+
+<p>
+<small class="badge badge-darkred">requires authentication</small>
+</p>
+
+
+
+<span id="example-requests-POSTapi-v1-notifications-read-all">
+<blockquote>Example request:</blockquote>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request POST \
+    "https://fama.test/api/v1/notifications/read-all" \
+    --header "Authorization: Bearer {YOUR_TOKEN}" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json"</code></pre></div>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "https://fama.test/api/v1/notifications/read-all"
+);
+
+const headers = {
+    "Authorization": "Bearer {YOUR_TOKEN}",
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+
+fetch(url, {
+    method: "POST",
+    headers,
+}).then(response =&gt; response.json());</code></pre></div>
+
+</span>
+
+<span id="example-responses-POSTapi-v1-notifications-read-all">
+</span>
+<span id="execution-results-POSTapi-v1-notifications-read-all" hidden>
+    <blockquote>Received response<span
+                id="execution-response-status-POSTapi-v1-notifications-read-all"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-POSTapi-v1-notifications-read-all"
+      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-POSTapi-v1-notifications-read-all" hidden>
+    <blockquote>Request failed with error:</blockquote>
+    <pre><code id="execution-error-message-POSTapi-v1-notifications-read-all">
+
+Tip: Check that you&#039;re properly connected to the network.
+If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
+You can check the Dev Tools console for debugging information.</code></pre>
+</span>
+<form id="form-POSTapi-v1-notifications-read-all" data-method="POST"
+      data-path="api/v1/notifications/read-all"
+      data-authed="1"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('POSTapi-v1-notifications-read-all', this);">
+    <h3>
+        Request&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-POSTapi-v1-notifications-read-all"
+                    onclick="tryItOut('POSTapi-v1-notifications-read-all');">Try it out ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-POSTapi-v1-notifications-read-all"
+                    onclick="cancelTryOut('POSTapi-v1-notifications-read-all');" hidden>Cancel 🛑
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-POSTapi-v1-notifications-read-all"
+                    data-initial-text="Send Request 💥"
+                    data-loading-text="⏱ Sending..."
+                    hidden>Send Request 💥
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-black">POST</small>
+            <b><code>api/v1/notifications/read-all</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Authorization</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Authorization" class="auth-value"               data-endpoint="POSTapi-v1-notifications-read-all"
+               value="Bearer {YOUR_TOKEN}"
+               data-component="header">
+    <br>
+<p>Example: <code>Bearer {YOUR_TOKEN}</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="POSTapi-v1-notifications-read-all"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="POSTapi-v1-notifications-read-all"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        </form>
+
+                    <h2 id="notifications-POSTapi-v1-notifications--id--read">Mark one read</h2>
+
+<p>
+<small class="badge badge-darkred">requires authentication</small>
+</p>
+
+
+
+<span id="example-requests-POSTapi-v1-notifications--id--read">
+<blockquote>Example request:</blockquote>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request POST \
+    "https://fama.test/api/v1/notifications/architecto/read" \
+    --header "Authorization: Bearer {YOUR_TOKEN}" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json"</code></pre></div>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "https://fama.test/api/v1/notifications/architecto/read"
+);
+
+const headers = {
+    "Authorization": "Bearer {YOUR_TOKEN}",
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+
+fetch(url, {
+    method: "POST",
+    headers,
+}).then(response =&gt; response.json());</code></pre></div>
+
+</span>
+
+<span id="example-responses-POSTapi-v1-notifications--id--read">
+</span>
+<span id="execution-results-POSTapi-v1-notifications--id--read" hidden>
+    <blockquote>Received response<span
+                id="execution-response-status-POSTapi-v1-notifications--id--read"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-POSTapi-v1-notifications--id--read"
+      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-POSTapi-v1-notifications--id--read" hidden>
+    <blockquote>Request failed with error:</blockquote>
+    <pre><code id="execution-error-message-POSTapi-v1-notifications--id--read">
+
+Tip: Check that you&#039;re properly connected to the network.
+If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
+You can check the Dev Tools console for debugging information.</code></pre>
+</span>
+<form id="form-POSTapi-v1-notifications--id--read" data-method="POST"
+      data-path="api/v1/notifications/{id}/read"
+      data-authed="1"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('POSTapi-v1-notifications--id--read', this);">
+    <h3>
+        Request&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-POSTapi-v1-notifications--id--read"
+                    onclick="tryItOut('POSTapi-v1-notifications--id--read');">Try it out ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-POSTapi-v1-notifications--id--read"
+                    onclick="cancelTryOut('POSTapi-v1-notifications--id--read');" hidden>Cancel 🛑
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-POSTapi-v1-notifications--id--read"
+                    data-initial-text="Send Request 💥"
+                    data-loading-text="⏱ Sending..."
+                    hidden>Send Request 💥
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-black">POST</small>
+            <b><code>api/v1/notifications/{id}/read</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Authorization</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Authorization" class="auth-value"               data-endpoint="POSTapi-v1-notifications--id--read"
+               value="Bearer {YOUR_TOKEN}"
+               data-component="header">
+    <br>
+<p>Example: <code>Bearer {YOUR_TOKEN}</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="POSTapi-v1-notifications--id--read"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="POSTapi-v1-notifications--id--read"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        <h4 class="fancy-heading-panel"><b>URL Parameters</b></h4>
+                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>id</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="id"                data-endpoint="POSTapi-v1-notifications--id--read"
+               value="architecto"
+               data-component="url">
+    <br>
+<p>The ID of the notification. Example: <code>architecto</code></p>
+            </div>
+                    </form>
+
+                <h1 id="reference-lookups">Reference / lookups</h1>
+
+    <p>Public catalog data the mobile app needs to render dynamic UI (dropdowns,
+profession pickers, the block catalog, the deal flows on offer). Read-only and
+unauthenticated — onboarding forms need these before a token exists.
+Translatable names come back in the request locale (Accept-Language).</p>
+
+                                <h2 id="reference-lookups-GETapi-v1-lookups-talent-types">Talent types</h2>
+
+<p>
+</p>
+
+<p>The full profession catalog.</p>
+
+<span id="example-requests-GETapi-v1-lookups-talent-types">
+<blockquote>Example request:</blockquote>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request GET \
+    --get "https://fama.test/api/v1/lookups/talent-types" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json"</code></pre></div>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "https://fama.test/api/v1/lookups/talent-types"
+);
+
+const headers = {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+
+fetch(url, {
+    method: "GET",
+    headers,
+}).then(response =&gt; response.json());</code></pre></div>
+
+</span>
+
+<span id="example-responses-GETapi-v1-lookups-talent-types">
+            <blockquote>
+            <p>Example response (200):</p>
+        </blockquote>
+                <details class="annotation">
+            <summary style="cursor: pointer;">
+                <small onclick="textContent = parentElement.parentElement.open ? 'Show headers' : 'Hide headers'">Show headers</small>
+            </summary>
+            <pre><code class="language-http">cache-control: no-cache, private
+content-type: application/json
+content-language: en
+x-ratelimit-limit: 60
+x-ratelimit-remaining: 59
+access-control-allow-origin: *
+ </code></pre></details>         <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;success&quot;: true,
+    &quot;data&quot;: [
+        {
+            &quot;id&quot;: 1,
+            &quot;slug&quot;: &quot;model&quot;,
+            &quot;name&quot;: &quot;Model&quot;,
+            &quot;category&quot;: &quot;model&quot;,
+            &quot;icon&quot;: &quot;lucide-model&quot;,
+            &quot;description&quot;: &quot;Model on Fama.&quot;
+        },
+        {
+            &quot;id&quot;: 2,
+            &quot;slug&quot;: &quot;photographer&quot;,
+            &quot;name&quot;: &quot;Photographer&quot;,
+            &quot;category&quot;: &quot;crew&quot;,
+            &quot;icon&quot;: &quot;lucide-photographer&quot;,
+            &quot;description&quot;: &quot;Photographer on Fama.&quot;
+        },
+        {
+            &quot;id&quot;: 3,
+            &quot;slug&quot;: &quot;cinematographer&quot;,
+            &quot;name&quot;: &quot;Cinematographer (DOP)&quot;,
+            &quot;category&quot;: &quot;crew&quot;,
+            &quot;icon&quot;: &quot;lucide-cinematographer&quot;,
+            &quot;description&quot;: &quot;Cinematographer (DOP) on Fama.&quot;
+        },
+        {
+            &quot;id&quot;: 4,
+            &quot;slug&quot;: &quot;creative-director&quot;,
+            &quot;name&quot;: &quot;Creative Director&quot;,
+            &quot;category&quot;: &quot;creative&quot;,
+            &quot;icon&quot;: &quot;lucide-creative-director&quot;,
+            &quot;description&quot;: &quot;Creative Director on Fama.&quot;
+        },
+        {
+            &quot;id&quot;: 5,
+            &quot;slug&quot;: &quot;stylist&quot;,
+            &quot;name&quot;: &quot;Stylist&quot;,
+            &quot;category&quot;: &quot;creative&quot;,
+            &quot;icon&quot;: &quot;lucide-stylist&quot;,
+            &quot;description&quot;: &quot;Stylist on Fama.&quot;
+        },
+        {
+            &quot;id&quot;: 6,
+            &quot;slug&quot;: &quot;graphic-designer&quot;,
+            &quot;name&quot;: &quot;Graphic Designer&quot;,
+            &quot;category&quot;: &quot;creative&quot;,
+            &quot;icon&quot;: &quot;lucide-graphic-designer&quot;,
+            &quot;description&quot;: &quot;Graphic Designer on Fama.&quot;
+        }
+    ],
+    &quot;message&quot;: null,
+    &quot;errors&quot;: null,
+    &quot;meta&quot;: null
+}</code>
+ </pre>
+    </span>
+<span id="execution-results-GETapi-v1-lookups-talent-types" hidden>
+    <blockquote>Received response<span
+                id="execution-response-status-GETapi-v1-lookups-talent-types"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-GETapi-v1-lookups-talent-types"
+      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-GETapi-v1-lookups-talent-types" hidden>
+    <blockquote>Request failed with error:</blockquote>
+    <pre><code id="execution-error-message-GETapi-v1-lookups-talent-types">
+
+Tip: Check that you&#039;re properly connected to the network.
+If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
+You can check the Dev Tools console for debugging information.</code></pre>
+</span>
+<form id="form-GETapi-v1-lookups-talent-types" data-method="GET"
+      data-path="api/v1/lookups/talent-types"
+      data-authed="0"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('GETapi-v1-lookups-talent-types', this);">
+    <h3>
+        Request&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-GETapi-v1-lookups-talent-types"
+                    onclick="tryItOut('GETapi-v1-lookups-talent-types');">Try it out ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-GETapi-v1-lookups-talent-types"
+                    onclick="cancelTryOut('GETapi-v1-lookups-talent-types');" hidden>Cancel 🛑
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-GETapi-v1-lookups-talent-types"
+                    data-initial-text="Send Request 💥"
+                    data-loading-text="⏱ Sending..."
+                    hidden>Send Request 💥
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-green">GET</small>
+            <b><code>api/v1/lookups/talent-types</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="GETapi-v1-lookups-talent-types"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="GETapi-v1-lookups-talent-types"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        </form>
+
+                    <h2 id="reference-lookups-GETapi-v1-lookups-block-types">Block types</h2>
+
+<p>
+</p>
+
+<p>The active profile-block catalog (what a talent can add + how it renders).</p>
+
+<span id="example-requests-GETapi-v1-lookups-block-types">
+<blockquote>Example request:</blockquote>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request GET \
+    --get "https://fama.test/api/v1/lookups/block-types" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json"</code></pre></div>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "https://fama.test/api/v1/lookups/block-types"
+);
+
+const headers = {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+
+fetch(url, {
+    method: "GET",
+    headers,
+}).then(response =&gt; response.json());</code></pre></div>
+
+</span>
+
+<span id="example-responses-GETapi-v1-lookups-block-types">
+            <blockquote>
+            <p>Example response (200):</p>
+        </blockquote>
+                <details class="annotation">
+            <summary style="cursor: pointer;">
+                <small onclick="textContent = parentElement.parentElement.open ? 'Show headers' : 'Hide headers'">Show headers</small>
+            </summary>
+            <pre><code class="language-http">cache-control: no-cache, private
+content-type: application/json
+content-language: en
+x-ratelimit-limit: 60
+x-ratelimit-remaining: 59
+access-control-allow-origin: *
+ </code></pre></details>         <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;success&quot;: true,
+    &quot;data&quot;: [
+        {
+            &quot;id&quot;: 1,
+            &quot;key&quot;: &quot;hero&quot;,
+            &quot;name&quot;: &quot;Hero&quot;,
+            &quot;description&quot;: null,
+            &quot;icon&quot;: &quot;lucide-hero&quot;,
+            &quot;availability&quot;: &quot;universal&quot;,
+            &quot;content_source&quot;: &quot;inline&quot;,
+            &quot;default_layout&quot;: null,
+            &quot;is_repeatable&quot;: false
+        },
+        {
+            &quot;id&quot;: 2,
+            &quot;key&quot;: &quot;gallery&quot;,
+            &quot;name&quot;: &quot;Gallery&quot;,
+            &quot;description&quot;: null,
+            &quot;icon&quot;: &quot;lucide-gallery&quot;,
+            &quot;availability&quot;: &quot;universal&quot;,
+            &quot;content_source&quot;: &quot;table&quot;,
+            &quot;default_layout&quot;: &quot;masonry&quot;,
+            &quot;is_repeatable&quot;: true
+        },
+        {
+            &quot;id&quot;: 3,
+            &quot;key&quot;: &quot;brand_collabs&quot;,
+            &quot;name&quot;: &quot;Brand Collaborations&quot;,
+            &quot;description&quot;: null,
+            &quot;icon&quot;: &quot;lucide-brand-collabs&quot;,
+            &quot;availability&quot;: &quot;universal&quot;,
+            &quot;content_source&quot;: &quot;table&quot;,
+            &quot;default_layout&quot;: &quot;grid&quot;,
+            &quot;is_repeatable&quot;: false
+        },
+        {
+            &quot;id&quot;: 4,
+            &quot;key&quot;: &quot;reviews&quot;,
+            &quot;name&quot;: &quot;Reviews&quot;,
+            &quot;description&quot;: null,
+            &quot;icon&quot;: &quot;lucide-reviews&quot;,
+            &quot;availability&quot;: &quot;universal&quot;,
+            &quot;content_source&quot;: &quot;table&quot;,
+            &quot;default_layout&quot;: &quot;list&quot;,
+            &quot;is_repeatable&quot;: false
+        },
+        {
+            &quot;id&quot;: 5,
+            &quot;key&quot;: &quot;services&quot;,
+            &quot;name&quot;: &quot;Services&quot;,
+            &quot;description&quot;: null,
+            &quot;icon&quot;: &quot;lucide-services&quot;,
+            &quot;availability&quot;: &quot;universal&quot;,
+            &quot;content_source&quot;: &quot;table&quot;,
+            &quot;default_layout&quot;: &quot;list&quot;,
+            &quot;is_repeatable&quot;: false
+        },
+        {
+            &quot;id&quot;: 6,
+            &quot;key&quot;: &quot;comp_card&quot;,
+            &quot;name&quot;: &quot;Comp Card&quot;,
+            &quot;description&quot;: null,
+            &quot;icon&quot;: &quot;lucide-comp-card&quot;,
+            &quot;availability&quot;: &quot;by_category&quot;,
+            &quot;content_source&quot;: &quot;table&quot;,
+            &quot;default_layout&quot;: null,
+            &quot;is_repeatable&quot;: false
+        },
+        {
+            &quot;id&quot;: 7,
+            &quot;key&quot;: &quot;look_types&quot;,
+            &quot;name&quot;: &quot;Looks&quot;,
+            &quot;description&quot;: null,
+            &quot;icon&quot;: &quot;lucide-look-types&quot;,
+            &quot;availability&quot;: &quot;by_category&quot;,
+            &quot;content_source&quot;: &quot;table&quot;,
+            &quot;default_layout&quot;: &quot;list&quot;,
+            &quot;is_repeatable&quot;: false
+        },
+        {
+            &quot;id&quot;: 8,
+            &quot;key&quot;: &quot;digitals&quot;,
+            &quot;name&quot;: &quot;Digitals&quot;,
+            &quot;description&quot;: null,
+            &quot;icon&quot;: &quot;lucide-digitals&quot;,
+            &quot;availability&quot;: &quot;by_category&quot;,
+            &quot;content_source&quot;: &quot;table&quot;,
+            &quot;default_layout&quot;: &quot;grid&quot;,
+            &quot;is_repeatable&quot;: false
+        },
+        {
+            &quot;id&quot;: 9,
+            &quot;key&quot;: &quot;showreel&quot;,
+            &quot;name&quot;: &quot;Showreel&quot;,
+            &quot;description&quot;: null,
+            &quot;icon&quot;: &quot;lucide-showreel&quot;,
+            &quot;availability&quot;: &quot;by_category&quot;,
+            &quot;content_source&quot;: &quot;table&quot;,
+            &quot;default_layout&quot;: &quot;carousel&quot;,
+            &quot;is_repeatable&quot;: true
+        },
+        {
+            &quot;id&quot;: 10,
+            &quot;key&quot;: &quot;equipment&quot;,
+            &quot;name&quot;: &quot;Equipment&quot;,
+            &quot;description&quot;: null,
+            &quot;icon&quot;: &quot;lucide-equipment&quot;,
+            &quot;availability&quot;: &quot;by_category&quot;,
+            &quot;content_source&quot;: &quot;table&quot;,
+            &quot;default_layout&quot;: &quot;list&quot;,
+            &quot;is_repeatable&quot;: false
+        },
+        {
+            &quot;id&quot;: 11,
+            &quot;key&quot;: &quot;projects&quot;,
+            &quot;name&quot;: &quot;Projects&quot;,
+            &quot;description&quot;: null,
+            &quot;icon&quot;: &quot;lucide-projects&quot;,
+            &quot;availability&quot;: &quot;by_category&quot;,
+            &quot;content_source&quot;: &quot;table&quot;,
+            &quot;default_layout&quot;: &quot;list&quot;,
+            &quot;is_repeatable&quot;: true
+        },
+        {
+            &quot;id&quot;: 12,
+            &quot;key&quot;: &quot;software_stack&quot;,
+            &quot;name&quot;: &quot;Software&quot;,
+            &quot;description&quot;: null,
+            &quot;icon&quot;: &quot;lucide-software-stack&quot;,
+            &quot;availability&quot;: &quot;by_category&quot;,
+            &quot;content_source&quot;: &quot;table&quot;,
+            &quot;default_layout&quot;: &quot;grid&quot;,
+            &quot;is_repeatable&quot;: false
+        },
+        {
+            &quot;id&quot;: 13,
+            &quot;key&quot;: &quot;agency_affiliations&quot;,
+            &quot;name&quot;: &quot;Agencies&quot;,
+            &quot;description&quot;: null,
+            &quot;icon&quot;: &quot;lucide-agency-affiliations&quot;,
+            &quot;availability&quot;: &quot;universal&quot;,
+            &quot;content_source&quot;: &quot;table&quot;,
+            &quot;default_layout&quot;: &quot;list&quot;,
+            &quot;is_repeatable&quot;: false
+        },
+        {
+            &quot;id&quot;: 14,
+            &quot;key&quot;: &quot;press_features&quot;,
+            &quot;name&quot;: &quot;Press&quot;,
+            &quot;description&quot;: null,
+            &quot;icon&quot;: &quot;lucide-press-features&quot;,
+            &quot;availability&quot;: &quot;universal&quot;,
+            &quot;content_source&quot;: &quot;table&quot;,
+            &quot;default_layout&quot;: &quot;grid&quot;,
+            &quot;is_repeatable&quot;: false
+        }
+    ],
+    &quot;message&quot;: null,
+    &quot;errors&quot;: null,
+    &quot;meta&quot;: null
+}</code>
+ </pre>
+    </span>
+<span id="execution-results-GETapi-v1-lookups-block-types" hidden>
+    <blockquote>Received response<span
+                id="execution-response-status-GETapi-v1-lookups-block-types"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-GETapi-v1-lookups-block-types"
+      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-GETapi-v1-lookups-block-types" hidden>
+    <blockquote>Request failed with error:</blockquote>
+    <pre><code id="execution-error-message-GETapi-v1-lookups-block-types">
+
+Tip: Check that you&#039;re properly connected to the network.
+If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
+You can check the Dev Tools console for debugging information.</code></pre>
+</span>
+<form id="form-GETapi-v1-lookups-block-types" data-method="GET"
+      data-path="api/v1/lookups/block-types"
+      data-authed="0"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('GETapi-v1-lookups-block-types', this);">
+    <h3>
+        Request&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-GETapi-v1-lookups-block-types"
+                    onclick="tryItOut('GETapi-v1-lookups-block-types');">Try it out ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-GETapi-v1-lookups-block-types"
+                    onclick="cancelTryOut('GETapi-v1-lookups-block-types');" hidden>Cancel 🛑
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-GETapi-v1-lookups-block-types"
+                    data-initial-text="Send Request 💥"
+                    data-loading-text="⏱ Sending..."
+                    hidden>Send Request 💥
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-green">GET</small>
+            <b><code>api/v1/lookups/block-types</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="GETapi-v1-lookups-block-types"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="GETapi-v1-lookups-block-types"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        </form>
+
+                    <h2 id="reference-lookups-GETapi-v1-lookups-deal-flows">Deal flows</h2>
+
+<p>
+</p>
+
+<p>The active deal flows on offer, each with its ordered steps so the app can
+preview the deal loop before starting one.</p>
+
+<span id="example-requests-GETapi-v1-lookups-deal-flows">
+<blockquote>Example request:</blockquote>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request GET \
+    --get "https://fama.test/api/v1/lookups/deal-flows" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json"</code></pre></div>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "https://fama.test/api/v1/lookups/deal-flows"
+);
+
+const headers = {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+
+fetch(url, {
+    method: "GET",
+    headers,
+}).then(response =&gt; response.json());</code></pre></div>
+
+</span>
+
+<span id="example-responses-GETapi-v1-lookups-deal-flows">
+            <blockquote>
+            <p>Example response (200):</p>
+        </blockquote>
+                <details class="annotation">
+            <summary style="cursor: pointer;">
+                <small onclick="textContent = parentElement.parentElement.open ? 'Show headers' : 'Hide headers'">Show headers</small>
+            </summary>
+            <pre><code class="language-http">cache-control: no-cache, private
+content-type: application/json
+content-language: en
+x-ratelimit-limit: 60
+x-ratelimit-remaining: 59
+access-control-allow-origin: *
+ </code></pre></details>         <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;success&quot;: true,
+    &quot;data&quot;: [
+        {
+            &quot;id&quot;: 1,
+            &quot;name&quot;: &quot;Standard Booking&quot;,
+            &quot;slug&quot;: &quot;standard-booking&quot;,
+            &quot;description&quot;: &quot;The default brand &harr; talent booking flow.&quot;,
+            &quot;applies_to&quot;: null,
+            &quot;status&quot;: &quot;active&quot;,
+            &quot;is_active&quot;: true,
+            &quot;is_default&quot;: true,
+            &quot;steps&quot;: [
+                {
+                    &quot;id&quot;: 1,
+                    &quot;key&quot;: &quot;brief&quot;,
+                    &quot;name&quot;: &quot;Project brief&quot;,
+                    &quot;instructions&quot;: &quot;Describe the project, dates and budget.&quot;,
+                    &quot;actor&quot;: &quot;brand&quot;,
+                    &quot;step_type&quot;: &quot;form&quot;,
+                    &quot;position&quot;: 0,
+                    &quot;is_required&quot;: true,
+                    &quot;is_skippable&quot;: false,
+                    &quot;settings&quot;: {
+                        &quot;fields&quot;: [
+                            &quot;scope&quot;,
+                            &quot;dates&quot;,
+                            &quot;budget&quot;
+                        ]
+                    }
+                },
+                {
+                    &quot;id&quot;: 2,
+                    &quot;key&quot;: &quot;quote&quot;,
+                    &quot;name&quot;: &quot;Talent quote&quot;,
+                    &quot;instructions&quot;: &quot;Send your quote for the brief.&quot;,
+                    &quot;actor&quot;: &quot;talent&quot;,
+                    &quot;step_type&quot;: &quot;form&quot;,
+                    &quot;position&quot;: 1,
+                    &quot;is_required&quot;: true,
+                    &quot;is_skippable&quot;: false,
+                    &quot;settings&quot;: {
+                        &quot;fields&quot;: [
+                            &quot;amount&quot;,
+                            &quot;note&quot;
+                        ],
+                        &quot;amount_field&quot;: &quot;amount&quot;
+                    }
+                },
+                {
+                    &quot;id&quot;: 3,
+                    &quot;key&quot;: &quot;agreement&quot;,
+                    &quot;name&quot;: &quot;Approve quote&quot;,
+                    &quot;instructions&quot;: &quot;Approve or reject the quote.&quot;,
+                    &quot;actor&quot;: &quot;brand&quot;,
+                    &quot;step_type&quot;: &quot;approval&quot;,
+                    &quot;position&quot;: 2,
+                    &quot;is_required&quot;: true,
+                    &quot;is_skippable&quot;: false,
+                    &quot;settings&quot;: []
+                },
+                {
+                    &quot;id&quot;: 4,
+                    &quot;key&quot;: &quot;payment&quot;,
+                    &quot;name&quot;: &quot;Deposit&quot;,
+                    &quot;instructions&quot;: &quot;Pay the deposit to lock the booking.&quot;,
+                    &quot;actor&quot;: &quot;brand&quot;,
+                    &quot;step_type&quot;: &quot;payment&quot;,
+                    &quot;position&quot;: 3,
+                    &quot;is_required&quot;: true,
+                    &quot;is_skippable&quot;: true,
+                    &quot;settings&quot;: {
+                        &quot;percentage&quot;: 50,
+                        &quot;confirmation&quot;: &quot;manual&quot;
+                    }
+                },
+                {
+                    &quot;id&quot;: 5,
+                    &quot;key&quot;: &quot;delivery&quot;,
+                    &quot;name&quot;: &quot;Deliver work&quot;,
+                    &quot;instructions&quot;: &quot;Upload the final deliverables.&quot;,
+                    &quot;actor&quot;: &quot;talent&quot;,
+                    &quot;step_type&quot;: &quot;upload&quot;,
+                    &quot;position&quot;: 4,
+                    &quot;is_required&quot;: true,
+                    &quot;is_skippable&quot;: false,
+                    &quot;settings&quot;: {
+                        &quot;collection&quot;: &quot;delivery&quot;
+                    }
+                },
+                {
+                    &quot;id&quot;: 6,
+                    &quot;key&quot;: &quot;signoff&quot;,
+                    &quot;name&quot;: &quot;Approve delivery&quot;,
+                    &quot;instructions&quot;: &quot;Approve the delivery to complete the deal.&quot;,
+                    &quot;actor&quot;: &quot;brand&quot;,
+                    &quot;step_type&quot;: &quot;approval&quot;,
+                    &quot;position&quot;: 5,
+                    &quot;is_required&quot;: true,
+                    &quot;is_skippable&quot;: false,
+                    &quot;settings&quot;: []
+                },
+                {
+                    &quot;id&quot;: 7,
+                    &quot;key&quot;: &quot;complete&quot;,
+                    &quot;name&quot;: &quot;Deal complete&quot;,
+                    &quot;instructions&quot;: null,
+                    &quot;actor&quot;: &quot;system&quot;,
+                    &quot;step_type&quot;: &quot;info&quot;,
+                    &quot;position&quot;: 6,
+                    &quot;is_required&quot;: true,
+                    &quot;is_skippable&quot;: false,
+                    &quot;settings&quot;: []
+                }
+            ]
+        },
+        {
+            &quot;id&quot;: 3,
+            &quot;name&quot;: &quot;Premium Booking&quot;,
+            &quot;slug&quot;: &quot;premium-booking-26bbgw&quot;,
+            &quot;description&quot;: null,
+            &quot;applies_to&quot;: &quot;creative&quot;,
+            &quot;status&quot;: &quot;active&quot;,
+            &quot;is_active&quot;: true,
+            &quot;is_default&quot;: false,
+            &quot;steps&quot;: [
+                {
+                    &quot;id&quot;: 11,
+                    &quot;key&quot;: &quot;brief&quot;,
+                    &quot;name&quot;: &quot;Creative brief&quot;,
+                    &quot;instructions&quot;: null,
+                    &quot;actor&quot;: &quot;brand&quot;,
+                    &quot;step_type&quot;: &quot;form&quot;,
+                    &quot;position&quot;: 0,
+                    &quot;is_required&quot;: true,
+                    &quot;is_skippable&quot;: false,
+                    &quot;settings&quot;: []
+                },
+                {
+                    &quot;id&quot;: 12,
+                    &quot;key&quot;: &quot;contract&quot;,
+                    &quot;name&quot;: &quot;Contract&quot;,
+                    &quot;instructions&quot;: null,
+                    &quot;actor&quot;: &quot;both&quot;,
+                    &quot;step_type&quot;: &quot;contract&quot;,
+                    &quot;position&quot;: 1,
+                    &quot;is_required&quot;: true,
+                    &quot;is_skippable&quot;: false,
+                    &quot;settings&quot;: []
+                }
+            ]
+        }
+    ],
+    &quot;message&quot;: null,
+    &quot;errors&quot;: null,
+    &quot;meta&quot;: null
+}</code>
+ </pre>
+    </span>
+<span id="execution-results-GETapi-v1-lookups-deal-flows" hidden>
+    <blockquote>Received response<span
+                id="execution-response-status-GETapi-v1-lookups-deal-flows"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-GETapi-v1-lookups-deal-flows"
+      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-GETapi-v1-lookups-deal-flows" hidden>
+    <blockquote>Request failed with error:</blockquote>
+    <pre><code id="execution-error-message-GETapi-v1-lookups-deal-flows">
+
+Tip: Check that you&#039;re properly connected to the network.
+If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
+You can check the Dev Tools console for debugging information.</code></pre>
+</span>
+<form id="form-GETapi-v1-lookups-deal-flows" data-method="GET"
+      data-path="api/v1/lookups/deal-flows"
+      data-authed="0"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('GETapi-v1-lookups-deal-flows', this);">
+    <h3>
+        Request&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-GETapi-v1-lookups-deal-flows"
+                    onclick="tryItOut('GETapi-v1-lookups-deal-flows');">Try it out ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-GETapi-v1-lookups-deal-flows"
+                    onclick="cancelTryOut('GETapi-v1-lookups-deal-flows');" hidden>Cancel 🛑
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-GETapi-v1-lookups-deal-flows"
+                    data-initial-text="Send Request 💥"
+                    data-loading-text="⏱ Sending..."
+                    hidden>Send Request 💥
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-green">GET</small>
+            <b><code>api/v1/lookups/deal-flows</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="GETapi-v1-lookups-deal-flows"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="GETapi-v1-lookups-deal-flows"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        </form>
+
+                    <h2 id="reference-lookups-GETapi-v1-lookups-options">Option lists</h2>
+
+<p>
+</p>
+
+<p>The enum option lists (brand + talent) that back the app's select inputs, so
+forms stay in sync with server-side validation.</p>
+
+<span id="example-requests-GETapi-v1-lookups-options">
+<blockquote>Example request:</blockquote>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request GET \
+    --get "https://fama.test/api/v1/lookups/options" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json"</code></pre></div>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "https://fama.test/api/v1/lookups/options"
+);
+
+const headers = {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+
+fetch(url, {
+    method: "GET",
+    headers,
+}).then(response =&gt; response.json());</code></pre></div>
+
+</span>
+
+<span id="example-responses-GETapi-v1-lookups-options">
+            <blockquote>
+            <p>Example response (200):</p>
+        </blockquote>
+                <details class="annotation">
+            <summary style="cursor: pointer;">
+                <small onclick="textContent = parentElement.parentElement.open ? 'Show headers' : 'Hide headers'">Show headers</small>
+            </summary>
+            <pre><code class="language-http">cache-control: no-cache, private
+content-type: application/json
+content-language: en
+x-ratelimit-limit: 60
+x-ratelimit-remaining: 59
+access-control-allow-origin: *
+ </code></pre></details>         <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;success&quot;: true,
+    &quot;data&quot;: {
+        &quot;brand&quot;: {
+            &quot;industries&quot;: [
+                &quot;fashion&quot;,
+                &quot;beauty&quot;,
+                &quot;food_beverage&quot;,
+                &quot;lifestyle&quot;,
+                &quot;tech&quot;,
+                &quot;other&quot;
+            ],
+            &quot;stages&quot;: [
+                &quot;new&quot;,
+                &quot;growing&quot;,
+                &quot;established&quot;
+            ],
+            &quot;geographic_reach&quot;: [
+                &quot;same_city&quot;,
+                &quot;mena&quot;,
+                &quot;international&quot;
+            ],
+            &quot;project_frequency&quot;: [
+                &quot;occasional&quot;,
+                &quot;monthly&quot;,
+                &quot;weekly&quot;,
+                &quot;ongoing&quot;
+            ],
+            &quot;project_types&quot;: [
+                &quot;editorial&quot;,
+                &quot;lookbook&quot;,
+                &quot;campaign_video&quot;,
+                &quot;social_content&quot;,
+                &quot;brand_identity&quot;
+            ],
+            &quot;moods&quot;: [
+                &quot;editorial&quot;,
+                &quot;minimal&quot;,
+                &quot;bold&quot;,
+                &quot;warm&quot;,
+                &quot;dark&quot;,
+                &quot;playful&quot;,
+                &quot;luxurious&quot;,
+                &quot;raw&quot;,
+                &quot;nostalgic&quot;,
+                &quot;commercial&quot;
+            ],
+            &quot;budgets&quot;: [
+                &quot;under_500&quot;,
+                &quot;500_2000&quot;,
+                &quot;2000_10000&quot;,
+                &quot;10000_plus&quot;
+            ],
+            &quot;social_platforms&quot;: [
+                &quot;instagram&quot;,
+                &quot;tiktok&quot;,
+                &quot;x&quot;,
+                &quot;linkedin&quot;,
+                &quot;youtube&quot;,
+                &quot;facebook&quot;,
+                &quot;behance&quot;,
+                &quot;website&quot;,
+                &quot;other&quot;
+            ],
+            &quot;company_sizes&quot;: [
+                &quot;solo&quot;,
+                &quot;small&quot;,
+                &quot;medium&quot;,
+                &quot;large&quot;,
+                &quot;enterprise&quot;
+            ],
+            &quot;campaign_types&quot;: [
+                &quot;campaign&quot;,
+                &quot;shoot&quot;
+            ]
+        },
+        &quot;talent&quot;: {
+            &quot;availability&quot;: [
+                &quot;available&quot;,
+                &quot;booked&quot;,
+                &quot;unavailable&quot;
+            ],
+            &quot;rate_tiers&quot;: [
+                &quot;emerging&quot;,
+                &quot;established&quot;,
+                &quot;premium&quot;,
+                &quot;elite&quot;
+            ],
+            &quot;booking_types&quot;: [
+                &quot;email&quot;,
+                &quot;calendar&quot;,
+                &quot;form&quot;,
+                &quot;external&quot;
+            ],
+            &quot;representation_types&quot;: [
+                &quot;exclusive&quot;,
+                &quot;non_exclusive&quot;,
+                &quot;mother_agency&quot;,
+                &quot;freelance&quot;
+            ],
+            &quot;service_price_units&quot;: [
+                &quot;hour&quot;,
+                &quot;day&quot;,
+                &quot;project&quot;,
+                &quot;fixed&quot;
+            ]
+        }
+    },
+    &quot;message&quot;: null,
+    &quot;errors&quot;: null,
+    &quot;meta&quot;: null
+}</code>
+ </pre>
+    </span>
+<span id="execution-results-GETapi-v1-lookups-options" hidden>
+    <blockquote>Received response<span
+                id="execution-response-status-GETapi-v1-lookups-options"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-GETapi-v1-lookups-options"
+      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-GETapi-v1-lookups-options" hidden>
+    <blockquote>Request failed with error:</blockquote>
+    <pre><code id="execution-error-message-GETapi-v1-lookups-options">
+
+Tip: Check that you&#039;re properly connected to the network.
+If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
+You can check the Dev Tools console for debugging information.</code></pre>
+</span>
+<form id="form-GETapi-v1-lookups-options" data-method="GET"
+      data-path="api/v1/lookups/options"
+      data-authed="0"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('GETapi-v1-lookups-options', this);">
+    <h3>
+        Request&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-GETapi-v1-lookups-options"
+                    onclick="tryItOut('GETapi-v1-lookups-options');">Try it out ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-GETapi-v1-lookups-options"
+                    onclick="cancelTryOut('GETapi-v1-lookups-options');" hidden>Cancel 🛑
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-GETapi-v1-lookups-options"
+                    data-initial-text="Send Request 💥"
+                    data-loading-text="⏱ Sending..."
+                    hidden>Send Request 💥
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-green">GET</small>
+            <b><code>api/v1/lookups/options</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="GETapi-v1-lookups-options"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="GETapi-v1-lookups-options"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        </form>
+
                 <h1 id="talent-account">Talent · Account</h1>
 
     
@@ -12042,7 +14274,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     --data "{
     \"agency_name\": \"b\",
     \"agency_url\": \"http:\\/\\/bailey.com\\/\",
-    \"representation_type\": \"non_exclusive\",
+    \"representation_type\": \"freelance\",
     \"region\": \"m\"
 }"
 </code></pre></div>
@@ -12062,7 +14294,7 @@ const headers = {
 let body = {
     "agency_name": "b",
     "agency_url": "http:\/\/bailey.com\/",
-    "representation_type": "non_exclusive",
+    "representation_type": "freelance",
     "region": "m"
 };
 
@@ -12191,10 +14423,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="representation_type"                data-endpoint="POSTapi-v1-talent-affiliations"
-               value="non_exclusive"
+               value="freelance"
                data-component="body">
     <br>
-<p>Example: <code>non_exclusive</code></p>
+<p>Example: <code>freelance</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>exclusive</code></li> <li><code>non_exclusive</code></li> <li><code>mother_agency</code></li> <li><code>freelance</code></li></ul>
         </div>
@@ -12863,12 +15095,12 @@ You can check the Dev Tools console for debugging information.</code></pre>
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
-    \"availability_status\": \"booked\",
+    \"availability_status\": \"unavailable\",
     \"willing_to_travel\": true,
     \"travel_regions\": [
         \"b\"
     ],
-    \"rate_tier\": \"emerging\"
+    \"rate_tier\": \"elite\"
 }"
 </code></pre></div>
 
@@ -12885,12 +15117,12 @@ const headers = {
 };
 
 let body = {
-    "availability_status": "booked",
+    "availability_status": "unavailable",
     "willing_to_travel": true,
     "travel_regions": [
         "b"
     ],
-    "rate_tier": "emerging"
+    "rate_tier": "elite"
 };
 
 fetch(url, {
@@ -12994,10 +15226,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="availability_status"                data-endpoint="PATCHapi-v1-talent-availability"
-               value="booked"
+               value="unavailable"
                data-component="body">
     <br>
-<p>Example: <code>booked</code></p>
+<p>Example: <code>unavailable</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>available</code></li> <li><code>booked</code></li> <li><code>unavailable</code></li></ul>
         </div>
@@ -13044,10 +15276,10 @@ Must be one of:
  &nbsp;
                 <input type="text" style="display: none"
                               name="rate_tier"                data-endpoint="PATCHapi-v1-talent-availability"
-               value="emerging"
+               value="elite"
                data-component="body">
     <br>
-<p>Example: <code>emerging</code></p>
+<p>Example: <code>elite</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>emerging</code></li> <li><code>established</code></li> <li><code>premium</code></li> <li><code>elite</code></li></ul>
         </div>
@@ -14090,7 +16322,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     --header "Authorization: Bearer {YOUR_TOKEN}" \
     --header "Content-Type: multipart/form-data" \
     --header "Accept: application/json" \
-    --form "file=@/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/phpnmvj51th7sd50d8EarD" </code></pre></div>
+    --form "file=@/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/phpu2v4clbsarbk4MgaEZf" </code></pre></div>
 
 
 <div class="javascript-example">
@@ -14236,7 +16468,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
                value=""
                data-component="body">
     <br>
-<p>The asset to upload. Example: <code>/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/phpnmvj51th7sd50d8EarD</code></p>
+<p>The asset to upload. Example: <code>/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/phpu2v4clbsarbk4MgaEZf</code></p>
         </div>
         </form>
 
@@ -15951,7 +18183,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     \"publication\": \"b\",
     \"title\": \"n\",
     \"url\": \"http:\\/\\/crooks.biz\\/et-fugiat-sunt-nihil-accusantium\",
-    \"published_date\": \"2026-07-09T08:34:04\"
+    \"published_date\": \"2026-07-09T09:16:36\"
 }"
 </code></pre></div>
 
@@ -15971,7 +18203,7 @@ let body = {
     "publication": "b",
     "title": "n",
     "url": "http:\/\/crooks.biz\/et-fugiat-sunt-nihil-accusantium",
-    "published_date": "2026-07-09T08:34:04"
+    "published_date": "2026-07-09T09:16:36"
 };
 
 fetch(url, {
@@ -16111,10 +18343,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="published_date"                data-endpoint="POSTapi-v1-talent-press"
-               value="2026-07-09T08:34:04"
+               value="2026-07-09T09:16:36"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-07-09T08:34:04</code></p>
+<p>Must be a valid date. Example: <code>2026-07-09T09:16:36</code></p>
         </div>
         </form>
 
@@ -16427,7 +18659,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     --header "Accept: application/json" \
     --data "{
     \"talent_type_id\": 16,
-    \"is_primary\": true
+    \"is_primary\": false
 }"
 </code></pre></div>
 
@@ -16445,7 +18677,7 @@ const headers = {
 
 let body = {
     "talent_type_id": 16,
-    "is_primary": true
+    "is_primary": false
 };
 
 fetch(url, {
@@ -16574,7 +18806,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             <code>false</code>
         </label>
     <br>
-<p>Example: <code>true</code></p>
+<p>Example: <code>false</code></p>
         </div>
         </form>
 
@@ -17191,13 +19423,13 @@ You can check the Dev Tools console for debugging information.</code></pre>
     \"slug\": \"i\",
     \"base_city\": \"y\",
     \"base_country\": \"v\",
-    \"booking_type\": \"external\",
+    \"booking_type\": \"calendar\",
     \"booking_value\": \"d\",
-    \"willing_to_travel\": true,
+    \"willing_to_travel\": false,
     \"travel_regions\": [
         \"l\"
     ],
-    \"rate_tier\": \"elite\"
+    \"rate_tier\": \"premium\"
 }"
 </code></pre></div>
 
@@ -17226,13 +19458,13 @@ let body = {
     "slug": "i",
     "base_city": "y",
     "base_country": "v",
-    "booking_type": "external",
+    "booking_type": "calendar",
     "booking_value": "d",
-    "willing_to_travel": true,
+    "willing_to_travel": false,
     "travel_regions": [
         "l"
     ],
-    "rate_tier": "elite"
+    "rate_tier": "premium"
 };
 
 fetch(url, {
@@ -17456,10 +19688,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="booking_type"                data-endpoint="PATCHapi-v1-talent-profile"
-               value="external"
+               value="calendar"
                data-component="body">
     <br>
-<p>Example: <code>external</code></p>
+<p>Example: <code>calendar</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>email</code></li> <li><code>calendar</code></li> <li><code>form</code></li> <li><code>external</code></li></ul>
         </div>
@@ -17495,7 +19727,7 @@ Must be one of:
             <code>false</code>
         </label>
     <br>
-<p>Example: <code>true</code></p>
+<p>Example: <code>false</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>travel_regions</code></b>&nbsp;&nbsp;
@@ -17518,10 +19750,10 @@ Must be one of:
  &nbsp;
                 <input type="text" style="display: none"
                               name="rate_tier"                data-endpoint="PATCHapi-v1-talent-profile"
-               value="elite"
+               value="premium"
                data-component="body">
     <br>
-<p>Example: <code>elite</code></p>
+<p>Example: <code>premium</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>emerging</code></li> <li><code>established</code></li> <li><code>premium</code></li> <li><code>elite</code></li></ul>
         </div>
@@ -17545,7 +19777,7 @@ Must be one of:
     --header "Authorization: Bearer {YOUR_TOKEN}" \
     --header "Content-Type: multipart/form-data" \
     --header "Accept: application/json" \
-    --form "image=@/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/phpekmmfb85oph65Sq9ZH5" </code></pre></div>
+    --form "image=@/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/phpgp04qp9atlm49in7qYJ" </code></pre></div>
 
 
 <div class="javascript-example">
@@ -17666,7 +19898,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
                value=""
                data-component="body">
     <br>
-<p>Must be an image. Must not be greater than 8192 kilobytes. Example: <code>/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/phpekmmfb85oph65Sq9ZH5</code></p>
+<p>Must be an image. Must not be greater than 8192 kilobytes. Example: <code>/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/phpgp04qp9atlm49in7qYJ</code></p>
         </div>
         </form>
 
@@ -19397,7 +21629,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     },
     \"price\": 77,
     \"currency\": \"iyv\",
-    \"price_unit\": \"day\",
+    \"price_unit\": \"hour\",
     \"duration_minutes\": 42,
     \"position\": 16
 }"
@@ -19426,7 +21658,7 @@ let body = {
     },
     "price": 77,
     "currency": "iyv",
-    "price_unit": "day",
+    "price_unit": "hour",
     "duration_minutes": 42,
     "position": 16
 };
@@ -19628,10 +21860,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="price_unit"                data-endpoint="POSTapi-v1-talent-services"
-               value="day"
+               value="hour"
                data-component="body">
     <br>
-<p>Example: <code>day</code></p>
+<p>Example: <code>hour</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>hour</code></li> <li><code>day</code></li> <li><code>project</code></li> <li><code>fixed</code></li></ul>
         </div>
@@ -19690,7 +21922,7 @@ Must be one of:
     },
     \"price\": 77,
     \"currency\": \"iyv\",
-    \"price_unit\": \"project\",
+    \"price_unit\": \"fixed\",
     \"duration_minutes\": 42,
     \"position\": 16
 }"
@@ -19719,7 +21951,7 @@ let body = {
     },
     "price": 77,
     "currency": "iyv",
-    "price_unit": "project",
+    "price_unit": "fixed",
     "duration_minutes": 42,
     "position": 16
 };
@@ -19934,10 +22166,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="price_unit"                data-endpoint="PATCHapi-v1-talent-services--service_id-"
-               value="project"
+               value="fixed"
                data-component="body">
     <br>
-<p>Example: <code>project</code></p>
+<p>Example: <code>fixed</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>hour</code></li> <li><code>day</code></li> <li><code>project</code></li> <li><code>fixed</code></li></ul>
         </div>

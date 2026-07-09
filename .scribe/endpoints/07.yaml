@@ -1,19 +1,19 @@
-name: 'Talent · Comp card'
+name: Notifications
 description: ''
 endpoints:
   -
     custom: []
     httpMethods:
       - GET
-    uri: api/v1/talent/comp-card
+    uri: api/v1/notifications
     metadata:
       custom: []
-      groupName: 'Talent · Comp card'
+      groupName: Notifications
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
-      title: 'Get my comp card'
-      description: ''
+      title: 'List my notifications'
+      description: 'Paginated, newest first.'
       authenticated: true
       deprecated: false
     headers:
@@ -48,15 +48,59 @@ endpoints:
   -
     custom: []
     httpMethods:
-      - PUT
-    uri: api/v1/talent/comp-card
+      - GET
+    uri: api/v1/notifications/unread-count
     metadata:
       custom: []
-      groupName: 'Talent · Comp card'
+      groupName: Notifications
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
-      title: 'Create / update my comp card'
+      title: 'Unread count'
+      description: 'The number of unread notifications (for a badge).'
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"success":false,"data":null,"message":"Unauthenticated.","errors":null,"meta":null}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/v1/notifications/read-all
+    metadata:
+      custom: []
+      groupName: Notifications
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Mark all read'
       description: ''
       authenticated: true
       deprecated: false
@@ -68,127 +112,8 @@ endpoints:
     cleanUrlParameters: []
     queryParameters: []
     cleanQueryParameters: []
-    bodyParameters:
-      height_cm:
-        custom: []
-        name: height_cm
-        description: 'Must be at least 0. Must not be greater than 300.'
-        required: false
-        example: 1
-        type: integer
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-      bust_cm:
-        custom: []
-        name: bust_cm
-        description: 'Must be at least 0. Must not be greater than 300.'
-        required: false
-        example: 22
-        type: integer
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-      waist_cm:
-        custom: []
-        name: waist_cm
-        description: 'Must be at least 0. Must not be greater than 300.'
-        required: false
-        example: 7
-        type: integer
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-      hips_cm:
-        custom: []
-        name: hips_cm
-        description: 'Must be at least 0. Must not be greater than 300.'
-        required: false
-        example: 16
-        type: integer
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-      shoe_size:
-        custom: []
-        name: shoe_size
-        description: 'Must not be greater than 20 characters.'
-        required: false
-        example: miyvdljnikhwaykc
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-      dress_size:
-        custom: []
-        name: dress_size
-        description: 'Must not be greater than 20 characters.'
-        required: false
-        example: myuwpwlvqwrsitcp
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-      hair_color:
-        custom: []
-        name: hair_color
-        description: 'Must not be greater than 50 characters.'
-        required: false
-        example: s
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-      eye_color:
-        custom: []
-        name: eye_color
-        description: 'Must not be greater than 50 characters.'
-        required: false
-        example: c
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-      skin_tone:
-        custom: []
-        name: skin_tone
-        description: 'Must not be greater than 50 characters.'
-        required: false
-        example: q
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-      measurements:
-        custom: []
-        name: measurements
-        description: ''
-        required: false
-        example: null
-        type: object
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-    cleanBodyParameters:
-      height_cm: 1
-      bust_cm: 22
-      waist_cm: 7
-      hips_cm: 16
-      shoe_size: miyvdljnikhwaykc
-      dress_size: myuwpwlvqwrsitcp
-      hair_color: s
-      eye_color: c
-      skin_tone: q
+    bodyParameters: []
+    cleanBodyParameters: []
     fileParameters: []
     responses: []
     responseFields: []
@@ -202,15 +127,15 @@ endpoints:
   -
     custom: []
     httpMethods:
-      - DELETE
-    uri: api/v1/talent/comp-card
+      - POST
+    uri: 'api/v1/notifications/{id}/read'
     metadata:
       custom: []
-      groupName: 'Talent · Comp card'
+      groupName: Notifications
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
-      title: 'Delete my comp card'
+      title: 'Mark one read'
       description: ''
       authenticated: true
       deprecated: false
@@ -218,8 +143,20 @@ endpoints:
       Authorization: 'Bearer {YOUR_TOKEN}'
       Content-Type: application/json
       Accept: application/json
-    urlParameters: []
-    cleanUrlParameters: []
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: 'The ID of the notification.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: architecto
     queryParameters: []
     cleanQueryParameters: []
     bodyParameters: []

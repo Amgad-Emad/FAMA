@@ -1,19 +1,21 @@
-name: 'Brand · Credibility'
+name: 'Brand · Discovery'
 description: ''
 endpoints:
   -
     custom: []
     httpMethods:
       - GET
-    uri: api/v1/brand/credibility
+    uri: api/v1/brand/discover
     metadata:
       custom: []
-      groupName: 'Brand · Credibility'
+      groupName: 'Brand · Discovery'
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
-      title: 'Get my credibility'
-      description: ''
+      title: 'Discovery feed'
+      description: |-
+        Paginated, personalised talents. Ad-hoc narrowing via `filter[...]`
+        (availability, city, type) and `sort` (view_count, created_at).
       authenticated: true
       deprecated: false
     headers:
@@ -22,8 +24,56 @@ endpoints:
       Accept: application/json
     urlParameters: []
     cleanUrlParameters: []
-    queryParameters: []
-    cleanQueryParameters: []
+    queryParameters:
+      'filter[availability]':
+        custom: []
+        name: 'filter[availability]'
+        description: ''
+        required: false
+        example: available
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      'filter[city]':
+        custom: []
+        name: 'filter[city]'
+        description: 'Partial city match.'
+        required: false
+        example: Cairo
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      'filter[type]':
+        custom: []
+        name: 'filter[type]'
+        description: 'Comma-separated profession slugs.'
+        required: false
+        example: model
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      sort:
+        custom: []
+        name: sort
+        description: 'view_count or created_at (prefix - for desc).'
+        required: false
+        example: '-view_count'
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanQueryParameters:
+      'filter[availability]': available
+      'filter[city]': Cairo
+      'filter[type]': model
+      sort: '-view_count'
     bodyParameters: []
     cleanBodyParameters: []
     fileParameters: []
@@ -37,6 +87,100 @@ endpoints:
           content-type: application/json
           access-control-allow-origin: '*'
         description: null
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/v1/brand/discover/save
+    metadata:
+      custom: []
+      groupName: 'Brand · Discovery'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Save a talent'
+      description: ''
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      talent_id:
+        custom: []
+        name: talent_id
+        description: 'The talent to save.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      talent_id: 1
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/v1/brand/discover/brief
+    metadata:
+      custom: []
+      groupName: 'Brand · Discovery'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Send a brief to a talent'
+      description: ''
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      talent_id:
+        custom: []
+        name: talent_id
+        description: 'The talent to brief.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      talent_id: 1
+    fileParameters: []
+    responses: []
     responseFields: []
     auth:
       - headers

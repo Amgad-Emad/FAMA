@@ -1,19 +1,19 @@
-name: 'Talent · Availability'
+name: 'Talent · Professions'
 description: ''
 endpoints:
   -
     custom: []
     httpMethods:
       - GET
-    uri: api/v1/talent/availability
+    uri: api/v1/talent/professions
     metadata:
       custom: []
-      groupName: 'Talent · Availability'
+      groupName: 'Talent · Professions'
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
-      title: 'Get my availability'
-      description: ''
+      title: 'List my professions'
+      description: 'The linked (ordered) professions and the ones still available to add.'
       authenticated: true
       deprecated: false
     headers:
@@ -48,15 +48,15 @@ endpoints:
   -
     custom: []
     httpMethods:
-      - PATCH
-    uri: api/v1/talent/availability
+      - POST
+    uri: api/v1/talent/professions
     metadata:
       custom: []
-      groupName: 'Talent · Availability'
+      groupName: 'Talent · Professions'
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
-      title: 'Update my availability & travel'
+      title: 'Add a profession'
       description: ''
       authenticated: true
       deprecated: false
@@ -69,64 +69,174 @@ endpoints:
     queryParameters: []
     cleanQueryParameters: []
     bodyParameters:
-      availability_status:
+      talent_type_id:
         custom: []
-        name: availability_status
-        description: ''
+        name: talent_type_id
+        description: 'Must match an existing stored value.'
         required: true
-        example: booked
-        type: string
-        enumValues:
-          - available
-          - booked
-          - unavailable
+        example: 16
+        type: integer
+        enumValues: []
         exampleWasSpecified: false
         nullable: false
         deprecated: false
-      willing_to_travel:
+      is_primary:
         custom: []
-        name: willing_to_travel
+        name: is_primary
         description: ''
         required: false
-        example: true
+        example: false
         type: boolean
         enumValues: []
         exampleWasSpecified: false
         nullable: false
         deprecated: false
-      travel_regions:
+    cleanBodyParameters:
+      talent_type_id: 16
+      is_primary: false
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PATCH
+    uri: api/v1/talent/professions/reorder
+    metadata:
+      custom: []
+      groupName: 'Talent · Professions'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Reorder my professions'
+      description: ''
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      order:
         custom: []
-        name: travel_regions
-        description: 'Must not be greater than 100 characters.'
+        name: order
+        description: ''
         required: false
         example:
-          - b
-        type: 'string[]'
+          - 16
+        type: 'integer[]'
         enumValues: []
         exampleWasSpecified: false
         nullable: false
         deprecated: false
-      rate_tier:
-        custom: []
-        name: rate_tier
-        description: ''
-        required: false
-        example: emerging
-        type: string
-        enumValues:
-          - emerging
-          - established
-          - premium
-          - elite
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
     cleanBodyParameters:
-      availability_status: booked
-      willing_to_travel: true
-      travel_regions:
-        - b
-      rate_tier: emerging
+      order:
+        - 16
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PATCH
+    uri: 'api/v1/talent/professions/{type_id}/primary'
+    metadata:
+      custom: []
+      groupName: 'Talent · Professions'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Set my primary profession'
+      description: ''
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      type_id:
+        custom: []
+        name: type_id
+        description: 'The ID of the type.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      type_id: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - DELETE
+    uri: 'api/v1/talent/professions/{type_id}'
+    metadata:
+      custom: []
+      groupName: 'Talent · Professions'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Remove a profession'
+      description: ''
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      type_id:
+        custom: []
+        name: type_id
+        description: 'The ID of the type.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      type_id: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
     fileParameters: []
     responses: []
     responseFields: []

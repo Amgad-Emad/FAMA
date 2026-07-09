@@ -1,25 +1,32 @@
-name: 'Talent · Profile'
-description: ''
+name: 'Reference / lookups'
+description: |-
+
+  Public catalog data the mobile app needs to render dynamic UI (dropdowns,
+  profession pickers, the block catalog, the deal flows on offer). Read-only and
+  unauthenticated — onboarding forms need these before a token exists.
+  Translatable names come back in the request locale (Accept-Language).
 endpoints:
   -
     custom: []
     httpMethods:
       - GET
-    uri: api/v1/talent/profile
+    uri: api/v1/lookups/talent-types
     metadata:
       custom: []
-      groupName: 'Talent · Profile'
-      groupDescription: ''
+      groupName: 'Reference / lookups'
+      groupDescription: |-
+
+        Public catalog data the mobile app needs to render dynamic UI (dropdowns,
+        profession pickers, the block catalog, the deal flows on offer). Read-only and
+        unauthenticated — onboarding forms need these before a token exists.
+        Translatable names come back in the request locale (Accept-Language).
       subgroup: ''
       subgroupDescription: ''
-      title: 'Get my profile'
-      description: |-
-        Core fields (translatables as per-locale maps), linked professions and the
-        ordered profile blocks.
-      authenticated: true
+      title: 'Talent types'
+      description: 'The full profession catalog.'
+      authenticated: false
       deprecated: false
     headers:
-      Authorization: 'Bearer {YOUR_TOKEN}'
       Content-Type: application/json
       Accept: application/json
     urlParameters: []
@@ -32,290 +39,18 @@ endpoints:
     responses:
       -
         custom: []
-        status: 401
-        content: '{"success":false,"data":null,"message":"Unauthenticated.","errors":null,"meta":null}'
+        status: 200
+        content: '{"success":true,"data":[{"id":1,"slug":"model","name":"Model","category":"model","icon":"lucide-model","description":"Model on Fama."},{"id":2,"slug":"photographer","name":"Photographer","category":"crew","icon":"lucide-photographer","description":"Photographer on Fama."},{"id":3,"slug":"cinematographer","name":"Cinematographer (DOP)","category":"crew","icon":"lucide-cinematographer","description":"Cinematographer (DOP) on Fama."},{"id":4,"slug":"creative-director","name":"Creative Director","category":"creative","icon":"lucide-creative-director","description":"Creative Director on Fama."},{"id":5,"slug":"stylist","name":"Stylist","category":"creative","icon":"lucide-stylist","description":"Stylist on Fama."},{"id":6,"slug":"graphic-designer","name":"Graphic Designer","category":"creative","icon":"lucide-graphic-designer","description":"Graphic Designer on Fama."}],"message":null,"errors":null,"meta":null}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
+          content-language: en
+          x-ratelimit-limit: '60'
+          x-ratelimit-remaining: '59'
           access-control-allow-origin: '*'
         description: null
     responseFields: []
-    auth:
-      - headers
-      - Authorization
-      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - PATCH
-    uri: api/v1/talent/profile
-    metadata:
-      custom: []
-      groupName: 'Talent · Profile'
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: 'Update my core profile'
-      description: ''
-      authenticated: true
-      deprecated: false
-    headers:
-      Authorization: 'Bearer {YOUR_TOKEN}'
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters: []
-    cleanUrlParameters: []
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters:
-      display_name:
-        custom: []
-        name: display_name
-        description: 'Must not be greater than 255 characters.'
-        required: false
-        example: b
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-      headline:
-        custom: []
-        name: headline
-        description: ''
-        required: false
-        example: null
-        type: object
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-      headline.en:
-        custom: []
-        name: headline.en
-        description: 'Must not be greater than 255 characters.'
-        required: false
-        example: 'n'
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-      headline.ar:
-        custom: []
-        name: headline.ar
-        description: 'Must not be greater than 255 characters.'
-        required: false
-        example: g
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-      bio:
-        custom: []
-        name: bio
-        description: ''
-        required: false
-        example: null
-        type: object
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-      bio.en:
-        custom: []
-        name: bio.en
-        description: 'Must not be greater than 5000 characters.'
-        required: false
-        example: z
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-      bio.ar:
-        custom: []
-        name: bio.ar
-        description: 'Must not be greater than 5000 characters.'
-        required: false
-        example: m
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-      slug:
-        custom: []
-        name: slug
-        description: 'Must contain only letters, numbers, dashes and underscores. Must not be greater than 255 characters.'
-        required: false
-        example: i
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-      base_city:
-        custom: []
-        name: base_city
-        description: 'Must not be greater than 255 characters.'
-        required: false
-        example: 'y'
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-      base_country:
-        custom: []
-        name: base_country
-        description: 'Must not be greater than 255 characters.'
-        required: false
-        example: v
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-      booking_type:
-        custom: []
-        name: booking_type
-        description: ''
-        required: false
-        example: external
-        type: string
-        enumValues:
-          - email
-          - calendar
-          - form
-          - external
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-      booking_value:
-        custom: []
-        name: booking_value
-        description: 'Must not be greater than 255 characters.'
-        required: false
-        example: d
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-      willing_to_travel:
-        custom: []
-        name: willing_to_travel
-        description: ''
-        required: false
-        example: true
-        type: boolean
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-      travel_regions:
-        custom: []
-        name: travel_regions
-        description: 'Must not be greater than 100 characters.'
-        required: false
-        example:
-          - l
-        type: 'string[]'
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-      rate_tier:
-        custom: []
-        name: rate_tier
-        description: ''
-        required: false
-        example: elite
-        type: string
-        enumValues:
-          - emerging
-          - established
-          - premium
-          - elite
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-    cleanBodyParameters:
-      display_name: b
-      headline:
-        en: 'n'
-        ar: g
-      bio:
-        en: z
-        ar: m
-      slug: i
-      base_city: 'y'
-      base_country: v
-      booking_type: external
-      booking_value: d
-      willing_to_travel: true
-      travel_regions:
-        - l
-      rate_tier: elite
-    fileParameters: []
-    responses: []
-    responseFields: []
-    auth:
-      - headers
-      - Authorization
-      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - POST
-    uri: api/v1/talent/profile/hero
-    metadata:
-      custom: []
-      groupName: 'Talent · Profile'
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: 'Upload my hero image'
-      description: 'Multipart `image`. Returns the resolved hero URL (medialibrary).'
-      authenticated: true
-      deprecated: false
-    headers:
-      Authorization: 'Bearer {YOUR_TOKEN}'
-      Content-Type: multipart/form-data
-      Accept: application/json
-    urlParameters: []
-    cleanUrlParameters: []
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters:
-      image:
-        custom: []
-        name: image
-        description: 'Must be an image. Must not be greater than 8192 kilobytes.'
-        required: true
-        example: null
-        type: file
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-    cleanBodyParameters: []
-    fileParameters:
-      image: null
-    responses: []
-    responseFields: []
-    auth:
-      - headers
-      - Authorization
-      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    auth: []
     controller: null
     method: null
     route: null
@@ -323,19 +58,23 @@ endpoints:
     custom: []
     httpMethods:
       - GET
-    uri: api/v1/talent/profile/blocks
+    uri: api/v1/lookups/block-types
     metadata:
       custom: []
-      groupName: 'Talent · Profile'
-      groupDescription: ''
+      groupName: 'Reference / lookups'
+      groupDescription: |-
+
+        Public catalog data the mobile app needs to render dynamic UI (dropdowns,
+        profession pickers, the block catalog, the deal flows on offer). Read-only and
+        unauthenticated — onboarding forms need these before a token exists.
+        Translatable names come back in the request locale (Accept-Language).
       subgroup: ''
       subgroupDescription: ''
-      title: 'List my profile blocks'
-      description: ''
-      authenticated: true
+      title: 'Block types'
+      description: 'The active profile-block catalog (what a talent can add + how it renders).'
+      authenticated: false
       deprecated: false
     headers:
-      Authorization: 'Bearer {YOUR_TOKEN}'
       Content-Type: application/json
       Accept: application/json
     urlParameters: []
@@ -348,18 +87,18 @@ endpoints:
     responses:
       -
         custom: []
-        status: 401
-        content: '{"success":false,"data":null,"message":"Unauthenticated.","errors":null,"meta":null}'
+        status: 200
+        content: '{"success":true,"data":[{"id":1,"key":"hero","name":"Hero","description":null,"icon":"lucide-hero","availability":"universal","content_source":"inline","default_layout":null,"is_repeatable":false},{"id":2,"key":"gallery","name":"Gallery","description":null,"icon":"lucide-gallery","availability":"universal","content_source":"table","default_layout":"masonry","is_repeatable":true},{"id":3,"key":"brand_collabs","name":"Brand Collaborations","description":null,"icon":"lucide-brand-collabs","availability":"universal","content_source":"table","default_layout":"grid","is_repeatable":false},{"id":4,"key":"reviews","name":"Reviews","description":null,"icon":"lucide-reviews","availability":"universal","content_source":"table","default_layout":"list","is_repeatable":false},{"id":5,"key":"services","name":"Services","description":null,"icon":"lucide-services","availability":"universal","content_source":"table","default_layout":"list","is_repeatable":false},{"id":6,"key":"comp_card","name":"Comp Card","description":null,"icon":"lucide-comp-card","availability":"by_category","content_source":"table","default_layout":null,"is_repeatable":false},{"id":7,"key":"look_types","name":"Looks","description":null,"icon":"lucide-look-types","availability":"by_category","content_source":"table","default_layout":"list","is_repeatable":false},{"id":8,"key":"digitals","name":"Digitals","description":null,"icon":"lucide-digitals","availability":"by_category","content_source":"table","default_layout":"grid","is_repeatable":false},{"id":9,"key":"showreel","name":"Showreel","description":null,"icon":"lucide-showreel","availability":"by_category","content_source":"table","default_layout":"carousel","is_repeatable":true},{"id":10,"key":"equipment","name":"Equipment","description":null,"icon":"lucide-equipment","availability":"by_category","content_source":"table","default_layout":"list","is_repeatable":false},{"id":11,"key":"projects","name":"Projects","description":null,"icon":"lucide-projects","availability":"by_category","content_source":"table","default_layout":"list","is_repeatable":true},{"id":12,"key":"software_stack","name":"Software","description":null,"icon":"lucide-software-stack","availability":"by_category","content_source":"table","default_layout":"grid","is_repeatable":false},{"id":13,"key":"agency_affiliations","name":"Agencies","description":null,"icon":"lucide-agency-affiliations","availability":"universal","content_source":"table","default_layout":"list","is_repeatable":false},{"id":14,"key":"press_features","name":"Press","description":null,"icon":"lucide-press-features","availability":"universal","content_source":"table","default_layout":"grid","is_repeatable":false}],"message":null,"errors":null,"meta":null}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
+          content-language: en
+          x-ratelimit-limit: '60'
+          x-ratelimit-remaining: '59'
           access-control-allow-origin: '*'
         description: null
     responseFields: []
-    auth:
-      - headers
-      - Authorization
-      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    auth: []
     controller: null
     method: null
     route: null
@@ -367,21 +106,25 @@ endpoints:
     custom: []
     httpMethods:
       - GET
-    uri: api/v1/talent/profile/block-picker
+    uri: api/v1/lookups/deal-flows
     metadata:
       custom: []
-      groupName: 'Talent · Profile'
-      groupDescription: ''
+      groupName: 'Reference / lookups'
+      groupDescription: |-
+
+        Public catalog data the mobile app needs to render dynamic UI (dropdowns,
+        profession pickers, the block catalog, the deal flows on offer). Read-only and
+        unauthenticated — onboarding forms need these before a token exists.
+        Translatable names come back in the request locale (Accept-Language).
       subgroup: ''
       subgroupDescription: ''
-      title: 'List addable block types'
+      title: 'Deal flows'
       description: |-
-        The block types still available to add, filtered by the talent's profession
-        eligibility.
-      authenticated: true
+        The active deal flows on offer, each with its ordered steps so the app can
+        preview the deal loop before starting one.
+      authenticated: false
       deprecated: false
     headers:
-      Authorization: 'Bearer {YOUR_TOKEN}'
       Content-Type: application/json
       Accept: application/json
     urlParameters: []
@@ -394,329 +137,68 @@ endpoints:
     responses:
       -
         custom: []
-        status: 401
-        content: '{"success":false,"data":null,"message":"Unauthenticated.","errors":null,"meta":null}'
+        status: 200
+        content: '{"success":true,"data":[{"id":1,"name":"Standard Booking","slug":"standard-booking","description":"The default brand \u2194 talent booking flow.","applies_to":null,"status":"active","is_active":true,"is_default":true,"steps":[{"id":1,"key":"brief","name":"Project brief","instructions":"Describe the project, dates and budget.","actor":"brand","step_type":"form","position":0,"is_required":true,"is_skippable":false,"settings":{"fields":["scope","dates","budget"]}},{"id":2,"key":"quote","name":"Talent quote","instructions":"Send your quote for the brief.","actor":"talent","step_type":"form","position":1,"is_required":true,"is_skippable":false,"settings":{"fields":["amount","note"],"amount_field":"amount"}},{"id":3,"key":"agreement","name":"Approve quote","instructions":"Approve or reject the quote.","actor":"brand","step_type":"approval","position":2,"is_required":true,"is_skippable":false,"settings":[]},{"id":4,"key":"payment","name":"Deposit","instructions":"Pay the deposit to lock the booking.","actor":"brand","step_type":"payment","position":3,"is_required":true,"is_skippable":true,"settings":{"percentage":50,"confirmation":"manual"}},{"id":5,"key":"delivery","name":"Deliver work","instructions":"Upload the final deliverables.","actor":"talent","step_type":"upload","position":4,"is_required":true,"is_skippable":false,"settings":{"collection":"delivery"}},{"id":6,"key":"signoff","name":"Approve delivery","instructions":"Approve the delivery to complete the deal.","actor":"brand","step_type":"approval","position":5,"is_required":true,"is_skippable":false,"settings":[]},{"id":7,"key":"complete","name":"Deal complete","instructions":null,"actor":"system","step_type":"info","position":6,"is_required":true,"is_skippable":false,"settings":[]}]},{"id":3,"name":"Premium Booking","slug":"premium-booking-26bbgw","description":null,"applies_to":"creative","status":"active","is_active":true,"is_default":false,"steps":[{"id":11,"key":"brief","name":"Creative brief","instructions":null,"actor":"brand","step_type":"form","position":0,"is_required":true,"is_skippable":false,"settings":[]},{"id":12,"key":"contract","name":"Contract","instructions":null,"actor":"both","step_type":"contract","position":1,"is_required":true,"is_skippable":false,"settings":[]}]}],"message":null,"errors":null,"meta":null}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
+          content-language: en
+          x-ratelimit-limit: '60'
+          x-ratelimit-remaining: '59'
           access-control-allow-origin: '*'
         description: null
     responseFields: []
-    auth:
-      - headers
-      - Authorization
-      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    auth: []
     controller: null
     method: null
     route: null
   -
     custom: []
     httpMethods:
-      - POST
-    uri: api/v1/talent/profile/blocks
+      - GET
+    uri: api/v1/lookups/options
     metadata:
       custom: []
-      groupName: 'Talent · Profile'
-      groupDescription: ''
+      groupName: 'Reference / lookups'
+      groupDescription: |-
+
+        Public catalog data the mobile app needs to render dynamic UI (dropdowns,
+        profession pickers, the block catalog, the deal flows on offer). Read-only and
+        unauthenticated — onboarding forms need these before a token exists.
+        Translatable names come back in the request locale (Accept-Language).
       subgroup: ''
       subgroupDescription: ''
-      title: 'Add a profile block'
-      description: ''
-      authenticated: true
+      title: 'Option lists'
+      description: |-
+        The enum option lists (brand + talent) that back the app's select inputs, so
+        forms stay in sync with server-side validation.
+      authenticated: false
       deprecated: false
     headers:
-      Authorization: 'Bearer {YOUR_TOKEN}'
       Content-Type: application/json
       Accept: application/json
     urlParameters: []
     cleanUrlParameters: []
     queryParameters: []
     cleanQueryParameters: []
-    bodyParameters:
-      block_type_id:
-        custom: []
-        name: block_type_id
-        description: 'Must match an existing stored value.'
-        required: true
-        example: 16
-        type: integer
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-    cleanBodyParameters:
-      block_type_id: 16
-    fileParameters: []
-    responses: []
-    responseFields: []
-    auth:
-      - headers
-      - Authorization
-      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - PATCH
-    uri: api/v1/talent/profile/blocks/reorder
-    metadata:
-      custom: []
-      groupName: 'Talent · Profile'
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: 'Reorder my profile blocks'
-      description: ''
-      authenticated: true
-      deprecated: false
-    headers:
-      Authorization: 'Bearer {YOUR_TOKEN}'
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters: []
-    cleanUrlParameters: []
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters:
-      order:
-        custom: []
-        name: order
-        description: ''
-        required: false
-        example:
-          - 16
-        type: 'integer[]'
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-    cleanBodyParameters:
-      order:
-        - 16
-    fileParameters: []
-    responses: []
-    responseFields: []
-    auth:
-      - headers
-      - Authorization
-      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - PATCH
-    uri: 'api/v1/talent/profile/blocks/{block_id}'
-    metadata:
-      custom: []
-      groupName: 'Talent · Profile'
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: 'Fill / edit a profile block'
-      description: ''
-      authenticated: true
-      deprecated: false
-    headers:
-      Authorization: 'Bearer {YOUR_TOKEN}'
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters:
-      block_id:
-        custom: []
-        name: block_id
-        description: 'The ID of the block.'
-        required: true
-        example: 1
-        type: integer
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-    cleanUrlParameters:
-      block_id: 1
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters:
-      title:
-        custom: []
-        name: title
-        description: ''
-        required: false
-        example: null
-        type: object
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-      title.en:
-        custom: []
-        name: title.en
-        description: 'Must not be greater than 255 characters.'
-        required: false
-        example: b
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-      title.ar:
-        custom: []
-        name: title.ar
-        description: 'Must not be greater than 255 characters.'
-        required: false
-        example: 'n'
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-      content:
-        custom: []
-        name: content
-        description: ''
-        required: false
-        example: null
-        type: object
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-      settings:
-        custom: []
-        name: settings
-        description: ''
-        required: false
-        example: null
-        type: object
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-      layout:
-        custom: []
-        name: layout
-        description: ''
-        required: false
-        example: grid
-        type: string
-        enumValues:
-          - grid
-          - carousel
-          - list
-          - masonry
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-    cleanBodyParameters:
-      title:
-        en: b
-        ar: 'n'
-      layout: grid
-    fileParameters: []
-    responses: []
-    responseFields: []
-    auth:
-      - headers
-      - Authorization
-      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - PATCH
-    uri: 'api/v1/talent/profile/blocks/{block_id}/visibility'
-    metadata:
-      custom: []
-      groupName: 'Talent · Profile'
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: 'Show / hide a profile block'
-      description: ''
-      authenticated: true
-      deprecated: false
-    headers:
-      Authorization: 'Bearer {YOUR_TOKEN}'
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters:
-      block_id:
-        custom: []
-        name: block_id
-        description: 'The ID of the block.'
-        required: true
-        example: 1
-        type: integer
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-    cleanUrlParameters:
-      block_id: 1
-    queryParameters: []
-    cleanQueryParameters: []
     bodyParameters: []
     cleanBodyParameters: []
     fileParameters: []
-    responses: []
-    responseFields: []
-    auth:
-      - headers
-      - Authorization
-      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - DELETE
-    uri: 'api/v1/talent/profile/blocks/{block_id}'
-    metadata:
-      custom: []
-      groupName: 'Talent · Profile'
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: 'Remove a profile block'
-      description: ''
-      authenticated: true
-      deprecated: false
-    headers:
-      Authorization: 'Bearer {YOUR_TOKEN}'
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters:
-      block_id:
+    responses:
+      -
         custom: []
-        name: block_id
-        description: 'The ID of the block.'
-        required: true
-        example: 1
-        type: integer
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-    cleanUrlParameters:
-      block_id: 1
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters: []
-    cleanBodyParameters: []
-    fileParameters: []
-    responses: []
+        status: 200
+        content: '{"success":true,"data":{"brand":{"industries":["fashion","beauty","food_beverage","lifestyle","tech","other"],"stages":["new","growing","established"],"geographic_reach":["same_city","mena","international"],"project_frequency":["occasional","monthly","weekly","ongoing"],"project_types":["editorial","lookbook","campaign_video","social_content","brand_identity"],"moods":["editorial","minimal","bold","warm","dark","playful","luxurious","raw","nostalgic","commercial"],"budgets":["under_500","500_2000","2000_10000","10000_plus"],"social_platforms":["instagram","tiktok","x","linkedin","youtube","facebook","behance","website","other"],"company_sizes":["solo","small","medium","large","enterprise"],"campaign_types":["campaign","shoot"]},"talent":{"availability":["available","booked","unavailable"],"rate_tiers":["emerging","established","premium","elite"],"booking_types":["email","calendar","form","external"],"representation_types":["exclusive","non_exclusive","mother_agency","freelance"],"service_price_units":["hour","day","project","fixed"]}},"message":null,"errors":null,"meta":null}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          content-language: en
+          x-ratelimit-limit: '60'
+          x-ratelimit-remaining: '59'
+          access-control-allow-origin: '*'
+        description: null
     responseFields: []
-    auth:
-      - headers
-      - Authorization
-      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    auth: []
     controller: null
     method: null
     route: null

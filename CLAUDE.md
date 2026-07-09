@@ -223,5 +223,19 @@ medialibrary multipart returning URLs. 381 tests green (+42 in tests/Feature/Api
 validation/pagination/discovery-filters/signals/campaign-lifecycle/deal-engine); no web regressions; Pint
 clean; Scribe regenerated (Brand · … groups); docs/api.md + changelog + CLAUDE updated. NO git.
 The mobile API now covers all three guards end to end (4A auth + 4B talent + 4C brand).
-Next: brand↔talent deal initiation (brand discovers a talent → enquiry→deal on the shared engine), and an
-admin API surface (mirror for the admin guard — governance/moderation/deal intervention over the API).
+Phase 4D complete (cross-cutting endpoints): (1) public brand DIRECTORY GET /api/v1/brands via new
+App\Queries\BrandSearch (spatie/query-builder, whitelisted filters industry/stage/reach/city/country/
+verified/q + sorts created_at/name) alongside talent search; unknown filter/sort → 400 envelope (new
+InvalidQuery handler in bootstrap/app.php, also closes the same gap on the talent feed). (2) NOTIFICATIONS:
+notifications table + App\Notifications\DealTurnChanged/NewDealMessage (database channel) dispatched from
+DealService on turn change (advance/reject/skip) + new message; endpoints (ability:talent,brand) list/
+unread-count/mark-read/mark-all — basic delivery, stable contract. (3) REFERENCE/LOOKUPS (public) GET
+/api/v1/lookups/{talent-types,block-types,deal-flows,options} with locale-resolved Api\V1 lookup resources.
+(4) ADMIN-LITE reads (policy-gated) GET /api/v1/admin/overview (abilities:admin) + /admin/activity
+(abilities:manage-settings) — heavy admin stays on web. Locale + media consistent throughout. 399 tests
+green (+18 in tests/Feature/Api/V1: Search/Notification/Lookup/AdminLite); no regressions from the
+DealService notification wiring; Pint clean; Scribe regenerated; docs/api.md + changelog + CLAUDE updated.
+NO git.
+Next: brand↔talent deal initiation (brand discovers a talent → enquiry→deal on the shared engine); richer
+notification delivery (push/email channels on the existing contract); Postman/OpenAPI export handed to the
+mobile developer.

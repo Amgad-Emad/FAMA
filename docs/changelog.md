@@ -2,6 +2,30 @@
 
 Notable changes to the Fama project. Newest first.
 
+## 2026-07-09 — Phase 4D: cross-cutting API endpoints
+
+- **Search/discovery** — new public brand directory `GET /api/v1/brands` (`App\Queries\BrandSearch`,
+  spatie/laravel-query-builder, whitelisted filters industry/stage/reach/city/country/verified/q + sorts
+  created_at/name, paginated), alongside the existing talent search. An unknown filter/sort now returns a
+  **400** envelope naming the allowed keys (added an `InvalidQuery` handler to `bootstrap/app.php` — also
+  fixes the same latent gap on the talent feed).
+- **Notifications** — `notifications` table + `App\Notifications\DealTurnChanged` / `NewDealMessage`
+  (database channel), dispatched from `DealService` on turn change (advance/reject/skip) and new message.
+  Endpoints (`ability:talent,brand`): list (paginated), unread-count, mark-one-read, mark-all-read. Basic
+  delivery, stable payload contract for later push/email channels.
+- **Reference / lookups** (public) — `GET /api/v1/lookups/{talent-types,block-types,deal-flows,options}`
+  so the app renders dynamic UI (profession + block catalog, deal flows with steps, brand+talent enum
+  option lists). Locale-resolved lookup resources (`Api\V1\TalentTypeResource`, `BlockTypeResource`).
+- **Admin-lite reads** (admin token, policy-gated) — `GET /api/v1/admin/overview` (`abilities:admin`,
+  governance counts) + `GET /api/v1/admin/activity` (`abilities:manage-settings`, recent audit). Heavy
+  admin stays on web.
+- **Locale + media** consistent across all of the above (SetApiLocale + medialibrary accessors, `media`
+  eager-loaded on lists).
+- **Tests** — `tests/Feature/Api/V1/{SearchTest,NotificationTest,LookupTest,AdminLiteTest}` (18): search
+  filters/sorts/pagination/bad-filter, notification generation + read flow + scoping, lookup locale +
+  active-only + options shape, admin auth/ability gating. **399 tests green** (was 381; +18). Pint clean;
+  Scribe regenerated (Notifications / Reference / Admin (lite) groups).
+
 ## 2026-07-09 — Phase 4C: brand API surface (`/api/v1/brand`)
 
 - **Full brand management over the API** — thin controllers (`app/Http/Controllers/Api/V1/Brand/*`) over

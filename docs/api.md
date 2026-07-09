@@ -237,13 +237,17 @@ creates the account (audited, `admin_users` log), and the new admin logs in them
 
 | Method + path | Purpose |
 |---|---|
-| `GET /api/v1/talents` | paginated discovery feed — reuses `App\Queries\TalentSearch`; same `filter[...]` + `sort` params as the web feed; `TalentCardResource` |
+| `GET /api/v1/talents` | paginated talent search — reuses `App\Queries\TalentSearch`; `TalentCardResource`. Whitelisted `filter[...]`: type, category, availability, city, country, equipment, software, q. Sorts: view_count, created_at |
 | `GET /api/v1/talents/{talent:slug}` | full published talent passport (`Api\V1\TalentResource`: visible blocks + comp card + types + services + approved reviews, locale-resolved); bumps view count; 404 if unpublished |
 | `GET /api/v1/talents/{talent:slug}/projects/{project}` | one published talent's case study (scoped to the talent; 404 otherwise) |
 | `POST /api/v1/talents/{talent:slug}/reviews` | submit a review → lands pending (`StoreReviewRequest`) |
 | `POST /api/v1/talents/{talent:slug}/enquiries` | submit a booking enquiry → `deal_enquiries` (availability-checked; `StoreEnquiryRequest`) |
+| `GET /api/v1/brands` | paginated public brand directory — `App\Queries\BrandSearch`; `Api\V1\BrandResource`. Whitelisted `filter[...]`: industry, stage, reach, city, country, verified, q. Sorts: created_at, name |
 | `GET /api/v1/brands/{brand:slug}` | published brand profile (`Api\V1\BrandResource`: credibility + aesthetic + social + images + approved reviews + public campaigns, locale-resolved); 404 if unpublished |
 | `GET /api/v1/brands/{brand:slug}/campaigns/{campaign:slug}` | one public campaign under a published brand (scope-bound to the brand; 404 otherwise) |
+
+An unknown filter or sort on a search endpoint returns a **400** envelope naming the allowed keys
+(spatie/laravel-query-builder — the whitelist is the contract).
 
 ### Deals — cross-entity read (authenticated, talent **or** brand token)
 
@@ -308,3 +312,49 @@ Translatable `description` is a per-locale map for the owner. Enum option lists 
 The brand acts as the `brand` role on the shared deal engine (same `advance` body shapes as the talent
 side). `App\Support\Brand\BrandOptions` is the single source of truth for the brand enum option lists,
 shared with the web controllers' validation.
+
+### Notifications (Phase 4D — talent **or** brand token)
+
+Deal turn changes and new deal messages are written to the polymorphic `notifications` table as deals
+progress (`DealService` dispatches `App\Notifications\DealTurnChanged` / `NewDealMessage` on the `database`
+channel). Delivery is intentionally basic; the payload contract is stable so push/email channels can be
+layered on later without changing it.
+
+| Method + path | Auth | Purpose |
+|---|---|---|
+| `GET /api/v1/notifications` | `ability:talent,brand` | paginated feed, newest first (`Api\V1\NotificationResource`) |
+| `GET /api/v1/notifications/unread-count` | `ability:talent,brand` | `{ unread: n }` for a badge |
+| `POST /api/v1/notifications/{id}/read` | `ability:talent,brand` | mark one read |
+| `POST /api/v1/notifications/read-all` | `ability:talent,brand` | mark all read |
+
+Each notification's `data` carries `type` (`deal.turn` / `deal.message`), `deal_id`, `deal_reference`,
+`deal_title` and a rendered `message`. Notifications are scoped to the token's entity automatically
+(Laravel's `Notifiable`).
+
+### Reference / lookups (Phase 4D — public)
+
+Catalog data the app renders dynamic UI from — read-only and unauthenticated (onboarding forms need them
+before a token exists). Translatable names come back in the request locale.
+
+| Method + path | Purpose |
+|---|---|
+| `GET /api/v1/lookups/talent-types` | the profession catalog (`Api\V1\TalentTypeResource`) |
+| `GET /api/v1/lookups/block-types` | the active profile-block catalog (`Api\V1\BlockTypeResource`) |
+| `GET /api/v1/lookups/deal-flows` | the active deal flows on offer, each with its ordered steps (`DealFlowResource`) |
+| `GET /api/v1/lookups/options` | the brand + talent enum option lists (industries, moods, budgets, rate tiers, price units, …) that back the app's selects |
+
+### Admin (lite) (Phase 4D — admin token, policy-gated)
+
+Read-only reads an admin mobile client genuinely needs; heavy admin (flow building, moderation actions,
+deal intervention) stays on the web.
+
+| Method + path | Auth | Purpose |
+|---|---|---|
+| `GET /api/v1/admin/overview` | `abilities:admin` | governance counts (pending queues, deals awaiting admin, catalog totals) |
+| `GET /api/v1/admin/activity` | `abilities:manage-settings` | recent audit trail, paginated + filterable (`log`, `q`); `ActivityResource` |
+
+### Locale & media consistency
+
+Every read above runs through `SetApiLocale` (Accept-Language → en/ar, `Content-Language` echoed);
+translatable fields resolve to that locale (public reads) or return per-locale maps (owner edits). All
+image URLs come from medialibrary accessors, and list endpoints eager-load `media` so they stay N+1-free.

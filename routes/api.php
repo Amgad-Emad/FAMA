@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Api\V1\Admin\ActivityController as AdminActivityController;
+use App\Http\Controllers\Api\V1\Admin\OverviewController as AdminOverviewController;
 use App\Http\Controllers\Api\V1\Auth\AdminAuthController;
 use App\Http\Controllers\Api\V1\Auth\BrandAuthController;
 use App\Http\Controllers\Api\V1\Auth\TalentAuthController;
@@ -14,6 +16,8 @@ use App\Http\Controllers\Api\V1\Brand\ProfileController as BrandProfileControlle
 use App\Http\Controllers\Api\V1\Brand\ReviewController as BrandReviewController;
 use App\Http\Controllers\Api\V1\BrandController;
 use App\Http\Controllers\Api\V1\DealController;
+use App\Http\Controllers\Api\V1\LookupController;
+use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\Talent\AccountController as TalentAccountController;
 use App\Http\Controllers\Api\V1\Talent\AffiliationController as TalentAffiliationController;
 use App\Http\Controllers\Api\V1\Talent\AvailabilityController as TalentAvailabilityController;
@@ -82,6 +86,10 @@ Route::prefix('v1')
                 Route::post('refresh', [AdminAuthController::class, 'refresh']);
                 Route::post('logout', [AdminAuthController::class, 'logout']);
                 Route::post('register', [AdminAuthController::class, 'register'])->middleware('abilities:manage-users');
+
+                // Admin-lite reads (heavy admin stays on web).
+                Route::get('overview', [AdminOverviewController::class, 'index']);
+                Route::get('activity', [AdminActivityController::class, 'index'])->middleware('abilities:manage-settings');
             });
         });
 
@@ -91,13 +99,26 @@ Route::prefix('v1')
         Route::get('talents/{talent:slug}/projects/{project}', [TalentController::class, 'project']);
         Route::post('talents/{talent:slug}/reviews', [TalentController::class, 'submitReview']);
         Route::post('talents/{talent:slug}/enquiries', [TalentController::class, 'submitEnquiry']);
+        Route::get('brands', [BrandController::class, 'index']);
         Route::get('brands/{brand:slug}', [BrandController::class, 'show']);
         Route::get('brands/{brand:slug}/campaigns/{campaign:slug}', [BrandController::class, 'campaign'])->scopeBindings();
+
+        // ---- Reference / lookups (public catalog for dynamic UI) -----------
+        Route::get('lookups/talent-types', [LookupController::class, 'talentTypes']);
+        Route::get('lookups/block-types', [LookupController::class, 'blockTypes']);
+        Route::get('lookups/deal-flows', [LookupController::class, 'dealFlows']);
+        Route::get('lookups/options', [LookupController::class, 'options']);
 
         // ---- Authenticated deal inbox (talent or brand token) --------------
         Route::middleware(['auth:sanctum', 'ability:talent,brand'])->group(function () {
             Route::get('deals', [DealController::class, 'index']);
             Route::get('deals/{deal}', [DealController::class, 'show']);
+
+            // Notifications (deal turn changes + new messages).
+            Route::get('notifications', [NotificationController::class, 'index']);
+            Route::get('notifications/unread-count', [NotificationController::class, 'unreadCount']);
+            Route::post('notifications/read-all', [NotificationController::class, 'markAllRead']);
+            Route::post('notifications/{id}/read', [NotificationController::class, 'markRead']);
         });
 
         // ---- Talent workspace (talent token) -------------------------------

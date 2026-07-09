@@ -12,6 +12,8 @@ use App\Models\Deal;
 use App\Models\DealEnquiry;
 use App\Models\DealFlow;
 use App\Models\DealMessage;
+use App\Notifications\DealTurnChanged;
+use App\Notifications\NewDealMessage;
 use App\States\DealMessage\Read;
 use App\States\DealStep\Skipped;
 use Illuminate\Database\Eloquent\Model;
@@ -56,10 +58,14 @@ class DealService extends Service
      */
     public function advance(Deal $deal, array $input, string $role, ?Model $actor = null): Deal
     {
-        return $this->runInTransaction(
+        $deal = $this->runInTransaction(
             fn () => ($this->advance)($deal, $input, $role, $actor),
             ['deal_id' => $deal->id, 'role' => $role],
         );
+
+        $this->notifyTurnChange($deal);
+
+        return $deal;
     }
 
     /**
@@ -67,10 +73,14 @@ class DealService extends Service
      */
     public function reject(Deal $deal, string $role, ?string $reason = null, ?Model $actor = null): Deal
     {
-        return $this->runInTransaction(
+        $deal = $this->runInTransaction(
             fn () => ($this->reject)($deal, $role, $reason, $actor),
             ['deal_id' => $deal->id, 'role' => $role],
         );
+
+        $this->notifyTurnChange($deal);
+
+        return $deal;
     }
 
     /**
@@ -78,7 +88,7 @@ class DealService extends Service
      */
     public function skip(Deal $deal, string $role, ?Model $actor = null): Deal
     {
-        return $this->runInTransaction(function () use ($deal, $role, $actor) {
+        $deal = $this->runInTransaction(function () use ($deal, $role, $actor) {
             $step = $deal->currentStep;
 
             if ($step === null || ! $step->status->isCurrent()) {
@@ -105,6 +115,10 @@ class DealService extends Service
 
             return $deal->refresh();
         }, ['deal_id' => $deal->id, 'role' => $role]);
+
+        $this->notifyTurnChange($deal);
+
+        return $deal;
     }
 
     /**
@@ -123,7 +137,7 @@ class DealService extends Service
      */
     public function postMessage(Deal $deal, string $role, Model $sender, string $body): DealMessage
     {
-        return $this->runInTransaction(fn () => $deal->messages()->create([
+        $message = $this->runInTransaction(fn () => $deal->messages()->create([
             'sender_type' => $sender->getMorphClass(),
             'sender_id' => $sender->getKey(),
             'sender_role' => $role,
@@ -131,6 +145,10 @@ class DealService extends Service
             'body' => $body,
             'status' => 'sent',
         ]), ['deal_id' => $deal->id, 'role' => $role]);
+
+        $this->notifyNewMessage($deal, $role, $body);
+
+        return $message;
     }
 
     /**
@@ -148,5 +166,44 @@ class DealService extends Service
                 $message->status->transitionTo(Read::class);
                 $message->forceFill(['read_at' => now()])->save();
             });
+    }
+
+    /**
+     * After a step advances/rejects/skips, notify the party whose turn it now is
+     * (database notification → the mobile app's notifications feed). System/auto
+     * steps and completed deals notify nobody. Best-effort: a `both` step points
+     * at the brand (either party may still act — see DealProgression).
+     */
+    private function notifyTurnChange(Deal $deal): void
+    {
+        $deal->loadMissing('currentStep', 'talent', 'brand');
+        $actor = $deal->currentStep?->actor;
+
+        $recipient = match ($actor) {
+            'talent' => $deal->talent,
+            'brand', 'both' => $deal->brand,
+            default => null,
+        };
+
+        $recipient?->notify(new DealTurnChanged($deal, $actor === 'talent' ? 'talent' : 'brand'));
+    }
+
+    /**
+     * Notify the counterparty (or both parties for an admin note) that a new chat
+     * message landed on the deal thread.
+     */
+    private function notifyNewMessage(Deal $deal, string $senderRole, string $body): void
+    {
+        $deal->loadMissing('talent', 'brand');
+
+        $recipients = match ($senderRole) {
+            'talent' => [$deal->brand],
+            'brand' => [$deal->talent],
+            default => [$deal->brand, $deal->talent],
+        };
+
+        foreach (array_filter($recipients) as $recipient) {
+            $recipient->notify(new NewDealMessage($deal, $senderRole, $body));
+        }
     }
 }

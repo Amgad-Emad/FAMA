@@ -1,18 +1,18 @@
-name: 'Talent · Account'
+name: 'Talent · Reviews'
 description: ''
 endpoints:
   -
     custom: []
     httpMethods:
       - GET
-    uri: api/v1/talent/account
+    uri: api/v1/talent/reviews
     metadata:
       custom: []
-      groupName: 'Talent · Account'
+      groupName: 'Talent · Reviews'
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
-      title: 'Get my account'
+      title: 'List my reviews'
       description: ''
       authenticated: true
       deprecated: false
@@ -22,8 +22,20 @@ endpoints:
       Accept: application/json
     urlParameters: []
     cleanUrlParameters: []
-    queryParameters: []
-    cleanQueryParameters: []
+    queryParameters:
+      status:
+        custom: []
+        name: status
+        description: 'Filter by pending, approved or rejected.'
+        required: false
+        example: pending
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanQueryParameters:
+      status: pending
     bodyParameters: []
     cleanBodyParameters: []
     fileParameters: []
@@ -49,14 +61,14 @@ endpoints:
     custom: []
     httpMethods:
       - PATCH
-    uri: api/v1/talent/account
+    uri: 'api/v1/talent/reviews/{review_id}/approve'
     metadata:
       custom: []
-      groupName: 'Talent · Account'
+      groupName: 'Talent · Reviews'
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
-      title: 'Update my account'
+      title: 'Approve a review'
       description: ''
       authenticated: true
       deprecated: false
@@ -64,35 +76,24 @@ endpoints:
       Authorization: 'Bearer {YOUR_TOKEN}'
       Content-Type: application/json
       Accept: application/json
-    urlParameters: []
-    cleanUrlParameters: []
+    urlParameters:
+      review_id:
+        custom: []
+        name: review_id
+        description: 'The ID of the review.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      review_id: 1
     queryParameters: []
     cleanQueryParameters: []
-    bodyParameters:
-      slug:
-        custom: []
-        name: slug
-        description: 'Must contain only letters, numbers, dashes and underscores. Must not be greater than 255 characters.'
-        required: false
-        example: b
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-      meta:
-        custom: []
-        name: meta
-        description: ''
-        required: false
-        example: null
-        type: object
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-    cleanBodyParameters:
-      slug: b
+    bodyParameters: []
+    cleanBodyParameters: []
     fileParameters: []
     responses: []
     responseFields: []
@@ -107,14 +108,14 @@ endpoints:
     custom: []
     httpMethods:
       - PATCH
-    uri: api/v1/talent/account/publish
+    uri: 'api/v1/talent/reviews/{review_id}/reject'
     metadata:
       custom: []
-      groupName: 'Talent · Account'
+      groupName: 'Talent · Reviews'
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
-      title: 'Publish / unpublish my profile'
+      title: 'Reject a review'
       description: ''
       authenticated: true
       deprecated: false
@@ -122,24 +123,24 @@ endpoints:
       Authorization: 'Bearer {YOUR_TOKEN}'
       Content-Type: application/json
       Accept: application/json
-    urlParameters: []
-    cleanUrlParameters: []
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters:
-      publish:
+    urlParameters:
+      review_id:
         custom: []
-        name: publish
-        description: 'Whether to publish (true) or unpublish (false).'
+        name: review_id
+        description: 'The ID of the review.'
         required: true
-        example: true
-        type: boolean
+        example: 1
+        type: integer
         enumValues: []
-        exampleWasSpecified: true
+        exampleWasSpecified: false
         nullable: false
         deprecated: false
-    cleanBodyParameters:
-      publish: true
+    cleanUrlParameters:
+      review_id: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
     fileParameters: []
     responses: []
     responseFields: []
