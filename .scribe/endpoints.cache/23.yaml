@@ -87,7 +87,7 @@ endpoints:
         name: type
         description: ''
         required: false
-        example: campaign
+        example: shoot
         type: string
         enumValues:
           - campaign
@@ -188,7 +188,7 @@ endpoints:
         name: start_date
         description: 'Must be a valid date.'
         required: false
-        example: '2026-07-09T09:16:36'
+        example: '2026-07-09T10:39:37'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -210,7 +210,7 @@ endpoints:
         name: is_public
         description: ''
         required: false
-        example: true
+        example: false
         type: boolean
         enumValues: []
         exampleWasSpecified: false
@@ -262,7 +262,7 @@ endpoints:
         deprecated: false
     cleanBodyParameters:
       title: b
-      type: campaign
+      type: shoot
       description:
         en: 'n'
         ar: g
@@ -271,9 +271,9 @@ endpoints:
       currency: iyv
       location_city: d
       location_country: l
-      start_date: '2026-07-09T09:16:36'
+      start_date: '2026-07-09T10:39:37'
       end_date: '2052-08-01'
-      is_public: true
+      is_public: false
       positions_count: 39
       roles:
         - talent_type_id: 16
@@ -497,7 +497,7 @@ endpoints:
         name: start_date
         description: 'Must be a valid date.'
         required: false
-        example: '2026-07-09T09:16:36'
+        example: '2026-07-09T10:39:37'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -519,7 +519,7 @@ endpoints:
         name: is_public
         description: ''
         required: false
-        example: true
+        example: false
         type: boolean
         enumValues: []
         exampleWasSpecified: false
@@ -580,9 +580,9 @@ endpoints:
       currency: iyv
       location_city: d
       location_country: l
-      start_date: '2026-07-09T09:16:36'
+      start_date: '2026-07-09T10:39:37'
       end_date: '2052-08-01'
-      is_public: true
+      is_public: false
       positions_count: 39
       roles:
         - talent_type_id: 16

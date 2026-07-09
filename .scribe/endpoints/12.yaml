@@ -111,7 +111,7 @@ endpoints:
         name: rate_tier
         description: ''
         required: false
-        example: elite
+        example: emerging
         type: string
         enumValues:
           - emerging
@@ -126,7 +126,7 @@ endpoints:
       willing_to_travel: true
       travel_regions:
         - b
-      rate_tier: elite
+      rate_tier: emerging
     fileParameters: []
     responses: []
     responseFields: []

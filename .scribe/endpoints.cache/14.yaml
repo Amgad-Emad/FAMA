@@ -197,7 +197,7 @@ endpoints:
         name: representation_type
         description: ''
         required: true
-        example: non_exclusive
+        example: freelance
         type: string
         enumValues:
           - exclusive
@@ -221,7 +221,7 @@ endpoints:
     cleanBodyParameters:
       agency_name: b
       agency_url: 'http://bailey.com/'
-      representation_type: non_exclusive
+      representation_type: freelance
       region: m
     fileParameters: []
     responses: []

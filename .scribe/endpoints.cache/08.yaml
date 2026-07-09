@@ -237,7 +237,7 @@ endpoints:
         name: rate_tier
         description: ''
         required: false
-        example: premium
+        example: elite
         type: string
         enumValues:
           - emerging
@@ -263,7 +263,7 @@ endpoints:
       willing_to_travel: false
       travel_regions:
         - l
-      rate_tier: premium
+      rate_tier: elite
     fileParameters: []
     responses: []
     responseFields: []
@@ -603,7 +603,7 @@ endpoints:
         name: layout
         description: ''
         required: false
-        example: grid
+        example: list
         type: string
         enumValues:
           - grid
@@ -617,7 +617,7 @@ endpoints:
       title:
         en: b
         ar: 'n'
-      layout: grid
+      layout: list
     fileParameters: []
     responses: []
     responseFields: []

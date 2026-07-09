@@ -60,6 +60,10 @@
             "@php artisan config:clear --ansi @no_additional_args",
             "@php artisan test"
         ],
+        "api-docs": [
+            "@php artisan scribe:generate --ansi",
+            "@php -r \"@mkdir('docs/api', 0755, true); copy('storage/app/private/scribe/openapi.yaml', 'docs/api/openapi.yaml'); copy('storage/app/private/scribe/collection.json', 'docs/api/collection.json');\""
+        ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover --ansi"

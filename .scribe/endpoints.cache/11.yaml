@@ -164,7 +164,7 @@ endpoints:
         name: price_unit
         description: ''
         required: true
-        example: hour
+        example: project
         type: string
         enumValues:
           - hour
@@ -205,7 +205,7 @@ endpoints:
         ar: z
       price: 77
       currency: iyv
-      price_unit: hour
+      price_unit: project
       duration_minutes: 42
       position: 16
     fileParameters: []
@@ -347,7 +347,7 @@ endpoints:
         name: price_unit
         description: ''
         required: true
-        example: fixed
+        example: day
         type: string
         enumValues:
           - hour
@@ -388,7 +388,7 @@ endpoints:
         ar: z
       price: 77
       currency: iyv
-      price_unit: fixed
+      price_unit: day
       duration_minutes: 42
       position: 16
     fileParameters: []

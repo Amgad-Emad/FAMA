@@ -109,7 +109,7 @@ endpoints:
         name: published_date
         description: 'Must be a valid date.'
         required: false
-        example: '2026-07-09T09:16:36'
+        example: '2026-07-09T10:39:37'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -119,7 +119,7 @@ endpoints:
       publication: b
       title: 'n'
       url: 'http://crooks.biz/et-fugiat-sunt-nihil-accusantium'
-      published_date: '2026-07-09T09:16:36'
+      published_date: '2026-07-09T10:39:37'
     fileParameters: []
     responses: []
     responseFields: []

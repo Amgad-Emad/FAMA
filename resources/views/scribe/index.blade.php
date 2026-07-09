@@ -5937,7 +5937,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     --header "Accept: application/json" \
     --data "{
     \"title\": \"b\",
-    \"type\": \"campaign\",
+    \"type\": \"shoot\",
     \"description\": {
         \"en\": \"n\",
         \"ar\": \"g\"
@@ -5947,9 +5947,9 @@ You can check the Dev Tools console for debugging information.</code></pre>
     \"currency\": \"iyv\",
     \"location_city\": \"d\",
     \"location_country\": \"l\",
-    \"start_date\": \"2026-07-09T09:16:36\",
+    \"start_date\": \"2026-07-09T10:39:37\",
     \"end_date\": \"2052-08-01\",
-    \"is_public\": true,
+    \"is_public\": false,
     \"positions_count\": 39,
     \"roles\": [
         {
@@ -5974,7 +5974,7 @@ const headers = {
 
 let body = {
     "title": "b",
-    "type": "campaign",
+    "type": "shoot",
     "description": {
         "en": "n",
         "ar": "g"
@@ -5984,9 +5984,9 @@ let body = {
     "currency": "iyv",
     "location_city": "d",
     "location_country": "l",
-    "start_date": "2026-07-09T09:16:36",
+    "start_date": "2026-07-09T10:39:37",
     "end_date": "2052-08-01",
-    "is_public": true,
+    "is_public": false,
     "positions_count": 39,
     "roles": [
         {
@@ -6109,10 +6109,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="type"                data-endpoint="POSTapi-v1-brand-campaigns"
-               value="campaign"
+               value="shoot"
                data-component="body">
     <br>
-<p>Example: <code>campaign</code></p>
+<p>Example: <code>shoot</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>campaign</code></li> <li><code>shoot</code></li></ul>
         </div>
@@ -6219,10 +6219,10 @@ Must be one of:
  &nbsp;
                 <input type="text" style="display: none"
                               name="start_date"                data-endpoint="POSTapi-v1-brand-campaigns"
-               value="2026-07-09T09:16:36"
+               value="2026-07-09T10:39:37"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-07-09T09:16:36</code></p>
+<p>Must be a valid date. Example: <code>2026-07-09T10:39:37</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>end_date</code></b>&nbsp;&nbsp;
@@ -6256,7 +6256,7 @@ Must be one of:
             <code>false</code>
         </label>
     <br>
-<p>Example: <code>true</code></p>
+<p>Example: <code>false</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>positions_count</code></b>&nbsp;&nbsp;
@@ -6497,9 +6497,9 @@ You can check the Dev Tools console for debugging information.</code></pre>
     \"currency\": \"iyv\",
     \"location_city\": \"d\",
     \"location_country\": \"l\",
-    \"start_date\": \"2026-07-09T09:16:36\",
+    \"start_date\": \"2026-07-09T10:39:37\",
     \"end_date\": \"2052-08-01\",
-    \"is_public\": true,
+    \"is_public\": false,
     \"positions_count\": 39,
     \"roles\": [
         {
@@ -6534,9 +6534,9 @@ let body = {
     "currency": "iyv",
     "location_city": "d",
     "location_country": "l",
-    "start_date": "2026-07-09T09:16:36",
+    "start_date": "2026-07-09T10:39:37",
     "end_date": "2052-08-01",
-    "is_public": true,
+    "is_public": false,
     "positions_count": 39,
     "roles": [
         {
@@ -6782,10 +6782,10 @@ Must be one of:
  &nbsp;
                 <input type="text" style="display: none"
                               name="start_date"                data-endpoint="PATCHapi-v1-brand-campaigns--campaign_id-"
-               value="2026-07-09T09:16:36"
+               value="2026-07-09T10:39:37"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-07-09T09:16:36</code></p>
+<p>Must be a valid date. Example: <code>2026-07-09T10:39:37</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>end_date</code></b>&nbsp;&nbsp;
@@ -6819,7 +6819,7 @@ Must be one of:
             <code>false</code>
         </label>
     <br>
-<p>Example: <code>true</code></p>
+<p>Example: <code>false</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>positions_count</code></b>&nbsp;&nbsp;
@@ -7219,7 +7219,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     --header "Authorization: Bearer {YOUR_TOKEN}" \
     --header "Content-Type: multipart/form-data" \
     --header "Accept: application/json" \
-    --form "file=@/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/php1penfeleonm80b8a2Yf" </code></pre></div>
+    --form "file=@/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/php9cp1icjpev4cf3Qz9CZ" </code></pre></div>
 
 
 <div class="javascript-example">
@@ -7353,7 +7353,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
                value=""
                data-component="body">
     <br>
-<p>Must be an image. Must not be greater than 5120 kilobytes. Example: <code>/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/php1penfeleonm80b8a2Yf</code></p>
+<p>Must be an image. Must not be greater than 5120 kilobytes. Example: <code>/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/php9cp1icjpev4cf3Qz9CZ</code></p>
         </div>
         </form>
 
@@ -10640,7 +10640,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     --header "Authorization: Bearer {YOUR_TOKEN}" \
     --header "Content-Type: multipart/form-data" \
     --header "Accept: application/json" \
-    --form "file=@/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/php4o89pcj6ujljdIX0n7J" </code></pre></div>
+    --form "file=@/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/phpgv60aooorbru6R4XjeG" </code></pre></div>
 
 
 <div class="javascript-example">
@@ -10761,7 +10761,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
                value=""
                data-component="body">
     <br>
-<p>Must be an image. Must not be greater than 5120 kilobytes. Example: <code>/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/php4o89pcj6ujljdIX0n7J</code></p>
+<p>Must be an image. Must not be greater than 5120 kilobytes. Example: <code>/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/phpgv60aooorbru6R4XjeG</code></p>
         </div>
         </form>
 
@@ -10783,7 +10783,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     --header "Authorization: Bearer {YOUR_TOKEN}" \
     --header "Content-Type: multipart/form-data" \
     --header "Accept: application/json" \
-    --form "file=@/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/php0qcjh1r09qued0lXBU6" </code></pre></div>
+    --form "file=@/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/php044tgp8koib821wB4gE" </code></pre></div>
 
 
 <div class="javascript-example">
@@ -10904,7 +10904,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
                value=""
                data-component="body">
     <br>
-<p>Must be an image. Must not be greater than 5120 kilobytes. Example: <code>/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/php0qcjh1r09qued0lXBU6</code></p>
+<p>Must be an image. Must not be greater than 5120 kilobytes. Example: <code>/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/php044tgp8koib821wB4gE</code></p>
         </div>
         </form>
 
@@ -11198,7 +11198,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     --header "Authorization: Bearer {YOUR_TOKEN}" \
     --header "Content-Type: multipart/form-data" \
     --header "Accept: application/json" \
-    --form "file=@/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/php6k96pk8d7fd3bi42VzT" </code></pre></div>
+    --form "file=@/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/phpu8ct9onpf69cfMskNs3" </code></pre></div>
 
 
 <div class="javascript-example">
@@ -11319,7 +11319,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
                value=""
                data-component="body">
     <br>
-<p>Must be an image. Must not be greater than 5120 kilobytes. Example: <code>/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/php6k96pk8d7fd3bi42VzT</code></p>
+<p>Must be an image. Must not be greater than 5120 kilobytes. Example: <code>/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/phpu8ct9onpf69cfMskNs3</code></p>
         </div>
         </form>
 
@@ -14465,7 +14465,7 @@ Must be one of:
     --data "{
     \"agency_name\": \"b\",
     \"agency_url\": \"http:\\/\\/bailey.com\\/\",
-    \"representation_type\": \"non_exclusive\",
+    \"representation_type\": \"freelance\",
     \"region\": \"m\"
 }"
 </code></pre></div>
@@ -14485,7 +14485,7 @@ const headers = {
 let body = {
     "agency_name": "b",
     "agency_url": "http:\/\/bailey.com\/",
-    "representation_type": "non_exclusive",
+    "representation_type": "freelance",
     "region": "m"
 };
 
@@ -14627,10 +14627,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="representation_type"                data-endpoint="PATCHapi-v1-talent-affiliations--affiliation_id-"
-               value="non_exclusive"
+               value="freelance"
                data-component="body">
     <br>
-<p>Example: <code>non_exclusive</code></p>
+<p>Example: <code>freelance</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>exclusive</code></li> <li><code>non_exclusive</code></li> <li><code>mother_agency</code></li> <li><code>freelance</code></li></ul>
         </div>
@@ -15100,7 +15100,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     \"travel_regions\": [
         \"b\"
     ],
-    \"rate_tier\": \"elite\"
+    \"rate_tier\": \"emerging\"
 }"
 </code></pre></div>
 
@@ -15122,7 +15122,7 @@ let body = {
     "travel_regions": [
         "b"
     ],
-    "rate_tier": "elite"
+    "rate_tier": "emerging"
 };
 
 fetch(url, {
@@ -15276,10 +15276,10 @@ Must be one of:
  &nbsp;
                 <input type="text" style="display: none"
                               name="rate_tier"                data-endpoint="PATCHapi-v1-talent-availability"
-               value="elite"
+               value="emerging"
                data-component="body">
     <br>
-<p>Example: <code>elite</code></p>
+<p>Example: <code>emerging</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>emerging</code></li> <li><code>established</code></li> <li><code>premium</code></li> <li><code>elite</code></li></ul>
         </div>
@@ -16322,7 +16322,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     --header "Authorization: Bearer {YOUR_TOKEN}" \
     --header "Content-Type: multipart/form-data" \
     --header "Accept: application/json" \
-    --form "file=@/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/phpu2v4clbsarbk4MgaEZf" </code></pre></div>
+    --form "file=@/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/phpf0aiq30urclqcvkEtrN" </code></pre></div>
 
 
 <div class="javascript-example">
@@ -16468,7 +16468,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
                value=""
                data-component="body">
     <br>
-<p>The asset to upload. Example: <code>/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/phpu2v4clbsarbk4MgaEZf</code></p>
+<p>The asset to upload. Example: <code>/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/phpf0aiq30urclqcvkEtrN</code></p>
         </div>
         </form>
 
@@ -18183,7 +18183,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     \"publication\": \"b\",
     \"title\": \"n\",
     \"url\": \"http:\\/\\/crooks.biz\\/et-fugiat-sunt-nihil-accusantium\",
-    \"published_date\": \"2026-07-09T09:16:36\"
+    \"published_date\": \"2026-07-09T10:39:37\"
 }"
 </code></pre></div>
 
@@ -18203,7 +18203,7 @@ let body = {
     "publication": "b",
     "title": "n",
     "url": "http:\/\/crooks.biz\/et-fugiat-sunt-nihil-accusantium",
-    "published_date": "2026-07-09T09:16:36"
+    "published_date": "2026-07-09T10:39:37"
 };
 
 fetch(url, {
@@ -18343,10 +18343,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="published_date"                data-endpoint="POSTapi-v1-talent-press"
-               value="2026-07-09T09:16:36"
+               value="2026-07-09T10:39:37"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-07-09T09:16:36</code></p>
+<p>Must be a valid date. Example: <code>2026-07-09T10:39:37</code></p>
         </div>
         </form>
 
@@ -19429,7 +19429,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     \"travel_regions\": [
         \"l\"
     ],
-    \"rate_tier\": \"premium\"
+    \"rate_tier\": \"elite\"
 }"
 </code></pre></div>
 
@@ -19464,7 +19464,7 @@ let body = {
     "travel_regions": [
         "l"
     ],
-    "rate_tier": "premium"
+    "rate_tier": "elite"
 };
 
 fetch(url, {
@@ -19750,10 +19750,10 @@ Must be one of:
  &nbsp;
                 <input type="text" style="display: none"
                               name="rate_tier"                data-endpoint="PATCHapi-v1-talent-profile"
-               value="premium"
+               value="elite"
                data-component="body">
     <br>
-<p>Example: <code>premium</code></p>
+<p>Example: <code>elite</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>emerging</code></li> <li><code>established</code></li> <li><code>premium</code></li> <li><code>elite</code></li></ul>
         </div>
@@ -19777,7 +19777,7 @@ Must be one of:
     --header "Authorization: Bearer {YOUR_TOKEN}" \
     --header "Content-Type: multipart/form-data" \
     --header "Accept: application/json" \
-    --form "image=@/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/phpgp04qp9atlm49in7qYJ" </code></pre></div>
+    --form "image=@/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/phpkb4cn9gkv3lraR1yMcf" </code></pre></div>
 
 
 <div class="javascript-example">
@@ -19898,7 +19898,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
                value=""
                data-component="body">
     <br>
-<p>Must be an image. Must not be greater than 8192 kilobytes. Example: <code>/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/phpgp04qp9atlm49in7qYJ</code></p>
+<p>Must be an image. Must not be greater than 8192 kilobytes. Example: <code>/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/phpkb4cn9gkv3lraR1yMcf</code></p>
         </div>
         </form>
 
@@ -20518,7 +20518,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
         \"en\": \"b\",
         \"ar\": \"n\"
     },
-    \"layout\": \"grid\"
+    \"layout\": \"list\"
 }"
 </code></pre></div>
 
@@ -20539,7 +20539,7 @@ let body = {
         "en": "b",
         "ar": "n"
     },
-    "layout": "grid"
+    "layout": "list"
 };
 
 fetch(url, {
@@ -20716,10 +20716,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="layout"                data-endpoint="PATCHapi-v1-talent-profile-blocks--block_id-"
-               value="grid"
+               value="list"
                data-component="body">
     <br>
-<p>Example: <code>grid</code></p>
+<p>Example: <code>list</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>grid</code></li> <li><code>carousel</code></li> <li><code>list</code></li> <li><code>masonry</code></li></ul>
         </div>
@@ -21629,7 +21629,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     },
     \"price\": 77,
     \"currency\": \"iyv\",
-    \"price_unit\": \"hour\",
+    \"price_unit\": \"project\",
     \"duration_minutes\": 42,
     \"position\": 16
 }"
@@ -21658,7 +21658,7 @@ let body = {
     },
     "price": 77,
     "currency": "iyv",
-    "price_unit": "hour",
+    "price_unit": "project",
     "duration_minutes": 42,
     "position": 16
 };
@@ -21860,10 +21860,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="price_unit"                data-endpoint="POSTapi-v1-talent-services"
-               value="hour"
+               value="project"
                data-component="body">
     <br>
-<p>Example: <code>hour</code></p>
+<p>Example: <code>project</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>hour</code></li> <li><code>day</code></li> <li><code>project</code></li> <li><code>fixed</code></li></ul>
         </div>
@@ -21922,7 +21922,7 @@ Must be one of:
     },
     \"price\": 77,
     \"currency\": \"iyv\",
-    \"price_unit\": \"fixed\",
+    \"price_unit\": \"day\",
     \"duration_minutes\": 42,
     \"position\": 16
 }"
@@ -21951,7 +21951,7 @@ let body = {
     },
     "price": 77,
     "currency": "iyv",
-    "price_unit": "fixed",
+    "price_unit": "day",
     "duration_minutes": 42,
     "position": 16
 };
@@ -22166,10 +22166,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="price_unit"                data-endpoint="PATCHapi-v1-talent-services--service_id-"
-               value="fixed"
+               value="day"
                data-component="body">
     <br>
-<p>Example: <code>fixed</code></p>
+<p>Example: <code>day</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>hour</code></li> <li><code>day</code></li> <li><code>project</code></li> <li><code>fixed</code></li></ul>
         </div>

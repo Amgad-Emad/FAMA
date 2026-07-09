@@ -29,10 +29,14 @@ it('returns the brand description in the Accept-Language locale', function () {
 it('shows a public campaign scoped to the brand and 404s a private one', function () {
     $brand = Brand::factory()->create(['is_published' => true, 'status' => 'published']);
     $public = Campaign::factory()->for($brand)->create(['is_public' => true, 'status' => 'open']);
+    $public->setTranslation('description', 'en', 'A summer shoot')->setTranslation('description', 'ar', 'تصوير صيفي')->save();
     $private = Campaign::factory()->for($brand)->create(['is_public' => false, 'status' => 'draft']);
 
-    $this->getJson("/api/v1/brands/{$brand->slug}/campaigns/{$public->slug}")
-        ->assertOk()->assertJsonPath('data.slug', $public->slug);
+    // Public campaign description resolves to the Accept-Language locale (single string, not a map).
+    $this->withHeaders(['Accept-Language' => 'ar'])->getJson("/api/v1/brands/{$brand->slug}/campaigns/{$public->slug}")
+        ->assertOk()
+        ->assertJsonPath('data.slug', $public->slug)
+        ->assertJsonPath('data.description', 'تصوير صيفي');
 
     $this->getJson("/api/v1/brands/{$brand->slug}/campaigns/{$private->slug}")->assertNotFound();
 });

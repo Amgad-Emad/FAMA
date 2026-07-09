@@ -1,67 +1,122 @@
-# API
+# Fama API — mobile developer handoff
 
-> The mobile API is built in Phase 4. This documents the **contract** the whole app already follows so
-> web-Ajax and API stay identical, plus how docs are generated.
+The Fama mobile API is **complete** and stable at **v1**. This page is the readable index; the
+machine-readable reference (OpenAPI + Postman) and an interactive explorer are linked below. The detailed
+endpoint tables follow (mobile endpoints under [Mobile API — `/api/v1`](#mobile-api--apiv1-phase-4a); the
+web-Ajax endpoints are documented afterwards for reference — they share this same envelope).
 
-## Response envelope (all JSON responses)
+## Generated reference (import these)
+
+| Artifact | Where | Use |
+|---|---|---|
+| **OpenAPI 3.0 spec** | [`docs/api/openapi.yaml`](api/openapi.yaml) | import into Swagger UI / generate a typed client |
+| **Postman collection** | [`docs/api/collection.json`](api/collection.json) | import into Postman and start calling |
+| **Interactive docs (try-it-out)** | `GET /docs` (live app) | explore + send test requests in the browser |
+| Live spec / collection | `GET /docs.openapi` · `GET /docs.postman` | same files served by the running app |
+
+Regenerate all of the above with **`composer api-docs`** (runs `scribe:generate` and copies the OpenAPI +
+Postman artifacts into `docs/api/`). Re-run it whenever API routes or their `@group` / `@authenticated`
+annotations change. The collection currently covers **130 endpoints**.
+
+## Base URL & versioning
+
+```
+{APP_URL}/api/v1
+```
+
+Everything lives under `/api/v1`. A future breaking revision ships as a sibling `/api/v2` group, so v1
+never shifts under an existing client.
+
+## Response envelope (every JSON response)
 
 ```json
-{
-  "success": true,
-  "data": <mixed|null>,
-  "message": "<string|null>",
-  "errors": <object|null>,
-  "meta": <object|null>
-}
+{ "success": true, "data": <mixed|null>, "message": "<string|null>", "errors": <object|null>, "meta": <object|null> }
 ```
 
 - `success` — boolean outcome.
 - `data` — payload (object, array, or list items).
-- `message` — human-readable note (e.g. a flash message or error summary).
-- `errors` — validation/field error bag: `{ "field": ["message", ...] }`. `null` on success.
-- `meta` — extra metadata. Paginated lists populate `meta.pagination`:
+- `message` — human-readable note (a confirmation or an error summary).
+- `errors` — validation/field bag `{ "field": ["message", …] }`; `null` on success.
+- `meta` — extra metadata; paginated lists put page info at `meta.pagination` (see below).
+
+Built by `App\Support\ApiResponse`. **Errors use the same envelope** — the central handler
+(`bootstrap/app.php`) shapes every failure into it:
+
+| Status | When |
+|---|---|
+| **400** | bad search query (unknown `filter[...]` / `sort` — the message names the allowed keys) |
+| **401** | missing / invalid / revoked token |
+| **403** | token lacks the required ability, or a foreign (not-owned) resource |
+| **404** | unknown record / unpublished profile |
+| **422** | validation failure (`errors` populated), domain-rule violation, or illegal state transition |
+| **429** | rate limit tripped (`meta.retry_after` = seconds) |
+| **500** | unexpected — generic message; details fail-logged to the `api` log channel |
+
+## Authentication (per entity)
+
+Stateless **Sanctum bearer tokens**. Each of the three entities (talent / brand / admin) has its own
+auth routes; a token is **ability-scoped** to its guard name (`talent` / `brand` / `admin`), and admin
+tokens additionally carry the admin's granular permissions (e.g. `manage-users`, `manage-settings`).
+
+Flow (identical shape for all three; admin has no public register):
+
+```
+POST /api/v1/{talent|brand}/register     # public sign-up  → { token, token_type, abilities, <entity> }   (201)
+POST /api/v1/{talent|brand|admin}/login  # credentials     → { token, token_type: "Bearer", abilities, <entity> }
+# then send the token on every protected request:
+Authorization: Bearer {token}
+GET  /api/v1/{talent|brand|admin}/me       # current entity
+POST /api/v1/{talent|brand|admin}/refresh  # rotate: revokes the presented token, returns a fresh one
+POST /api/v1/{talent|brand|admin}/logout   # revoke the presented token
+```
+
+- **Talent / brand**: `register` + `login` are public. Protected routes require `abilities:talent` /
+  `abilities:brand`.
+- **Admin**: `login` only (no public sign-up). New staff are provisioned by an existing admin holding
+  `manage-users` via `POST /api/v1/admin/register`. Protected routes require `abilities:admin` (some
+  add a permission, e.g. `abilities:manage-settings`).
+- Endpoints open to either party (deal inbox, notifications) use `ability:talent,brand` (any of).
+
+## Pagination
+
+Every **unbounded / growing list** (search, feeds, inboxes, moderation queues, notifications, activity)
+is paginated and fills `meta.pagination`:
 
 ```json
 "meta": { "pagination": { "current_page": 1, "last_page": 5, "per_page": 15, "total": 68, "from": 1, "to": 15 } }
 ```
 
-Built by `App\Support\ApiResponse` and the `response()->success|error|paginated()` macros. Validation
-and authentication exceptions are auto-rendered into this envelope for JSON/Ajax requests
-(`bootstrap/app.php`).
+Pass `?page=N` to traverse. A `ContractComplianceTest` asserts this block (all six keys) on every list
+endpoint. **Intentionally NOT paginated** (returned whole, because the client renders the entire set as
+one unit and it is naturally bounded): the reference **lookups** (`/lookups/*`), and a talent/brand's own
+**editor-state collections** — profile blocks + block-picker, professions, brand images, social handles.
+These still return the standard envelope (with `data` as the full collection).
 
-## Auth
-- **Web:** session guards (`admin` / `brand` / `talent`) via Breeze.
-- **Mobile API (Phase 4A — built):** stateless Sanctum bearer tokens. All three models use
-  `HasApiTokens`. Login/register verify credentials against the entity model directly (no session) and
-  issue an **ability-scoped** personal access token; the token's abilities are the guard name
-  (`talent` / `brand` / `admin`) — admin tokens additionally carry the admin's granular spatie
-  permissions so future admin API routes gate with `abilities:<permission>`. Protected routes use
-  `auth:sanctum` + the `abilities`/`ability` middleware. `refresh` rotates the token (revoke + reissue);
-  `logout` revokes the presented token.
+## Locale
 
-## Client wrapper
-`resources/js/http.js` (`window.fama` / ES exports) wraps `fetch`: attaches CSRF +
-`X-Requested-With: XMLHttpRequest` + `Accept: application/json`, parses the envelope, and throws
-`ApiError { status, message, errors, data, meta }` on failure so callers surface validation errors
-inline.
+Send `Accept-Language: ar` or `Accept-Language: en` (quality-weighted values like `ar-EG,ar;q=0.9,en;q=0.5`
+are honoured; anything unsupported falls back to `en`). `SetApiLocale` negotiates it, echoes the chosen
+locale on the **`Content-Language`** response header, and — on public reads — translatable fields
+(talent headline/bio, brand & campaign description, profession/block names) resolve to that single locale.
+Owner-editing endpoints instead return per-locale maps (`{"en": …, "ar": …}`) so the app can edit both.
+
+## Rate limits
+
+Two named throttles (returning a **429** envelope with `meta.retry_after` on trip):
+
+| Bucket | Limit | Scope | Applies to |
+|---|---|---|---|
+| `api` | 60 / min | token user, else client IP | the whole `/api/v1` group |
+| `auth` | 10 / min | email + IP | the credential endpoints (register / login) |
+
+## Client wrapper (web)
+`resources/js/http.js` wraps `fetch` for the web-Ajax layer (CSRF + `Accept: application/json`, envelope
+parsing, `ApiError` on failure). It shares this exact envelope, so web and API never drift.
 
 ## Generated docs (Scribe)
-`knuckleswtf/scribe` (`config/scribe.php`) documents the `api/*` routes with grouped endpoints, bearer
-auth, "try it out", a Postman collection and an OpenAPI export:
-
-```bash
-php artisan scribe:generate   # regenerate after changing API routes/annotations
-```
-
-| Artifact | URL / path |
-|---|---|
-| HTML docs (try-it-out) | `GET /docs` (Blade — `resources/views/scribe/`) |
-| OpenAPI 3 spec | `GET /docs.openapi` → `storage/app/private/scribe/openapi.yaml` |
-| Postman collection | `GET /docs.postman` → `storage/app/private/scribe/collection.json` |
-
-Endpoints are grouped and ordered (Talent → Brand → Admin authentication → Discovery → Deals) via
-`@group` docblocks; `@authenticated` / `@unauthenticated` mark each endpoint's auth. Regenerate whenever
-API routes or their annotations change.
+`knuckleswtf/scribe` (`config/scribe.php`) documents the `api/*` routes — grouped + ordered via `@group`
+docblocks, `@authenticated` / `@unauthenticated` per endpoint, bearer auth, "try it out", Postman +
+OpenAPI. Regenerate + export with `composer api-docs`.
 
 ## Public pages — web endpoints (unguarded)
 
@@ -198,22 +253,9 @@ components live in `resources/js/admin.js`.
 
 Defined in `routes/api.php` (registered under the `api` prefix by `bootstrap/app.php`, so every path is
 `/api/v1/...`). Stateless Sanctum token auth, the shared JSON envelope, and the same domain services the
-web layer uses (controllers stay thin). A new API version gets its own `Route::prefix('v2')` group so the
-v1 contract never shifts under existing clients.
-
-**Conventions**
-- **Locale:** send `Accept-Language: ar` (or `en`); `SetApiLocale` negotiates it (quality-weighted,
-  primary-subtag match, en/ar only) and echoes `Content-Language`. Translatable fields (talent
-  headline/bio, brand description, profession names) come back as a single string in that locale.
-- **Throttling:** every route is throttled by the `api` limiter (60/min, keyed by token user or IP); the
-  credential endpoints add the stricter `auth` limiter (10/min, keyed by email+IP). A trip returns a
-  **429** envelope with `meta.retry_after`.
-- **Errors → envelope:** the central handler (`bootstrap/app.php`) shapes validation (**422**),
-  auth (**401**), authorization/ability (**403**), not-found (**404**), throttle (**429**), domain-rule
-  and illegal-transition (**422**) into the envelope; unexpected 5xx are fail-logged to the `api`
-  channel and returned as a clean **500**.
-- **Tokens:** `data.token` (`{id}|{plain}`) + `token_type: "Bearer"` + `abilities`. Send as
-  `Authorization: Bearer {token}`.
+web layer uses (controllers stay thin). The cross-cutting conventions — envelope, error statuses,
+pagination, locale header, rate limits and the token flow — are in the [handoff header](#authentication-per-entity)
+at the top of this page; the tables below are the per-endpoint reference.
 
 ### Authentication (per guard)
 

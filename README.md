@@ -34,19 +34,22 @@ Two-layer authz (`can:` middleware + service re-check); **every mutation is acti
 demo flows + pending-moderation items + audit entries seeded. QA checklist:
 [`docs/conventions.md`](docs/conventions.md#qa-checklist--admin-slice-manual).
 
-**Mobile API (Phase 4A) — built.** Versioned Sanctum token API at **`/api/v1`** (`routes/api.php`):
-register/login/logout/refresh/me for all three guards with **ability-scoped tokens** (admin provisioning
-gated by `manage-users`, no public admin sign-up); public discovery (`/talents`, `/talents/{slug}`,
-`/brands/{slug}`) and an authenticated deal inbox (`/deals`) — all reusing the web layer's services,
-queries and the shared JSON envelope + `meta.pagination`. `Accept-Language` locale negotiation, per-route
-throttling, a central envelope exception handler, and **Scribe** docs at **`/docs`** (OpenAPI + Postman).
-See [`docs/api.md`](docs/api.md).
+**Mobile API — complete (v1, production-grade).** A versioned Sanctum token API at **`/api/v1`**
+(130 endpoints) covering all three entities: auth (register/login/logout/refresh/me, ability-scoped
+tokens), the full **talent** and **brand** workspaces (profile, content, campaigns, discovery, deals with
+step actions), public search + profiles, notifications, reference/lookup catalogs, and policy-gated
+admin-lite reads. Shared JSON envelope + `meta.pagination` on every list, `Accept-Language` locale
+negotiation, per-route rate limiting, a central envelope exception handler, and no lazy-loading. **The
+mobile handoff doc is [`docs/api.md`](docs/api.md)** — base URL, per-entity auth flow, envelope, error
+codes, pagination, locale, rate limits — with the generated **OpenAPI** ([`docs/api/openapi.yaml`](docs/api/openapi.yaml))
+and **Postman** ([`docs/api/collection.json`](docs/api/collection.json)) reference and a live explorer at
+`/docs`. Regenerate with `composer api-docs`.
 
 All slices: Blade + Alpine on the shared `http.js` (no page reloads), JSON envelope, i18n (EN/AR + RTL),
-light/dark. Full Pest suite green (291 tests); demo data seeded (`php artisan migrate:fresh --seed`).
+light/dark. Full Pest suite green (407 tests); demo data seeded (`php artisan migrate:fresh --seed`).
 
-**Next:** brand↔talent deal initiation on the shared engine, and the deal-step **action** slice over the
-API (advance/reject/message — v1 deals are read-only).
+**Next:** brand↔talent deal initiation on the shared engine; richer notification channels (push/email) on
+the existing contract.
 
 ## Stack
 
@@ -98,7 +101,7 @@ Fama has **three login entities**, each with its own session guard + Eloquent pr
   active guard's dashboard.
 - **Dashboards** are guarded route groups (`auth:admin` / `auth:brand` / `auth:talent`). Public pages
   (home now; public talent/brand profiles in Phase 1) are unguarded.
-- **Mobile API** authenticates with **Sanctum** tokens at `/api/v1` (Phase 4A — built); all three models
+- **Mobile API** authenticates with **Sanctum** tokens at `/api/v1` (Phase 4 — complete); all three models
   use `HasApiTokens`, and tokens are ability-scoped to their guard.
 
 ## Folder structure (Fama additions)

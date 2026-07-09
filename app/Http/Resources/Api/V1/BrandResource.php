@@ -4,7 +4,6 @@ namespace App\Http\Resources\Api\V1;
 
 use App\Http\Resources\BaseResource;
 use App\Http\Resources\BrandReviewResource;
-use App\Http\Resources\CampaignResource;
 use App\Models\Brand;
 use Illuminate\Http\Request;
 

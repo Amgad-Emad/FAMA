@@ -236,6 +236,19 @@ unread-count/mark-read/mark-all — basic delivery, stable contract. (3) REFEREN
 green (+18 in tests/Feature/Api/V1: Search/Notification/Lookup/AdminLite); no regressions from the
 DealService notification wiring; Pint clean; Scribe regenerated; docs/api.md + changelog + CLAUDE updated.
 NO git.
+
+MOBILE API PHASE COMPLETE (production-grade: 4A auth + 4B talent + 4C brand + 4D cross-cutting + 4E
+handoff). 130 versioned /api/v1 endpoints, all reusing the web services/queries/Resources (ADR-2) with
+thin controllers. Full Pest suite green (407 tests); a ContractComplianceTest asserts the JSON envelope +
+complete meta.pagination on EVERY paginated list (and, running with preventLazyLoading on + seeded data,
+proves no endpoint lazy-loads). Unbounded lists all paginate; bounded editor-state (blocks/professions/
+images/social) + reference lookups intentionally return whole collections (documented). Consistent error
+envelopes for 400/401/403/404/422/429/500 (central handler in bootstrap/app.php incl. spatie InvalidQuery
+→ 400). Rate limits: api 60/min + auth 10/min (429 with meta.retry_after). Accept-Language honored on all
+public reads — added Api\V1\CampaignResource so public campaign description/caption resolve single-locale
+(owner endpoints keep per-locale maps). Scribe regenerated; OpenAPI + Postman exported to docs/api/ via the
+new `composer api-docs` script (reproducible). docs/api.md is the mobile handoff index (base URL, per-entity
+auth flow, envelope, error table, pagination, locale, rate limits, links to the generated reference +
+Postman); README references it; this section marks the phase COMPLETE. NO git.
 Next: brand↔talent deal initiation (brand discovers a talent → enquiry→deal on the shared engine); richer
-notification delivery (push/email channels on the existing contract); Postman/OpenAPI export handed to the
-mobile developer.
+notification delivery (push/email channels on the existing contract).

@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Api\V1\BrandResource;
-use App\Http\Resources\CampaignResource;
+use App\Http\Resources\Api\V1\CampaignResource;
 use App\Models\Brand;
 use App\Models\Campaign;
 use App\Queries\BrandSearch;
