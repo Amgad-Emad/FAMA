@@ -10,7 +10,7 @@
     ],
     "info": {
         "name": "FAMA API Documentation",
-        "_postman_id": "52f9941c-dffd-49f1-b747-f1062b40418e",
+        "_postman_id": "4632ee4d-144a-4546-8708-4628b8bc3fad",
         "description": "The Fama mobile API (v1) \u2014 token-authenticated endpoints for talents, brands and admins, sharing the same services and JSON envelope as the web app.",
         "schema": "https:\/\/schema.getpostman.com\/json\/collection\/v2.1.0\/collection.json"
     },
@@ -109,10 +109,7 @@
                             }
                         ],
                         "body": null,
-                        "description": "",
-                        "auth": {
-                            "type": "noauth"
-                        }
+                        "description": ""
                     },
                     "response": [
                         {
@@ -157,10 +154,7 @@
                             }
                         ],
                         "body": null,
-                        "description": "",
-                        "auth": {
-                            "type": "noauth"
-                        }
+                        "description": ""
                     },
                     "response": []
                 },
@@ -185,10 +179,7 @@
                             }
                         ],
                         "body": null,
-                        "description": "",
-                        "auth": {
-                            "type": "noauth"
-                        }
+                        "description": ""
                     },
                     "response": []
                 }
@@ -288,10 +279,7 @@
                             }
                         ],
                         "body": null,
-                        "description": "",
-                        "auth": {
-                            "type": "noauth"
-                        }
+                        "description": ""
                     },
                     "response": [
                         {
@@ -336,10 +324,7 @@
                             }
                         ],
                         "body": null,
-                        "description": "",
-                        "auth": {
-                            "type": "noauth"
-                        }
+                        "description": ""
                     },
                     "response": []
                 },
@@ -364,10 +349,7 @@
                             }
                         ],
                         "body": null,
-                        "description": "",
-                        "auth": {
-                            "type": "noauth"
-                        }
+                        "description": ""
                     },
                     "response": []
                 }
@@ -429,10 +411,7 @@
                             }
                         ],
                         "body": null,
-                        "description": "",
-                        "auth": {
-                            "type": "noauth"
-                        }
+                        "description": ""
                     },
                     "response": [
                         {
@@ -477,10 +456,7 @@
                             }
                         ],
                         "body": null,
-                        "description": "",
-                        "auth": {
-                            "type": "noauth"
-                        }
+                        "description": ""
                     },
                     "response": []
                 },
@@ -505,10 +481,7 @@
                             }
                         ],
                         "body": null,
-                        "description": "",
-                        "auth": {
-                            "type": "noauth"
-                        }
+                        "description": ""
                     },
                     "response": []
                 },
@@ -1498,7 +1471,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\"title\":\"b\",\"type\":\"shoot\",\"description\":{\"en\":\"n\",\"ar\":\"g\"},\"budget_min\":12,\"budget_max\":77,\"currency\":\"iyv\",\"location_city\":\"d\",\"location_country\":\"l\",\"start_date\":\"2026-07-09T10:39:37\",\"end_date\":\"2052-08-01\",\"is_public\":false,\"positions_count\":39,\"roles\":[{\"talent_type_id\":16,\"quantity\":22}]}"
+                            "raw": "{\"title\":\"b\",\"type\":\"shoot\",\"description\":{\"en\":\"n\",\"ar\":\"g\"},\"budget_min\":12,\"budget_max\":77,\"currency\":\"iyv\",\"location_city\":\"d\",\"location_country\":\"l\",\"start_date\":\"2026-07-10T11:49:04\",\"end_date\":\"2052-08-02\",\"is_public\":false,\"positions_count\":39,\"roles\":[{\"talent_type_id\":16,\"quantity\":22}]}"
                         },
                         "description": ""
                     },
@@ -1587,7 +1560,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\"title\":\"b\",\"type\":\"shoot\",\"description\":{\"en\":\"n\",\"ar\":\"g\"},\"budget_min\":12,\"budget_max\":77,\"currency\":\"iyv\",\"location_city\":\"d\",\"location_country\":\"l\",\"start_date\":\"2026-07-09T10:39:37\",\"end_date\":\"2052-08-01\",\"is_public\":false,\"positions_count\":39,\"roles\":[{\"talent_type_id\":16,\"quantity\":22}]}"
+                            "raw": "{\"title\":\"b\",\"type\":\"campaign\",\"description\":{\"en\":\"n\",\"ar\":\"g\"},\"budget_min\":12,\"budget_max\":77,\"currency\":\"iyv\",\"location_city\":\"d\",\"location_country\":\"l\",\"start_date\":\"2026-07-10T11:49:04\",\"end_date\":\"2052-08-02\",\"is_public\":false,\"positions_count\":39,\"roles\":[{\"talent_type_id\":16,\"quantity\":22}]}"
                         },
                         "description": ""
                     },
@@ -1876,6 +1849,41 @@
             "name": "Brand \u00b7 Deals",
             "description": "",
             "item": [
+                {
+                    "name": "Start a deal",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/brand\/deals",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/brand\/deals"
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"talent_id\":16,\"service_id\":16,\"deal_flow_id\":16,\"campaign_id\":16,\"brief\":\"n\"}"
+                        },
+                        "description": "Brand-initiated (\"Start a deal\"): creates a deal with the resolved active\nflow, snapshots its steps, activates the first step and notifies the talent.\nGuard failures (talent unpublished \/ not bookable, brand incomplete, no\nactive flow) return **422**. Optionally links a campaign (`deals.campaign_id`)."
+                    },
+                    "response": [
+                        {
+                            "header": [],
+                            "code": 201,
+                            "body": "{\"success\":true,\"data\":{\"id\":1,\"reference\":\"FAMA-2026-00001\",\"status\":\"awaiting_brand\"},\"message\":\"Deal started.\",\"errors\":null,\"meta\":{\"room\":\"\/api\/v1\/brand\/deals\/1\"}}",
+                            "name": "Created"
+                        }
+                    ]
+                },
                 {
                     "name": "List my deals",
                     "request": {
@@ -2250,6 +2258,97 @@
                         "description": ""
                     },
                     "response": []
+                }
+            ]
+        },
+        {
+            "name": "Brand \u00b7 Enquiries",
+            "description": "",
+            "item": [
+                {
+                    "name": "List my pending enquiries",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/brand\/enquiries",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/brand\/enquiries"
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": "Paginated pre-auth enquiries addressed to the brand's email that are still\nawaiting conversion (`status = new`)."
+                    },
+                    "response": [
+                        {
+                            "header": [
+                                {
+                                    "key": "cache-control",
+                                    "value": "no-cache, private"
+                                },
+                                {
+                                    "key": "content-type",
+                                    "value": "application\/json"
+                                },
+                                {
+                                    "key": "access-control-allow-origin",
+                                    "value": "*"
+                                }
+                            ],
+                            "code": 401,
+                            "body": "{\"success\":false,\"data\":null,\"message\":\"Unauthenticated.\",\"errors\":null,\"meta\":null}",
+                            "name": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "Convert an enquiry to a deal",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/v1\/brand\/enquiries\/:enquiry_id\/convert",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/v1\/brand\/enquiries\/:enquiry_id\/convert",
+                            "variable": [
+                                {
+                                    "id": "enquiry_id",
+                                    "key": "enquiry_id",
+                                    "value": 1,
+                                    "description": "The ID of the enquiry."
+                                }
+                            ]
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": "Turns a matched pending enquiry into a real deal (carrying its talent \/\nservice \/ brief), marks it converted, and notifies the talent. **403** if\nthe enquiry's email isn't the brand's; **422** if already handled."
+                    },
+                    "response": [
+                        {
+                            "header": [],
+                            "code": 201,
+                            "body": "{\"success\":true,\"data\":{\"id\":1,\"reference\":\"FAMA-2026-00001\",\"status\":\"awaiting_brand\"},\"message\":\"Enquiry converted to a deal.\",\"errors\":null,\"meta\":{\"room\":\"\/api\/v1\/brand\/deals\/1\"}}",
+                            "name": "Created"
+                        }
+                    ]
                 }
             ]
         },
@@ -3473,7 +3572,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\"agency_name\":\"b\",\"agency_url\":\"http:\\\/\\\/bailey.com\\\/\",\"representation_type\":\"freelance\",\"region\":\"m\"}"
+                            "raw": "{\"agency_name\":\"b\",\"agency_url\":\"http:\\\/\\\/bailey.com\\\/\",\"representation_type\":\"exclusive\",\"region\":\"m\"}"
                         },
                         "description": ""
                     },
@@ -3509,7 +3608,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\"agency_name\":\"b\",\"agency_url\":\"http:\\\/\\\/bailey.com\\\/\",\"representation_type\":\"freelance\",\"region\":\"m\"}"
+                            "raw": "{\"agency_name\":\"b\",\"agency_url\":\"http:\\\/\\\/bailey.com\\\/\",\"representation_type\":\"exclusive\",\"region\":\"m\"}"
                         },
                         "description": ""
                     },
@@ -3654,7 +3753,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\"availability_status\":\"unavailable\",\"willing_to_travel\":true,\"travel_regions\":[\"b\"],\"rate_tier\":\"emerging\"}"
+                            "raw": "{\"availability_status\":\"available\",\"willing_to_travel\":true,\"travel_regions\":[\"b\"],\"rate_tier\":\"emerging\"}"
                         },
                         "description": ""
                     },
@@ -4330,7 +4429,7 @@
                                 {
                                     "id": "enquiry_id",
                                     "key": "enquiry_id",
-                                    "value": 16,
+                                    "value": 1,
                                     "description": "The ID of the enquiry."
                                 }
                             ]
@@ -4444,7 +4543,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\"publication\":\"b\",\"title\":\"n\",\"url\":\"http:\\\/\\\/crooks.biz\\\/et-fugiat-sunt-nihil-accusantium\",\"published_date\":\"2026-07-09T10:39:37\"}"
+                            "raw": "{\"publication\":\"b\",\"title\":\"n\",\"url\":\"http:\\\/\\\/crooks.biz\\\/et-fugiat-sunt-nihil-accusantium\",\"published_date\":\"2026-07-10T11:49:04\"}"
                         },
                         "description": ""
                     },
@@ -4556,7 +4655,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\"talent_type_id\":16,\"is_primary\":false}"
+                            "raw": "{\"talent_type_id\":16,\"is_primary\":true}"
                         },
                         "description": ""
                     },
@@ -4729,7 +4828,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\"display_name\":\"b\",\"headline\":{\"en\":\"n\",\"ar\":\"g\"},\"bio\":{\"en\":\"z\",\"ar\":\"m\"},\"slug\":\"i\",\"base_city\":\"y\",\"base_country\":\"v\",\"booking_type\":\"calendar\",\"booking_value\":\"d\",\"willing_to_travel\":false,\"travel_regions\":[\"l\"],\"rate_tier\":\"elite\"}"
+                            "raw": "{\"display_name\":\"b\",\"headline\":{\"en\":\"n\",\"ar\":\"g\"},\"bio\":{\"en\":\"z\",\"ar\":\"m\"},\"slug\":\"i\",\"base_city\":\"y\",\"base_country\":\"v\",\"booking_type\":\"external\",\"booking_value\":\"d\",\"willing_to_travel\":false,\"travel_regions\":[\"l\"],\"rate_tier\":\"elite\"}"
                         },
                         "description": ""
                     },
@@ -4945,7 +5044,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\"title\":{\"en\":\"b\",\"ar\":\"n\"},\"layout\":\"list\"}"
+                            "raw": "{\"title\":{\"en\":\"b\",\"ar\":\"n\"},\"layout\":\"carousel\"}"
                         },
                         "description": ""
                     },
@@ -5214,7 +5313,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\"name\":{\"en\":\"b\",\"ar\":\"n\"},\"description\":{\"en\":\"g\",\"ar\":\"z\"},\"price\":77,\"currency\":\"iyv\",\"price_unit\":\"project\",\"duration_minutes\":42,\"position\":16}"
+                            "raw": "{\"name\":{\"en\":\"b\",\"ar\":\"n\"},\"description\":{\"en\":\"g\",\"ar\":\"z\"},\"price\":77,\"currency\":\"iyv\",\"price_unit\":\"hour\",\"duration_minutes\":42,\"position\":16}"
                         },
                         "description": ""
                     },

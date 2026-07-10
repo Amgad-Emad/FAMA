@@ -114,7 +114,10 @@ return [
 
         // Set this to true if your API should be authenticated by default. If so, you must also set `enabled` (above) to true.
         // You can then use @unauthenticated or @authenticated on individual endpoints to change their status from the default.
-        'default' => false,
+        // Fama: the whole /api/v1 surface is token-authenticated EXCEPT the public reads + login/register,
+        // which carry @unauthenticated — so default = true marks every protected route secured in the OpenAPI
+        // (class-level @authenticated tags are not emitted as `security` by this Scribe version).
+        'default' => true,
 
         // Where is the auth value meant to be sent in a request?
         'in' => AuthIn::BEARER->value,

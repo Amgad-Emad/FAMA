@@ -74,7 +74,7 @@ endpoints:
         name: availability_status
         description: ''
         required: true
-        example: unavailable
+        example: available
         type: string
         enumValues:
           - available
@@ -122,7 +122,7 @@ endpoints:
         nullable: true
         deprecated: false
     cleanBodyParameters:
-      availability_status: unavailable
+      availability_status: available
       willing_to_travel: true
       travel_regions:
         - b

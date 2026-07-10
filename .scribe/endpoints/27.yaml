@@ -1,19 +1,19 @@
-name: 'Brand · Credibility'
+name: 'Brand · Reviews'
 description: ''
 endpoints:
   -
     custom: []
     httpMethods:
       - GET
-    uri: api/v1/brand/credibility
+    uri: api/v1/brand/reviews
     metadata:
       custom: []
-      groupName: 'Brand · Credibility'
+      groupName: 'Brand · Reviews'
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
-      title: 'Get my credibility'
-      description: ''
+      title: 'List reviews received'
+      description: 'Paginated, approved-only, newest first.'
       authenticated: true
       deprecated: false
     headers:

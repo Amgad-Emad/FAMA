@@ -51,6 +51,14 @@
             </div>
 
             <div class="flex flex-col gap-2 sm:self-center">
+                @if (auth('brand')->check() && auth('brand')->user()->is_complete && $talent->is_published && $talent->availability_status->getValue() === 'available')
+                    {{-- Authenticated, onboarded brand can start a deal straight from the profile. --}}
+                    <button type="button"
+                            @click="$dispatch('open-start-deal', { talentId: {{ $talent->id }}, talentName: @js($talent->display_name) })"
+                            class="w-full rounded-pill bg-accent px-6 py-3 text-center text-base font-medium text-on-primary hover:opacity-90 sm:w-auto">
+                        {{ __('Start a deal') }}
+                    </button>
+                @endif
                 <x-ui.button :href="route('talent.enquire', ['slug' => $talent->slug])" variant="accent" size="lg" class="w-full sm:w-auto">{{ __('Contact') }}</x-ui.button>
                 <x-ui.button :href="route('talent.review.create', ['slug' => $talent->slug])" variant="outline" size="sm" class="w-full sm:w-auto">{{ __('Leave a review') }}</x-ui.button>
             </div>
@@ -72,4 +80,8 @@
             <x-ui.card class="text-center text-subtle">{{ __('This profile is still being set up.') }}</x-ui.card>
         @endif
     </div>
+
+    @if (auth('brand')->check() && auth('brand')->user()->is_complete)
+        <x-brand.start-deal-modal />
+    @endif
 </x-public-layout>

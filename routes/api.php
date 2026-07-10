@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\V1\Brand\CreativeNeedsController as BrandCreativeNe
 use App\Http\Controllers\Api\V1\Brand\CredibilityController as BrandCredibilityController;
 use App\Http\Controllers\Api\V1\Brand\DealController as BrandDealController;
 use App\Http\Controllers\Api\V1\Brand\DiscoveryController as BrandDiscoveryController;
+use App\Http\Controllers\Api\V1\Brand\EnquiryController as BrandEnquiryController;
 use App\Http\Controllers\Api\V1\Brand\OnboardingController as BrandOnboardingController;
 use App\Http\Controllers\Api\V1\Brand\ProfileController as BrandProfileController;
 use App\Http\Controllers\Api\V1\Brand\ReviewController as BrandReviewController;
@@ -252,6 +253,11 @@ Route::prefix('v1')
                 Route::get('discover', [BrandDiscoveryController::class, 'feed']);
                 Route::post('discover/save', [BrandDiscoveryController::class, 'save']);
                 Route::post('discover/brief', [BrandDiscoveryController::class, 'brief']);
+
+                // Deal initiation (Path A) + pending enquiries (Path B).
+                Route::post('deals', [BrandDealController::class, 'store']);
+                Route::get('enquiries', [BrandEnquiryController::class, 'index']);
+                Route::post('enquiries/{enquiry}/convert', [BrandEnquiryController::class, 'convert']);
 
                 // Deals — inbox, room, step actions.
                 Route::get('deals', [BrandDealController::class, 'index']);

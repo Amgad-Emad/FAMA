@@ -1,19 +1,21 @@
-name: 'Brand · Reviews'
+name: 'Brand · Enquiries'
 description: ''
 endpoints:
   -
     custom: []
     httpMethods:
       - GET
-    uri: api/v1/brand/reviews
+    uri: api/v1/brand/enquiries
     metadata:
       custom: []
-      groupName: 'Brand · Reviews'
+      groupName: 'Brand · Enquiries'
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
-      title: 'List reviews received'
-      description: 'Paginated, approved-only, newest first.'
+      title: 'List my pending enquiries'
+      description: |-
+        Paginated pre-auth enquiries addressed to the brand's email that are still
+        awaiting conversion (`status = new`).
       authenticated: true
       deprecated: false
     headers:
@@ -37,6 +39,62 @@ endpoints:
           content-type: application/json
           access-control-allow-origin: '*'
         description: null
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: 'api/v1/brand/enquiries/{enquiry_id}/convert'
+    metadata:
+      custom: []
+      groupName: 'Brand · Enquiries'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Convert an enquiry to a deal'
+      description: |-
+        Turns a matched pending enquiry into a real deal (carrying its talent /
+        service / brief), marks it converted, and notifies the talent. **403** if
+        the enquiry's email isn't the brand's; **422** if already handled.
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      enquiry_id:
+        custom: []
+        name: enquiry_id
+        description: 'The ID of the enquiry.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      enquiry_id: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 201
+        content: '{"success":true,"data":{"id":1,"reference":"FAMA-2026-00001","status":"awaiting_brand"},"message":"Enquiry converted to a deal.","errors":null,"meta":{"room":"/api/v1/brand/deals/1"}}'
+        headers: []
+        description: Created
     responseFields: []
     auth:
       - headers

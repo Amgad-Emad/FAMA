@@ -30,6 +30,9 @@ class DealEnquiryResource extends BaseResource
             'service' => $this->whenLoaded('service', fn () => $this->service
                 ? ['id' => $this->service->id, 'name' => $this->service->getTranslation('name', app()->getLocale())]
                 : null),
+            'talent' => $this->whenLoaded('talent', fn () => $this->talent
+                ? ['id' => $this->talent->id, 'display_name' => $this->talent->display_name, 'slug' => $this->talent->slug]
+                : null),
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }

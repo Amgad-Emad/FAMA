@@ -2,6 +2,43 @@
 
 Notable changes to the Fama project. Newest first.
 
+## 2026-07-10 — Docs/tooling cleanup (no feature changes)
+
+- **ADR-I** consequence corrected: v1 deals are NOT read-only (talent/brand step actions shipped 4B/4C;
+  initiation in ADR-J) — only the top-level cross-entity `GET /api/v1/deals[/{deal}]` is read-only.
+- **Scribe auth coverage**: OpenAPI now marks **every** protected route secured. Class-level `@authenticated`
+  wasn't emitted as `security` by this Scribe version, so set `config/scribe.php` `auth.default = true`
+  (the whole `/api/v1` surface is token-auth except the public reads + login/register, which carry
+  `@unauthenticated`; added it to `AbstractAuthController::login`). `composer api-docs` now runs
+  `scribe:generate --force` so config changes always re-extract. Verified: **116 secured operations ==
+  116 protected routes** (`auth:sanctum`); the 17 unsecured are exactly the public routes.
+- **CLAUDE.md**: "Current project state" now opens with an **ALL PHASES COMPLETE** header.
+- Suite still green (420); Pint clean; OpenAPI + Postman (133 endpoints) regenerated. NO git.
+
+## 2026-07-10 — Brand↔talent deal initiation (the last engine gap)
+
+- **Two initiation paths, web + `/api/v1` (`abilities:brand`)**, thin controllers over the existing
+  `DealService` — no engine changes. **Path A "Start a deal"** (`StartDealRequest` →
+  `DealService::startBrandDeal`): CTAs on the discovery card, the brand-authenticated talent profile, and
+  the campaign workspace (carrying `campaign_id`); guards (talent published + `available`, brand
+  `is_complete`) → 422; reuses `initiate()`. **Path B enquiry→deal** (`DealService::convertEnquiry`, flow
+  now optional/resolved): a brand's pending enquiries (email-matched, `status = new`) surface as a list +
+  dashboard count; convert is email-owned (403) and once-only (422).
+- **Flow resolution** (`DealService::resolveFlowForTalent` + `Talent::primaryCategory()`): explicit flow
+  must be active + applicable; else category-scoped active default, else global active default; none → 422.
+- **Notification** `App\Notifications\DealStarted` (`type = deal.started`) to the talent on
+  initiation/conversion; the deal appears immediately in `GET /talent/deals`.
+- **UI** (Blade + Alpine on http.js, JSON envelope, no reload): reusable `brandStartDeal` modal
+  (`<x-brand.start-deal-modal>`), `brandEnquiries` list, an "Enquiries" nav item + dashboard prompt; all
+  token-styled, dark/light + RTL, Arabic strings added to `lang/ar.json` (24 keys, 0 missing).
+- **Tests** — `tests/Feature/Deals/DealInitiationTest.php` (13): brand initiates (web + API), guards,
+  flow-resolution precedence + no-default 422, enquiry convert (403/422), campaign link, CTA visibility,
+  and the **end-to-end loop from a UI-initiated deal** → advance every step → complete → credibility
+  accrues + the talent's brand-review window opens. `ContractComplianceTest` extended (new enquiries list).
+  **420 tests green** (was 407). Every new multi-write goes through `runInTransaction` (deals channel);
+  N+1 clean; Pint clean; Scribe/OpenAPI/Postman regenerated (133 endpoints); docs + ADR-J updated (ADR-I
+  read-only line corrected). NO git.
+
 ## 2026-07-09 — Phase 4D: cross-cutting API endpoints
 
 - **Search/discovery** — new public brand directory `GET /api/v1/brands` (`App\Queries\BrandSearch`,

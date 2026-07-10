@@ -246,6 +246,32 @@ turn-aware action panel by `step_type` and the interleaved message/system_event 
 > **minimal** brands table (auth surface + name/slug + `is_complete` gate) so the engine references and
 > tests can seed brands; Phase 1B adds the full brand core (see docs/schema.md).
 
+### Deal initiation (the real brand↔talent entry points)
+
+The engine, both deal rooms and the step actions predate this; deal **initiation** is the user-facing
+entry that turns a real brand + real talent into a real deal. Two paths, wired (web + `/api/v1`,
+`abilities:brand`) as thin controllers over `DealService` — no engine changes.
+
+- **Path A — "Start a deal"** (`StartDealRequest` → `DealService::startBrandDeal`). CTAs live on the
+  discovery feed card, the brand-authenticated public talent profile, and the campaign workspace ("book
+  talent into campaign", carrying `campaign_id`). The service guards the participants (talent published +
+  `availability_status = available`; brand `is_complete`) — failures are **422** — resolves the flow (see
+  below), then reuses `initiate()` (which snapshots steps, activates the first step and sets `status` to
+  its actor) and notifies the talent.
+- **Path B — enquiry → deal** (`DealService::convertEnquiry`). A pre-auth `deal_enquiries` row (public
+  Contact form) is surfaced to the brand whose **email matches** `contact_email` and whose `status = new`
+  (a "Pending enquiries" list + a dashboard count). Convert (email-ownership → **403** otherwise;
+  already-handled → **422**) carries the enquiry's talent/service/brief into a deal and stamps
+  `status = converted` + `converted_deal_id`.
+- **Flow resolution** (`DealService::resolveFlowForTalent`): with an explicit `deal_flow_id`, the flow must
+  be **active** and applicable to the talent's primary category (`applies_to` = category / `all` / null);
+  otherwise prefer the **active default scoped to the talent's primary category**, else the **global
+  active default** (`applies_to = all`/null). `deals.deal_flow_id` is required, so no active default → a
+  clear **422** (an admin must publish a default flow first).
+- **Notification**: initiation/conversion dispatches `App\Notifications\DealStarted` (`type = deal.started`,
+  same payload contract) to the talent, so the deal is immediately visible + actionable in their inbox;
+  the existing `deal.turn` notification still fires once it is actually the talent's turn.
+
 ## Domain model — brand side (Phase 2A)
 
 The brand core (`brands`, extended from the Phase 1E stub) plus its satellites and campaigns

@@ -64,6 +64,8 @@ abstract class AbstractAuthController extends Controller
      * entity model (constant-time hash check) with a single generic error to
      * avoid leaking which half was wrong.
      *
+     * @unauthenticated
+     *
      * @throws ValidationException
      */
     public function login(LoginApiRequest $request): JsonResponse

@@ -35,6 +35,17 @@
             @endforeach
         </div>
 
+        {{-- Pending enquiries prompt (Path B) — nudge to convert into deals --}}
+        @if (($stats['pending_enquiries'] ?? 0) > 0)
+            <a href="{{ route('brand.enquiries') }}" class="flex items-center justify-between rounded-xl border border-line bg-surface p-6 hover:border-accent">
+                <div>
+                    <h3 class="font-display text-lg text-ink">{{ __('Pending enquiries') }}</h3>
+                    <p class="text-sm text-muted">{{ trans_choice('You have :count enquiry waiting to be converted into a deal.|You have :count enquiries waiting to be converted into deals.', $stats['pending_enquiries'], ['count' => $stats['pending_enquiries']]) }}</p>
+                </div>
+                <span class="rounded-pill bg-accent px-3 py-1 text-sm font-medium text-on-primary">{{ $stats['pending_enquiries'] }}</span>
+            </a>
+        @endif
+
         {{-- Discovery entry --}}
         <a href="{{ route('brand.discover') }}" class="flex items-center justify-between rounded-xl border border-line bg-accent-weak p-6 hover:opacity-90">
             <div>

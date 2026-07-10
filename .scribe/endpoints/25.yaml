@@ -4,6 +4,111 @@ endpoints:
   -
     custom: []
     httpMethods:
+      - POST
+    uri: api/v1/brand/deals
+    metadata:
+      custom: []
+      groupName: 'Brand · Deals'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Start a deal'
+      description: |-
+        Brand-initiated ("Start a deal"): creates a deal with the resolved active
+        flow, snapshots its steps, activates the first step and notifies the talent.
+        Guard failures (talent unpublished / not bookable, brand incomplete, no
+        active flow) return **422**. Optionally links a campaign (`deals.campaign_id`).
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      talent_id:
+        custom: []
+        name: talent_id
+        description: 'Must match an existing stored value.'
+        required: true
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      service_id:
+        custom: []
+        name: service_id
+        description: 'Must match an existing stored value.'
+        required: false
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      deal_flow_id:
+        custom: []
+        name: deal_flow_id
+        description: 'Must match an existing stored value.'
+        required: false
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      campaign_id:
+        custom: []
+        name: campaign_id
+        description: 'Must match an existing stored value.'
+        required: false
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      brief:
+        custom: []
+        name: brief
+        description: 'Must not be greater than 5000 characters.'
+        required: false
+        example: 'n'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+    cleanBodyParameters:
+      talent_id: 16
+      service_id: 16
+      deal_flow_id: 16
+      campaign_id: 16
+      brief: 'n'
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 201
+        content: '{"success":true,"data":{"id":1,"reference":"FAMA-2026-00001","status":"awaiting_brand"},"message":"Deal started.","errors":null,"meta":{"room":"/api/v1/brand/deals/1"}}'
+        headers: []
+        description: Created
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
       - GET
     uri: api/v1/brand/deals
     metadata:

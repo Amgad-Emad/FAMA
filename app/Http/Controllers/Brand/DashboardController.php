@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Brand;
 
 use App\Models\Deal;
+use App\Models\DealEnquiry;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
@@ -31,6 +32,11 @@ class DashboardController extends BrandController
 
         $recentCampaigns = $brand->campaigns()->latest()->limit(4)->get();
 
+        $pendingEnquiries = DealEnquiry::query()
+            ->where('contact_email', $brand->email)
+            ->where('status', 'new')
+            ->count();
+
         $stats = [
             'is_published' => (bool) $brand->is_published,
             'is_verified' => (bool) $brand->is_verified,
@@ -38,6 +44,7 @@ class DashboardController extends BrandController
             'completed_projects' => (int) ($brand->credibility?->completed_projects_count ?? 0),
             'active_deals' => $activeDeals->count(),
             'campaigns' => $brand->campaigns()->count(),
+            'pending_enquiries' => $pendingEnquiries,
         ];
 
         return view('brand.dashboard', [

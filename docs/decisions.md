@@ -84,8 +84,32 @@
   `SetApiLocale`, `api`/`auth` throttlers, central API exception handler + `api` log channel, Scribe
   (OpenAPI + Postman + `/docs`).
 - **Consequences:** New API versions are additive; adding an admin API capability is a permission on the
-  token, not a schema change. Deal-step *actions* over the API (advance/reject/message) are a later slice —
-  v1 deals are read-only. Password-reset over the API remains unbuilt (ADR-G still open).
+  token, not a schema change. **v1 deals are NOT read-only:** talent/brand deal-step actions
+  (advance/reject/skip/message) shipped in Phases 4B/4C, and brand↔talent deal **initiation** shipped in
+  ADR-J. Only the top-level cross-entity `GET /api/v1/deals[/{deal}]` (the shared read-only inbox for
+  either token) is read-only. Password-reset over the API remains unbuilt (ADR-G still open).
+
+### ADR-J — Deal initiation: flow resolution, enquiry-conversion trigger, email ownership
+- **Context:** The engine + rooms + step actions existed and were tested with seeded deals. The remaining
+  gap was the user-facing entry points (brand starts a deal; a pre-auth enquiry becomes a deal) — which
+  need three decisions: which flow a new deal snapshots, what triggers an enquiry conversion, and who may
+  convert an enquiry.
+- **Decision:** **Accepted.** (a) **Flow resolution at initiation** (`DealService::resolveFlowForTalent`):
+  an explicit `deal_flow_id` must be active + applicable to the talent's primary category; otherwise the
+  active **default** scoped to that category wins, else the **global** active default (`applies_to` =
+  `all`/null). No active default → **422** (admin must publish one first) — `deals.deal_flow_id` is NOT
+  NULL, so resolution must always succeed or fail loudly. (b) **Enquiry conversion is an explicit brand
+  action** (`POST …/enquiries/{enquiry}/convert`), not automatic on onboarding — onboarding may *nudge*
+  (a pending-enquiries prompt), but the deliberate click stays the source of truth (avoids surprise deals).
+  (c) **Email ownership** gates conversion: an enquiry is the brand's only if `contact_email` equals the
+  brand's email (**403** otherwise) and `status = new` (already-handled → **422**).
+- **Status:** **Resolved (Accepted)** — deal-initiation phase. `StartDealRequest`, `DealService::
+  startBrandDeal` / `convertEnquiry` (flow now optional → resolved), `App\Notifications\DealStarted`,
+  brand web + API entry points; `Talent::primaryCategory()`.
+- **Consequences:** A brand can only start a deal against a published, bookable talent when onboarded;
+  which flow applies is deterministic and admin-governed; enquiry conversion is auditable and can't be
+  hijacked across brands. Deal completion still fires `DealCompleted` (credibility accrual + the talent's
+  brand-review window) — now reachable from a real UI-initiated loop, not just seeds.
 
 ## Open — needs owner (surface every session)
 

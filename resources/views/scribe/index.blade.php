@@ -270,7 +270,10 @@ rotation is how a client renews a credential it wants to cycle.</a>
                     <a href="#brand-deals">Brand · Deals</a>
                 </li>
                                     <ul id="tocify-subheader-brand-deals" class="tocify-subheader">
-                                                    <li class="tocify-item level-2" data-unique="brand-deals-GETapi-v1-brand-deals">
+                                                    <li class="tocify-item level-2" data-unique="brand-deals-POSTapi-v1-brand-deals">
+                                <a href="#brand-deals-POSTapi-v1-brand-deals">Start a deal</a>
+                            </li>
+                                                                                <li class="tocify-item level-2" data-unique="brand-deals-GETapi-v1-brand-deals">
                                 <a href="#brand-deals-GETapi-v1-brand-deals">List my deals</a>
                             </li>
                                                                                 <li class="tocify-item level-2" data-unique="brand-deals-GETapi-v1-brand-deals--deal_id-">
@@ -303,6 +306,19 @@ rotation is how a client renews a credential it wants to cycle.</a>
                             </li>
                                                                                 <li class="tocify-item level-2" data-unique="brand-discovery-POSTapi-v1-brand-discover-brief">
                                 <a href="#brand-discovery-POSTapi-v1-brand-discover-brief">Send a brief to a talent</a>
+                            </li>
+                                                                        </ul>
+                            </ul>
+                    <ul id="tocify-header-brand-enquiries" class="tocify-header">
+                <li class="tocify-item level-1" data-unique="brand-enquiries">
+                    <a href="#brand-enquiries">Brand · Enquiries</a>
+                </li>
+                                    <ul id="tocify-subheader-brand-enquiries" class="tocify-subheader">
+                                                    <li class="tocify-item level-2" data-unique="brand-enquiries-GETapi-v1-brand-enquiries">
+                                <a href="#brand-enquiries-GETapi-v1-brand-enquiries">List my pending enquiries</a>
+                            </li>
+                                                                                <li class="tocify-item level-2" data-unique="brand-enquiries-POSTapi-v1-brand-enquiries--enquiry_id--convert">
+                                <a href="#brand-enquiries-POSTapi-v1-brand-enquiries--enquiry_id--convert">Convert an enquiry to a deal</a>
                             </li>
                                                                         </ul>
                             </ul>
@@ -674,7 +690,7 @@ rotation is how a client renews a credential it wants to cycle.</a>
     </ul>
 
     <ul class="toc-footer" id="last-updated">
-        <li>Last updated: July 9, 2026</li>
+        <li>Last updated: July 10, 2026</li>
     </ul>
 </div>
 
@@ -1070,6 +1086,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
                     <h2 id="talent-authentication-GETapi-v1-talent-me">Return the authenticated entity (the token&#039;s tokenable).</h2>
 
 <p>
+<small class="badge badge-darkred">requires authentication</small>
 </p>
 
 
@@ -1081,6 +1098,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
     --get "https://fama.test/api/v1/talent/me" \
+    --header "Authorization: Bearer {YOUR_TOKEN}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
@@ -1091,6 +1109,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 );
 
 const headers = {
+    "Authorization": "Bearer {YOUR_TOKEN}",
     "Content-Type": "application/json",
     "Accept": "application/json",
 };
@@ -1142,7 +1161,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 </span>
 <form id="form-GETapi-v1-talent-me" data-method="GET"
       data-path="api/v1/talent/me"
-      data-authed="0"
+      data-authed="1"
       data-hasfiles="0"
       data-isarraybody="0"
       autocomplete="off"
@@ -1172,6 +1191,18 @@ You can check the Dev Tools console for debugging information.</code></pre>
             <b><code>api/v1/talent/me</code></b>
         </p>
                 <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Authorization</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Authorization" class="auth-value"               data-endpoint="GETapi-v1-talent-me"
+               value="Bearer {YOUR_TOKEN}"
+               data-component="header">
+    <br>
+<p>Example: <code>Bearer {YOUR_TOKEN}</code></p>
+            </div>
                                 <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
 &nbsp;
@@ -1203,6 +1234,7 @@ ability-scoped replacement. Sanctum tokens don&#039;t expire on their own, so
 rotation is how a client renews a credential it wants to cycle.</h2>
 
 <p>
+<small class="badge badge-darkred">requires authentication</small>
 </p>
 
 
@@ -1214,6 +1246,7 @@ rotation is how a client renews a credential it wants to cycle.</h2>
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
     "https://fama.test/api/v1/talent/refresh" \
+    --header "Authorization: Bearer {YOUR_TOKEN}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
@@ -1224,6 +1257,7 @@ rotation is how a client renews a credential it wants to cycle.</h2>
 );
 
 const headers = {
+    "Authorization": "Bearer {YOUR_TOKEN}",
     "Content-Type": "application/json",
     "Accept": "application/json",
 };
@@ -1255,7 +1289,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 </span>
 <form id="form-POSTapi-v1-talent-refresh" data-method="POST"
       data-path="api/v1/talent/refresh"
-      data-authed="0"
+      data-authed="1"
       data-hasfiles="0"
       data-isarraybody="0"
       autocomplete="off"
@@ -1286,6 +1320,18 @@ You can check the Dev Tools console for debugging information.</code></pre>
         </p>
                 <h4 class="fancy-heading-panel"><b>Headers</b></h4>
                                 <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Authorization</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Authorization" class="auth-value"               data-endpoint="POSTapi-v1-talent-refresh"
+               value="Bearer {YOUR_TOKEN}"
+               data-component="header">
+    <br>
+<p>Example: <code>Bearer {YOUR_TOKEN}</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
 &nbsp;
  &nbsp;
@@ -1314,6 +1360,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
                     <h2 id="talent-authentication-POSTapi-v1-talent-logout">Revoke the token presented with the request (single-device logout).</h2>
 
 <p>
+<small class="badge badge-darkred">requires authentication</small>
 </p>
 
 
@@ -1325,6 +1372,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
     "https://fama.test/api/v1/talent/logout" \
+    --header "Authorization: Bearer {YOUR_TOKEN}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
@@ -1335,6 +1383,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 );
 
 const headers = {
+    "Authorization": "Bearer {YOUR_TOKEN}",
     "Content-Type": "application/json",
     "Accept": "application/json",
 };
@@ -1366,7 +1415,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 </span>
 <form id="form-POSTapi-v1-talent-logout" data-method="POST"
       data-path="api/v1/talent/logout"
-      data-authed="0"
+      data-authed="1"
       data-hasfiles="0"
       data-isarraybody="0"
       autocomplete="off"
@@ -1396,6 +1445,18 @@ You can check the Dev Tools console for debugging information.</code></pre>
             <b><code>api/v1/talent/logout</code></b>
         </p>
                 <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Authorization</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Authorization" class="auth-value"               data-endpoint="POSTapi-v1-talent-logout"
+               value="Bearer {YOUR_TOKEN}"
+               data-component="header">
+    <br>
+<p>Example: <code>Bearer {YOUR_TOKEN}</code></p>
+            </div>
                                 <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
 &nbsp;
@@ -1791,6 +1852,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
                     <h2 id="brand-authentication-GETapi-v1-brand-me">Return the authenticated entity (the token&#039;s tokenable).</h2>
 
 <p>
+<small class="badge badge-darkred">requires authentication</small>
 </p>
 
 
@@ -1802,6 +1864,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
     --get "https://fama.test/api/v1/brand/me" \
+    --header "Authorization: Bearer {YOUR_TOKEN}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
@@ -1812,6 +1875,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 );
 
 const headers = {
+    "Authorization": "Bearer {YOUR_TOKEN}",
     "Content-Type": "application/json",
     "Accept": "application/json",
 };
@@ -1863,7 +1927,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 </span>
 <form id="form-GETapi-v1-brand-me" data-method="GET"
       data-path="api/v1/brand/me"
-      data-authed="0"
+      data-authed="1"
       data-hasfiles="0"
       data-isarraybody="0"
       autocomplete="off"
@@ -1893,6 +1957,18 @@ You can check the Dev Tools console for debugging information.</code></pre>
             <b><code>api/v1/brand/me</code></b>
         </p>
                 <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Authorization</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Authorization" class="auth-value"               data-endpoint="GETapi-v1-brand-me"
+               value="Bearer {YOUR_TOKEN}"
+               data-component="header">
+    <br>
+<p>Example: <code>Bearer {YOUR_TOKEN}</code></p>
+            </div>
                                 <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
 &nbsp;
@@ -1924,6 +2000,7 @@ ability-scoped replacement. Sanctum tokens don&#039;t expire on their own, so
 rotation is how a client renews a credential it wants to cycle.</h2>
 
 <p>
+<small class="badge badge-darkred">requires authentication</small>
 </p>
 
 
@@ -1935,6 +2012,7 @@ rotation is how a client renews a credential it wants to cycle.</h2>
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
     "https://fama.test/api/v1/brand/refresh" \
+    --header "Authorization: Bearer {YOUR_TOKEN}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
@@ -1945,6 +2023,7 @@ rotation is how a client renews a credential it wants to cycle.</h2>
 );
 
 const headers = {
+    "Authorization": "Bearer {YOUR_TOKEN}",
     "Content-Type": "application/json",
     "Accept": "application/json",
 };
@@ -1976,7 +2055,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 </span>
 <form id="form-POSTapi-v1-brand-refresh" data-method="POST"
       data-path="api/v1/brand/refresh"
-      data-authed="0"
+      data-authed="1"
       data-hasfiles="0"
       data-isarraybody="0"
       autocomplete="off"
@@ -2007,6 +2086,18 @@ You can check the Dev Tools console for debugging information.</code></pre>
         </p>
                 <h4 class="fancy-heading-panel"><b>Headers</b></h4>
                                 <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Authorization</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Authorization" class="auth-value"               data-endpoint="POSTapi-v1-brand-refresh"
+               value="Bearer {YOUR_TOKEN}"
+               data-component="header">
+    <br>
+<p>Example: <code>Bearer {YOUR_TOKEN}</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
 &nbsp;
  &nbsp;
@@ -2035,6 +2126,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
                     <h2 id="brand-authentication-POSTapi-v1-brand-logout">Revoke the token presented with the request (single-device logout).</h2>
 
 <p>
+<small class="badge badge-darkred">requires authentication</small>
 </p>
 
 
@@ -2046,6 +2138,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
     "https://fama.test/api/v1/brand/logout" \
+    --header "Authorization: Bearer {YOUR_TOKEN}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
@@ -2056,6 +2149,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 );
 
 const headers = {
+    "Authorization": "Bearer {YOUR_TOKEN}",
     "Content-Type": "application/json",
     "Accept": "application/json",
 };
@@ -2087,7 +2181,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 </span>
 <form id="form-POSTapi-v1-brand-logout" data-method="POST"
       data-path="api/v1/brand/logout"
-      data-authed="0"
+      data-authed="1"
       data-hasfiles="0"
       data-isarraybody="0"
       autocomplete="off"
@@ -2117,6 +2211,18 @@ You can check the Dev Tools console for debugging information.</code></pre>
             <b><code>api/v1/brand/logout</code></b>
         </p>
                 <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Authorization</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Authorization" class="auth-value"               data-endpoint="POSTapi-v1-brand-logout"
+               value="Bearer {YOUR_TOKEN}"
+               data-component="header">
+    <br>
+<p>Example: <code>Bearer {YOUR_TOKEN}</code></p>
+            </div>
                                 <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
 &nbsp;
@@ -2317,6 +2423,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
                     <h2 id="admin-authentication-GETapi-v1-admin-me">Return the authenticated entity (the token&#039;s tokenable).</h2>
 
 <p>
+<small class="badge badge-darkred">requires authentication</small>
 </p>
 
 
@@ -2328,6 +2435,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
     --get "https://fama.test/api/v1/admin/me" \
+    --header "Authorization: Bearer {YOUR_TOKEN}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
@@ -2338,6 +2446,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 );
 
 const headers = {
+    "Authorization": "Bearer {YOUR_TOKEN}",
     "Content-Type": "application/json",
     "Accept": "application/json",
 };
@@ -2389,7 +2498,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 </span>
 <form id="form-GETapi-v1-admin-me" data-method="GET"
       data-path="api/v1/admin/me"
-      data-authed="0"
+      data-authed="1"
       data-hasfiles="0"
       data-isarraybody="0"
       autocomplete="off"
@@ -2419,6 +2528,18 @@ You can check the Dev Tools console for debugging information.</code></pre>
             <b><code>api/v1/admin/me</code></b>
         </p>
                 <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Authorization</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Authorization" class="auth-value"               data-endpoint="GETapi-v1-admin-me"
+               value="Bearer {YOUR_TOKEN}"
+               data-component="header">
+    <br>
+<p>Example: <code>Bearer {YOUR_TOKEN}</code></p>
+            </div>
                                 <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
 &nbsp;
@@ -2450,6 +2571,7 @@ ability-scoped replacement. Sanctum tokens don&#039;t expire on their own, so
 rotation is how a client renews a credential it wants to cycle.</h2>
 
 <p>
+<small class="badge badge-darkred">requires authentication</small>
 </p>
 
 
@@ -2461,6 +2583,7 @@ rotation is how a client renews a credential it wants to cycle.</h2>
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
     "https://fama.test/api/v1/admin/refresh" \
+    --header "Authorization: Bearer {YOUR_TOKEN}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
@@ -2471,6 +2594,7 @@ rotation is how a client renews a credential it wants to cycle.</h2>
 );
 
 const headers = {
+    "Authorization": "Bearer {YOUR_TOKEN}",
     "Content-Type": "application/json",
     "Accept": "application/json",
 };
@@ -2502,7 +2626,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 </span>
 <form id="form-POSTapi-v1-admin-refresh" data-method="POST"
       data-path="api/v1/admin/refresh"
-      data-authed="0"
+      data-authed="1"
       data-hasfiles="0"
       data-isarraybody="0"
       autocomplete="off"
@@ -2533,6 +2657,18 @@ You can check the Dev Tools console for debugging information.</code></pre>
         </p>
                 <h4 class="fancy-heading-panel"><b>Headers</b></h4>
                                 <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Authorization</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Authorization" class="auth-value"               data-endpoint="POSTapi-v1-admin-refresh"
+               value="Bearer {YOUR_TOKEN}"
+               data-component="header">
+    <br>
+<p>Example: <code>Bearer {YOUR_TOKEN}</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
 &nbsp;
  &nbsp;
@@ -2561,6 +2697,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
                     <h2 id="admin-authentication-POSTapi-v1-admin-logout">Revoke the token presented with the request (single-device logout).</h2>
 
 <p>
+<small class="badge badge-darkred">requires authentication</small>
 </p>
 
 
@@ -2572,6 +2709,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
     "https://fama.test/api/v1/admin/logout" \
+    --header "Authorization: Bearer {YOUR_TOKEN}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
@@ -2582,6 +2720,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 );
 
 const headers = {
+    "Authorization": "Bearer {YOUR_TOKEN}",
     "Content-Type": "application/json",
     "Accept": "application/json",
 };
@@ -2613,7 +2752,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 </span>
 <form id="form-POSTapi-v1-admin-logout" data-method="POST"
       data-path="api/v1/admin/logout"
-      data-authed="0"
+      data-authed="1"
       data-hasfiles="0"
       data-isarraybody="0"
       autocomplete="off"
@@ -2643,6 +2782,18 @@ You can check the Dev Tools console for debugging information.</code></pre>
             <b><code>api/v1/admin/logout</code></b>
         </p>
                 <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Authorization</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Authorization" class="auth-value"               data-endpoint="POSTapi-v1-admin-logout"
+               value="Bearer {YOUR_TOKEN}"
+               data-component="header">
+    <br>
+<p>Example: <code>Bearer {YOUR_TOKEN}</code></p>
+            </div>
                                 <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
 &nbsp;
@@ -5947,8 +6098,8 @@ You can check the Dev Tools console for debugging information.</code></pre>
     \"currency\": \"iyv\",
     \"location_city\": \"d\",
     \"location_country\": \"l\",
-    \"start_date\": \"2026-07-09T10:39:37\",
-    \"end_date\": \"2052-08-01\",
+    \"start_date\": \"2026-07-10T11:49:04\",
+    \"end_date\": \"2052-08-02\",
     \"is_public\": false,
     \"positions_count\": 39,
     \"roles\": [
@@ -5984,8 +6135,8 @@ let body = {
     "currency": "iyv",
     "location_city": "d",
     "location_country": "l",
-    "start_date": "2026-07-09T10:39:37",
-    "end_date": "2052-08-01",
+    "start_date": "2026-07-10T11:49:04",
+    "end_date": "2052-08-02",
     "is_public": false,
     "positions_count": 39,
     "roles": [
@@ -6219,10 +6370,10 @@ Must be one of:
  &nbsp;
                 <input type="text" style="display: none"
                               name="start_date"                data-endpoint="POSTapi-v1-brand-campaigns"
-               value="2026-07-09T10:39:37"
+               value="2026-07-10T11:49:04"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-07-09T10:39:37</code></p>
+<p>Must be a valid date. Example: <code>2026-07-10T11:49:04</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>end_date</code></b>&nbsp;&nbsp;
@@ -6231,10 +6382,10 @@ Must be one of:
  &nbsp;
                 <input type="text" style="display: none"
                               name="end_date"                data-endpoint="POSTapi-v1-brand-campaigns"
-               value="2052-08-01"
+               value="2052-08-02"
                data-component="body">
     <br>
-<p>Must be a valid date. Must be a date after or equal to <code>start_date</code>. Example: <code>2052-08-01</code></p>
+<p>Must be a valid date. Must be a date after or equal to <code>start_date</code>. Example: <code>2052-08-02</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>is_public</code></b>&nbsp;&nbsp;
@@ -6487,7 +6638,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     --header "Accept: application/json" \
     --data "{
     \"title\": \"b\",
-    \"type\": \"shoot\",
+    \"type\": \"campaign\",
     \"description\": {
         \"en\": \"n\",
         \"ar\": \"g\"
@@ -6497,8 +6648,8 @@ You can check the Dev Tools console for debugging information.</code></pre>
     \"currency\": \"iyv\",
     \"location_city\": \"d\",
     \"location_country\": \"l\",
-    \"start_date\": \"2026-07-09T10:39:37\",
-    \"end_date\": \"2052-08-01\",
+    \"start_date\": \"2026-07-10T11:49:04\",
+    \"end_date\": \"2052-08-02\",
     \"is_public\": false,
     \"positions_count\": 39,
     \"roles\": [
@@ -6524,7 +6675,7 @@ const headers = {
 
 let body = {
     "title": "b",
-    "type": "shoot",
+    "type": "campaign",
     "description": {
         "en": "n",
         "ar": "g"
@@ -6534,8 +6685,8 @@ let body = {
     "currency": "iyv",
     "location_city": "d",
     "location_country": "l",
-    "start_date": "2026-07-09T10:39:37",
-    "end_date": "2052-08-01",
+    "start_date": "2026-07-10T11:49:04",
+    "end_date": "2052-08-02",
     "is_public": false,
     "positions_count": 39,
     "roles": [
@@ -6672,10 +6823,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="type"                data-endpoint="PATCHapi-v1-brand-campaigns--campaign_id-"
-               value="shoot"
+               value="campaign"
                data-component="body">
     <br>
-<p>Example: <code>shoot</code></p>
+<p>Example: <code>campaign</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>campaign</code></li> <li><code>shoot</code></li></ul>
         </div>
@@ -6782,10 +6933,10 @@ Must be one of:
  &nbsp;
                 <input type="text" style="display: none"
                               name="start_date"                data-endpoint="PATCHapi-v1-brand-campaigns--campaign_id-"
-               value="2026-07-09T10:39:37"
+               value="2026-07-10T11:49:04"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-07-09T10:39:37</code></p>
+<p>Must be a valid date. Example: <code>2026-07-10T11:49:04</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>end_date</code></b>&nbsp;&nbsp;
@@ -6794,10 +6945,10 @@ Must be one of:
  &nbsp;
                 <input type="text" style="display: none"
                               name="end_date"                data-endpoint="PATCHapi-v1-brand-campaigns--campaign_id-"
-               value="2052-08-01"
+               value="2052-08-02"
                data-component="body">
     <br>
-<p>Must be a valid date. Must be a date after or equal to <code>start_date</code>. Example: <code>2052-08-01</code></p>
+<p>Must be a valid date. Must be a date after or equal to <code>start_date</code>. Example: <code>2052-08-02</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>is_public</code></b>&nbsp;&nbsp;
@@ -7219,7 +7370,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     --header "Authorization: Bearer {YOUR_TOKEN}" \
     --header "Content-Type: multipart/form-data" \
     --header "Accept: application/json" \
-    --form "file=@/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/php9cp1icjpev4cf3Qz9CZ" </code></pre></div>
+    --form "file=@/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/phph11mqrd3gpih0lbW4al" </code></pre></div>
 
 
 <div class="javascript-example">
@@ -7353,7 +7504,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
                value=""
                data-component="body">
     <br>
-<p>Must be an image. Must not be greater than 5120 kilobytes. Example: <code>/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/php9cp1icjpev4cf3Qz9CZ</code></p>
+<p>Must be an image. Must not be greater than 5120 kilobytes. Example: <code>/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/phph11mqrd3gpih0lbW4al</code></p>
         </div>
         </form>
 
@@ -7991,7 +8142,232 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
     
 
-                                <h2 id="brand-deals-GETapi-v1-brand-deals">List my deals</h2>
+                                <h2 id="brand-deals-POSTapi-v1-brand-deals">Start a deal</h2>
+
+<p>
+<small class="badge badge-darkred">requires authentication</small>
+</p>
+
+<p>Brand-initiated ("Start a deal"): creates a deal with the resolved active
+flow, snapshots its steps, activates the first step and notifies the talent.
+Guard failures (talent unpublished / not bookable, brand incomplete, no
+active flow) return <strong>422</strong>. Optionally links a campaign (<code>deals.campaign_id</code>).</p>
+
+<span id="example-requests-POSTapi-v1-brand-deals">
+<blockquote>Example request:</blockquote>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request POST \
+    "https://fama.test/api/v1/brand/deals" \
+    --header "Authorization: Bearer {YOUR_TOKEN}" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json" \
+    --data "{
+    \"talent_id\": 16,
+    \"service_id\": 16,
+    \"deal_flow_id\": 16,
+    \"campaign_id\": 16,
+    \"brief\": \"n\"
+}"
+</code></pre></div>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "https://fama.test/api/v1/brand/deals"
+);
+
+const headers = {
+    "Authorization": "Bearer {YOUR_TOKEN}",
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+let body = {
+    "talent_id": 16,
+    "service_id": 16,
+    "deal_flow_id": 16,
+    "campaign_id": 16,
+    "brief": "n"
+};
+
+fetch(url, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body),
+}).then(response =&gt; response.json());</code></pre></div>
+
+</span>
+
+<span id="example-responses-POSTapi-v1-brand-deals">
+            <blockquote>
+            <p>Example response (201, Created):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;success&quot;: true,
+    &quot;data&quot;: {
+        &quot;id&quot;: 1,
+        &quot;reference&quot;: &quot;FAMA-2026-00001&quot;,
+        &quot;status&quot;: &quot;awaiting_brand&quot;
+    },
+    &quot;message&quot;: &quot;Deal started.&quot;,
+    &quot;errors&quot;: null,
+    &quot;meta&quot;: {
+        &quot;room&quot;: &quot;/api/v1/brand/deals/1&quot;
+    }
+}</code>
+ </pre>
+    </span>
+<span id="execution-results-POSTapi-v1-brand-deals" hidden>
+    <blockquote>Received response<span
+                id="execution-response-status-POSTapi-v1-brand-deals"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-POSTapi-v1-brand-deals"
+      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-POSTapi-v1-brand-deals" hidden>
+    <blockquote>Request failed with error:</blockquote>
+    <pre><code id="execution-error-message-POSTapi-v1-brand-deals">
+
+Tip: Check that you&#039;re properly connected to the network.
+If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
+You can check the Dev Tools console for debugging information.</code></pre>
+</span>
+<form id="form-POSTapi-v1-brand-deals" data-method="POST"
+      data-path="api/v1/brand/deals"
+      data-authed="1"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('POSTapi-v1-brand-deals', this);">
+    <h3>
+        Request&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-POSTapi-v1-brand-deals"
+                    onclick="tryItOut('POSTapi-v1-brand-deals');">Try it out ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-POSTapi-v1-brand-deals"
+                    onclick="cancelTryOut('POSTapi-v1-brand-deals');" hidden>Cancel 🛑
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-POSTapi-v1-brand-deals"
+                    data-initial-text="Send Request 💥"
+                    data-loading-text="⏱ Sending..."
+                    hidden>Send Request 💥
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-black">POST</small>
+            <b><code>api/v1/brand/deals</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Authorization</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Authorization" class="auth-value"               data-endpoint="POSTapi-v1-brand-deals"
+               value="Bearer {YOUR_TOKEN}"
+               data-component="header">
+    <br>
+<p>Example: <code>Bearer {YOUR_TOKEN}</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="POSTapi-v1-brand-deals"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="POSTapi-v1-brand-deals"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <h4 class="fancy-heading-panel"><b>Body Parameters</b></h4>
+        <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>talent_id</code></b>&nbsp;&nbsp;
+<small>integer</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="number" style="display: none"
+               step="any"               name="talent_id"                data-endpoint="POSTapi-v1-brand-deals"
+               value="16"
+               data-component="body">
+    <br>
+<p>Must match an existing stored value. Example: <code>16</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>service_id</code></b>&nbsp;&nbsp;
+<small>integer</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="number" style="display: none"
+               step="any"               name="service_id"                data-endpoint="POSTapi-v1-brand-deals"
+               value="16"
+               data-component="body">
+    <br>
+<p>Must match an existing stored value. Example: <code>16</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>deal_flow_id</code></b>&nbsp;&nbsp;
+<small>integer</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="number" style="display: none"
+               step="any"               name="deal_flow_id"                data-endpoint="POSTapi-v1-brand-deals"
+               value="16"
+               data-component="body">
+    <br>
+<p>Must match an existing stored value. Example: <code>16</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>campaign_id</code></b>&nbsp;&nbsp;
+<small>integer</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="number" style="display: none"
+               step="any"               name="campaign_id"                data-endpoint="POSTapi-v1-brand-deals"
+               value="16"
+               data-component="body">
+    <br>
+<p>Must match an existing stored value. Example: <code>16</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>brief</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="brief"                data-endpoint="POSTapi-v1-brand-deals"
+               value="n"
+               data-component="body">
+    <br>
+<p>Must not be greater than 5000 characters. Example: <code>n</code></p>
+        </div>
+        </form>
+
+                    <h2 id="brand-deals-GETapi-v1-brand-deals">List my deals</h2>
 
 <p>
 <small class="badge badge-darkred">requires authentication</small>
@@ -9418,6 +9794,317 @@ You can check the Dev Tools console for debugging information.</code></pre>
         </div>
         </form>
 
+                <h1 id="brand-enquiries">Brand · Enquiries</h1>
+
+    
+
+                                <h2 id="brand-enquiries-GETapi-v1-brand-enquiries">List my pending enquiries</h2>
+
+<p>
+<small class="badge badge-darkred">requires authentication</small>
+</p>
+
+<p>Paginated pre-auth enquiries addressed to the brand's email that are still
+awaiting conversion (<code>status = new</code>).</p>
+
+<span id="example-requests-GETapi-v1-brand-enquiries">
+<blockquote>Example request:</blockquote>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request GET \
+    --get "https://fama.test/api/v1/brand/enquiries" \
+    --header "Authorization: Bearer {YOUR_TOKEN}" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json"</code></pre></div>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "https://fama.test/api/v1/brand/enquiries"
+);
+
+const headers = {
+    "Authorization": "Bearer {YOUR_TOKEN}",
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+
+fetch(url, {
+    method: "GET",
+    headers,
+}).then(response =&gt; response.json());</code></pre></div>
+
+</span>
+
+<span id="example-responses-GETapi-v1-brand-enquiries">
+            <blockquote>
+            <p>Example response (401):</p>
+        </blockquote>
+                <details class="annotation">
+            <summary style="cursor: pointer;">
+                <small onclick="textContent = parentElement.parentElement.open ? 'Show headers' : 'Hide headers'">Show headers</small>
+            </summary>
+            <pre><code class="language-http">cache-control: no-cache, private
+content-type: application/json
+access-control-allow-origin: *
+ </code></pre></details>         <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;success&quot;: false,
+    &quot;data&quot;: null,
+    &quot;message&quot;: &quot;Unauthenticated.&quot;,
+    &quot;errors&quot;: null,
+    &quot;meta&quot;: null
+}</code>
+ </pre>
+    </span>
+<span id="execution-results-GETapi-v1-brand-enquiries" hidden>
+    <blockquote>Received response<span
+                id="execution-response-status-GETapi-v1-brand-enquiries"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-GETapi-v1-brand-enquiries"
+      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-GETapi-v1-brand-enquiries" hidden>
+    <blockquote>Request failed with error:</blockquote>
+    <pre><code id="execution-error-message-GETapi-v1-brand-enquiries">
+
+Tip: Check that you&#039;re properly connected to the network.
+If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
+You can check the Dev Tools console for debugging information.</code></pre>
+</span>
+<form id="form-GETapi-v1-brand-enquiries" data-method="GET"
+      data-path="api/v1/brand/enquiries"
+      data-authed="1"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('GETapi-v1-brand-enquiries', this);">
+    <h3>
+        Request&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-GETapi-v1-brand-enquiries"
+                    onclick="tryItOut('GETapi-v1-brand-enquiries');">Try it out ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-GETapi-v1-brand-enquiries"
+                    onclick="cancelTryOut('GETapi-v1-brand-enquiries');" hidden>Cancel 🛑
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-GETapi-v1-brand-enquiries"
+                    data-initial-text="Send Request 💥"
+                    data-loading-text="⏱ Sending..."
+                    hidden>Send Request 💥
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-green">GET</small>
+            <b><code>api/v1/brand/enquiries</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Authorization</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Authorization" class="auth-value"               data-endpoint="GETapi-v1-brand-enquiries"
+               value="Bearer {YOUR_TOKEN}"
+               data-component="header">
+    <br>
+<p>Example: <code>Bearer {YOUR_TOKEN}</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="GETapi-v1-brand-enquiries"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="GETapi-v1-brand-enquiries"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        </form>
+
+                    <h2 id="brand-enquiries-POSTapi-v1-brand-enquiries--enquiry_id--convert">Convert an enquiry to a deal</h2>
+
+<p>
+<small class="badge badge-darkred">requires authentication</small>
+</p>
+
+<p>Turns a matched pending enquiry into a real deal (carrying its talent /
+service / brief), marks it converted, and notifies the talent. <strong>403</strong> if
+the enquiry's email isn't the brand's; <strong>422</strong> if already handled.</p>
+
+<span id="example-requests-POSTapi-v1-brand-enquiries--enquiry_id--convert">
+<blockquote>Example request:</blockquote>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request POST \
+    "https://fama.test/api/v1/brand/enquiries/1/convert" \
+    --header "Authorization: Bearer {YOUR_TOKEN}" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json"</code></pre></div>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "https://fama.test/api/v1/brand/enquiries/1/convert"
+);
+
+const headers = {
+    "Authorization": "Bearer {YOUR_TOKEN}",
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+
+fetch(url, {
+    method: "POST",
+    headers,
+}).then(response =&gt; response.json());</code></pre></div>
+
+</span>
+
+<span id="example-responses-POSTapi-v1-brand-enquiries--enquiry_id--convert">
+            <blockquote>
+            <p>Example response (201, Created):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;success&quot;: true,
+    &quot;data&quot;: {
+        &quot;id&quot;: 1,
+        &quot;reference&quot;: &quot;FAMA-2026-00001&quot;,
+        &quot;status&quot;: &quot;awaiting_brand&quot;
+    },
+    &quot;message&quot;: &quot;Enquiry converted to a deal.&quot;,
+    &quot;errors&quot;: null,
+    &quot;meta&quot;: {
+        &quot;room&quot;: &quot;/api/v1/brand/deals/1&quot;
+    }
+}</code>
+ </pre>
+    </span>
+<span id="execution-results-POSTapi-v1-brand-enquiries--enquiry_id--convert" hidden>
+    <blockquote>Received response<span
+                id="execution-response-status-POSTapi-v1-brand-enquiries--enquiry_id--convert"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-POSTapi-v1-brand-enquiries--enquiry_id--convert"
+      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-POSTapi-v1-brand-enquiries--enquiry_id--convert" hidden>
+    <blockquote>Request failed with error:</blockquote>
+    <pre><code id="execution-error-message-POSTapi-v1-brand-enquiries--enquiry_id--convert">
+
+Tip: Check that you&#039;re properly connected to the network.
+If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
+You can check the Dev Tools console for debugging information.</code></pre>
+</span>
+<form id="form-POSTapi-v1-brand-enquiries--enquiry_id--convert" data-method="POST"
+      data-path="api/v1/brand/enquiries/{enquiry_id}/convert"
+      data-authed="1"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('POSTapi-v1-brand-enquiries--enquiry_id--convert', this);">
+    <h3>
+        Request&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-POSTapi-v1-brand-enquiries--enquiry_id--convert"
+                    onclick="tryItOut('POSTapi-v1-brand-enquiries--enquiry_id--convert');">Try it out ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-POSTapi-v1-brand-enquiries--enquiry_id--convert"
+                    onclick="cancelTryOut('POSTapi-v1-brand-enquiries--enquiry_id--convert');" hidden>Cancel 🛑
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-POSTapi-v1-brand-enquiries--enquiry_id--convert"
+                    data-initial-text="Send Request 💥"
+                    data-loading-text="⏱ Sending..."
+                    hidden>Send Request 💥
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-black">POST</small>
+            <b><code>api/v1/brand/enquiries/{enquiry_id}/convert</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Authorization</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Authorization" class="auth-value"               data-endpoint="POSTapi-v1-brand-enquiries--enquiry_id--convert"
+               value="Bearer {YOUR_TOKEN}"
+               data-component="header">
+    <br>
+<p>Example: <code>Bearer {YOUR_TOKEN}</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="POSTapi-v1-brand-enquiries--enquiry_id--convert"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="POSTapi-v1-brand-enquiries--enquiry_id--convert"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        <h4 class="fancy-heading-panel"><b>URL Parameters</b></h4>
+                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>enquiry_id</code></b>&nbsp;&nbsp;
+<small>integer</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="number" style="display: none"
+               step="any"               name="enquiry_id"                data-endpoint="POSTapi-v1-brand-enquiries--enquiry_id--convert"
+               value="1"
+               data-component="url">
+    <br>
+<p>The ID of the enquiry. Example: <code>1</code></p>
+            </div>
+                    </form>
+
                 <h1 id="brand-onboarding">Brand · Onboarding</h1>
 
     
@@ -10640,7 +11327,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     --header "Authorization: Bearer {YOUR_TOKEN}" \
     --header "Content-Type: multipart/form-data" \
     --header "Accept: application/json" \
-    --form "file=@/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/phpgv60aooorbru6R4XjeG" </code></pre></div>
+    --form "file=@/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/php2gpm7fom67023vyStSQ" </code></pre></div>
 
 
 <div class="javascript-example">
@@ -10761,7 +11448,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
                value=""
                data-component="body">
     <br>
-<p>Must be an image. Must not be greater than 5120 kilobytes. Example: <code>/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/phpgv60aooorbru6R4XjeG</code></p>
+<p>Must be an image. Must not be greater than 5120 kilobytes. Example: <code>/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/php2gpm7fom67023vyStSQ</code></p>
         </div>
         </form>
 
@@ -10783,7 +11470,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     --header "Authorization: Bearer {YOUR_TOKEN}" \
     --header "Content-Type: multipart/form-data" \
     --header "Accept: application/json" \
-    --form "file=@/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/php044tgp8koib821wB4gE" </code></pre></div>
+    --form "file=@/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/phprpmgp3vn0frk03erQve" </code></pre></div>
 
 
 <div class="javascript-example">
@@ -10904,7 +11591,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
                value=""
                data-component="body">
     <br>
-<p>Must be an image. Must not be greater than 5120 kilobytes. Example: <code>/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/php044tgp8koib821wB4gE</code></p>
+<p>Must be an image. Must not be greater than 5120 kilobytes. Example: <code>/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/phprpmgp3vn0frk03erQve</code></p>
         </div>
         </form>
 
@@ -11198,7 +11885,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     --header "Authorization: Bearer {YOUR_TOKEN}" \
     --header "Content-Type: multipart/form-data" \
     --header "Accept: application/json" \
-    --form "file=@/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/phpu8ct9onpf69cfMskNs3" </code></pre></div>
+    --form "file=@/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/phpeivdaf7qgmgjeYvEzxL" </code></pre></div>
 
 
 <div class="javascript-example">
@@ -11319,7 +12006,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
                value=""
                data-component="body">
     <br>
-<p>Must be an image. Must not be greater than 5120 kilobytes. Example: <code>/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/phpu8ct9onpf69cfMskNs3</code></p>
+<p>Must be an image. Must not be greater than 5120 kilobytes. Example: <code>/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/phpeivdaf7qgmgjeYvEzxL</code></p>
         </div>
         </form>
 
@@ -14274,7 +14961,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     --data "{
     \"agency_name\": \"b\",
     \"agency_url\": \"http:\\/\\/bailey.com\\/\",
-    \"representation_type\": \"freelance\",
+    \"representation_type\": \"exclusive\",
     \"region\": \"m\"
 }"
 </code></pre></div>
@@ -14294,7 +14981,7 @@ const headers = {
 let body = {
     "agency_name": "b",
     "agency_url": "http:\/\/bailey.com\/",
-    "representation_type": "freelance",
+    "representation_type": "exclusive",
     "region": "m"
 };
 
@@ -14423,10 +15110,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="representation_type"                data-endpoint="POSTapi-v1-talent-affiliations"
-               value="freelance"
+               value="exclusive"
                data-component="body">
     <br>
-<p>Example: <code>freelance</code></p>
+<p>Example: <code>exclusive</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>exclusive</code></li> <li><code>non_exclusive</code></li> <li><code>mother_agency</code></li> <li><code>freelance</code></li></ul>
         </div>
@@ -14465,7 +15152,7 @@ Must be one of:
     --data "{
     \"agency_name\": \"b\",
     \"agency_url\": \"http:\\/\\/bailey.com\\/\",
-    \"representation_type\": \"freelance\",
+    \"representation_type\": \"exclusive\",
     \"region\": \"m\"
 }"
 </code></pre></div>
@@ -14485,7 +15172,7 @@ const headers = {
 let body = {
     "agency_name": "b",
     "agency_url": "http:\/\/bailey.com\/",
-    "representation_type": "freelance",
+    "representation_type": "exclusive",
     "region": "m"
 };
 
@@ -14627,10 +15314,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="representation_type"                data-endpoint="PATCHapi-v1-talent-affiliations--affiliation_id-"
-               value="freelance"
+               value="exclusive"
                data-component="body">
     <br>
-<p>Example: <code>freelance</code></p>
+<p>Example: <code>exclusive</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>exclusive</code></li> <li><code>non_exclusive</code></li> <li><code>mother_agency</code></li> <li><code>freelance</code></li></ul>
         </div>
@@ -15095,7 +15782,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
-    \"availability_status\": \"unavailable\",
+    \"availability_status\": \"available\",
     \"willing_to_travel\": true,
     \"travel_regions\": [
         \"b\"
@@ -15117,7 +15804,7 @@ const headers = {
 };
 
 let body = {
-    "availability_status": "unavailable",
+    "availability_status": "available",
     "willing_to_travel": true,
     "travel_regions": [
         "b"
@@ -15226,10 +15913,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="availability_status"                data-endpoint="PATCHapi-v1-talent-availability"
-               value="unavailable"
+               value="available"
                data-component="body">
     <br>
-<p>Example: <code>unavailable</code></p>
+<p>Example: <code>available</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>available</code></li> <li><code>booked</code></li> <li><code>unavailable</code></li></ul>
         </div>
@@ -16322,7 +17009,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     --header "Authorization: Bearer {YOUR_TOKEN}" \
     --header "Content-Type: multipart/form-data" \
     --header "Accept: application/json" \
-    --form "file=@/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/phpf0aiq30urclqcvkEtrN" </code></pre></div>
+    --form "file=@/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/phpuqmjskdn7evv4Sz0Y64" </code></pre></div>
 
 
 <div class="javascript-example">
@@ -16468,7 +17155,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
                value=""
                data-component="body">
     <br>
-<p>The asset to upload. Example: <code>/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/phpf0aiq30urclqcvkEtrN</code></p>
+<p>The asset to upload. Example: <code>/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/phpuqmjskdn7evv4Sz0Y64</code></p>
         </div>
         </form>
 
@@ -17866,7 +18553,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "https://fama.test/api/v1/talent/enquiries/16" \
+    --get "https://fama.test/api/v1/talent/enquiries/1" \
     --header "Authorization: Bearer {YOUR_TOKEN}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -17874,7 +18561,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "https://fama.test/api/v1/talent/enquiries/16"
+    "https://fama.test/api/v1/talent/enquiries/1"
 );
 
 const headers = {
@@ -18004,10 +18691,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="number" style="display: none"
                step="any"               name="enquiry_id"                data-endpoint="GETapi-v1-talent-enquiries--enquiry_id-"
-               value="16"
+               value="1"
                data-component="url">
     <br>
-<p>The ID of the enquiry. Example: <code>16</code></p>
+<p>The ID of the enquiry. Example: <code>1</code></p>
             </div>
                     </form>
 
@@ -18183,7 +18870,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     \"publication\": \"b\",
     \"title\": \"n\",
     \"url\": \"http:\\/\\/crooks.biz\\/et-fugiat-sunt-nihil-accusantium\",
-    \"published_date\": \"2026-07-09T10:39:37\"
+    \"published_date\": \"2026-07-10T11:49:04\"
 }"
 </code></pre></div>
 
@@ -18203,7 +18890,7 @@ let body = {
     "publication": "b",
     "title": "n",
     "url": "http:\/\/crooks.biz\/et-fugiat-sunt-nihil-accusantium",
-    "published_date": "2026-07-09T10:39:37"
+    "published_date": "2026-07-10T11:49:04"
 };
 
 fetch(url, {
@@ -18343,10 +19030,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="published_date"                data-endpoint="POSTapi-v1-talent-press"
-               value="2026-07-09T10:39:37"
+               value="2026-07-10T11:49:04"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-07-09T10:39:37</code></p>
+<p>Must be a valid date. Example: <code>2026-07-10T11:49:04</code></p>
         </div>
         </form>
 
@@ -18659,7 +19346,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     --header "Accept: application/json" \
     --data "{
     \"talent_type_id\": 16,
-    \"is_primary\": false
+    \"is_primary\": true
 }"
 </code></pre></div>
 
@@ -18677,7 +19364,7 @@ const headers = {
 
 let body = {
     "talent_type_id": 16,
-    "is_primary": false
+    "is_primary": true
 };
 
 fetch(url, {
@@ -18806,7 +19493,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             <code>false</code>
         </label>
     <br>
-<p>Example: <code>false</code></p>
+<p>Example: <code>true</code></p>
         </div>
         </form>
 
@@ -19423,7 +20110,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     \"slug\": \"i\",
     \"base_city\": \"y\",
     \"base_country\": \"v\",
-    \"booking_type\": \"calendar\",
+    \"booking_type\": \"external\",
     \"booking_value\": \"d\",
     \"willing_to_travel\": false,
     \"travel_regions\": [
@@ -19458,7 +20145,7 @@ let body = {
     "slug": "i",
     "base_city": "y",
     "base_country": "v",
-    "booking_type": "calendar",
+    "booking_type": "external",
     "booking_value": "d",
     "willing_to_travel": false,
     "travel_regions": [
@@ -19688,10 +20375,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="booking_type"                data-endpoint="PATCHapi-v1-talent-profile"
-               value="calendar"
+               value="external"
                data-component="body">
     <br>
-<p>Example: <code>calendar</code></p>
+<p>Example: <code>external</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>email</code></li> <li><code>calendar</code></li> <li><code>form</code></li> <li><code>external</code></li></ul>
         </div>
@@ -19777,7 +20464,7 @@ Must be one of:
     --header "Authorization: Bearer {YOUR_TOKEN}" \
     --header "Content-Type: multipart/form-data" \
     --header "Accept: application/json" \
-    --form "image=@/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/phpkb4cn9gkv3lraR1yMcf" </code></pre></div>
+    --form "image=@/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/phpk77bfs038ac38ggg1XE" </code></pre></div>
 
 
 <div class="javascript-example">
@@ -19898,7 +20585,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
                value=""
                data-component="body">
     <br>
-<p>Must be an image. Must not be greater than 8192 kilobytes. Example: <code>/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/phpkb4cn9gkv3lraR1yMcf</code></p>
+<p>Must be an image. Must not be greater than 8192 kilobytes. Example: <code>/private/var/folders/88/vbp1hp0s0rl7dm90kvjglj940000gn/T/phpk77bfs038ac38ggg1XE</code></p>
         </div>
         </form>
 
@@ -20518,7 +21205,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
         \"en\": \"b\",
         \"ar\": \"n\"
     },
-    \"layout\": \"list\"
+    \"layout\": \"carousel\"
 }"
 </code></pre></div>
 
@@ -20539,7 +21226,7 @@ let body = {
         "en": "b",
         "ar": "n"
     },
-    "layout": "list"
+    "layout": "carousel"
 };
 
 fetch(url, {
@@ -20716,10 +21403,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="layout"                data-endpoint="PATCHapi-v1-talent-profile-blocks--block_id-"
-               value="list"
+               value="carousel"
                data-component="body">
     <br>
-<p>Example: <code>list</code></p>
+<p>Example: <code>carousel</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>grid</code></li> <li><code>carousel</code></li> <li><code>list</code></li> <li><code>masonry</code></li></ul>
         </div>
@@ -21629,7 +22316,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     },
     \"price\": 77,
     \"currency\": \"iyv\",
-    \"price_unit\": \"project\",
+    \"price_unit\": \"hour\",
     \"duration_minutes\": 42,
     \"position\": 16
 }"
@@ -21658,7 +22345,7 @@ let body = {
     },
     "price": 77,
     "currency": "iyv",
-    "price_unit": "project",
+    "price_unit": "hour",
     "duration_minutes": 42,
     "position": 16
 };
@@ -21860,10 +22547,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="price_unit"                data-endpoint="POSTapi-v1-talent-services"
-               value="project"
+               value="hour"
                data-component="body">
     <br>
-<p>Example: <code>project</code></p>
+<p>Example: <code>hour</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>hour</code></li> <li><code>day</code></li> <li><code>project</code></li> <li><code>fixed</code></li></ul>
         </div>

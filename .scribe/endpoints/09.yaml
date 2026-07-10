@@ -85,7 +85,7 @@ endpoints:
         name: is_primary
         description: ''
         required: false
-        example: false
+        example: true
         type: boolean
         enumValues: []
         exampleWasSpecified: false
@@ -93,7 +93,7 @@ endpoints:
         deprecated: false
     cleanBodyParameters:
       talent_type_id: 16
-      is_primary: false
+      is_primary: true
     fileParameters: []
     responses: []
     responseFields: []

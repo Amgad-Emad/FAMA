@@ -12,6 +12,8 @@ use App\Models\Deal;
 use App\Models\DealEnquiry;
 use App\Models\DealFlow;
 use App\Models\DealMessage;
+use App\Models\Talent;
+use App\Notifications\DealStarted;
 use App\Notifications\DealTurnChanged;
 use App\Notifications\NewDealMessage;
 use App\States\DealMessage\Read;
@@ -49,6 +51,92 @@ class DealService extends Service
             fn () => ($this->initiate)($attributes, $flow),
             ['flow_id' => $flow->id, 'talent_id' => $attributes['talent_id'] ?? null],
         );
+    }
+
+    /**
+     * Brand-initiated entry point ("Start a deal"). Guards the participants,
+     * resolves the applicable deal flow, then reuses initiate() (transactional +
+     * fail-logged) and notifies the talent. Guard failures surface as 422.
+     *
+     * @param  array<string, mixed>  $data  talent (Talent), service_id?, deal_flow_id?, campaign_id?, brief?, title?
+     *
+     * @throws InvalidArgumentException
+     */
+    public function startBrandDeal(Brand $brand, array $data): Deal
+    {
+        /** @var Talent $talent */
+        $talent = $data['talent'];
+
+        if (! $brand->is_complete) {
+            throw new InvalidArgumentException(__('Finish onboarding before starting a deal.'));
+        }
+
+        if (! $talent->is_published) {
+            throw new InvalidArgumentException(__('This talent is not available for booking.'));
+        }
+
+        if ($talent->availability_status->getValue() !== 'available') {
+            throw new InvalidArgumentException(__('This talent is not currently taking bookings.'));
+        }
+
+        $flow = $this->resolveFlowForTalent($talent, $data['deal_flow_id'] ?? null);
+
+        $deal = $this->initiate([
+            'brand_id' => $brand->getKey(),
+            'talent_id' => $talent->getKey(),
+            'service_id' => $data['service_id'] ?? null,
+            'campaign_id' => $data['campaign_id'] ?? null,
+            'title' => $data['title'] ?? (__('Booking with ').$talent->display_name),
+            'brief' => $data['brief'] ?? null,
+            'initiated_by' => 'brand',
+        ], $flow);
+
+        $this->notifyDealStarted($deal);
+
+        return $deal;
+    }
+
+    /**
+     * Resolve the deal flow to snapshot for a talent. With an explicit id, the
+     * flow must be active AND applicable to the talent's primary category. Without
+     * one, prefer the active default scoped to that category, else the global
+     * active default (applies_to = all / null). No active default → 422.
+     *
+     * @throws InvalidArgumentException
+     */
+    public function resolveFlowForTalent(Talent $talent, ?int $flowId = null): DealFlow
+    {
+        $category = $talent->primaryCategory();
+
+        if ($flowId !== null) {
+            $flow = DealFlow::query()->active()->whereKey($flowId)->first();
+
+            if ($flow === null) {
+                throw new InvalidArgumentException(__('The selected deal flow is not available.'));
+            }
+
+            if (! $this->flowAppliesTo($flow, $category)) {
+                throw new InvalidArgumentException(__('The selected deal flow does not apply to this talent.'));
+            }
+
+            return $flow;
+        }
+
+        // Prefer the default scoped to the talent's primary category…
+        $flow = $category !== null
+            ? DealFlow::query()->active()->where('is_default', true)->where('applies_to', $category)->first()
+            : null;
+
+        // …else the global default (applies_to = all / null).
+        $flow ??= DealFlow::query()->active()->where('is_default', true)
+            ->where(fn ($q) => $q->where('applies_to', 'all')->orWhereNull('applies_to'))
+            ->first();
+
+        if ($flow === null) {
+            throw new InvalidArgumentException(__('No active deal flow is available yet. An administrator must publish a default flow first.'));
+        }
+
+        return $flow;
     }
 
     /**
@@ -122,14 +210,26 @@ class DealService extends Service
     }
 
     /**
-     * Convert a pre-auth enquiry into a deal.
+     * Convert a pre-auth enquiry into a deal. The flow is resolved from the
+     * enquiry's talent (same rules as Path A) unless one is supplied. The action
+     * carries the enquiry's talent/service/brief and marks it converted; the
+     * talent is then notified.
+     *
+     * @throws InvalidArgumentException
      */
-    public function convertEnquiry(DealEnquiry $enquiry, Brand $brand, DealFlow $flow): Deal
+    public function convertEnquiry(DealEnquiry $enquiry, Brand $brand, ?DealFlow $flow = null): Deal
     {
-        return $this->runInTransaction(
+        $enquiry->loadMissing('talent');
+        $flow ??= $this->resolveFlowForTalent($enquiry->talent, null);
+
+        $deal = $this->runInTransaction(
             fn () => ($this->convert)($enquiry, $brand, $flow),
             ['enquiry_id' => $enquiry->id, 'brand_id' => $brand->getKey()],
         );
+
+        $this->notifyDealStarted($deal);
+
+        return $deal;
     }
 
     /**
@@ -166,6 +266,26 @@ class DealService extends Service
                 $message->status->transitionTo(Read::class);
                 $message->forceFill(['read_at' => now()])->save();
             });
+    }
+
+    /**
+     * Whether a flow applies to a talent category (global flows apply to all).
+     */
+    private function flowAppliesTo(DealFlow $flow, ?string $category): bool
+    {
+        return $flow->applies_to === null
+            || $flow->applies_to === 'all'
+            || ($category !== null && $flow->applies_to === $category);
+    }
+
+    /**
+     * Notify the talent that a brand has started a deal with them (initiation /
+     * enquiry conversion), so it surfaces in their inbox as actionable.
+     */
+    private function notifyDealStarted(Deal $deal): void
+    {
+        $deal->loadMissing('talent');
+        $deal->talent?->notify(new DealStarted($deal));
     }
 
     /**

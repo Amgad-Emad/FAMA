@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Brand;
 
+use App\Http\Requests\Brand\StartDealRequest;
 use App\Http\Resources\DealMessageResource;
 use App\Http\Resources\DealResource;
 use App\Http\Resources\DealStepResource;
@@ -24,6 +25,22 @@ class DealController extends BrandController
     public function index(): View
     {
         return view('brand.deals.index');
+    }
+
+    /**
+     * Brand-initiated deal ("Start a deal") — creates the deal via the engine and
+     * returns the deal-room URL for the Ajax caller to redirect to. Guard failures
+     * (unbookable talent, incomplete brand, no active flow) surface as 422.
+     */
+    public function store(StartDealRequest $request): JsonResponse
+    {
+        $deal = $this->deals->startBrandDeal($this->brand(), $request->payload());
+
+        return response()->success(
+            ['id' => $deal->id, 'reference' => $deal->reference, 'redirect' => route('brand.deals.show', $deal)],
+            __('Deal started.'),
+            status: 201,
+        );
     }
 
     public function data(Request $request): JsonResponse

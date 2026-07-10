@@ -536,4 +536,72 @@ document.addEventListener('alpine:init', () => {
             }
         },
     }));
+
+    // Reusable "Start a deal" modal. Opened via a window `open-start-deal` event
+    // ({ talentId, talentName, campaignId? }); posts to /brand/deals and redirects
+    // to the new deal room. Guard/validation errors surface inline (JSON envelope).
+    Alpine.data('brandStartDeal', () => ({
+        open: false,
+        talentId: null,
+        talentName: '',
+        campaignId: null,
+        brief: '',
+        saving: false,
+        error: '',
+
+        onOpen(detail) {
+            this.talentId = detail.talentId;
+            this.talentName = detail.talentName || '';
+            this.campaignId = detail.campaignId || null;
+            this.brief = '';
+            this.error = '';
+            this.open = true;
+        },
+
+        async start() {
+            if (this.saving) return;
+            this.saving = true;
+            this.error = '';
+            try {
+                const { data } = await post('/brand/deals', {
+                    talent_id: this.talentId,
+                    brief: this.brief || null,
+                    campaign_id: this.campaignId,
+                });
+                window.location.href = data.redirect;
+            } catch (e) {
+                this.error = e instanceof ApiError ? e.message : 'Something went wrong.';
+                this.saving = false;
+            }
+        },
+    }));
+
+    // Pending enquiries list + convert-to-deal.
+    Alpine.data('brandEnquiries', () => ({
+        enquiries: [],
+        meta: null,
+        loading: true,
+        converting: null,
+
+        async init() {
+            try {
+                const { data, meta } = await get('/brand/enquiries/data');
+                this.enquiries = data;
+                this.meta = meta;
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        async convert(id) {
+            this.converting = id;
+            try {
+                const { data } = await post(`/brand/enquiries/${id}/convert`, {});
+                window.location.href = data.redirect;
+            } catch (e) {
+                if (e instanceof ApiError) window.alert(e.message);
+                this.converting = null;
+            }
+        },
+    }));
 });

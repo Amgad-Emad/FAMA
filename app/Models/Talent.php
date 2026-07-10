@@ -161,6 +161,20 @@ class Talent extends Authenticatable implements HasMedia
     }
 
     /**
+     * The category of the talent's primary profession (the `is_primary` pivot,
+     * else the first) — used to resolve the applicable deal flow at initiation.
+     */
+    public function primaryCategory(): ?string
+    {
+        $this->loadMissing('talentTypes');
+
+        $primary = $this->talentTypes->firstWhere(fn (TalentType $type): bool => (bool) $type->pivot->is_primary)
+            ?? $this->talentTypes->first();
+
+        return $primary?->category;
+    }
+
+    /**
      * The reorderable layout layer (profile_blocks) in display order.
      *
      * @return HasMany<ProfileBlock, $this>

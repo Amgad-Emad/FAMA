@@ -30,6 +30,8 @@ tags:
     description: ''
   - name: 'Brand · Discovery'
     description: ''
+  - name: 'Brand · Enquiries'
+    description: ''
   - name: 'Brand · Onboarding'
     description: ''
   - name: 'Brand · Profile'
@@ -246,7 +248,6 @@ paths:
                     nullable: true
       tags:
         - 'Talent authentication'
-      security: []
   /api/v1/talent/refresh:
     post:
       summary: "Rotate the caller's token: revoke the one presented and issue a fresh\nability-scoped replacement. Sanctum tokens don't expire on their own, so\nrotation is how a client renews a credential it wants to cycle."
@@ -256,7 +257,6 @@ paths:
       responses: {}
       tags:
         - 'Talent authentication'
-      security: []
   /api/v1/talent/logout:
     post:
       summary: 'Revoke the token presented with the request (single-device logout).'
@@ -266,7 +266,6 @@ paths:
       responses: {}
       tags:
         - 'Talent authentication'
-      security: []
   /api/v1/brand/register:
     post:
       summary: 'Register a brand'
@@ -439,7 +438,6 @@ paths:
                     nullable: true
       tags:
         - 'Brand authentication'
-      security: []
   /api/v1/brand/refresh:
     post:
       summary: "Rotate the caller's token: revoke the one presented and issue a fresh\nability-scoped replacement. Sanctum tokens don't expire on their own, so\nrotation is how a client renews a credential it wants to cycle."
@@ -449,7 +447,6 @@ paths:
       responses: {}
       tags:
         - 'Brand authentication'
-      security: []
   /api/v1/brand/logout:
     post:
       summary: 'Revoke the token presented with the request (single-device logout).'
@@ -459,7 +456,6 @@ paths:
       responses: {}
       tags:
         - 'Brand authentication'
-      security: []
   /api/v1/admin/login:
     post:
       summary: 'Authenticate credentials and issue an ability-scoped token.'
@@ -532,7 +528,6 @@ paths:
                     nullable: true
       tags:
         - 'Admin authentication'
-      security: []
   /api/v1/admin/refresh:
     post:
       summary: "Rotate the caller's token: revoke the one presented and issue a fresh\nability-scoped replacement. Sanctum tokens don't expire on their own, so\nrotation is how a client renews a credential it wants to cycle."
@@ -542,7 +537,6 @@ paths:
       responses: {}
       tags:
         - 'Admin authentication'
-      security: []
   /api/v1/admin/logout:
     post:
       summary: 'Revoke the token presented with the request (single-device logout).'
@@ -552,7 +546,6 @@ paths:
       responses: {}
       tags:
         - 'Admin authentication'
-      security: []
   /api/v1/admin/register:
     post:
       summary: 'Provision an admin'
@@ -2090,12 +2083,12 @@ paths:
                 start_date:
                   type: string
                   description: 'Must be a valid date.'
-                  example: '2026-07-09T10:39:37'
+                  example: '2026-07-10T11:49:04'
                   nullable: true
                 end_date:
                   type: string
                   description: 'Must be a valid date. Must be a date after or equal to <code>start_date</code>.'
-                  example: '2052-08-01'
+                  example: '2052-08-02'
                   nullable: true
                 is_public:
                   type: boolean
@@ -2188,7 +2181,7 @@ paths:
                 type:
                   type: string
                   description: ''
-                  example: shoot
+                  example: campaign
                   enum:
                     - campaign
                     - shoot
@@ -2237,12 +2230,12 @@ paths:
                 start_date:
                   type: string
                   description: 'Must be a valid date.'
-                  example: '2026-07-09T10:39:37'
+                  example: '2026-07-10T11:49:04'
                   nullable: true
                 end_date:
                   type: string
                   description: 'Must be a valid date. Must be a date after or equal to <code>start_date</code>.'
-                  example: '2052-08-01'
+                  example: '2052-08-02'
                   nullable: true
                 is_public:
                   type: boolean
@@ -2500,6 +2493,92 @@ paths:
       tags:
         - 'Brand · Credibility'
   /api/v1/brand/deals:
+    post:
+      summary: 'Start a deal'
+      operationId: startADeal
+      description: "Brand-initiated (\"Start a deal\"): creates a deal with the resolved active\nflow, snapshots its steps, activates the first step and notifies the talent.\nGuard failures (talent unpublished / not bookable, brand incomplete, no\nactive flow) return **422**. Optionally links a campaign (`deals.campaign_id`)."
+      parameters: []
+      responses:
+        201:
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  success: true
+                  data:
+                    id: 1
+                    reference: FAMA-2026-00001
+                    status: awaiting_brand
+                  message: 'Deal started.'
+                  errors: null
+                  meta:
+                    room: /api/v1/brand/deals/1
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      reference:
+                        type: string
+                        example: FAMA-2026-00001
+                      status:
+                        type: string
+                        example: awaiting_brand
+                  message:
+                    type: string
+                    example: 'Deal started.'
+                  errors:
+                    type: string
+                    example: null
+                    nullable: true
+                  meta:
+                    type: object
+                    properties:
+                      room:
+                        type: string
+                        example: /api/v1/brand/deals/1
+      tags:
+        - 'Brand · Deals'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                talent_id:
+                  type: integer
+                  description: 'Must match an existing stored value.'
+                  example: 16
+                service_id:
+                  type: integer
+                  description: 'Must match an existing stored value.'
+                  example: 16
+                  nullable: true
+                deal_flow_id:
+                  type: integer
+                  description: 'Must match an existing stored value.'
+                  example: 16
+                  nullable: true
+                campaign_id:
+                  type: integer
+                  description: 'Must match an existing stored value.'
+                  example: 16
+                  nullable: true
+                brief:
+                  type: string
+                  description: 'Must not be greater than 5000 characters.'
+                  example: 'n'
+                  nullable: true
+              required:
+                - talent_id
     get:
       summary: 'List my deals'
       operationId: listMyDeals
@@ -2818,6 +2897,109 @@ paths:
                   example: 1
               required:
                 - talent_id
+  /api/v1/brand/enquiries:
+    get:
+      summary: 'List my pending enquiries'
+      operationId: listMyPendingEnquiries
+      description: "Paginated pre-auth enquiries addressed to the brand's email that are still\nawaiting conversion (`status = new`)."
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  success: false
+                  data: null
+                  message: Unauthenticated.
+                  errors: null
+                  meta: null
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    type: string
+                    example: null
+                    nullable: true
+                  message:
+                    type: string
+                    example: Unauthenticated.
+                  errors:
+                    type: string
+                    example: null
+                    nullable: true
+                  meta:
+                    type: string
+                    example: null
+                    nullable: true
+      tags:
+        - 'Brand · Enquiries'
+  '/api/v1/brand/enquiries/{enquiry_id}/convert':
+    post:
+      summary: 'Convert an enquiry to a deal'
+      operationId: convertAnEnquiryToADeal
+      description: "Turns a matched pending enquiry into a real deal (carrying its talent /\nservice / brief), marks it converted, and notifies the talent. **403** if\nthe enquiry's email isn't the brand's; **422** if already handled."
+      parameters: []
+      responses:
+        201:
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  success: true
+                  data:
+                    id: 1
+                    reference: FAMA-2026-00001
+                    status: awaiting_brand
+                  message: 'Enquiry converted to a deal.'
+                  errors: null
+                  meta:
+                    room: /api/v1/brand/deals/1
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      reference:
+                        type: string
+                        example: FAMA-2026-00001
+                      status:
+                        type: string
+                        example: awaiting_brand
+                  message:
+                    type: string
+                    example: 'Enquiry converted to a deal.'
+                  errors:
+                    type: string
+                    example: null
+                    nullable: true
+                  meta:
+                    type: object
+                    properties:
+                      room:
+                        type: string
+                        example: /api/v1/brand/deals/1
+      tags:
+        - 'Brand · Enquiries'
+    parameters:
+      -
+        in: path
+        name: enquiry_id
+        description: 'The ID of the enquiry.'
+        example: 1
+        required: true
+        schema:
+          type: integer
   /api/v1/brand/onboarding:
     get:
       summary: 'Onboarding status'
@@ -4715,7 +4897,7 @@ paths:
                 representation_type:
                   type: string
                   description: ''
-                  example: freelance
+                  example: exclusive
                   enum:
                     - exclusive
                     - non_exclusive
@@ -4757,7 +4939,7 @@ paths:
                 representation_type:
                   type: string
                   description: ''
-                  example: freelance
+                  example: exclusive
                   enum:
                     - exclusive
                     - non_exclusive
@@ -4864,7 +5046,7 @@ paths:
                 availability_status:
                   type: string
                   description: ''
-                  example: unavailable
+                  example: available
                   enum:
                     - available
                     - booked
@@ -5452,7 +5634,7 @@ paths:
         in: path
         name: enquiry_id
         description: 'The ID of the enquiry.'
-        example: 16
+        example: 1
         required: true
         schema:
           type: integer
@@ -5527,7 +5709,7 @@ paths:
                 published_date:
                   type: string
                   description: 'Must be a valid date.'
-                  example: '2026-07-09T10:39:37'
+                  example: '2026-07-10T11:49:04'
                   nullable: true
               required:
                 - publication
@@ -5612,7 +5794,7 @@ paths:
                 is_primary:
                   type: boolean
                   description: ''
-                  example: false
+                  example: true
               required:
                 - talent_type_id
   /api/v1/talent/professions/reorder:
@@ -5784,7 +5966,7 @@ paths:
                 booking_type:
                   type: string
                   description: ''
-                  example: calendar
+                  example: external
                   enum:
                     - email
                     - calendar
@@ -6010,7 +6192,7 @@ paths:
                 layout:
                   type: string
                   description: ''
-                  example: list
+                  example: carousel
                   enum:
                     - grid
                     - carousel
@@ -6238,7 +6420,7 @@ paths:
                 price_unit:
                   type: string
                   description: ''
-                  example: project
+                  example: hour
                   enum:
                     - hour
                     - day

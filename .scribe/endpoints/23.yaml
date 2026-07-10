@@ -186,7 +186,7 @@ endpoints:
         name: start_date
         description: 'Must be a valid date.'
         required: false
-        example: '2026-07-09T10:39:37'
+        example: '2026-07-10T11:49:04'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -197,7 +197,7 @@ endpoints:
         name: end_date
         description: 'Must be a valid date. Must be a date after or equal to <code>start_date</code>.'
         required: false
-        example: '2052-08-01'
+        example: '2052-08-02'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -269,8 +269,8 @@ endpoints:
       currency: iyv
       location_city: d
       location_country: l
-      start_date: '2026-07-09T10:39:37'
-      end_date: '2052-08-01'
+      start_date: '2026-07-10T11:49:04'
+      end_date: '2052-08-02'
       is_public: false
       positions_count: 39
       roles:
@@ -394,7 +394,7 @@ endpoints:
         name: type
         description: ''
         required: false
-        example: shoot
+        example: campaign
         type: string
         enumValues:
           - campaign
@@ -495,7 +495,7 @@ endpoints:
         name: start_date
         description: 'Must be a valid date.'
         required: false
-        example: '2026-07-09T10:39:37'
+        example: '2026-07-10T11:49:04'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -506,7 +506,7 @@ endpoints:
         name: end_date
         description: 'Must be a valid date. Must be a date after or equal to <code>start_date</code>.'
         required: false
-        example: '2052-08-01'
+        example: '2052-08-02'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -569,7 +569,7 @@ endpoints:
         deprecated: false
     cleanBodyParameters:
       title: b
-      type: shoot
+      type: campaign
       description:
         en: 'n'
         ar: g
@@ -578,8 +578,8 @@ endpoints:
       currency: iyv
       location_city: d
       location_country: l
-      start_date: '2026-07-09T10:39:37'
-      end_date: '2052-08-01'
+      start_date: '2026-07-10T11:49:04'
+      end_date: '2052-08-02'
       is_public: false
       positions_count: 39
       roles:

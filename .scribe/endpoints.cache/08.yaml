@@ -188,7 +188,7 @@ endpoints:
         name: booking_type
         description: ''
         required: false
-        example: calendar
+        example: external
         type: string
         enumValues:
           - email
@@ -258,7 +258,7 @@ endpoints:
       slug: i
       base_city: 'y'
       base_country: v
-      booking_type: calendar
+      booking_type: external
       booking_value: d
       willing_to_travel: false
       travel_regions:
@@ -603,7 +603,7 @@ endpoints:
         name: layout
         description: ''
         required: false
-        example: list
+        example: carousel
         type: string
         enumValues:
           - grid
@@ -617,7 +617,7 @@ endpoints:
       title:
         en: b
         ar: 'n'
-      layout: list
+      layout: carousel
     fileParameters: []
     responses: []
     responseFields: []

@@ -13,9 +13,10 @@
                         <p class="text-xs text-muted" x-text="talent.primary_type ? talent.primary_type.name : ''"></p>
                         <p class="mt-1 line-clamp-2 text-sm text-muted" x-text="talent.headline"></p>
                         <p class="mt-1 text-xs text-muted" x-text="[talent.city, talent.country].filter(Boolean).join(', ')"></p>
-                        <div class="mt-auto flex gap-2 pt-3">
+                        <div class="mt-auto flex flex-wrap gap-2 pt-3">
                             <button @click="save(talent.id)" :disabled="saved[talent.id]" class="flex-1 rounded-pill border border-line-strong px-3 py-1.5 text-xs text-muted hover:text-ink disabled:opacity-50" x-text="saved[talent.id] ? '{{ __('Saved') }}' : '{{ __('Save') }}'"></button>
-                            <button @click="brief(talent.id)" class="flex-1 rounded-pill bg-accent px-3 py-1.5 text-xs text-on-primary hover:opacity-90">{{ __('Send brief') }}</button>
+                            <button @click="brief(talent.id)" class="flex-1 rounded-pill border border-line-strong px-3 py-1.5 text-xs text-muted hover:text-ink">{{ __('Send brief') }}</button>
+                            <button @click="$dispatch('open-start-deal', { talentId: talent.id, talentName: talent.display_name, campaignId: {{ (int) request()->query('for_campaign') ?: 'null' }} })" class="flex-1 rounded-pill bg-accent px-3 py-1.5 text-xs text-on-primary hover:opacity-90">{{ __('Start a deal') }}</button>
                         </div>
                     </div>
                 </div>
@@ -27,4 +28,6 @@
             <button @click="more()" :disabled="loading" class="rounded-pill border border-line px-5 py-2 text-sm text-muted hover:text-ink disabled:opacity-50">{{ __('Load more') }}</button>
         </div>
     </div>
+
+    <x-brand.start-deal-modal />
 </x-brand-layout>

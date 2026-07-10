@@ -6,6 +6,7 @@ use App\Http\Controllers\Brand\CreativeNeedsController;
 use App\Http\Controllers\Brand\DashboardController;
 use App\Http\Controllers\Brand\DealController;
 use App\Http\Controllers\Brand\DiscoveryController;
+use App\Http\Controllers\Brand\EnquiryController;
 use App\Http\Controllers\Brand\OnboardingController;
 use App\Http\Controllers\Brand\ProfileEditorController;
 use App\Http\Controllers\Brand\ReviewController;
@@ -68,6 +69,12 @@ Route::get('/discover', [DiscoveryController::class, 'index'])->name('discover')
 Route::get('/discover/feed', [DiscoveryController::class, 'feed'])->name('discover.feed');
 Route::post('/discover/save', [DiscoveryController::class, 'save'])->name('discover.save');
 Route::post('/discover/brief', [DiscoveryController::class, 'brief'])->name('discover.brief');
+
+// --- Deal initiation (Path A: "Start a deal") + Path B: pending enquiries ---
+Route::post('/deals', [DealController::class, 'store'])->name('deals.store');
+Route::get('/enquiries', [EnquiryController::class, 'index'])->name('enquiries');
+Route::get('/enquiries/data', [EnquiryController::class, 'data'])->name('enquiries.data');
+Route::post('/enquiries/{enquiry}/convert', [EnquiryController::class, 'convert'])->name('enquiries.convert');
 
 // --- Deals inbox + brand deal room (shared engine, brand actor) -------------
 Route::get('/deals', [DealController::class, 'index'])->name('deals');

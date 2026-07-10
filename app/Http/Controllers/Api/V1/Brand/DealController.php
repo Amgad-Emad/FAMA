@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1\Brand;
 
+use App\Http\Requests\Brand\StartDealRequest;
 use App\Http\Resources\DealMessageResource;
 use App\Http\Resources\DealResource;
 use App\Http\Resources\DealStepResource;
@@ -23,6 +24,29 @@ use Illuminate\Http\Request;
 class DealController extends BrandApiController
 {
     public function __construct(private readonly DealService $deals) {}
+
+    /**
+     * Start a deal
+     *
+     * Brand-initiated ("Start a deal"): creates a deal with the resolved active
+     * flow, snapshots its steps, activates the first step and notifies the talent.
+     * Guard failures (talent unpublished / not bookable, brand incomplete, no
+     * active flow) return **422**. Optionally links a campaign (`deals.campaign_id`).
+     *
+     * @response 201 scenario="Created" {"success":true,"data":{"id":1,"reference":"FAMA-2026-00001","status":"awaiting_brand"},"message":"Deal started.","errors":null,"meta":{"room":"/api/v1/brand/deals/1"}}
+     */
+    public function store(StartDealRequest $request): JsonResponse
+    {
+        $deal = $this->deals->startBrandDeal($this->brand(), $request->payload());
+        $deal->load(['brand', 'talent', 'service', 'currentStep']);
+
+        return response()->success(
+            new DealResource($deal),
+            __('Deal started.'),
+            ['room' => "/api/v1/brand/deals/{$deal->id}"],
+            201,
+        );
+    }
 
     /**
      * List my deals

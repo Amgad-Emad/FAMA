@@ -19,6 +19,7 @@
                             <button x-show="campaign.status === 'in_progress'" @click="transition('complete')" :disabled="acting" class="rounded-pill bg-accent px-3 py-1.5 text-xs text-on-primary">{{ __('Complete') }}</button>
                             <button x-show="['draft','open','in_progress'].includes(campaign.status)" @click="transition('cancel')" :disabled="acting" class="rounded-pill border border-line px-3 py-1.5 text-xs text-muted">{{ __('Cancel') }}</button>
                             <button @click="togglePublic()" class="rounded-pill border border-line px-3 py-1.5 text-xs text-muted" x-text="campaign.is_public ? '{{ __('Make private') }}' : '{{ __('List publicly') }}'"></button>
+                            <a href="{{ route('brand.discover', ['for_campaign' => $campaign->id]) }}" class="rounded-pill bg-accent px-3 py-1.5 text-xs text-on-primary hover:opacity-90">{{ __('Book talent into campaign') }}</a>
                         </div>
                     </div>
                 </div>

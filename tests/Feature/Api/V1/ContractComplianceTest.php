@@ -103,12 +103,14 @@ it('brand lists — envelope + pagination on every one', function () {
     BrandReview::factory()->count(2)->for($brand)->create(['is_approved' => true, 'status' => 'approved']);
     Deal::factory()->count(2)->create(['brand_id' => $brand->id]);
     Talent::factory()->count(2)->create(['is_published' => true, 'status' => 'live']); // feed
+    DealEnquiry::factory()->count(2)->create(['contact_email' => $brand->email, 'status' => 'new']); // pending enquiries
 
     foreach ([
         '/api/v1/brand/campaigns',
         '/api/v1/brand/reviews',
         '/api/v1/brand/deals',
         '/api/v1/brand/discover',
+        '/api/v1/brand/enquiries',
     ] as $url) {
         assertPaginated(api()->withToken($token)->getJson($url));
     }

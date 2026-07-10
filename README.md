@@ -45,11 +45,17 @@ codes, pagination, locale, rate limits — with the generated **OpenAPI** ([`doc
 and **Postman** ([`docs/api/collection.json`](docs/api/collection.json)) reference and a live explorer at
 `/docs`. Regenerate with `composer api-docs`.
 
-All slices: Blade + Alpine on the shared `http.js` (no page reloads), JSON envelope, i18n (EN/AR + RTL),
-light/dark. Full Pest suite green (407 tests); demo data seeded (`php artisan migrate:fresh --seed`).
+**Deal loop closed end to end.** Brands start real deals with real talents — **Path A "Start a deal"**
+(discovery card, talent profile, campaign workspace) and **Path B** (a pre-auth enquiry converts into the
+brand's deal), on web + `/api/v1` over the shared engine, with admin-governed flow resolution. A
+UI-initiated deal walks every step to completion → credibility accrual + the talent's brand-review window
+(proven end to end, not just seeded).
 
-**Next:** brand↔talent deal initiation on the shared engine; richer notification channels (push/email) on
-the existing contract.
+All slices: Blade + Alpine on the shared `http.js` (no page reloads), JSON envelope, i18n (EN/AR + RTL),
+light/dark. Full Pest suite green (420 tests); demo data seeded (`php artisan migrate:fresh --seed`).
+
+**Next:** richer notification channels (push/email) on the existing contract; brand team/roles and the
+talent admission gate (open ADRs A / C).
 
 ## Stack
 

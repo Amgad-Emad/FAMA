@@ -208,6 +208,8 @@ illegal state-transition violations → **422**. An **incomplete brand** (`is_co
 | Campaign lifecycle | `PATCH …/{c}/status` (`{action: open\|start\|complete\|cancel}`) · `PATCH …/{c}/public` · `POST …/{c}/media` | transitions · list ⇄ private · add media |
 | Discovery | `GET /brand/discover` · `GET /brand/discover/feed` | feed shell · personalised paginated feed (writes a `view` signal) |
 | Discovery actions | `POST /brand/discover/save` · `POST /brand/discover/brief` (`{talent_id}`) | write `save` / `brief_sent` signals |
+| Start a deal | `POST /brand/deals` (`{talent_id, service_id?, deal_flow_id?, campaign_id?, brief?}`) | Path A — creates the deal via the engine, returns the room `redirect`; guards → 422 |
+| Enquiries | `GET /brand/enquiries` · `GET …/data` · `POST /brand/enquiries/{enquiry}/convert` | Path B — pending enquiries (email-matched) + convert to a deal (403 foreign · 422 handled) |
 | Deals inbox | `GET /brand/deals` · `GET /brand/deals/data?status=` | list, `is_brand_turn`, filter, paginated |
 | Deal room | `GET /brand/deals/{deal}` · `GET …/thread` | room shell · header+stepper+timeline (marks read) |
 | Deal actions | `POST /brand/deals/{deal}/{advance,reject,skip,message}` | act as the `brand` role (submit brief, accept quote, sign, pay) |
@@ -346,6 +348,8 @@ Translatable `description` is a per-locale map for the owner. Enum option lists 
 | Creative needs | `GET /brand/creative-needs` · `PATCH …` | talent types + project types + frequency + budget tier (drives the feed) |
 | Campaigns | `GET /brand/campaigns` · `POST …` · `GET …/{campaign}` · `PATCH …/{campaign}` · `PATCH …/{campaign}/status` · `PATCH …/{campaign}/public` · `POST …/{campaign}/media` · `DELETE …/{campaign}` | CRUD + roles + media + lifecycle; `show` includes the deals under the campaign |
 | Discovery | `GET /brand/discover` · `POST …/save` · `POST …/brief` | personalised feed (filter + sort) · save/brief signal writes |
+| Deal initiation | `POST /brand/deals` (`{talent_id, service_id?, deal_flow_id?, campaign_id?, brief?}`) | Path A — start a deal (201, `DealResource` + `meta.room`); guards → 422 |
+| Enquiries | `GET /brand/enquiries` · `POST /brand/enquiries/{enquiry}/convert` | Path B — pending enquiries (paginated) + convert (403 foreign · 422 handled) |
 | Deals | `GET /brand/deals?status=` · `GET …/{deal}` · `POST …/{deal}/{advance,reject,skip,message}` | inbox (filter, paginated) · room · brand-side step actions (brief, accept quote, sign, pay) |
 | Reviews | `GET /brand/reviews` | reviews received (approved-only, read-only) |
 | Credibility | `GET /brand/credibility` | accrued credibility (read; null until first completed deal) |
@@ -369,7 +373,7 @@ layered on later without changing it.
 | `POST /api/v1/notifications/{id}/read` | `ability:talent,brand` | mark one read |
 | `POST /api/v1/notifications/read-all` | `ability:talent,brand` | mark all read |
 
-Each notification's `data` carries `type` (`deal.turn` / `deal.message`), `deal_id`, `deal_reference`,
+Each notification's `data` carries `type` (`deal.started` / `deal.turn` / `deal.message`), `deal_id`, `deal_reference`,
 `deal_title` and a rendered `message`. Notifications are scoped to the token's entity automatically
 (Laravel's `Notifiable`).
 

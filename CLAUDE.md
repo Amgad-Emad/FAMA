@@ -57,6 +57,7 @@ Every phase ends with: (1) tests green; (2) fail-logs verified; (3) DB transacti
 (5) this "Current project state" section updated; (6) README current; (7) NO git.
 
 ## Current project state
+ALL PHASES COMPLETE — talent + brand + admin (web) + the versioned mobile API (auth, talent, brand, admin-lite, cross-cutting, handoff) + brand↔talent deal initiation; full Pest suite green. The dated log below is the build history.
 Phase 0 complete: app + packages installed; three auth guards (admin/brand/talent) via Breeze; Sanctum
 ready; i18n (mcamara + translatable) + RTL + Tailwind dark mode; shared JSON envelope, log channels,
 transaction pattern, preventLazyLoading, and http.js fetch wrapper in place; docs/ + README skeletons
@@ -250,5 +251,22 @@ public reads — added Api\V1\CampaignResource so public campaign description/ca
 new `composer api-docs` script (reproducible). docs/api.md is the mobile handoff index (base URL, per-entity
 auth flow, envelope, error table, pagination, locale, rate limits, links to the generated reference +
 Postman); README references it; this section marks the phase COMPLETE. NO git.
-Next: brand↔talent deal initiation (brand discovers a talent → enquiry→deal on the shared engine); richer
-notification delivery (push/email channels on the existing contract).
+DEAL INITIATION COMPLETE (the last engine gap): the real brand↔talent entry points, web + /api/v1
+(abilities:brand), as thin controllers over the existing DealService — NO engine rebuild. Path A "Start a
+deal" (StartDealRequest → DealService::startBrandDeal): CTAs on the discovery card, the brand-authenticated
+talent profile, and the campaign workspace (carrying campaign_id); guards (talent published + available,
+brand is_complete) → 422; reuses initiate(). Path B enquiry→deal (DealService::convertEnquiry, flow now
+optional/resolved): a brand's pending enquiries (email-matched contact_email + status=new) surface as a
+list (GET /brand/enquiries + API) + a dashboard count; convert is email-owned (403) + once-only (422),
+setting status=converted + converted_deal_id. Flow resolution (DealService::resolveFlowForTalent +
+Talent::primaryCategory()): explicit flow must be active + applicable, else category-scoped active default,
+else global active default, else 422. App\Notifications\DealStarted (type deal.started) notifies the talent
+on initiation/conversion; the deal shows immediately in GET /talent/deals. UI: reusable brandStartDeal
+modal (x-brand.start-deal-modal), brandEnquiries list, Enquiries nav + dashboard prompt — Blade+Alpine on
+http.js, JSON envelope, no reload, dark/light + RTL, Arabic added (lang/ar.json, 0 missing). 420 tests
+green (+13 in tests/Feature/Deals/DealInitiationTest incl. the END-TO-END loop from a UI-initiated deal →
+credibility accrual + brand-review window); ContractCompliance extended; every new multi-write via
+runInTransaction (deals channel); N+1 clean; Pint clean; Scribe/OpenAPI/Postman regenerated (133
+endpoints); docs + ADR-J added (ADR-I read-only line corrected). NO git.
+Next: richer notification delivery (push/email channels on the existing contract); brand team/roles
+(ADR-A, still open); talent admission gate (ADR-C, still open).
