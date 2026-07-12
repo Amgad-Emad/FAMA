@@ -99,7 +99,7 @@ Fama has **three login entities**, each with its own session guard + Eloquent pr
 | Guard | Provider → Model | Table | Web home |
 |---|---|---|---|
 | `admin` (default) | `users` → `App\Models\User` | `users` (migrated) | `/admin/dashboard` |
-| `brand` | `brands` → `App\Models\Brand` | `brands` (minimal stub — Phase 1E; extended Phase 1B) | `/brand/dashboard` |
+| `brand` | `brands` → `App\Models\Brand` | `brands` + satellites & campaigns (Phase 2A–2C) | `/brand/dashboard` |
 | `talent` | `talents` → `App\Models\Talent` | `talents` (Phase 1A) | `/talent/dashboard` |
 
 - **Login** is a single, role-aware form: the submitted `role` selects the guard; absent `role`

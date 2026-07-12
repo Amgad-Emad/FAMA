@@ -79,8 +79,10 @@ The UI is skills-first with the non-skill filters in an "Advanced filters" modal
 `composer api-docs` script yet; this contract doc is updated by hand.)*
 Sorts: `sort=view_count|created_at` (default `-view_count`). 12 per page. Output: `TalentCardResource`.
 
-The `{slug}` profile route is the single-segment catch-all and stays **last**; `/discover` and the
-`/{slug}/...` sub-pages are registered before it.
+The `{slug}` profile route is the single-segment catch-all and stays **last**; `/discover`, the
+`/{slug}/...` sub-pages, and the two-segment `/brands/{slug}[/campaigns/{campaign-slug}]` routes are
+registered before it. Brand pages resolve a **published** brand only (404 otherwise), campaign detail a
+**public** campaign only, and the campaign binding is scoped so it must belong to the brand in the path.
 
 ## Talent dashboard — web endpoints (session, `auth:talent`)
 
@@ -119,6 +121,43 @@ Controllers are thin and delegate to the Phase 1B services (ProfileBlockService,
 TalentProfileService); validation via Form Requests (`app/Http/Requests/Talent`), output via Resources
 (`app/Http/Resources`). Front-end components live in `resources/js/dashboard.js`
 (`profileEditor` — which now also holds Skills, pricing and publish — and `crudList`).
+
+## Brand dashboard — web endpoints (session, `auth:brand`)
+
+Defined in `routes/brand.php` (prefix `/brand`, name `brand.`). Same conventions as the talent dashboard:
+GET page routes return a Blade shell; every other action returns the JSON envelope; lists are eager-loaded
++ paginated; resources are scoped to the authenticated brand (foreign resource → **403**); domain-rule and
+illegal state-transition violations → **422**. An **incomplete brand** (`is_complete = false`) hitting
+`GET /brand/dashboard` is redirected into the onboarding wizard.
+
+| Area | Method + path | Purpose |
+|---|---|---|
+| Onboarding | `GET /brand/onboarding` | 6-step wizard shell (redirects to dashboard once complete) |
+| Onboarding | `POST /brand/onboarding/{identity,location,creative-needs,aesthetic,budget}` | persist each step (registered → onboarding) |
+| Onboarding | `POST /brand/onboarding/complete` | flip `is_complete` (onboarding → complete), returns redirect |
+| Home | `GET /brand/dashboard` | completion status, active deals + whose-turn, recent campaigns, feed entry |
+| Profile | `GET /brand/profile` · `PATCH /brand/profile` | editor shell · core fields |
+| Profile media | `POST /brand/profile/{logo,cover}` · `PATCH /brand/profile/aesthetic` | logo/cover (medialibrary) · references + mood tags |
+| Gallery | `GET /brand/profile/images` · `POST …` · `DELETE …/{image}` | brand images CRUD |
+| Social | `GET /brand/social/data` · `POST /brand/social` · `DELETE /brand/social/{handle}` | social handles |
+| Creative needs | `GET /brand/creative-needs` · `PATCH /brand/creative-needs` | talent types + project types + frequency + budget tier |
+| Campaigns | `GET /brand/campaigns` · `GET …/data` · `POST …` | manager · list (paginated, `deals_count`) · create |
+| Campaign | `GET /brand/campaigns/{c}` · `GET …/data` · `PATCH …` · `DELETE …` | workspace · payload (roles, gallery, deals) · edit · delete |
+| Campaign lifecycle | `PATCH …/{c}/status` (`{action: open\|start\|complete\|cancel}`) · `PATCH …/{c}/public` · `POST …/{c}/media` | transitions · list ⇄ private · add media |
+| Discovery | `GET /brand/discover` · `GET /brand/discover/feed` | feed shell · personalised paginated feed (writes a `view` signal) |
+| Discovery actions | `POST /brand/discover/save` · `POST /brand/discover/brief` (`{talent_id}`) | write `save` / `brief_sent` signals |
+| Deals inbox | `GET /brand/deals` · `GET /brand/deals/data?status=` | list, `is_brand_turn`, filter, paginated |
+| Deal room | `GET /brand/deals/{deal}` · `GET …/thread` | room shell · header+stepper+timeline (marks read) |
+| Deal actions | `POST /brand/deals/{deal}/{advance,reject,skip,message}` | act as the `brand` role (submit brief, accept quote, sign, pay) |
+| Reviews | `GET /brand/reviews` · `GET /brand/reviews/data` | reviews received (approved only, read-only, 3 sub-ratings) |
+| Account | `GET /brand/account` · `PATCH /brand/account` · `PATCH /brand/account/publish` | settings/slug · publish toggle (published ⇄ unpublished) |
+
+The brand acts as the `brand` role on the **shared** deal engine (same `advance` body shapes as the talent
+side; `awaiting_brand` is highlighted). Controllers delegate to the Phase 2B services (BrandOnboardingService,
+CampaignService, BrandReviewService, BrandSignalService) and the `BrandTalentFeed` query; validation via
+Form Requests (`app/Http/Requests/Brand`) + inline rules, output via Resources (`BrandResource`,
+`CampaignResource`, `BrandReviewResource`, `TalentCardResource`, shared `DealResource`). Front-end
+components live in `resources/js/brand.js`.
 
 ## Mobile API endpoints
 None wired yet — the Sanctum token API lands in Phase 4; each endpoint will document its request/response

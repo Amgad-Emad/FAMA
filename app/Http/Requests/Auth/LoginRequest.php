@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Auth;
 
 use App\Enums\UserRole;
+use App\Support\Auth\Guards;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -61,7 +62,9 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        if (! Auth::guard($this->role()->guard())->attempt(
+        $guard = $this->role()->guard();
+
+        if (! Auth::guard($guard)->attempt(
             $this->only('email', 'password'),
             $this->boolean('remember'),
         )) {
@@ -73,6 +76,16 @@ class LoginRequest extends FormRequest
         }
 
         RateLimiter::clear($this->throttleKey());
+
+        // Enforce a single active identity per session. Without this, a session
+        // already authenticated on another guard would keep winning the
+        // priority-ordered Guards::current() check, landing the user on the
+        // wrong dashboard (e.g. a talent login while a brand session is live).
+        foreach (Guards::names() as $other) {
+            if ($other !== $guard) {
+                Auth::guard($other)->logout();
+            }
+        }
     }
 
     /**

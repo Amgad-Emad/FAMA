@@ -110,19 +110,43 @@ Deviations (deliberate):
   synced projection (same convention as the Phase 1B state columns).
 - **`campaign_id`** on deals is still deferred (ADR-F), added with campaigns.
 
-## Not yet built (Phase 1B+)
+## Brand core & satellites (Phase 2A — migrated)
 
-- **Brand core & satellites** (Phase 1B): extend `brands` (industry, stage, location, reach, …) and add
-  `brand_aesthetics`, `brand_images`, `brand_creative_needs`, `brand_credibility`, `brand_reviews`,
-  `brand_social_handles`, `brand_signals`.
-- **Campaigns:** `campaigns`, `campaign_talent_types`, `campaign_media`.
-- **Platform:** `settings`.
+`extend_brands_for_profile` fills the `brands` stub with the full identity (all nullable for
+progressive onboarding): `description` (translatable), `industry`, `brand_stage`, `base_city`,
+`base_country`, `geographic_reach`, `founded_year`, `company_size`, `website` (+ discovery indexes on
+industry/reach/city/published). Logo & cover are medialibrary collections (ADR-5), not columns.
 
-> `App\Models\Brand` is now a minimal deal-engine model (auth + identity + `is_complete`); Phase 1B
-> fills out the rich brand profile.
+**Satellites:** `brand_aesthetics` (1:1; free-text `brand_references`), `brand_images` (child media),
+`brand_creative_needs` (1:1; `project_frequency`, internal `budget_tier`), `brand_credibility` (1:1;
+denormalized counters, internal `brief_quality_score`), `brand_reviews` (talent→brand, three
+sub-ratings + `is_approved` + `status`), `brand_social_handles`, `brand_signals` (**append-only** — no
+`updated_at`).
+
+**ADR-6 promotions (brand side, applied):**
+- `brand_aesthetics.mood_tags` → **`brand_mood_tags`** (`brand_aesthetic_id`, `tag`; unique + `tag`
+  index) — "brands with an editorial mood".
+- `brand_creative_needs.talent_types` → **`brand_creative_need_talent_type`** (M:N with `talent_types`)
+  — "all brands needing photographers".
+- `brand_creative_needs.project_types` → **`brand_creative_need_project_type`** (`project_type` enum,
+  unique + index).
+
+> `brand_signals` is an append-only event log and a candidate for a dedicated analytics store if
+> volume grows (schema-master §4).
+
+## Campaigns (Phase 2A — migrated)
+
+`campaigns` (soft deletes; `slug` unique, `type` campaign/shoot, `status` draft/open/in_progress/
+completed/cancelled, budget min/max + currency, location, dates, `is_public`, `positions_count`;
+`description` translatable; cover via medialibrary), `campaign_talent_types` (roles sought,
+UNIQUE(campaign_id, talent_type_id), `quantity`), `campaign_media` (gallery; uploads via medialibrary,
+`embed_url` external, `caption` translatable).
+
+## Not yet built
+
+- **Platform:** `settings` (key-value config).
 
 ## Open schema items (from the specs / decisions)
-- `deals.campaign_id` — FK deals → campaigns (ADR-F), added when the campaign⇄deal link is finalised.
-- Discovery/search (ADR-6): **applied for the talent side** in Phase 1C — see "Discovery search
-  indexes" above. Brand-side promotions (`brand_creative_needs.talent_types`, aesthetic tags) land in
-  Phase 1B.
+- `deals.campaign_id` — FK deals → campaigns (ADR-F), added when the campaign⇄deal link is finalised
+  (campaigns now exist, so this can land in the brand deal phase, 2C).
+- Discovery/search (ADR-6): **applied for both talent (Phase 1C) and brand (Phase 2A)** sides.

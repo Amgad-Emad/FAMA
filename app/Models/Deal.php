@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\ModelStates\HasStates;
 
@@ -75,6 +76,26 @@ class Deal extends Model
     public function flow(): BelongsTo
     {
         return $this->belongsTo(DealFlow::class, 'deal_flow_id');
+    }
+
+    /**
+     * The campaign this deal runs under, if any (ADR-F).
+     *
+     * @return BelongsTo<Campaign, $this>
+     */
+    public function campaign(): BelongsTo
+    {
+        return $this->belongsTo(Campaign::class);
+    }
+
+    /**
+     * The talent's review of the brand for this deal (at most one).
+     *
+     * @return HasOne<BrandReview, $this>
+     */
+    public function brandReview(): HasOne
+    {
+        return $this->hasOne(BrandReview::class);
     }
 
     /**

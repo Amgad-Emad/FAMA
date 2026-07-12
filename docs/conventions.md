@@ -88,7 +88,7 @@ Fama is bilingual (en/ar). Policy:
 - Validation: validate the submitted locale's value; keep the other locale untouched on partial edits.
 - Fallback: missing translations fall back to `APP_FALLBACK_LOCALE` (en).
 
-**Current translatable attributes (Phase 1A — talent side).** These columns are JSON per-locale:
+**Current translatable attributes.** These columns are JSON per-locale:
 
 | Model | Translatable attributes |
 |---|---|
@@ -102,6 +102,9 @@ Fama is bilingual (en/ar). Policy:
 | `BrandCollab` | `project_title` |
 | `PortfolioItem` | `caption` |
 | `Equipment` | `notes` |
+| `Brand` (Phase 2A) | `description` |
+| `Campaign` (Phase 2A) | `description` |
+| `CampaignMedia` (Phase 2A) | `caption` |
 
 **Deliberately NOT translatable:** identifiers/slugs/enums/keys; proper nouns (`brand_name`,
 `client_name`, `software_name`, equipment `brand`/`model`/`name`); `Review.body` (external text kept
@@ -242,3 +245,50 @@ logout. Toggle theme + locale on each page and confirm both render.
 - [ ] Acting on another talent's resource → 403; acting out of turn on a deal → 422.
 - [ ] No `LazyLoadingViolationException` on any page (preventLazyLoading is on outside production);
       every list is paginated + eager-loaded.
+
+## QA checklist — brand slice (manual)
+
+Run against the seeded demo (`php artisan migrate:fresh --seed`; brand `nomad-coffee@fama.test` /
+`password`, slug `nomad-coffee`). Every dashboard interaction is Ajax — **no full page reload** except
+logout. Toggle theme + locale on each page and confirm both render (all colours are tokens; layouts are
+`dir`-aware — verified: no hardcoded colours in `resources/views/brand`, logical `start/end` props used).
+
+**Public pages** (no login)
+- [ ] `/brands/{slug}` — header (logo/cover, verified badge, location, description), **credibility**
+      (completed projects / response rate / avg response), **only approved** talent reviews, **only
+      public** non-cancelled campaigns, social handles + aesthetic moods. An unpublished brand 404s.
+- [ ] `/brands/{slug}/campaigns/{campaign-slug}` — cover, description, budget/location/dates, **roles
+      sought** (with quantities), gallery. A private campaign, a foreign-brand campaign, or one under an
+      unpublished brand all 404.
+
+**Onboarding** (`auth:brand`, incomplete brand)
+- [ ] `/brand/dashboard` on an incomplete brand redirects into `/brand/onboarding`.
+- [ ] Wizard — 6 steps persist step-by-step (identity → location → creative needs → aesthetic → budget →
+      finish); finishing flips `is_complete` and lands on the dashboard with the first feed.
+
+**Brand dashboard** (`auth:brand`, complete brand)
+- [ ] Home — publish status, completed-projects / active-deals / campaigns counts, **active deals with
+      whose-turn** (awaiting_brand highlighted), recent campaigns, discovery entry.
+- [ ] Profile editor — core fields (inline save), logo/cover upload, aesthetic + mood tags, image gallery
+      add/remove, social handles add/remove.
+- [ ] Creative needs — talent types / project types / frequency / budget; saved inline (reshapes the feed).
+- [ ] Campaigns — create (with roles + quantities); workspace: lifecycle buttons (open → start → complete
+      / cancel — illegal transition 422), public toggle, add media, deals under the campaign.
+- [ ] Discovery — personalised feed, load-more pagination, **Save** and **Send brief** write signals.
+- [ ] Reviews received — approved-only, read-only, three sub-ratings.
+- [ ] Account — settings/slug, **publish toggle** (blocked with 422 until onboarding is complete).
+
+**Deals** (brand side of the shared engine)
+- [ ] Inbox — deals listed with status + current step; `awaiting_brand` highlighted; status filter;
+      paginated.
+- [ ] Deal room — stepper + action panel keyed by `step_type` (submit brief, accept/return quote, sign,
+      pay); timeline + free messaging; read-only when it's not the brand's turn.
+- [ ] The seeded demo has a deal under a campaign (`deals.campaign_id`) and two campaigns at different
+      statuses (open + completed showcase).
+
+**Cross-cutting**
+- [ ] Dark ⇄ light toggle persists across pages; RTL (`/ar`) mirrors layout + shows Arabic strings.
+- [ ] Acting on another brand's resource (deal/campaign) → 403; illegal campaign transition or premature
+      publish → 422.
+- [ ] No `LazyLoadingViolationException`; every list is paginated + eager-loaded (query counts stay flat
+      as campaigns/images/talents grow — see `BrandHardeningTest`).

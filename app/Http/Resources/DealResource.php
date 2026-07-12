@@ -27,6 +27,7 @@ class DealResource extends BaseResource
             'end_date' => $this->end_date?->toDateString(),
             'initiated_by' => $this->initiated_by,
             'is_talent_turn' => (string) $this->status === 'awaiting_talent',
+            'is_brand_turn' => (string) $this->status === 'awaiting_brand',
             'brand' => $this->whenLoaded('brand', fn () => ['name' => $this->brand?->name]),
             'current_step' => $this->whenLoaded('currentStep', fn () => $this->currentStep ? [
                 'key' => $this->currentStep->key,

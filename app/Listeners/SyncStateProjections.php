@@ -22,10 +22,25 @@ class SyncStateProjections
 
         match (true) {
             $model instanceof Talent && $event->field === 'status' => $this->syncTalent($model, $final),
+            $model instanceof Brand && $event->field === 'status' => $this->syncBrand($model, $final),
+            $model instanceof BrandReview => $model->forceFill(['is_approved' => $final === 'approved'])->saveQuietly(),
             $model instanceof ProfileBlock => $model->forceFill(['is_visible' => $final === 'visible'])->saveQuietly(),
             $model instanceof Review => $model->forceFill(['is_approved' => $final === 'approved'])->saveQuietly(),
             default => null,
         };
+    }
+
+    /**
+     * Brand flags projected from the lifecycle status. `is_verified` is
+     * orthogonal (a one-way admin flag) and is NOT touched here.
+     */
+    private function syncBrand(Brand $brand, ?string $final): void
+    {
+        $brand->forceFill([
+            'is_complete' => in_array($final, ['complete', 'published', 'unpublished', 'suspended'], true),
+            'is_published' => $final === 'published',
+            'is_active' => $final !== 'suspended',
+        ])->saveQuietly();
     }
 
     /**

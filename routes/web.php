@@ -51,9 +51,8 @@ Route::group([
         Route::view('/dashboard', 'dashboard')->name('dashboard');
     });
 
-    Route::middleware('auth:brand')->prefix('brand')->name('brand.')->group(function () {
-        Route::view('/dashboard', 'dashboard')->name('dashboard');
-    });
+    Route::middleware('auth:brand')->prefix('brand')->name('brand.')
+        ->group(base_path('routes/brand.php'));
 
     Route::middleware('auth:talent')->prefix('talent')->name('talent.')
         ->group(base_path('routes/talent.php'));
@@ -73,6 +72,13 @@ Route::group([
     // --- Public discovery + talent sub-pages (before the {slug} catch-all) ---
     Route::get('/discover', [DiscoveryController::class, 'index'])->name('discover');
     Route::get('/discover/search', [DiscoveryController::class, 'search'])->name('discover.search');
+
+    // Public brand profile + campaign detail (two-segment paths, so they never
+    // collide with the single-segment /{slug} talent catch-all; kept here for
+    // clarity). The campaign binding is scoped to its brand.
+    Route::get('/brands/{brand:slug}', [BrandProfileController::class, 'show'])->name('brand.public');
+    Route::get('/brands/{brand:slug}/campaigns/{campaign:slug}', [BrandProfileController::class, 'campaign'])
+        ->scopeBindings()->name('brand.campaign.public');
 
     Route::get('/{slug}/review', [PublicReviewController::class, 'create'])
         ->where('slug', '[A-Za-z0-9\-]+')->name('talent.review.create');

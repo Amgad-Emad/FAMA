@@ -168,14 +168,16 @@
 ### ADR-E — Brand-spec completeness
 - **Context:** Some brand-side spec sections originally referenced unfetchable Claude artifact URLs and may have gaps.
 - **Decision:** Confirm completeness against `docs/specs/brand-spec.md` before building Phase 2.
-- **Status:** OPEN — needs owner.
-- **Consequences:** Phase 2 (brand) build is gated on this spec confirmation.
+- **Status:** **Resolved (Accepted)** — confirmed at the start of Phase 2A. `brand-spec.md` is a complete
+  transcription (all pages, workflows, lifecycles) and covers every schema-master §4/§5 table; no gaps.
+- **Consequences:** Phase 2 (brand) build unblocked; Phase 2A schema shipped against the confirmed spec.
 
 ### ADR-F — `deals.campaign_id` FK *(retained from Phase 0)*
 - **Context:** Brand/campaign workflows reference a deal running under a campaign, but the FK isn't in the `deals` definition.
-- **Decision:** TBD — add `campaign_id → campaigns (nullable)` when the campaign⇄deal link is finalised.
-- **Status:** OPEN.
-- **Consequences:** Update `docs/specs/schema-master.md` §3 at the same time.
+- **Decision:** Add `campaign_id → campaigns (nullable, nullOnDelete)` on `deals`.
+- **Status:** **Resolved (Accepted)** — added in Phase 2B (`add_brand_state_and_campaign_link`) once
+  `campaigns` existed. `Deal::campaign()` / `Campaign::deals()` relations wired.
+- **Consequences:** A campaign groups many deals; a completed public campaign is a profile showcase.
 
 ### ADR-G — Brand/talent password-reset tables *(retained from Phase 0)*
 - **Context:** Phase 0 points the `brands`/`talents` password brokers at the shared `password_reset_tokens` table (inert — unused yet).

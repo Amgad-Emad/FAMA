@@ -32,8 +32,14 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
+        // Land on the authenticated guard's own dashboard. We deliberately do NOT
+        // honour session('url.intended'): in a multi-guard app the intended URL
+        // often belongs to a different guard (e.g. a /brand/* page captured before
+        // a talent login), which would bounce the user straight back to login.
+        $request->session()->forget('url.intended');
+
         // route('dashboard') dispatches to the active guard's dashboard.
-        return redirect()->intended(route('dashboard', absolute: false));
+        return redirect()->route('dashboard');
     }
 
     /**
