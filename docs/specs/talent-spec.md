@@ -64,7 +64,7 @@ Status overview: draft vs live (`is_published`), `view_count`, pending reviews c
 
 **Profile editor** *(the single profile surface)*
 Holds everything about the profile in one page:
-- **Identity** — core `talents` fields (display name, headline, bio, base city/country, booking method) and **Username** (the public `slug`, relabelled "Username" in the UI + validation; still unique + auto-generated if blank). *(The cover/hero uploader was removed with the IG-style header — ADR-O.)*
+- **Identity** — the **profile image** (avatar) uploader (upload / change / remove → the `avatar` single-file media collection; Ajax, no reload; falls back to the initials avatar) plus core `talents` fields (display name, headline, bio, base city/country, booking method) and **Username** (the public `slug`, relabelled "Username" in the UI + validation; still unique + auto-generated if blank). *(Only the circular avatar — the cover/hero uploader was removed with the IG-style header, ADR-O.)*
 - **Skills** — add/remove skills, mark one `is_primary`, order them (`position`). Adding a skill seeds **that skill's** `default_blocks` into its **own tab** (per-skill, ADR-Q). Removing a skill deletes its tab's blocks but preserves content (items un-linked, projects un-scoped) — the UI confirms first. (Skills persist through `talent_types`, the Skills catalog.)
 - **Blocks** — organised by scope: a Universal / profile-level section plus one section per skill (primary first). Add / reorder (within a scope) / hide / remove a block, or **move** it between scopes — the picker offers only blocks eligible in that scope, and `is_repeatable` now means "once per scope".
 - **Publish** — the `is_published` toggle (Live ⇄ Unpublished), guarded by the profile state machine.

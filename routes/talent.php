@@ -28,6 +28,8 @@ Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard
 // --- Profile editor (the single profile surface) ----------------------------
 Route::get('/profile', [ProfileEditorController::class, 'edit'])->name('profile.edit');
 Route::patch('/profile', [ProfileEditorController::class, 'updateCore'])->name('profile.update');
+Route::post('/profile/avatar', [ProfileEditorController::class, 'updateAvatar'])->name('profile.avatar.update');
+Route::delete('/profile/avatar', [ProfileEditorController::class, 'removeAvatar'])->name('profile.avatar.destroy');
 Route::patch('/profile/pricing', [ProfileEditorController::class, 'updatePricingRate'])->name('profile.pricing');
 Route::patch('/profile/publish', [ProfileEditorController::class, 'publish'])->name('profile.publish');
 Route::get('/profile/blocks', [ProfileEditorController::class, 'blocks'])->name('profile.blocks');

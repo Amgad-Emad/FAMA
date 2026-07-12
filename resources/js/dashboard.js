@@ -121,6 +121,12 @@ document.addEventListener('alpine:init', () => {
         coreSaved: false,
         dragId: null,
 
+        // Profile image (avatar).
+        avatarUrl: initial.avatarUrl || null,
+        displayName: initial.displayName || '',
+        uploadingAvatar: false,
+        avatarError: '',
+
         // Publish toggle (moved from Account).
         isPublished: initial.publish.is_published,
         status: initial.publish.status,
@@ -197,6 +203,45 @@ document.addEventListener('alpine:init', () => {
                 if (e instanceof ApiError) this.errors = e.errors || { _: [e.message] };
             } finally {
                 this.savingCore = false;
+            }
+        },
+
+        // Initials fallback shown when there's no uploaded avatar.
+        get avatarInitials() {
+            const parts = (this.displayName || '').trim().split(/\s+/).filter(Boolean).slice(0, 2);
+            return parts.map((w) => w[0].toUpperCase()).join('') || '—';
+        },
+
+        // Upload / replace the profile image (multipart, no reload).
+        async uploadAvatar(fileList) {
+            const file = fileList && fileList[0];
+            if (!file) return;
+            this.avatarError = '';
+            this.uploadingAvatar = true;
+            try {
+                const body = new FormData();
+                body.append('avatar', file);
+                const { data } = await post('/talent/profile/avatar', body);
+                this.avatarUrl = data.avatar_url;
+            } catch (e) {
+                this.avatarError = e instanceof ApiError ? (e.errors?.avatar?.[0] || e.message) : 'Upload failed';
+            } finally {
+                this.uploadingAvatar = false;
+                if (this.$refs.avatarInput) this.$refs.avatarInput.value = ''; // allow re-picking the same file
+            }
+        },
+
+        // Remove the profile image (falls back to initials).
+        async removeAvatar() {
+            this.avatarError = '';
+            this.uploadingAvatar = true;
+            try {
+                const { data } = await del('/talent/profile/avatar');
+                this.avatarUrl = data.avatar_url;
+            } catch (e) {
+                this.avatarError = e instanceof ApiError ? e.message : 'Remove failed';
+            } finally {
+                this.uploadingAvatar = false;
             }
         },
 

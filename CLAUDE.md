@@ -115,7 +115,10 @@ suppresses the header. Old ?skill= deep links break (no redirects). AR names are
 with stakeholders.
 Talent dashboard complete (talent guard, routes/talent.php + app/Http/Controllers/Talent/*). Sidebar:
 Home · Profile · Content · Reviews · Deals. The **Profile editor** is the single profile surface —
-identity + Username (the `slug`, relabelled), the **Skills** section (SkillController under
+identity + the **profile image (avatar) uploader** (POST/DELETE /talent/profile/avatar →
+TalentProfileService::updateAvatar/removeAvatar → the `avatar` single-file media collection; Ajax preview,
+initials fallback; UpdateAvatarRequest validates image/mimes/≤5MB; only the circular avatar, no cover — ADR-O)
++ Username (the `slug`, relabelled), the **Skills** section (SkillController under
 /talent/profile/skills*), the **Pricing rate**, the **Publish** toggle (PATCH /talent/profile/publish),
 and reorderable blocks + eligibility picker; plus block content editors (registry-driven +
 media) and reviews moderation. Blade shells + Alpine (resources/js/dashboard.js) on http.js, JSON

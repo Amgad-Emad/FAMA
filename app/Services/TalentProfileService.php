@@ -8,6 +8,7 @@ use App\States\Review\Approved;
 use App\States\Review\Rejected;
 use App\States\TalentProfile\Live;
 use App\States\TalentProfile\Unpublished;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 
 /**
@@ -64,6 +65,33 @@ class TalentProfileService extends Service
 
             return $talent;
         }, ['talent_id' => $talent->id]);
+    }
+
+    // ----- Avatar (profile image) --------------------------------------------
+
+    /**
+     * Replace the talent's profile image. The `avatar` collection is single-file,
+     * so uploading a new one clears the previous automatically (media channel).
+     */
+    public function updateAvatar(Talent $talent, UploadedFile $file): Talent
+    {
+        return $this->runInTransaction(function () use ($talent, $file): Talent {
+            $talent->addMedia($file)->toMediaCollection('avatar');
+
+            return $talent->refresh();
+        }, ['talent_id' => $talent->id], channel: 'media');
+    }
+
+    /**
+     * Remove the talent's profile image (clears the `avatar` collection).
+     */
+    public function removeAvatar(Talent $talent): Talent
+    {
+        return $this->runInTransaction(function () use ($talent): Talent {
+            $talent->clearMediaCollection('avatar');
+
+            return $talent->refresh();
+        }, ['talent_id' => $talent->id], channel: 'media');
     }
 
     /**

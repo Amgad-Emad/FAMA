@@ -16,6 +16,8 @@
 <x-talent-layout :title="__('Profile')">
     <div x-data="profileEditor({
         core: @js($core),
+        avatarUrl: @js($talent->avatar_url),
+        displayName: @js($talent->display_name),
         blocks: @js($blocks),
         catalog: @js($catalog),
         universalLabel: @js(__('Universal · profile-level')),
@@ -44,6 +46,36 @@
         {{-- Core fields (identity + username) --}}
         <x-ui.section :title="__('Core details')" :eyebrow="__('Your identity')">
             <x-ui.card class="space-y-6">
+                {{-- Profile image (avatar) — uploads to the `avatar` collection, Ajax, no reload. --}}
+                <div class="flex flex-col items-center gap-5 border-b border-line pb-6 sm:flex-row sm:items-center">
+                    <span class="inline-flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-pill border border-line-strong bg-elevated shadow-e1">
+                        <template x-if="avatarUrl">
+                            <img :src="avatarUrl" alt="{{ __('Profile image') }}" class="h-full w-full object-cover">
+                        </template>
+                        <template x-if="!avatarUrl">
+                            <span class="flex h-full w-full items-center justify-center font-display text-3xl text-accent-ink"
+                                  style="background: linear-gradient(135deg, var(--accent-weak), var(--gold-weak));"
+                                  x-text="avatarInitials"></span>
+                        </template>
+                    </span>
+
+                    <div class="space-y-2 text-center sm:text-start">
+                        <div class="font-mono text-[10px] uppercase tracking-wider text-subtle">{{ __('Profile image') }}</div>
+                        <input x-ref="avatarInput" type="file" accept="image/png,image/jpeg,image/jpg,image/webp" class="hidden"
+                               @change="uploadAvatar($event.target.files)">
+                        <div class="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
+                            <x-ui.button variant="outline" size="sm" x-on:click="$refs.avatarInput.click()" x-bind:disabled="uploadingAvatar">
+                                <span x-show="!uploadingAvatar" x-text="avatarUrl ? '{{ __('Change photo') }}' : '{{ __('Upload photo') }}'"></span>
+                                <span x-show="uploadingAvatar" x-cloak>{{ __('Uploading…') }}</span>
+                            </x-ui.button>
+                            <button type="button" x-show="avatarUrl" x-cloak @click="removeAvatar()" x-bind:disabled="uploadingAvatar"
+                                    class="text-sm text-muted underline underline-offset-2 transition hover:text-danger focus:outline-none focus-visible:ring-2 focus-visible:ring-accent">{{ __('Remove') }}</button>
+                        </div>
+                        <p class="text-xs text-subtle">{{ __('JPG, PNG or WebP · up to 5 MB · square works best.') }}</p>
+                        <p x-show="avatarError" x-cloak class="text-xs text-danger" x-text="avatarError"></p>
+                    </div>
+                </div>
+
                 <div class="grid gap-4 sm:grid-cols-2">
                     <div>
                         <label class="mb-1 block text-sm font-medium text-ink">{{ __('Display name') }}</label>

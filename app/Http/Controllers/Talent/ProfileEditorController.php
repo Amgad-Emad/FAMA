@@ -6,6 +6,7 @@ use App\Http\Requests\Talent\AddBlockRequest;
 use App\Http\Requests\Talent\FillBlockRequest;
 use App\Http\Requests\Talent\MoveBlockRequest;
 use App\Http\Requests\Talent\ReorderRequest;
+use App\Http\Requests\Talent\UpdateAvatarRequest;
 use App\Http\Requests\Talent\UpdateCoreProfileRequest;
 use App\Http\Requests\Talent\UpdatePricingRateRequest;
 use App\Http\Resources\BlockTypeResource;
@@ -94,6 +95,26 @@ class ProfileEditorController extends TalentController
             'booking_type' => $talent->booking_type,
             'booking_value' => $talent->booking_value,
         ], __('Profile updated.'));
+    }
+
+    /**
+     * Upload / replace the profile image (avatar). Returns the resolved URL.
+     */
+    public function updateAvatar(UpdateAvatarRequest $request): JsonResponse
+    {
+        $talent = $this->profile->updateAvatar($this->talent(), $request->file('avatar'));
+
+        return response()->success(['avatar_url' => $talent->avatar_url], __('Profile image updated.'));
+    }
+
+    /**
+     * Remove the profile image (falls back to the initials avatar).
+     */
+    public function removeAvatar(): JsonResponse
+    {
+        $talent = $this->profile->removeAvatar($this->talent());
+
+        return response()->success(['avatar_url' => $talent->avatar_url], __('Profile image removed.'));
     }
 
     /**

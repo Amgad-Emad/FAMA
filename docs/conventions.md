@@ -204,6 +204,9 @@ logout. Toggle theme + locale on each page and confirm both render.
       (awaiting_talent highlighted), quick links.
 - [ ] Profile editor — the single profile surface:
       - Publish/unpublish toggle (moved from Account); publishing a no-display-name profile → 422.
+      - **Profile image (avatar)** — Upload photo / Change photo / Remove (Ajax, no reload): the preview
+        updates in place and falls back to initials when removed; a non-image or >5 MB file → 422 inline.
+        (No hero/cover uploader — ADR-O; only the circular avatar.)
       - Core fields inline save; **Username** field (the `slug`); a taken username → "username" 422.
       - **Skills** section — add/remove/reorder, set primary; duplicate → 422; adding a skill seeds new blocks.
       - **Pricing rate** — set unit/amount/currency (all-or-nothing; partial → 422; blank clears); currency upper-cased.

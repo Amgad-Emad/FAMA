@@ -2,6 +2,23 @@
 
 Notable changes to the Fama project. Newest first.
 
+## 2026-07-12 — Talent profile image (avatar) uploader
+
+- **Added the missing profile-image uploader** to the Profile editor's Identity/Core-details section. A
+  talent can now **Upload / Change / Remove** their avatar — Ajax, no reload: the preview updates in place
+  and falls back to the initials avatar when removed. The image goes to the existing `avatar` single-file
+  media collection (ADR-O — only the circular avatar; no cover/hero).
+- **Endpoints:** `POST /talent/profile/avatar` (update) and `DELETE /talent/profile/avatar` (remove), both
+  returning `{ avatar_url }`. Thin controller (`ProfileEditorController::updateAvatar/removeAvatar`) →
+  `TalentProfileService::updateAvatar/removeAvatar` (media ops, fail-logged to the `media` channel).
+  Validation via `UpdateAvatarRequest` (`image|mimes:jpg,jpeg,png,webp|max:5120`).
+- **Front-end:** `profileEditor` (dashboard.js) gains `avatarUrl` + `uploadAvatar()`/`removeAvatar()` and an
+  `avatarInitials` getter; a reactive avatar preview + hidden file input in the editor blade.
+- **Tests:** `ProfileEditorTest` gains 7 cases — the uploader renders; upload returns a URL + adds media;
+  re-upload replaces (single-file); remove clears it; non-image / >5 MB → 422; guests are redirected.
+  **Full Pest suite green (199).** Verified in-browser (uploader renders with the seeded avatar; Remove →
+  initials reactively, no reload; DELETE endpoint works) — console clean. Docs updated. No git.
+
 ## 2026-07-12 — Fix: MariaDB deploy failure on the Looks functional-index migration
 
 - **Migration `2026_07_11_000100_add_look_types_name_index` failed on MariaDB** (production) with a
