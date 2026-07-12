@@ -27,7 +27,7 @@ class Deal extends Model
      * @var list<string>
      */
     protected $fillable = [
-        'reference', 'brand_id', 'talent_id', 'service_id', 'deal_flow_id', 'campaign_id',
+        'reference', 'brand_id', 'talent_id', 'deal_flow_id',
         'current_step_id', 'status', 'title', 'brief', 'agreed_amount',
         'currency', 'start_date', 'end_date', 'initiated_by',
     ];
@@ -69,13 +69,6 @@ class Deal extends Model
         return $this->belongsTo(Talent::class);
     }
 
-    /**
-     * @return BelongsTo<Service, $this>
-     */
-    public function service(): BelongsTo
-    {
-        return $this->belongsTo(Service::class);
-    }
 
     /**
      * @return BelongsTo<DealFlow, $this>

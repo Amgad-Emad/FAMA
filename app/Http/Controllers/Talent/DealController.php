@@ -29,7 +29,7 @@ class DealController extends TalentController
         $status = $request->query('status');
 
         $query = Deal::forTalent($this->talent()->getKey())
-            ->with(['brand', 'service', 'currentStep'])
+            ->with(['brand', 'currentStep'])
             ->latest();
 
         if (in_array($status, ['awaiting_talent', 'awaiting_brand', 'awaiting_admin', 'completed', 'draft', 'cancelled', 'declined', 'expired'], true)) {
@@ -59,7 +59,7 @@ class DealController extends TalentController
 
         $this->deals->markThreadRead($deal, 'talent');
 
-        $deal->load(['brand', 'service', 'currentStep', 'steps', 'messages']);
+        $deal->load(['brand', 'currentStep', 'steps', 'messages']);
 
         return response()->success([
             'deal' => new DealResource($deal),

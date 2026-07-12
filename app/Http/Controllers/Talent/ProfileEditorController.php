@@ -4,23 +4,31 @@ namespace App\Http\Controllers\Talent;
 
 use App\Http\Requests\Talent\AddBlockRequest;
 use App\Http\Requests\Talent\FillBlockRequest;
+use App\Http\Requests\Talent\MoveBlockRequest;
 use App\Http\Requests\Talent\ReorderRequest;
+use App\Http\Requests\Talent\UpdateAvatarRequest;
 use App\Http\Requests\Talent\UpdateCoreProfileRequest;
+use App\Http\Requests\Talent\UpdatePricingRateRequest;
 use App\Http\Resources\BlockTypeResource;
 use App\Http\Resources\ProfileBlockResource;
+use App\Http\Resources\TalentTypeResource;
 use App\Models\BlockType;
 use App\Models\ProfileBlock;
+use App\Models\TalentType;
 use App\Services\ProfileBlockService;
 use App\Services\TalentProfileService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\View\View;
+use InvalidArgumentException;
 
 /**
- * Profile editor (talent-spec) — core `talents` fields + the reorderable
- * `profile_blocks` layer with the eligibility-driven block picker. All logic
- * delegates to ProfileBlockService / TalentProfileService; every non-page action
- * returns the JSON envelope for the Alpine/http.js front-end.
+ * Profile editor (talent-spec) — the single profile surface. Core `talents` fields
+ * (identity + username), the Skills section, the Pricing rate, the publish toggle,
+ * and the reorderable `profile_blocks` layer with the eligibility-driven block
+ * picker. All logic delegates to ProfileBlockService / TalentProfileService; every
+ * non-page action returns the JSON envelope for the Alpine/http.js front-end.
  */
 class ProfileEditorController extends TalentController
 {
@@ -32,12 +40,45 @@ class ProfileEditorController extends TalentController
     public function edit(): View
     {
         $talent = $this->talent()->load(['profileBlocks.blockType', 'talentTypes']);
+        $skills = $this->orderedSkills($talent);
+
+        $catalog = BlockType::query()->where('is_active', true)
+            ->with(['categories', 'talentTypes'])->orderBy('position')->get();
 
         return view('talent.profile-editor', [
             'talent' => $talent,
             'blocks' => ProfileBlockResource::collection($talent->profileBlocks),
-            'picker' => BlockTypeResource::collection($this->blocks->availableBlockTypes($talent)),
+            'catalog' => BlockTypeResource::collection($catalog),
+            'skills' => TalentTypeResource::collection($skills),
+            'availableSkills' => TalentTypeResource::collection(
+                TalentType::whereNotIn('id', $talent->talentTypes->pluck('id'))->orderBy('id')->get()
+            ),
         ]);
+    }
+
+    /**
+     * The talent's skills ordered primary-first, then by pivot position (ADR-Q).
+     *
+     * @return Collection<int, TalentType>
+     */
+    private function orderedSkills(\App\Models\Talent $talent): Collection
+    {
+        return $talent->talentTypes
+            ->sortBy(fn (TalentType $t) => [$t->pivot->is_primary ? 0 : 1, (int) $t->pivot->position])
+            ->values();
+    }
+
+    /**
+     * Resolve a scope id to one of the talent's skills (or null = universal).
+     */
+    private function scope(?int $typeId): ?TalentType
+    {
+        if ($typeId === null) {
+            return null;
+        }
+
+        return $this->talent()->talentTypes()->whereKey($typeId)->first()
+            ?? throw new InvalidArgumentException('That is not one of your skills.');
     }
 
     public function updateCore(UpdateCoreProfileRequest $request): JsonResponse
@@ -53,18 +94,58 @@ class ProfileEditorController extends TalentController
             'base_country' => $talent->base_country,
             'booking_type' => $talent->booking_type,
             'booking_value' => $talent->booking_value,
-            'willing_to_travel' => (bool) $talent->willing_to_travel,
-            'travel_regions' => $talent->travel_regions,
-            'rate_tier' => $talent->rate_tier,
         ], __('Profile updated.'));
     }
 
-    public function uploadHero(Request $request): JsonResponse
+    /**
+     * Upload / replace the profile image (avatar). Returns the resolved URL.
+     */
+    public function updateAvatar(UpdateAvatarRequest $request): JsonResponse
     {
-        $request->validate(['image' => ['required', 'image', 'max:8192']]);
-        $talent = $this->profile->setHeroImage($this->talent(), $request->file('image'));
+        $talent = $this->profile->updateAvatar($this->talent(), $request->file('avatar'));
 
-        return response()->success(['hero_image_url' => $talent->hero_image_url], __('Hero image updated.'));
+        return response()->success(['avatar_url' => $talent->avatar_url], __('Profile image updated.'));
+    }
+
+    /**
+     * Remove the profile image (falls back to the initials avatar).
+     */
+    public function removeAvatar(): JsonResponse
+    {
+        $talent = $this->profile->removeAvatar($this->talent());
+
+        return response()->success(['avatar_url' => $talent->avatar_url], __('Profile image removed.'));
+    }
+
+    /**
+     * Update (or clear) the indicative pricing rate — all-or-nothing (ADR-N).
+     */
+    public function updatePricingRate(UpdatePricingRateRequest $request): JsonResponse
+    {
+        $talent = $this->profile->updatePricingRate($this->talent(), $request->validated());
+
+        return response()->success([
+            'rate_unit' => $talent->rate_unit,
+            'rate_amount' => $talent->rate_amount,
+            'rate_currency' => $talent->rate_currency,
+        ], __('Pricing rate updated.'));
+    }
+
+    /**
+     * Publish / unpublish the profile from the editor (moved from Account).
+     */
+    public function publish(Request $request): JsonResponse
+    {
+        $publish = $request->boolean('publish');
+
+        $talent = $publish
+            ? $this->profile->publish($this->talent())
+            : $this->profile->unpublish($this->talent());
+
+        return response()->success([
+            'is_published' => (bool) $talent->is_published,
+            'status' => $talent->status->getValue(),
+        ], $publish ? __('Profile published.') : __('Profile unpublished.'));
     }
 
     public function blocks(): JsonResponse
@@ -74,15 +155,18 @@ class ProfileEditorController extends TalentController
         return response()->success(ProfileBlockResource::collection($talent->profileBlocks));
     }
 
-    public function picker(): JsonResponse
+    public function picker(Request $request): JsonResponse
     {
-        return response()->success(BlockTypeResource::collection($this->blocks->availableBlockTypes($this->talent())));
+        $scope = $this->scope($request->has('talent_type_id') ? $request->integer('talent_type_id') : null);
+
+        return response()->success(BlockTypeResource::collection($this->blocks->availableBlockTypes($this->talent(), $scope)));
     }
 
     public function addBlock(AddBlockRequest $request): JsonResponse
     {
         $blockType = BlockType::findOrFail($request->integer('block_type_id'));
-        $block = $this->blocks->addBlock($this->talent(), $blockType);
+        $scope = $this->scope($request->filled('talent_type_id') ? $request->integer('talent_type_id') : null);
+        $block = $this->blocks->addBlock($this->talent(), $blockType, $scope);
 
         return response()->success(new ProfileBlockResource($block->load('blockType')), __('Block added.'), status: 201);
     }
@@ -97,9 +181,22 @@ class ProfileEditorController extends TalentController
 
     public function reorderBlocks(ReorderRequest $request): JsonResponse
     {
-        $this->blocks->reorder($this->talent(), $request->orderedIds());
+        $scope = $this->scope($request->filled('talent_type_id') ? $request->integer('talent_type_id') : null);
+        $this->blocks->reorder($this->talent(), $scope, $request->orderedIds());
 
         return response()->success(null, __('Order saved.'));
+    }
+
+    /**
+     * Move a block to another scope (a tab, or the universal section) — ADR-Q.
+     */
+    public function moveBlock(MoveBlockRequest $request, ProfileBlock $block): JsonResponse
+    {
+        $this->ensureOwns($block);
+        $target = $this->scope($request->filled('talent_type_id') ? $request->integer('talent_type_id') : null);
+        $block = $this->blocks->moveBlock($block, $target);
+
+        return response()->success(new ProfileBlockResource($block->load('blockType')), __('Block moved.'));
     }
 
     public function toggleBlock(Request $request, ProfileBlock $block): JsonResponse

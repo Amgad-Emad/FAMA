@@ -1,70 +1,105 @@
 <?php
 
-use App\Models\AgencyAffiliation;
 use App\Models\PortfolioItem;
+use App\Models\Project;
 use App\Models\Talent;
+use App\Models\TalentType;
+use Database\Seeders\BlockTypeSeeder;
+use Database\Seeders\TalentTypeSeeder;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
-it('updates availability and travel settings', function () {
-    $talent = Talent::factory()->create(['availability_status' => 'available']);
+it('scopes a project to a skill — defaults to the primary skill, honours an explicit one, rejects a foreign one', function () {
+    $this->seed([TalentTypeSeeder::class, BlockTypeSeeder::class]);
+    $talent = Talent::factory()->create();
+    $model = TalentType::where('slug', 'modeling')->firstOrFail();
+    $photographer = TalentType::where('slug', 'photography')->firstOrFail();
+    $talent->talentTypes()->attach([
+        $model->id => ['is_primary' => true, 'position' => 0],
+        $photographer->id => ['is_primary' => false, 'position' => 1],
+    ]);
 
+    // No skill given → defaults to the primary skill.
+    $id = $this->actingAs($talent, 'talent')
+        ->postJson(route('talent.content.store', ['type' => 'projects']), ['title' => ['en' => 'Campaign']])
+        ->assertCreated()->json('data.id');
+    expect(Project::find($id)->talent_type_id)->toBe($model->id);
+
+    // Explicit skill honoured.
     $this->actingAs($talent, 'talent')
-        ->patchJson(route('talent.availability.update'), [
-            'availability_status' => 'booked',
-            'willing_to_travel' => true,
-            'travel_regions' => ['MENA', 'GCC'],
-            'rate_tier' => 'premium',
-        ])
-        ->assertOk()
-        ->assertJsonPath('data.availability_status', 'booked');
+        ->postJson(route('talent.content.store', ['type' => 'projects']), ['title' => ['en' => 'Shoot'], 'talent_type_id' => $photographer->id])
+        ->assertCreated()->assertJsonPath('data.talent_type_id', $photographer->id);
 
-    $talent->refresh();
-    expect($talent->availability_status->getValue())->toBe('booked');
-    expect($talent->willing_to_travel)->toBeTrue();
-    expect($talent->rate_tier)->toBe('premium');
+    // A skill the talent does not have → 422.
+    $foreign = TalentType::where('slug', 'styling')->firstOrFail();
+    $this->actingAs($talent, 'talent')
+        ->postJson(route('talent.content.store', ['type' => 'projects']), ['title' => ['en' => 'X'], 'talent_type_id' => $foreign->id])
+        ->assertStatus(422);
 });
 
-it('publishes and unpublishes from the account page', function () {
+it('publishes and unpublishes from the profile editor', function () {
     $talent = Talent::factory()->draft()->create(['display_name' => 'Pub']);
 
-    $this->actingAs($talent, 'talent')->patchJson(route('talent.account.publish'), ['publish' => true])
+    $this->actingAs($talent, 'talent')->patchJson(route('talent.profile.publish'), ['publish' => true])
         ->assertOk()->assertJsonPath('data.is_published', true);
     expect($talent->fresh()->is_published)->toBeTrue();
 
-    $this->actingAs($talent, 'talent')->patchJson(route('talent.account.publish'), ['publish' => false])->assertOk();
+    $this->actingAs($talent, 'talent')->patchJson(route('talent.profile.publish'), ['publish' => false])->assertOk();
     expect($talent->fresh()->is_published)->toBeFalse();
 });
 
 it('refuses to publish a profile with no display name (422)', function () {
     $talent = Talent::factory()->draft()->create(['display_name' => null]);
 
-    $this->actingAs($talent, 'talent')->patchJson(route('talent.account.publish'), ['publish' => true])
+    $this->actingAs($talent, 'talent')->patchJson(route('talent.profile.publish'), ['publish' => true])
         ->assertStatus(422)->assertJsonPath('success', false);
 });
 
-it('updates the account slug', function () {
+it('updates the username (slug) from the profile editor', function () {
     $talent = Talent::factory()->create();
 
-    $this->actingAs($talent, 'talent')->patchJson(route('talent.account.update'), ['slug' => 'my-new-slug'])
-        ->assertOk()->assertJsonPath('data.slug', 'my-new-slug');
-    expect($talent->fresh()->slug)->toBe('my-new-slug');
+    $this->actingAs($talent, 'talent')->patchJson(route('talent.profile.update'), ['slug' => 'my-new-username'])
+        ->assertOk()->assertJsonPath('data.slug', 'my-new-username');
+    expect($talent->fresh()->slug)->toBe('my-new-username');
 });
 
-it('adds an affiliation, ends it, and adds press', function () {
+it('rejects a taken username with a "username" validation message', function () {
+    Talent::factory()->create(['slug' => 'taken-name']);
     $talent = Talent::factory()->create();
 
-    $affiliationId = $this->actingAs($talent, 'talent')
-        ->postJson(route('talent.affiliations.store'), ['agency_name' => 'Elite', 'representation_type' => 'exclusive'])
-        ->assertCreated()->json('data.id');
+    $this->actingAs($talent, 'talent')->patchJson(route('talent.profile.update'), ['slug' => 'taken-name'])
+        ->assertStatus(422)
+        ->assertJsonPath('success', false)
+        ->assertJsonPath('errors.slug.0', 'The username has already been taken.');
+});
 
-    $this->actingAs($talent, 'talent')->patchJson(route('talent.affiliations.end', $affiliationId))->assertOk();
-    expect(AgencyAffiliation::find($affiliationId)->is_current)->toBeFalse();
+it('sets, reads back and clears the pricing rate (all-or-nothing)', function () {
+    $talent = Talent::factory()->create();
 
-    $this->actingAs($talent, 'talent')
-        ->postJson(route('talent.press.store'), ['publication' => 'Vogue', 'title' => 'Feature'])
-        ->assertCreated();
-    expect($talent->pressFeatures()->count())->toBe(1);
+    // Complete rate — currency upper-cased by the service.
+    $this->actingAs($talent, 'talent')->patchJson(route('talent.profile.pricing'), [
+        'rate_unit' => 'day', 'rate_amount' => 1500, 'rate_currency' => 'egp',
+    ])->assertOk()
+        ->assertJsonPath('data.rate_unit', 'day')
+        ->assertJsonPath('data.rate_amount', '1500.00')
+        ->assertJsonPath('data.rate_currency', 'EGP');
+
+    // Blank amount clears the whole rate.
+    $this->actingAs($talent, 'talent')->patchJson(route('talent.profile.pricing'), [
+        'rate_unit' => '', 'rate_amount' => '', 'rate_currency' => '',
+    ])->assertOk()->assertJsonPath('data.rate_amount', null);
+
+    $fresh = $talent->fresh();
+    expect($fresh->rate_unit)->toBeNull();
+    expect($fresh->rate_currency)->toBeNull();
+});
+
+it('rejects a partial pricing rate (422, all-or-nothing)', function () {
+    $talent = Talent::factory()->create();
+
+    $this->actingAs($talent, 'talent')->patchJson(route('talent.profile.pricing'), ['rate_amount' => 1000])
+        ->assertStatus(422)
+        ->assertJsonPath('success', false);
 });
 
 it('manages a gallery content editor: create, list, reorder, remove', function () {

@@ -12,9 +12,9 @@ it('casts talent_type default_blocks to an array', function () {
 });
 
 it('translates talent_type name', function () {
-    $type = TalentType::factory()->create(['name' => ['en' => 'Model', 'ar' => 'عارضة']]);
+    $type = TalentType::factory()->create(['name' => ['en' => 'Modeling', 'ar' => 'عرض الأزياء']]);
 
-    expect(TalentType::find($type->id)->getTranslation('name', 'ar'))->toBe('عارضة');
+    expect(TalentType::find($type->id)->getTranslation('name', 'ar'))->toBe('عرض الأزياء');
 });
 
 it('profile block belongs to a talent and a block type', function () {
@@ -57,7 +57,7 @@ it('gates a by_category block to categories', function () {
     expect($fresh->categories->pluck('category')->all())->toBe(['model']);
 });
 
-it('gates a by_type block to professions via the pivot', function () {
+it('gates a by_type block to skills via the pivot', function () {
     $blockType = BlockType::factory()->byType()->create();
     $type = TalentType::factory()->create();
     $blockType->talentTypes()->attach($type->id);

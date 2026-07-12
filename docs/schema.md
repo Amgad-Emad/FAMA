@@ -22,54 +22,76 @@
 (unique `talent_id`+`talent_type_id`), `block_types`, `block_type_category`, `block_type_talent_type`,
 `profile_blocks`.
 
-**Content tables:** `portfolio_items`, `brand_collabs`, `reviews`, `services`, `comp_cards`
+**Content tables:** `portfolio_items`, `brand_collabs`, `reviews`, `comp_cards`
 (1:1, unique `talent_id`), `look_types`, `digitals`, `showreels`, `equipment`, `projects`,
-`software_stack`, `agency_affiliations`, `press_features`.
+`software_stack`.
+
+> **Removed features (ADR-K/L/M):** `services`, `agency_affiliations`, `press_features` (tables +
+> models + block types), the `talents` columns `availability_status` / `rate_tier` /
+> `willing_to_travel` / `travel_regions`, and `deals.service_id` / `deal_enquiries.service_id` were
+> dropped by the `2026_07_10_0001–0004` migrations.
 
 Deviations from the canonical schema (deliberate, per the standing decisions):
 
-- **Uploaded-asset URL columns are dropped.** `hero_image_url`, `avatar_url`, portfolio & digital
-  `media_url`/`thumbnail_url`, `brand_logo_url`, `reviewer_avatar_url`, showreel/press `thumbnail_url`,
-  `cover_image_url`, `icon_url`, `agency_logo_url` are **not** columns — they are media-library
+- **Uploaded-asset URL columns are dropped.** `avatar_url`, portfolio & digital
+  `media_url`/`thumbnail_url`, `brand_logo_url`, `reviewer_avatar_url`, showreel `thumbnail_url`,
+  `cover_image_url`, `icon_url` are **not** columns — they are media-library
   accessors on the models (ADR-5). Plain URL columns are kept only for EXTERNAL links/embeds:
-  `showreels.video_url`, `brand_collabs.url`, `projects.url`, `agency_affiliations.agency_url`,
-  `press_features.url`, and a new `portfolio_items.embed_url` (for `media_type = embed`).
+  `showreels.video_url`, `brand_collabs.url`, `projects.url`, and a new
+  `portfolio_items.embed_url` (for `media_type = embed`). *(The talent `hero`/cover collection +
+  `hero_image_url` accessor were removed with the IG-style header — ADR-O; the `avatar` collection stays.)*
 - **Translatable columns are JSON** (per-locale), not VARCHAR/TEXT — see the list in
   `docs/conventions.md`.
 - **`block_type_talent_type`** pivot added to make `availability = by_type` functional (the spec pairs
   it with `block_type_category`).
 - **Profile identity/settings are nullable** on `talents` (display_name, headline, bio, base_city,
-  base_country, booking_value, rate_tier) so a talent can sign up first and fill the profile
-  progressively; `slug` is auto-generated if not supplied.
+  base_country, booking_value) so a talent can sign up first and fill the profile
+  progressively; `slug` is auto-generated if not supplied (shown as **Username** in the UI — ADR-N).
+- **Pricing rate (ADR-N):** `rate_unit` ENUM(project, day, hour) NULL, `rate_amount` DECIMAL(10,2) NULL,
+  `rate_currency` CHAR(3) NULL added to `talents` (migration `2026_07_10_000500`). All-or-nothing, NOT
+  translatable. Replaces the removed rate card (ADR-K).
 - `profile_blocks.block_type_id` is **restrict-on-delete** (deactivated block types are grandfathered,
   not deleted); all `talent_id` FKs cascade.
 - **State machine columns (Phase 1B):** `status` added to `talents`, `profile_blocks`, `reviews`,
-  `services`, `agency_affiliations`, `portfolio_items` (spatie/laravel-model-states); `availability_status`
-  is the availability state. The existing booleans are kept as synced projections (see
-  `docs/architecture.md` → state machines table).
+  `portfolio_items` (spatie/laravel-model-states). The existing booleans are kept as synced projections
+  (see `docs/architecture.md` → state machines table).
+- **Skill scope (ADR-Q, migration `2026_07_11_000200`):** `profile_blocks.talent_type_id` and
+  `projects.talent_type_id` — nullable FKs → `talent_types` (nullOnDelete). NULL = profile-level /
+  universal; NOT NULL = the skill's tab. Indexes: `profile_blocks (talent_id, talent_type_id, position)`
+  (position is per-scope) and `projects (talent_type_id)`. The migration **backfills**: projects → the
+  talent's primary skill; blocks → the single skill their gate matches (universal/ambiguous → NULL), and
+  reports the counts. Seeding is now per-skill (`SeedBlocksForSkill`).
 
 ## Discovery search indexes (Phase 1C — migrated, ADR-6)
 
 `2026_07_06_000100_add_discovery_search_indexes` adds the indexes the public discovery/search page
-filters on. The query-critical dimensions were already relational (professions via the
+filters on. The query-critical dimensions were already relational (skills via the
 `talent_talent_type` pivot; gear/tools as the `equipment` and `software_stack` tables), so no arrays
 needed promoting on the talent side — only these indexes:
 
-- `talents`: `availability_status`, `is_published`, `base_city`, `base_country` (single-column).
+- `talents`: `is_published`, `base_city`, `base_country` (single-column). *(The `availability_status`
+  index was dropped with the column — ADR-L.)*
 - `talent_talent_type`: `talent_type_id` (reverse pivot lookup — "talents who work as type X"; the
   existing unique index is `talent_id`-first).
 - `equipment`: `category`; `software_stack`: `software_name` (cross-talent gear/tool filters; the
   existing composite indexes are `talent_id`-first).
+- `look_types`: **functional index** `look_types_name_en_index` on `CAST(name->>'$.en' AS CHAR(191))`
+  (migration `2026_07_11_000100`). `name` is a translatable JSON column, so it can't be indexed directly;
+  the model-scope **Looks** filter matches the English name path, which this index covers. **Created only
+  on genuine MySQL 8.0.13+** (functional key parts); **skipped on MariaDB** (no expression indexes — Laravel
+  reports MariaDB as the `mysql` driver, so the migration inspects `VERSION()` to detect it) and on older
+  MySQL. The Looks filter still works unindexed there — `look_types` is a tiny lookup table. (Comp-card
+  attribute *ranges* are a noted future enhancement — not built.)
 
 Consumed by `App\Queries\TalentSearch` (spatie/laravel-query-builder) via `filter[type|category|
-availability|city|country|equipment|software|q]`.
+city|country|equipment|software|looks|q]`.
 
 ## Deal engine (Phase 1E — migrated)
 
 **Templates:** `deal_flows` (named, `applies_to` category scope, `is_default`), `deal_flow_steps`
 (ordered; `actor`, `step_type`, `is_required`/`is_skippable`, `settings` JSON).
 
-**Instances:** `deals` (soft deletes; `reference` unique, FK brand/talent/service?/deal_flow;
+**Instances:** `deals` (soft deletes; `reference` unique, FK brand/talent/deal_flow;
 `current_step_id` → deal_steps; `status` state machine; headline brief/amount/dates; `initiated_by`),
 `deal_steps` (per-deal snapshot; `status` state machine; `payload` JSON; polymorphic `completed_by`),
 `deal_messages` (thread; `type` message/system_event/action_summary; polymorphic `sender`; `status`

@@ -9,9 +9,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Spatie\Translatable\HasTranslations;
 
 /**
- * TalentType — the six-profession lookup (schema-master §1). Its `default_blocks`
- * (ordered block_type keys) drives which blocks a new talent of this type gets
- * seeded. name/description are translatable.
+ * TalentType — the Skills catalog (schema-master §1): the six seeded skills a
+ * talent can work as. (The physical table stays `talent_types`; "Skills" is the
+ * product term — ADR-N.) Its `default_blocks` (ordered block_type keys) drives
+ * which blocks a new talent of this skill gets seeded. name/description are
+ * translatable.
  */
 class TalentType extends Model
 {
@@ -45,7 +47,7 @@ class TalentType extends Model
     }
 
     /**
-     * Talents who work as this profession.
+     * Talents who work with this skill.
      *
      * @return BelongsToMany<Talent, $this>
      */
@@ -57,7 +59,7 @@ class TalentType extends Model
     }
 
     /**
-     * Block types gated to this specific profession (availability = by_type).
+     * Block types gated to this specific skill (availability = by_type).
      *
      * @return BelongsToMany<BlockType, $this>
      */

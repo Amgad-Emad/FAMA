@@ -4,7 +4,6 @@
             <x-ui.eyebrow>{{ __('Welcome back') }}</x-ui.eyebrow>
             <h2 class="mt-1 font-display text-3xl text-ink">{{ $talent->display_name ?: $talent->email }}</h2>
         </div>
-        <x-ui.badge :status="$talent->availability_status->getValue()" />
     </div>
 
     <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -14,7 +13,7 @@
                 <span class="h-2.5 w-2.5 rounded-pill {{ $stats['is_published'] ? 'bg-success' : 'bg-warn' }}"></span>
                 <span class="font-display text-xl text-ink">{{ $stats['is_published'] ? __('Live') : __(ucfirst($stats['status'])) }}</span>
             </div>
-            <a href="{{ route('talent.account') }}" class="mt-3 inline-block text-xs text-accent-ink underline">
+            <a href="{{ route('talent.profile.edit') }}" class="mt-3 inline-block text-xs text-accent-ink underline">
                 {{ $stats['is_published'] ? __('Manage publishing') : __('Publish your profile') }}
             </a>
         </x-ui.card>
@@ -29,7 +28,7 @@
             @endif
         </x-ui.card>
 
-        <x-ui.stat :label="__('Blocks · professions')" :value="$stats['blocks'].' · '.$stats['professions']" />
+        <x-ui.stat :label="__('Blocks · skills')" :value="$stats['blocks'].' · '.$stats['skills']" />
     </div>
 
     <x-ui.section class="mt-10" :title="__('Active deals')" :eyebrow="__('Whose turn')">
@@ -65,12 +64,9 @@
     <x-ui.section class="mt-10" :title="__('Manage your profile')">
         <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             @foreach ([
-                ['talent.profile.edit', __('Profile editor'), __('Blocks, layout & core details')],
-                ['talent.professions', __('Professions'), __('Your creative disciplines')],
-                ['talent.services', __('Rate card'), __('Services & pricing')],
+                ['talent.profile.edit', __('Profile'), __('Identity, skills, username, publishing, pricing & blocks')],
                 ['talent.reviews', __('Reviews'), __('Moderate testimonials')],
-                ['talent.availability', __('Availability'), __('Status, travel & rate tier')],
-                ['talent.account', __('Account'), __('Slug, publishing & prefs')],
+                ['talent.deals', __('Deals'), __('Your active bookings')],
             ] as [$route, $label, $desc])
                 <a href="{{ route($route) }}" class="group rounded-lg border border-line bg-surface p-5 transition hover:border-line-strong hover:shadow-e1">
                     <div class="font-medium text-ink group-hover:text-accent-ink">{{ $label }}</div>

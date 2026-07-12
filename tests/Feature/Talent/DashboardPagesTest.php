@@ -32,12 +32,7 @@ it('shows active deals with whose-turn on the dashboard home', function () {
 $pages = [
     'talent.dashboard',
     'talent.profile.edit',
-    'talent.professions',
-    'talent.services',
-    'talent.availability',
     'talent.reviews',
-    'talent.affiliations',
-    'talent.account',
 ];
 
 it('renders every dashboard page for the authenticated talent', function () use ($pages) {

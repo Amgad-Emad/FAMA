@@ -2,12 +2,8 @@
 
 namespace App\Listeners;
 
-use App\Models\AgencyAffiliation;
-use App\Models\Brand;
-use App\Models\BrandReview;
 use App\Models\ProfileBlock;
 use App\Models\Review;
-use App\Models\Service;
 use App\Models\Talent;
 use Spatie\ModelStates\Events\StateChanged;
 
@@ -30,8 +26,6 @@ class SyncStateProjections
             $model instanceof BrandReview => $model->forceFill(['is_approved' => $final === 'approved'])->saveQuietly(),
             $model instanceof ProfileBlock => $model->forceFill(['is_visible' => $final === 'visible'])->saveQuietly(),
             $model instanceof Review => $model->forceFill(['is_approved' => $final === 'approved'])->saveQuietly(),
-            $model instanceof Service => $model->forceFill(['is_active' => $final === 'active'])->saveQuietly(),
-            $model instanceof AgencyAffiliation => $model->forceFill(['is_current' => $final === 'current'])->saveQuietly(),
             default => null,
         };
     }

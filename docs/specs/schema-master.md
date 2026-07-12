@@ -3,13 +3,15 @@
 > Single source of truth for the Fama data model. Transcribed and lightly cleaned (typos fixed, ordering and formatting normalized) from the original design docs — **no technical content changed**. Tables are grouped by domain for readability; grouping is presentational only.
 >
 > **Implementation note:** per `docs/decisions.md`, all **uploaded** files go through `spatie/laravel-medialibrary` (collections + conversions). The `*_url` / `thumbnail_url` columns below for *uploaded* assets are replaced at implementation time by media-library accessors; plain URL columns are kept only for **external** links/embeds (YouTube/Vimeo, social, brand-collab, press). The schema is documented here as originally designed.
+>
+> **Removed features (`docs/decisions.md` ADR-K/L/M):** the `services` table, `agency_affiliations`/`press_features` tables, and the `talents` columns `availability_status`, `rate_tier`, `willing_to_travel`, `travel_regions` were removed entirely, along with `deals.service_id` and `deal_enquiries.service_id`. Those tables/columns are struck below and no longer exist in the schema.
 
 ---
 
 ## 1. Talent core & block system
 
 ### `talents`
-The profile itself — the "living creative passport." Holds one-per-profile identity data (name, bio, hero image, public slug) and the singular settings that only ever have one value per person (availability, rate tier, travel, booking method). Anything that is "one talent = one value" lives here rather than in a child table. A talent's profession(s) are linked through `talent_talent_type`, and the merged `default_blocks` of those types decide the default layout. Soft deletes let you unpublish/remove without losing history.
+The profile itself — the "living creative passport." Holds one-per-profile identity data (name, bio, hero image, public slug shown as **Username**) and the singular settings that only ever have one value per person (booking method + the indicative **Pricing rate**). Anything that is "one talent = one value" lives here rather than in a child table. A talent's skill(s) are linked through `talent_talent_type`, and the merged `default_blocks` of those skills decide the default layout. Soft deletes let you unpublish/remove without losing history. *(The availability, rate-tier, and travel settings were removed — ADR-L. The Pricing rate `rate_*` columns were added — ADR-N.)*
 
 | Column | Type / constraints |
 |---|---|
@@ -25,24 +27,27 @@ The profile itself — the "living creative passport." Holds one-per-profile ide
 | display_name | VARCHAR |
 | headline | VARCHAR |
 | bio | TEXT |
-| hero_image_url | VARCHAR |
-| avatar_url | VARCHAR |
-| availability_status | ENUM(available, booked, unavailable) |
+| ~~hero_image_url~~ | ~~VARCHAR~~ — cover/hero removed with the IG-style header (ADR-O); was a media accessor |
+| avatar_url | VARCHAR — media accessor (`avatar` collection) |
+| ~~availability_status~~ | ~~ENUM(available, booked, unavailable)~~ — removed (ADR-L) |
 | base_city | VARCHAR |
 | base_country | VARCHAR |
-| rate_tier | ENUM(emerging, established, premium, elite) NULL |
-| willing_to_travel | BOOLEAN |
-| travel_regions | JSON NULL |
+| ~~rate_tier~~ | ~~ENUM(emerging, established, premium, elite) NULL~~ — removed (ADR-L) |
+| ~~willing_to_travel~~ | ~~BOOLEAN~~ — removed (ADR-L) |
+| ~~travel_regions~~ | ~~JSON NULL~~ — removed (ADR-L) |
 | booking_type | ENUM(email, calendar, form, external) |
 | booking_value | VARCHAR |
+| rate_unit | ENUM(project, day, hour) NULL — Pricing rate (ADR-N) |
+| rate_amount | DECIMAL(10,2) NULL — Pricing rate (ADR-N) |
+| rate_currency | CHAR(3) NULL — ISO code; Pricing rate (ADR-N) |
 | is_published | BOOLEAN |
 | published_at | TIMESTAMP NULL |
 | view_count | UNSIGNED INT |
 | meta | JSON NULL |
 | created_at / updated_at / deleted_at | timestamps + soft delete |
 
-### `talent_types`
-Lookup table for the six professions (model, photographer, DOP, creative director, stylist, graphic designer). Its real job is `default_blocks`: when a new talent picks "photographer," this is where the system reads which blocks to preload and in what order. Keeping it as a table (not hardcoded) means you can add a profession or change a default layout without touching code or migrations.
+### `talent_types` — the **Skills catalog** (ADR-N)
+`talent_types` is the **Skills catalog**: the six seeded skills, named as **disciplines/activities** — Modeling, Photography, Cinematography, Creative Direction, Styling, Graphic Design (slugs `modeling` / `photography` / `cinematography` / `creative-direction` / `styling` / `graphic-design`) — not person-nouns (ADR-S; IDs unchanged, so every FK is intact). "Skills" is the product term everywhere in the UI/routes; the physical table keeps the `talent_types` name (renaming it would cascade into brand creative-needs, campaigns, and API lookups — a deliberate future migration, ADR-N). Its real job is `default_blocks`: when a new talent picks "Photography," this is where the system reads which blocks to preload and in what order. Keeping it as a table (not hardcoded) means you can add a skill or change a default layout without touching code or migrations.
 
 | Column | Type / constraints |
 |---|---|
@@ -56,7 +61,7 @@ Lookup table for the six professions (model, photographer, DOP, creative directo
 | created_at / updated_at | timestamps |
 
 ### `talent_talent_type` (pivot)
-Makes talent ↔ profession many-to-many, so one talent can be more than one type (e.g. photographer + creative director, or model + photographer). `is_primary` marks the type that leads the profile and drives the headline; `position` orders the rest. On profile creation the system merges the `default_blocks` of every linked type and dedupes before seeding `profile_blocks`, so a multi-type talent gets no duplicate blocks. `UNIQUE(talent_id, talent_type_id)` stops the same type being attached twice.
+Makes talent ↔ skill many-to-many, so one talent can have more than one skill (e.g. Photography + Creative Direction, or Modeling + Photography). `is_primary` marks the skill that leads the profile and drives the headline; `position` orders the rest. On profile creation the system merges the `default_blocks` of every linked skill and dedupes before seeding `profile_blocks`, so a multi-skill talent gets no duplicate blocks. `UNIQUE(talent_id, talent_type_id)` stops the same skill being attached twice.
 
 | Column | Type / constraints |
 |---|---|
@@ -97,15 +102,16 @@ Which categories a gated block applies to. Only used when `availability = by_cat
 | category | ENUM(model, crew, creative) |
 
 ### `profile_blocks`
-The heart of the "malleable, reorderable" system. Every block a talent shows is a row here, with `position` for ordering, `is_visible` for show/hide, and `block_type_id` to say what it is. This table is layout and arrangement, deliberately separated from the actual content: simple blocks store data inline in `content` (JSON); rich blocks point to their own tables. This separation lets a talent drag, hide, and rearrange blocks without restructuring data.
+The heart of the "malleable, reorderable" system. Every block a talent shows is a row here, with `position` for ordering, `is_visible` for show/hide, and `block_type_id` to say what it is. This table is layout and arrangement, deliberately separated from the actual content: simple blocks store data inline in `content` (JSON); rich blocks point to their own tables. Blocks are **skill-scoped** (ADR-Q): `talent_type_id` NULL = a profile-level / universal block (rendered above the tabs); NOT NULL = the block lives in that skill's tab. `position` is ordered **within a scope** (per `talent_id, talent_type_id`).
 
 | Column | Type / constraints |
 |---|---|
 | id | BIGINT UNSIGNED, PK |
 | talent_id | FK → talents |
 | block_type_id | FK → block_types |
+| talent_type_id | FK → talent_types NULL, nullOnDelete — the skill's tab; NULL = profile-level (ADR-Q); index `(talent_id, talent_type_id, position)` |
 | title | VARCHAR |
-| position | UNSIGNED INT |
+| position | UNSIGNED INT (ordered within the scope) |
 | is_visible | BOOLEAN |
 | layout | ENUM(grid, carousel, list, masonry) NULL |
 | settings | JSON |
@@ -166,22 +172,8 @@ Client/peer testimonials, one per review. Needs its own table for the one-to-man
 | reviewed_at | TIMESTAMP |
 | created_at / updated_at | timestamps |
 
-### `services`
-What the talent offers and for how much. Separate because a talent has multiple services, each with its own price, unit (hour/day/project), and active flag.
-
-| Column | Type / constraints |
-|---|---|
-| id | BIGINT UNSIGNED, PK |
-| talent_id | FK → talents |
-| name | VARCHAR |
-| description | TEXT |
-| price | DECIMAL(10,2) NULL |
-| currency | CHAR(3) |
-| price_unit | ENUM(hour, day, project, fixed) |
-| duration_minutes | INT NULL |
-| is_active | BOOLEAN |
-| position | UNSIGNED INT |
-| created_at / updated_at | timestamps |
+### ~~`services`~~ — removed (ADR-K)
+The per-talent rate card was removed entirely. Pricing is now the single indicative **Pricing rate** on `talents` (`rate_unit`/`rate_amount`/`rate_currency`, ADR-N), and a deal's amount comes from the flow's form/quote step — not a service.
 
 ### `comp_cards`
 Model-specific stats (height, measurements, hair/eye color). A 1:1 table (note the UNIQUE on `talent_id`) rather than columns on `talents`, because these fields only apply to models — putting them on `talents` would leave them NULL for every photographer and designer.
@@ -258,12 +250,13 @@ A crew member's kit (cameras, lenses, lighting). One row per item, grouped by ca
 | created_at / updated_at | timestamps |
 
 ### `projects`
-Long-form project write-ups for creatives. Each is a substantial content object (summary, full body, cover image, measurable results). The `results` JSON holds flexible metrics per case without needing fixed columns.
+Long-form project write-ups for creatives. Each is a substantial content object (summary, full body, cover image, measurable results). The `results` JSON holds flexible metrics per case without needing fixed columns. Projects are **skill-scoped** (ADR-Q): `talent_type_id` says which skill's tab a project belongs to.
 
 | Column | Type / constraints |
 |---|---|
 | id | BIGINT UNSIGNED, PK |
 | talent_id | FK → talents |
+| talent_type_id | FK → talent_types NULL, nullOnDelete — the project's skill/tab (ADR-Q); indexed |
 | title | VARCHAR |
 | client_name | VARCHAR |
 | role | VARCHAR |
@@ -289,35 +282,11 @@ Tools a creative uses, with proficiency level. A child table because it's a many
 | position | UNSIGNED INT |
 | created_at / updated_at | timestamps |
 
-### `agency_affiliations`
-Optional representation info. A talent can have several (different agencies in different regions), each with its own representation type and `is_current` flag — handles the "represented by X in Europe, Y in the US" case cleanly.
+### ~~`agency_affiliations`~~ — removed (ADR-M)
+The agency-representation satellite was removed entirely.
 
-| Column | Type / constraints |
-|---|---|
-| id | BIGINT UNSIGNED, PK |
-| talent_id | FK → talents |
-| agency_name | VARCHAR |
-| agency_url | VARCHAR |
-| agency_logo_url | VARCHAR |
-| representation_type | ENUM(exclusive, non_exclusive, mother_agency, freelance) |
-| region | VARCHAR |
-| is_current | BOOLEAN |
-| created_at / updated_at | timestamps |
-
-### `press_features`
-Media mentions and press — a growing list, sortable by date, each with a link and thumbnail.
-
-| Column | Type / constraints |
-|---|---|
-| id | BIGINT UNSIGNED, PK |
-| talent_id | FK → talents |
-| publication | VARCHAR |
-| title | VARCHAR |
-| url | VARCHAR |
-| thumbnail_url | VARCHAR |
-| published_date | DATE |
-| position | UNSIGNED INT |
-| created_at / updated_at | timestamps |
+### ~~`press_features`~~ — removed (ADR-M)
+The press-mentions satellite was removed entirely.
 
 ---
 
@@ -364,7 +333,7 @@ One row per brand ↔ talent deal. `current_step_id` points at the active step; 
 | reference | VARCHAR, UNIQUE (human code, e.g. FAMA-2026-0001) |
 | brand_id | FK → brands |
 | talent_id | FK → talents |
-| service_id | FK → services NULL |
+| ~~service_id~~ | ~~FK → services NULL~~ — removed (ADR-K); amount comes from the flow's form/quote step |
 | deal_flow_id | FK → deal_flows (the flow it was seeded from) |
 | current_step_id | FK → deal_steps NULL |
 | status | ENUM(draft, awaiting_brand, awaiting_talent, awaiting_admin, completed, cancelled, declined, expired) |
@@ -423,7 +392,7 @@ The pre-auth holding table. When a visitor presses Contact on a public talent pr
 |---|---|
 | id | BIGINT UNSIGNED, PK |
 | talent_id | FK → talents |
-| service_id | FK → services NULL |
+| ~~service_id~~ | ~~FK → services NULL~~ — removed (ADR-K) |
 | contact_name | VARCHAR |
 | contact_email | VARCHAR |
 | contact_company | VARCHAR NULL |
@@ -588,7 +557,7 @@ Campaigns/shoots the brand runs on Fama — the "Create a Campaign / Create a sh
 | created_at / updated_at / deleted_at | timestamps + soft delete |
 
 ### `campaign_talent_types` (optional — roles a campaign seeks)
-Names the professions a campaign needs (e.g. "1 model + 1 photographer"). Skip if campaigns are free-form.
+Names the skills a campaign needs (e.g. "one Modeling + one Photography"), referencing the `talent_types` Skills catalog (disciplines — ADR-S). Skip if campaigns are free-form.
 
 | Column | Type / constraints |
 |---|---|
@@ -665,9 +634,9 @@ Key-value store for admin-tunable global settings (default currency, default dea
 - **talents** ⇄ **talent_types** via `talent_talent_type` (M:N; `is_primary`, `position`).
 - **talents** → many `profile_blocks`; each `profile_blocks` → one `block_types`.
 - **block_types** → many `block_type_category` (when `availability = by_category`).
-- **talents** → many of every content table (`portfolio_items`, `brand_collabs`, `reviews`, `services`, `look_types`, `digitals`, `showreels`, `equipment`, `projects`, `software_stack`, `agency_affiliations`, `press_features`); 1:1 `comp_cards`.
+- **talents** → many of every content table (`portfolio_items`, `brand_collabs`, `reviews`, `look_types`, `digitals`, `showreels`, `equipment`, `projects`, `software_stack`); 1:1 `comp_cards`. *(`services`, `agency_affiliations`, `press_features` removed — ADR-K/M.)*
 - **deal_flows** → many `deal_flow_steps`.
-- **deals** belongs to `brands`, `talents`, `deal_flows` (+ optional `service`, future `campaign`); has many `deal_steps` and `deal_messages`; `current_step_id` → `deal_steps`.
+- **deals** belongs to `brands`, `talents`, `deal_flows` (+ future `campaign`); has many `deal_steps` and `deal_messages`; `current_step_id` → `deal_steps`. *(The optional `service` link was removed — ADR-K.)*
 - **deal_steps** snapshot from `deal_flow_steps` (`flow_step_id`).
 - **deal_enquiries** → optional `converted_deal_id` → `deals`.
 - **brands** → 1:1 `brand_aesthetics`, `brand_creative_needs`, `brand_credibility`; many `brand_images`, `brand_reviews`, `brand_social_handles`, `brand_signals`, `campaigns`.

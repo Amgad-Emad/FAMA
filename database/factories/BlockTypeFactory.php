@@ -46,7 +46,7 @@ class BlockTypeFactory extends Factory
     }
 
     /**
-     * Gated to specific professions.
+     * Gated to specific skills.
      */
     public function byType(): static
     {

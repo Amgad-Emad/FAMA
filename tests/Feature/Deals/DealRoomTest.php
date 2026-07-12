@@ -34,6 +34,23 @@ it('renders the inbox and the deal room for the owner', function () {
     $this->actingAs($talent, 'talent')->get(route('talent.deals.show', $deal))->assertOk();
 });
 
+it('lays out the timeline as the central focus with phases + action panel in the side panel', function () {
+    $talent = Talent::factory()->create();
+    $deal = roomDeal($talent);
+
+    $this->actingAs($talent, 'talent')->get(route('talent.deals.show', $deal))
+        ->assertOk()
+        // Header (top) carries the back link; the timeline is central (main column),
+        // and the current-step action panel + phases stepper sit in the side panel after it.
+        ->assertSeeInOrder([
+            __('All deals'),
+            __('Timeline'),
+            __('Message…'),      // the composer lives with the central timeline
+            __('Current step'),  // side panel: action panel first…
+            __('Phases'),        // …then the phases stepper
+        ]);
+});
+
 it('returns the thread payload and flags the talent’s turn', function () {
     $talent = Talent::factory()->create();
     $deal = roomDeal($talent);

@@ -10,6 +10,7 @@
         'md' => 'h-16 w-16 text-lg',
         'lg' => 'h-24 w-24 text-2xl',
         'xl' => 'h-28 w-28 text-3xl',
+        '2xl' => 'h-32 w-32 text-4xl sm:h-36 sm:w-36',
     ];
     $dim = $sizes[$size] ?? $sizes['md'];
 

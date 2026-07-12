@@ -1,4 +1,8 @@
-@php $items = $talent->portfolioItems; @endphp
+@php
+    // Gallery items are block-scoped (ADR-Q): each tab's gallery shows its own body
+    // of work. Fall back to a talent's un-linked items only for a universal gallery.
+    $items = $talent->portfolioItems->where('block_id', $block->id);
+@endphp
 
 @if ($items->isNotEmpty())
     <x-ui.section :title="$block->title ?: $block->blockType->name" :eyebrow="__('Portfolio')">

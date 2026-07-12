@@ -18,6 +18,8 @@ class AddBlockRequest extends FormRequest
     {
         return [
             'block_type_id' => ['required', 'integer', 'exists:block_types,id'],
+            // The scope to add into: a skill's talent_type_id, or null = universal.
+            'talent_type_id' => ['nullable', 'integer', 'exists:talent_types,id'],
         ];
     }
 }

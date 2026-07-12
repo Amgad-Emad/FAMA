@@ -20,7 +20,6 @@ class DealEnquiryFactory extends Factory
     {
         return [
             'talent_id' => Talent::factory(),
-            'service_id' => null,
             'contact_name' => fake()->name(),
             'contact_email' => fake()->safeEmail(),
             'contact_company' => fake()->company(),
