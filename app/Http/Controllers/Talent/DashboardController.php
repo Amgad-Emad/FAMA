@@ -25,7 +25,7 @@ class DashboardController extends TalentController
             'view_count' => (int) $talent->view_count,
             'pending_reviews' => (int) $talent->pending_reviews_count,
             'blocks' => (int) $talent->profile_blocks_count,
-            'professions' => (int) $talent->talent_types_count,
+            'skills' => (int) $talent->talent_types_count,
         ];
 
         // Live (non-terminal) deals for the "whose turn" overview.

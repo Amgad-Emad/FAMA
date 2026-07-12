@@ -2,7 +2,6 @@
 
 use App\Models\CompCard;
 use App\Models\PortfolioItem;
-use App\Models\Service;
 use App\Models\Talent;
 use App\Models\TalentType;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -10,14 +9,14 @@ use Illuminate\Support\Carbon;
 
 it('casts json, booleans, integers and dates', function () {
     $talent = Talent::factory()->create([
-        'travel_regions' => ['MENA', 'GCC'],
+        'meta' => ['onboarded' => true],
         'is_published' => true,
         'view_count' => 12,
     ]);
 
     $fresh = Talent::find($talent->id);
 
-    expect($fresh->travel_regions)->toBe(['MENA', 'GCC']);
+    expect($fresh->meta)->toBe(['onboarded' => true]);
     expect($fresh->is_published)->toBeTrue();
     expect($fresh->view_count)->toBe(12);
     expect($fresh->published_at)->toBeInstanceOf(Carbon::class);
@@ -62,17 +61,15 @@ it('soft deletes', function () {
 it('exposes the talent content relationships', function () {
     $talent = Talent::factory()->create();
     PortfolioItem::factory()->count(2)->for($talent)->create();
-    Service::factory()->count(3)->for($talent)->create();
     CompCard::factory()->for($talent)->create();
 
-    $fresh = Talent::withCount(['portfolioItems', 'services'])->with('compCard')->find($talent->id);
+    $fresh = Talent::withCount(['portfolioItems'])->with('compCard')->find($talent->id);
 
     expect($fresh->portfolio_items_count)->toBe(2);
-    expect($fresh->services_count)->toBe(3);
     expect($fresh->compCard)->toBeInstanceOf(CompCard::class);
 });
 
-it('links professions through the pivot ordered by position with a primary', function () {
+it('links skills through the pivot ordered by position with a primary', function () {
     $talent = Talent::factory()->create();
     $model = TalentType::factory()->create();
     $photographer = TalentType::factory()->create();
@@ -98,13 +95,12 @@ it('enforces a unique talent/type pair', function () {
         ->toThrow(UniqueConstraintViolationException::class);
 });
 
-it('registers hero and avatar media collections with null accessors when empty', function () {
+it('registers the avatar media collection with a null accessor when empty', function () {
     $talent = Talent::factory()->create();
 
     $collections = collect($talent->getRegisteredMediaCollections())->pluck('name');
 
-    expect($collections)->toContain('hero');
     expect($collections)->toContain('avatar');
-    expect($talent->hero_image_url)->toBeNull();
+    expect($collections)->not->toContain('hero'); // cover/hero removed (ADR-O)
     expect($talent->avatar_url)->toBeNull();
 });

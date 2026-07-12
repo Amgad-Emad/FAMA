@@ -13,7 +13,6 @@ use App\Models\LookType;
 use App\Models\PortfolioItem;
 use App\Models\Project;
 use App\Models\Review;
-use App\Models\Service;
 use App\Models\Showreel;
 use App\Models\Talent;
 use App\Models\TalentType;
@@ -25,7 +24,7 @@ use Illuminate\Support\Facades\Hash;
 
 /**
  * Produces one rich, multi-type demo talent (model + photographer) so later
- * phases have something real to render: two professions, the merged+deduped
+ * phases have something real to render: two skills, the merged+deduped
  * default blocks seeded into profile_blocks, and populated content tables.
  *
  * Idempotent: the demo talent is rebuilt from scratch each run (children cascade
@@ -43,10 +42,10 @@ class TalentDemoSeeder extends Seeder
             // Rebuild from clean state (FK cascade removes children/pivots).
             Talent::withTrashed()->where('email', self::EMAIL)->forceDelete();
 
-            $model = TalentType::where('slug', 'model')->firstOrFail();
-            $photographer = TalentType::where('slug', 'photographer')->firstOrFail();
+            $model = TalentType::where('slug', 'modeling')->firstOrFail();
+            $photographer = TalentType::where('slug', 'photography')->firstOrFail();
 
-            $talent = Talent::factory()->available()->create([
+            $talent = Talent::factory()->create([
                 'email' => self::EMAIL,
                 'slug' => 'demo-talent',
                 'display_name' => 'Layla Hassan',
@@ -54,50 +53,32 @@ class TalentDemoSeeder extends Seeder
                 'bio' => ['en' => 'Editorial model and commercial photographer based in Cairo.', 'ar' => 'عارضة تحريرية ومصورة تجارية مقرها القاهرة.'],
                 'base_city' => 'Cairo',
                 'base_country' => 'Egypt',
-                'rate_tier' => 'established',
+                'rate_unit' => 'day',
+                'rate_amount' => 8000,
+                'rate_currency' => 'EGP',
                 'is_published' => true,
             ]);
 
-            // Two professions; model leads the headline.
+            // Two skills; model leads the headline.
             $talent->talentTypes()->sync([
                 $model->id => ['is_primary' => true, 'position' => 0],
                 $photographer->id => ['is_primary' => false, 'position' => 1],
             ]);
 
-            // Hero + avatar images.
-            $talent->addMedia($this->cover('layla-hero', 1280, 860))->toMediaCollection('hero');
+            // Avatar image (the cover/hero was removed with the IG-style header — ADR-O).
             $talent->addMedia($this->cover('layla-avatar', 640, 640))->toMediaCollection('avatar');
 
-            // Merge + dedupe the default blocks of both types, preserving order.
-            $keys = collect($model->default_blocks)
-                ->merge($photographer->default_blocks)
-                ->unique()
-                ->values();
+            // Seed blocks scope-aware (ADR-Q): universal talent-level blocks (hero,
+            // reviews, brand collabs) sit in the profile-level section; gated blocks
+            // and galleries live in each skill's own tab.
+            $this->seedScopedBlocks($talent, [$model, $photographer]);
 
-            $blockTypes = BlockType::whereIn('key', $keys)->get()->keyBy('key');
-
-            $position = 0;
-            foreach ($keys as $key) {
-                $blockType = $blockTypes->get($key);
-                if ($blockType === null) {
-                    continue;
-                }
-
-                $talent->profileBlocks()->create([
-                    'block_type_id' => $blockType->id,
-                    'title' => $blockType->getTranslations('name'),
-                    'position' => $position++,
-                    'is_visible' => true,
-                    'layout' => $blockType->default_layout,
-                    'settings' => [],
-                    'content' => null,
-                ]);
-            }
-
-            // Populate the content tables the demo profile renders.
-            $galleryBlock = $talent->profileBlocks()
-                ->whereRelation('blockType', 'key', 'gallery')
-                ->first();
+            // Populate the content tables the demo profile renders. Each skill's tab
+            // has its own gallery (ADR-Q), so items are split across the two galleries.
+            $modelGallery = $talent->profileBlocks()->where('talent_type_id', $model->id)
+                ->whereRelation('blockType', 'key', 'gallery')->first();
+            $photographerGallery = $talent->profileBlocks()->where('talent_type_id', $photographer->id)
+                ->whereRelation('blockType', 'key', 'gallery')->first();
 
             // Gallery — curated captions.
             $captions = [
@@ -109,8 +90,10 @@ class TalentDemoSeeder extends Seeder
                 ['en' => 'Linen campaign still', 'ar' => 'لقطة حملة الكتان'],
             ];
             foreach ($captions as $i => $caption) {
+                // First three → the model tab's gallery; the rest → the photographer tab's.
+                $block = $i < 3 ? $modelGallery : $photographerGallery;
                 $item = PortfolioItem::factory()->for($talent)->create([
-                    'block_id' => $galleryBlock?->id, 'media_type' => 'image', 'caption' => $caption, 'position' => $i,
+                    'block_id' => $block?->id, 'media_type' => 'image', 'caption' => $caption, 'position' => $i,
                 ]);
                 $item->addMedia($this->cover('layla-g'.$i, 900, 1120))->toMediaCollection('gallery');
             }
@@ -123,6 +106,7 @@ class TalentDemoSeeder extends Seeder
 
             // Projects — curated.
             Project::factory()->for($talent)->create([
+                'talent_type_id' => $photographer->id,
                 'title' => ['en' => 'Nomad Coffee — Autumn launch', 'ar' => 'نوماد كوفي — إطلاق الخريف'],
                 'client_name' => 'Nomad Coffee Co.', 'year' => 2025, 'position' => 0,
                 'role' => ['en' => 'Lead model & stills', 'ar' => 'عارضة رئيسية وتصوير ثابت'],
@@ -130,6 +114,7 @@ class TalentDemoSeeder extends Seeder
                 'results' => ['Reach' => '2.4M', 'Engagement' => '+38%', 'Assets' => '60+'],
             ]);
             Project::factory()->for($talent)->create([
+                'talent_type_id' => $photographer->id,
                 'title' => ['en' => 'Nefertari Cosmetics — SS26', 'ar' => 'مستحضرات نفرتاري — ربيع/صيف ٢٦'],
                 'client_name' => 'Nefertari Cosmetics', 'year' => 2026, 'position' => 1,
                 'role' => ['en' => 'Beauty model', 'ar' => 'عارضة جمال'],
@@ -140,16 +125,6 @@ class TalentDemoSeeder extends Seeder
             // Brand collaborations.
             foreach (['Nomad Coffee Co.', 'Nefertari Cosmetics', 'El Gouna Resorts', 'Cairo Linen'] as $i => $brandName) {
                 BrandCollab::factory()->for($talent)->create(['brand_name' => $brandName, 'year' => 2024 + ($i % 2), 'position' => $i]);
-            }
-
-            // Rate card — curated services.
-            $services = [
-                ['name' => ['en' => 'Editorial modelling — full day', 'ar' => 'عرض أزياء تحريري — يوم كامل'], 'price' => 18000, 'price_unit' => 'day'],
-                ['name' => ['en' => 'Commercial photography — half day', 'ar' => 'تصوير تجاري — نصف يوم'], 'price' => 9000, 'price_unit' => 'day'],
-                ['name' => ['en' => 'Lookbook shoot — per look', 'ar' => 'تصوير لوك بوك — لكل إطلالة'], 'price' => 1500, 'price_unit' => 'project'],
-            ];
-            foreach ($services as $i => $service) {
-                Service::factory()->for($talent)->create($service + ['currency' => 'EGP', 'is_active' => true, 'position' => $i]);
             }
 
             // Reviews — curated (3 approved + 1 pending).
@@ -202,5 +177,51 @@ class TalentDemoSeeder extends Seeder
                 $deals->advance($d3, ['note' => 'Beautiful work'], 'brand', $gouna);
             }
         });
+    }
+
+    /**
+     * Seed a talent's blocks scope-aware (ADR-Q): universal talent-level blocks
+     * (hero, reviews, brand collabs — universal + non-repeatable) sit once in the
+     * profile-level section; gated blocks and galleries (repeatable) live in each
+     * skill's own tab.
+     *
+     * @param  array<int, \App\Models\TalentType>  $skills
+     */
+    private function seedScopedBlocks(Talent $talent, array $skills): void
+    {
+        $allKeys = collect($skills)->flatMap(fn ($s) => $s->default_blocks ?? [])->unique();
+        $blockTypes = BlockType::whereIn('key', $allKeys)->get()->keyBy('key');
+        $universalOnce = [];
+        $universalPos = 0;
+
+        foreach ($skills as $skill) {
+            $tabPos = 0;
+            foreach (($skill->default_blocks ?? []) as $key) {
+                $bt = $blockTypes->get($key);
+                if ($bt === null) {
+                    continue;
+                }
+
+                $universal = $bt->availability === 'universal' && ! $bt->is_repeatable;
+                if ($universal && in_array($bt->id, $universalOnce, true)) {
+                    continue;
+                }
+                if ($universal) {
+                    $universalOnce[] = $bt->id;
+                }
+
+                $talent->profileBlocks()->create([
+                    'block_type_id' => $bt->id,
+                    'talent_type_id' => $universal ? null : $skill->id,
+                    'title' => $bt->getTranslations('name'),
+                    'position' => $universal ? $universalPos++ : $tabPos++,
+                    'is_visible' => true,
+                    'status' => 'visible',
+                    'layout' => $bt->default_layout,
+                    'settings' => [],
+                    'content' => null,
+                ]);
+            }
+        }
     }
 }

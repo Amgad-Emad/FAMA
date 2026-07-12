@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Brand\TalentMessageController;
 use App\Http\Controllers\DiscoveryController;
 use App\Http\Controllers\EnquiryController;
 use App\Http\Controllers\ProfileController;
@@ -81,11 +82,23 @@ Route::group([
     Route::get('/{slug}/work/{project}', [ProjectController::class, 'show'])
         ->where('slug', '[A-Za-z0-9\-]+')->name('talent.work');
 
+    // Lazy skill-tab fetch (talent-spec) — returns one skill's rendered blocks as an
+    // envelope for the public profile's tab panels (ADR-R).
+    Route::get('/{slug}/tab/{skill}', [TalentProfileController::class, 'tab'])
+        ->where('slug', '[A-Za-z0-9\-]+')->where('skill', '[A-Za-z0-9\-]+')->name('talent.tab');
+
     // Deal initiation — booking CTA (no-login enquiry capture).
     Route::get('/{slug}/enquire', [EnquiryController::class, 'create'])
         ->where('slug', '[A-Za-z0-9\-]+')->name('talent.enquire');
     Route::post('/{slug}/enquire', [EnquiryController::class, 'store'])
         ->where('slug', '[A-Za-z0-9\-]+')->name('talent.enquire.store');
+
+    // Brand↔talent messaging entry (public profile primary "Message" CTA, ADR-P).
+    // Public on purpose: it branches on brand auth itself (guest → brand login with
+    // the profile as the return URL; brand → interim "coming soon" stub). The real
+    // chat / deal initiation attaches in TalentMessageController later.
+    Route::get('/brand/talents/{talent:slug}/message', TalentMessageController::class)
+        ->name('brand.talents.message');
 
     // Public talent profile — fama.com/{slug}. MUST stay last: it is a
     // single-segment catch-all, so all named routes above take precedence. The

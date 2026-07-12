@@ -12,12 +12,47 @@ that walks a brand and a talent through booking, quoting, contracting, payment, 
 ## Status
 
 **Talent slice — complete (production-grade).** Public pages (profile, project detail, review, enquiry,
-discovery/search), the full talent dashboard (profile/blocks, professions, content editors, rate card,
-availability, reviews, affiliations & press, account), and the shared **deal engine** (flows → steps →
+discovery/search), the full talent dashboard — sidebar **Home · Profile · Content · Reviews · Deals**,
+where the **Profile editor** is the single profile surface (identity, Skills, Username, publish, pricing
+rate, blocks) — and the shared **deal engine** (flows → steps →
+
 deals, StepHandler strategy, state machines) with the talent deal room + inbox. Blade + Alpine on the
 shared `http.js` (no page reloads), JSON envelope, i18n (EN/AR + RTL), light/dark. Full Pest suite
 green; demo data seeded (`php artisan migrate:fresh --seed`). Manual QA checklist:
 [`docs/conventions.md`](docs/conventions.md#qa-checklist--talent-slice-manual).
+
+> **Removed (`docs/decisions.md` ADR-K/L/M):** the rate-card / services, availability & travel, and
+> affiliations & press talent features were removed entirely. Deal amount comes from the flow's
+> form/quote step; enquiries are no longer gated by availability.
+>
+> **Skills + editor consolidation + Pricing rate (ADR-N):** "Professions" is renamed **Skills** across
+> the UI/routes (the `talent_types` table is the Skills catalog); the Professions + Account tabs were
+> folded into the Profile editor; the public `slug` is shown as **Username**; a new indicative
+> **Pricing rate** (`rate_unit`/`rate_amount`/`rate_currency`) replaces the rate card.
+>
+> **Instagram-style profile header (ADR-O):** the public profile leads with an avatar-based IG-style
+> header — **no cover/hero image** (the `hero` collection + `hero_image_url` accessor + editor uploader
+> are gone; `avatar` stays). Header = circular avatar + display_name + **@username** + primary-skill
+> line + a **Projects · Views · Rating** stats row + bio + optional link + the **Pricing rate** chip +
+> Message / Leave-a-review CTAs. Token-only; verified dark + light + RTL.
+>
+> **Skill-scoped blocks & projects (ADR-Q):** `profile_blocks` and `projects` belong to a skill
+> (`talent_type_id`; NULL = profile-level). Adding a skill seeds **its own tab's** blocks (per-skill —
+> gallery in both tabs); the picker is per-scope, blocks move between tabs, and removing a skill deletes
+> its tab's blocks but preserves content. The editor manages blocks per scope.
+>
+> **Public profile — two regions (ADR-R):** Region 1 = the IG identity header + universal/meta (location,
+> pricing rate, clickable skill chips) + profile-level blocks; Region 2 = **skill tabs** (primary active
+> by default, tabs only for skills with visible blocks). The active tab renders server-side; others
+> **lazy-load** on click (`GET /{slug}/tab/{skill}`, no reload) and cache; the active tab is deep-linked
+> in the URL (`?skill=`, shareable + back button). Projects in a tab are scoped to that skill.
+>
+> **Skills named as disciplines (ADR-S):** the six Skills read as the **discipline/activity** — Modeling,
+> Photography, Cinematography, Creative Direction, Styling, Graphic Design (slugs `modeling` /
+> `photography` / `cinematography` / `creative-direction` / `styling` / `graphic-design`), not person-nouns.
+> `talent_types` IDs are unchanged so all FKs are intact; the `category` enum (`model/crew/creative`) is
+> unchanged (only its display labels are Modeling/Crew/Creative). Old `?skill=` deep links break (no
+> redirects). **AR names are a first pass — to be confirmed.**
 
 **Next — Phase 2A:** brand core & satellites, then the brand-side deal room (Phase 2C) on the same
 engine; Admin authoring/intervention is Phase 3.

@@ -27,7 +27,7 @@ class Project extends Model implements HasMedia
      * @var list<string>
      */
     protected $fillable = [
-        'talent_id', 'title', 'client_name', 'role', 'summary', 'body',
+        'talent_id', 'talent_type_id', 'title', 'client_name', 'role', 'summary', 'body',
         'results', 'year', 'url', 'position',
     ];
 
@@ -86,5 +86,16 @@ class Project extends Model implements HasMedia
     public function talent(): BelongsTo
     {
         return $this->belongsTo(Talent::class);
+    }
+
+    /**
+     * The skill (tab) this project belongs to; NULL once its skill is removed
+     * (content is preserved — ADR-Q).
+     *
+     * @return BelongsTo<TalentType, $this>
+     */
+    public function talentType(): BelongsTo
+    {
+        return $this->belongsTo(TalentType::class);
     }
 }

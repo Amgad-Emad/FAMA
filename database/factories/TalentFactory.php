@@ -38,12 +38,8 @@ class TalentFactory extends Factory
                 'en' => fake()->paragraph(),
                 'ar' => 'نبذة تعريفية عن الموهبة وخبراتها.',
             ],
-            'availability_status' => fake()->randomElement(['available', 'booked', 'unavailable']),
             'base_city' => fake()->randomElement(['Cairo', 'Alexandria', 'Giza', 'Dubai', 'Riyadh']),
             'base_country' => fake()->randomElement(['Egypt', 'UAE', 'Saudi Arabia']),
-            'rate_tier' => fake()->randomElement(['emerging', 'established', 'premium', 'elite']),
-            'willing_to_travel' => fake()->boolean(70),
-            'travel_regions' => fake()->randomElements(['MENA', 'GCC', 'Europe', 'Africa'], 2),
             'booking_type' => 'email',
             'booking_value' => fake()->safeEmail(),
             'is_published' => true,
@@ -64,13 +60,5 @@ class TalentFactory extends Factory
             'published_at' => null,
             'status' => 'draft',
         ]);
-    }
-
-    /**
-     * An available talent (booking CTA open).
-     */
-    public function available(): static
-    {
-        return $this->state(fn (): array => ['availability_status' => 'available']);
     }
 }

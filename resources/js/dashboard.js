@@ -15,33 +15,173 @@ function t(map) {
 document.addEventListener('alpine:init', () => {
     const Alpine = window.Alpine;
 
-    // --- Profile editor -----------------------------------------------------
+    // --- Public profile skill tabs (talent-spec, ADR-R) ---------------------
+    // The skill tab bar is the profile's primary navigation (role="tablist"). The
+    // active tab is server-rendered; other tabs are fetched lazily on first click
+    // (envelope, no reload) and cached so re-clicking is instant. The active tab is
+    // mirrored in the URL (`?skill=`) so it's shareable + the back button works.
+    // Keyboard: arrow/Home/End move between tabs (activation follows focus).
+    Alpine.data('profileTabs', (initial) => ({
+        active: initial.active,
+        tabs: initial.tabs || [],
+        labels: initial.labels || {},
+        urls: initial.urls || {},
+        cache: {},
+        loading: false,
+
+        init() {
+            // Cache the server-rendered active panel so switching back is instant.
+            if (this.active && this.$refs.panel) {
+                this.cache[this.active] = this.$refs.panel.innerHTML;
+            }
+            // Back/forward buttons re-open the tab named in the URL.
+            window.addEventListener('popstate', () => {
+                const slug = new URLSearchParams(window.location.search).get('skill');
+                const target = slug && this.tabs.includes(slug) ? slug : this.tabs[0];
+                if (target) this.show(target, { push: false });
+            });
+        },
+
+        // Roving-tabindex keyboard nav across the tablist (RTL-aware). Activation
+        // follows focus, matching the automatic-activation tab pattern.
+        onTabKey(e, index) {
+            const keys = { ArrowRight: 1, ArrowLeft: -1, Home: 'first', End: 'last' };
+            if (!(e.key in keys)) return;
+            e.preventDefault();
+            const rtl = document.documentElement.dir === 'rtl';
+            const n = this.tabs.length;
+            let target;
+            if (keys[e.key] === 'first') target = 0;
+            else if (keys[e.key] === 'last') target = n - 1;
+            else {
+                const step = rtl ? -keys[e.key] : keys[e.key]; // mirror arrows in RTL
+                target = (index + step + n) % n;
+            }
+            const btn = this.$refs.tablist?.querySelectorAll('[role="tab"]')[target];
+            btn?.focus();
+            this.show(this.tabs[target]);
+        },
+
+        async show(slug, { push = true } = {}) {
+            if (!this.tabs.includes(slug) || !this.$refs.panel) return;
+            if (slug === this.active && this.cache[slug] !== undefined) return;
+
+            // Preserve the current panel before switching away.
+            if (this.active) this.cache[this.active] = this.$refs.panel.innerHTML;
+            this.active = slug;
+
+            if (push) {
+                const url = new URL(window.location);
+                url.searchParams.set('skill', slug);
+                window.history.pushState({ skill: slug }, '', url);
+            }
+
+            if (this.cache[slug] !== undefined) {
+                this.swapPanel(this.cache[slug]);
+                return;
+            }
+
+            this.loading = true;
+            try {
+                const { data } = await get(this.urls[slug]);
+                this.cache[slug] = data.html;
+                this.swapPanel(data.html);
+            } catch (e) {
+                /* keep the current panel on failure */
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        // Swap the panel content with a brief fade. A forced reflow between opacity
+        // 0 and 1 makes the transition play without requestAnimationFrame (which is
+        // paused in background tabs); reduced-motion zeroes the duration via CSS, so
+        // it always ends fully visible.
+        swapPanel(html) {
+            const p = this.$refs.panel;
+            if (!p) return;
+            p.style.opacity = '0';
+            p.innerHTML = html;
+            void p.offsetHeight; // reflow
+            p.style.opacity = '';
+        },
+    }));
+
+    // --- Profile editor (the single profile surface) ------------------------
+    // Holds identity + username, Skills, the Pricing rate, the publish toggle,
+    // and the reorderable blocks — the old Professions + Account tabs folded in.
     Alpine.data('profileEditor', (initial) => ({
         core: initial.core,
         blocks: initial.blocks,
-        picker: initial.picker,
+        catalog: initial.catalog,
+        universalLabel: initial.universalLabel || 'Universal',
+        newBlock: {},
         errors: {},
         savingCore: false,
         coreSaved: false,
         dragId: null,
-        heroUploading: false,
-        heroUrl: initial.core.hero_image_url || null,
+
+        // Publish toggle (moved from Account).
+        isPublished: initial.publish.is_published,
+        status: initial.publish.status,
+        publishing: false,
+        publishError: '',
+
+        // Pricing rate (all-or-nothing).
+        rate: { rate_unit: initial.rate.rate_unit || '', rate_amount: initial.rate.rate_amount || '', rate_currency: initial.rate.rate_currency || '' },
+        savingRate: false,
+        rateSaved: false,
+        rateErrors: {},
+
+        // Skills — each is a tab; blocks are scoped per skill (ADR-Q).
+        skills: initial.skills,
+        availableSkills: initial.availableSkills,
+        addSkillId: '',
+        skillDragId: null,
+        confirmRemoveSkillId: null,
+
         t,
 
-        async uploadHero(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            this.heroUploading = true;
-            const body = new FormData();
-            body.append('image', file);
-            try {
-                const { data } = await post('/talent/profile/hero', body);
-                this.heroUrl = data.hero_image_url;
-            } catch (e) {
-                if (e instanceof ApiError) window.alert(e.message);
-            } finally {
-                this.heroUploading = false;
-            }
+        // ----- Scopes: universal (profile-level) + one tab per skill --------
+        get scopeGroups() {
+            const sorted = this.skills.slice().sort((a, b) => (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0) || (a.position - b.position));
+            return [{ key: 'universal', typeId: null, label: this.universalLabel, category: null }].concat(
+                sorted.map((s) => ({ key: String(s.id), typeId: s.id, label: this.t(s.name), category: s.category, is_primary: s.is_primary })),
+            );
+        },
+
+        blocksInScope(typeId) {
+            return this.blocks.filter((b) => (b.talent_type_id ?? null) === typeId).sort((a, b) => a.position - b.position);
+        },
+
+        catalogFor(block) {
+            return this.catalog.find((c) => c.id === block.block_type.id) || null;
+        },
+
+        eligibleInScope(bt, group) {
+            if (group.typeId === null) return bt.availability === 'universal';
+            if (bt.availability === 'universal') return true;
+            if (bt.availability === 'by_category') return (bt.category_gates || []).includes(group.category);
+            if (bt.availability === 'by_type') return (bt.type_gates || []).includes(group.typeId);
+            return false;
+        },
+
+        // The add-picker for a scope: eligible, minus non-repeatables already there.
+        pickerForScope(group) {
+            const present = this.blocksInScope(group.typeId).map((b) => b.block_type.id);
+            return this.catalog.filter((bt) => this.eligibleInScope(bt, group) && !(bt.is_repeatable === false && present.includes(bt.id)));
+        },
+
+        // Scopes a block may move to (eligible + no non-repeatable clash).
+        moveTargets(block) {
+            const bt = this.catalogFor(block);
+            if (!bt) return [];
+            return this.scopeGroups.filter((g) => {
+                if ((block.talent_type_id ?? null) === g.typeId) return false;
+                if (!this.eligibleInScope(bt, g)) return false;
+                if (bt.is_repeatable) return true;
+                return !this.blocksInScope(g.typeId).some((b) => b.block_type.id === bt.id && b.id !== block.id);
+            });
         },
 
         async saveCore() {
@@ -60,11 +200,14 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
-        async addBlock(id) {
+        // Add a block into a specific scope (a tab, or the universal section).
+        async addBlock(group) {
+            const id = this.newBlock[group.key];
+            if (!id) return;
             try {
-                const { data } = await post('/talent/profile/blocks', { block_type_id: id });
+                const { data } = await post('/talent/profile/blocks', { block_type_id: id, talent_type_id: group.typeId });
                 this.blocks.push(data);
-                await this.refreshPicker();
+                this.newBlock[group.key] = '';
             } catch (e) {
                 if (e instanceof ApiError) window.alert(e.message);
             }
@@ -75,7 +218,6 @@ document.addEventListener('alpine:init', () => {
             this.blocks = this.blocks.filter((b) => b.id !== block.id);
             try {
                 await del(`/talent/profile/blocks/${block.id}`);
-                await this.refreshPicker();
             } catch (e) {
                 this.blocks = prev;
             }
@@ -100,137 +242,460 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
-        onDrop(target) {
-            if (this.dragId === null || this.dragId === target.id) return;
-            const from = this.blocks.findIndex((b) => b.id === this.dragId);
-            const to = this.blocks.findIndex((b) => b.id === target.id);
-            const [moved] = this.blocks.splice(from, 1);
-            this.blocks.splice(to, 0, moved);
-            this.dragId = null;
-            this.persistOrder();
-        },
-
-        async persistOrder() {
+        // Move a block to another scope (re-stamp talent_type_id + reposition).
+        async moveBlock(block, targetTypeId) {
+            const value = targetTypeId === '' ? null : Number(targetTypeId);
             try {
-                await patch('/talent/profile/blocks/reorder', { order: this.blocks.map((b) => b.id) });
-            } catch (e) {
-                /* keep optimistic order; a reload would resync */
-            }
-        },
-
-        async refreshPicker() {
-            try {
-                const { data } = await get('/talent/profile/block-picker');
-                this.picker = data;
-            } catch (e) {
-                /* ignore */
-            }
-        },
-    }));
-
-    // --- Professions manager ------------------------------------------------
-    Alpine.data('professionsManager', (initial) => ({
-        linked: initial.linked,
-        available: initial.available,
-        addId: '',
-        dragId: null,
-        t,
-
-        async refresh(payload) {
-            if (payload) {
-                this.linked = payload.linked;
-                this.available = payload.available;
-                return;
-            }
-            const { data } = await get('/talent/professions/data');
-            this.linked = data.linked;
-            this.available = data.available;
-        },
-
-        async add() {
-            if (!this.addId) return;
-            try {
-                const { data } = await post('/talent/professions', { talent_type_id: this.addId });
-                await this.refresh(data);
-                this.addId = '';
+                const { data } = await patch(`/talent/profile/blocks/${block.id}/move`, { talent_type_id: value });
+                Object.assign(block, data);
             } catch (e) {
                 if (e instanceof ApiError) window.alert(e.message);
             }
         },
 
-        async remove(type) {
-            const { data } = await del(`/talent/professions/${type.id}`);
-            await this.refresh(data);
-        },
-
-        async makePrimary(type) {
-            const { data } = await patch(`/talent/professions/${type.id}/primary`);
-            await this.refresh(data);
-        },
-
+        // Reorder only within the dragged block's own scope.
         onDrop(target) {
             if (this.dragId === null || this.dragId === target.id) return;
-            const from = this.linked.findIndex((x) => x.id === this.dragId);
-            const to = this.linked.findIndex((x) => x.id === target.id);
-            const [moved] = this.linked.splice(from, 1);
-            this.linked.splice(to, 0, moved);
+            const dragged = this.blocks.find((b) => b.id === this.dragId);
+            const scopeId = target.talent_type_id ?? null;
             this.dragId = null;
-            patch('/talent/professions/reorder', { order: this.linked.map((x) => x.id) }).catch(() => {});
+            if (!dragged || (dragged.talent_type_id ?? null) !== scopeId) return; // same scope only
+
+            const scoped = this.blocksInScope(scopeId);
+            const from = scoped.findIndex((b) => b.id === dragged.id);
+            const to = scoped.findIndex((b) => b.id === target.id);
+            const [moved] = scoped.splice(from, 1);
+            scoped.splice(to, 0, moved);
+            scoped.forEach((b, i) => { b.position = i; });
+            this.persistOrder(scopeId, scoped.map((b) => b.id));
+        },
+
+        async persistOrder(scopeTypeId, order) {
+            try {
+                await patch('/talent/profile/blocks/reorder', { talent_type_id: scopeTypeId, order });
+            } catch (e) {
+                /* keep optimistic order; a reload would resync */
+            }
+        },
+
+        async refreshBlocks() {
+            try {
+                const { data } = await get('/talent/profile/blocks');
+                this.blocks = data;
+            } catch (e) {
+                /* ignore */
+            }
+        },
+
+        // ----- Publish (moved from Account) ---------------------------------
+        async togglePublish() {
+            this.publishing = true;
+            this.publishError = '';
+            try {
+                const { data } = await patch('/talent/profile/publish', { publish: !this.isPublished });
+                this.isPublished = data.is_published;
+                this.status = data.status;
+            } catch (e) {
+                if (e instanceof ApiError) this.publishError = e.message;
+            } finally {
+                this.publishing = false;
+            }
+        },
+
+        // ----- Pricing rate (all-or-nothing) --------------------------------
+        async saveRate() {
+            this.rateErrors = {};
+            this.savingRate = true;
+            this.rateSaved = false;
+            try {
+                const { data } = await patch('/talent/profile/pricing', this.rate);
+                this.rate = { rate_unit: data.rate_unit || '', rate_amount: data.rate_amount || '', rate_currency: data.rate_currency || '' };
+                this.rateSaved = true;
+                setTimeout(() => (this.rateSaved = false), 2000);
+            } catch (e) {
+                if (e instanceof ApiError) this.rateErrors = e.errors || { _: [e.message] };
+            } finally {
+                this.savingRate = false;
+            }
+        },
+
+        clearRate() {
+            this.rate = { rate_unit: '', rate_amount: '', rate_currency: '' };
+            this.saveRate();
+        },
+
+        // ----- Skills (the old Professions tab) -----------------------------
+        applySkills(payload) {
+            this.skills = payload.linked;
+            this.availableSkills = payload.available;
+        },
+
+        async addSkill() {
+            if (!this.addSkillId) return;
+            try {
+                const { data } = await post('/talent/profile/skills', { talent_type_id: this.addSkillId });
+                this.applySkills(data);
+                this.addSkillId = '';
+                await this.refreshBlocks(); // its tab was seeded with blocks
+            } catch (e) {
+                if (e instanceof ApiError) window.alert(e.message);
+            }
+        },
+
+        // Removing a skill deletes its tab's blocks — require an explicit confirm.
+        requestRemoveSkill(type) { this.confirmRemoveSkillId = type.id; },
+        cancelRemoveSkill() { this.confirmRemoveSkillId = null; },
+
+        async removeSkill(type) {
+            this.confirmRemoveSkillId = null;
+            try {
+                const { data } = await del(`/talent/profile/skills/${type.id}`);
+                this.applySkills(data);
+                await this.refreshBlocks(); // that tab's blocks are gone (content preserved)
+            } catch (e) {
+                if (e instanceof ApiError) window.alert(e.message);
+            }
+        },
+
+        async makePrimarySkill(type) {
+            const { data } = await patch(`/talent/profile/skills/${type.id}/primary`);
+            this.applySkills(data);
+        },
+
+        onSkillDrop(target) {
+            if (this.skillDragId === null || this.skillDragId === target.id) return;
+            const from = this.skills.findIndex((x) => x.id === this.skillDragId);
+            const to = this.skills.findIndex((x) => x.id === target.id);
+            const [moved] = this.skills.splice(from, 1);
+            this.skills.splice(to, 0, moved);
+            this.skillDragId = null;
+            patch('/talent/profile/skills/reorder', { order: this.skills.map((x) => x.id) }).catch(() => {});
         },
     }));
 
     // --- Public discovery / talent search -----------------------------------
+    // Skills-first: skills (talent_types) are THE primary filter, grouped by scope
+    // (model/crew/creative) and rendered as multi-select chips with real states.
+    // The full filter set lives in a teleported, focus-trapped "Advanced filters"
+    // modal whose groups are revealed by the selected skills' categories; the
+    // free-text search is a demoted secondary control. Active filters sync to the
+    // URL (shareable + back-button), results paginate, everything is Ajax.
     Alpine.data('talentSearch', (initial) => ({
         types: initial.types || [],
         equipmentCategories: initial.equipmentCategories || [],
         softwareOptions: initial.softwareOptions || [],
-        filters: { type: [], availability: '', city: '', equipment: '', software: '', q: '' },
+        lookOptions: initial.lookOptions || [],
+        scopeLabels: initial.scopeLabels || { model: 'Modeling', crew: 'Crew', creative: 'Creative' },
+        filters: { type: [], city: '', country: '', equipment: '', software: '', looks: '', q: '' },
+        // Advanced-filters modal edits a STAGED copy; nothing commits to `filters`
+        // (or the results) until "Apply filters". Snapshotted from `filters` on open.
+        draft: { type: [], city: '', country: '', equipment: '', software: '', looks: '' },
         results: [],
         meta: null,
+        page: 1,
         loading: true,
+        modalOpen: false,   // mounted (x-show) — reliable display toggle
+        modalActive: false, // animation state (opacity/transform via :class)
+        skeletons: [0, 1, 2, 3, 4, 5],
+        triggerEl: null,
         t,
 
+        // Inline SVG glyphs keyed by `talent_types.icon` (lucide-<slug>); a sparkle
+        // fallback keeps unknown icons from rendering blank.
+        skillIcons: {
+            'lucide-modeling': '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+            'lucide-photography': '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>',
+            'lucide-cinematography': '<path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2"/>',
+            'lucide-creative-direction': '<path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/>',
+            'lucide-styling': '<path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z"/>',
+            'lucide-graphic-design': '<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+        },
+        _fallbackIcon: '<path d="m12 3 1.9 5.8a2 2 0 0 0 1.3 1.3L21 12l-5.8 1.9a2 2 0 0 0-1.3 1.3L12 21l-1.9-5.8a2 2 0 0 0-1.3-1.3L3 12l5.8-1.9a2 2 0 0 0 1.3-1.3z"/>',
+
         async init() {
-            await this.search();
+            this.hydrateFromUrl();
+            // Back/forward buttons restore the filtered view without re-pushing.
+            window.addEventListener('popstate', () => {
+                this.hydrateFromUrl();
+                this.runSearch(this.page, 'none');
+            });
+            // Normalise the URL (replace, not push) on first paint.
+            await this.runSearch(this.page, 'replace');
         },
 
-        buildQuery(page) {
+        // Skills grouped by scope (model → crew → creative), empty groups dropped.
+        get skillGroups() {
+            return ['model', 'crew', 'creative']
+                .map((category) => ({
+                    category,
+                    label: this.scopeLabels[category] || category,
+                    types: this.types.filter((type) => type.category === category),
+                }))
+                .filter((group) => group.types.length > 0);
+        },
+
+        // The set of scopes (categories) covered by a list of skill slugs.
+        scopesOf(slugs) {
+            const byslug = {};
+            this.types.forEach((type) => { byslug[type.slug] = type.category; });
+            return new Set((slugs || []).map((slug) => byslug[slug]).filter(Boolean));
+        },
+
+        get selectedScopes() { return this.scopesOf(this.filters.type); },
+
+        // Scoped filters in the modal are shown ONLY for the DRAFT skills' categories:
+        // a scoped filter appears only once its related skill is selected (no skill →
+        // no scoped filters), so picking a skill reveals the filters that narrow it.
+        get draftScopes() { return this.scopesOf(this.draft.type); },
+        get showEquipment() { return this.draftScopes.has('crew'); },
+        get showSoftware() { return this.draftScopes.has('creative'); },
+        get showLooks() { return this.draftScopes.has('model'); },
+        get hasScopedFilters() { return this.showEquipment || this.showSoftware || this.showLooks; },
+
+        // Advanced (scoped/location) filter count — badge on the modal trigger,
+        // reflecting the APPLIED filters (not the unsaved draft).
+        get activeFilterCount() {
+            return ['city', 'country', 'equipment', 'software', 'looks']
+                .filter((key) => this.filters[key]).length;
+        },
+
+        get selectedSkillCount() { return this.filters.type.length; },
+        get draftSelectedCount() { return this.draft.type.length; },
+        get resultTotal() { return this.meta?.pagination?.total ?? 0; },
+
+        // Removable chips for the active-filter summary row (skills first, then
+        // location/scoped, then the free-text query).
+        get activeSummary() {
+            const out = [];
+            this.filters.type.forEach((slug) => out.push({ kind: 'type', value: slug, label: this.typeName(slug) }));
+            [['city', this.filters.city], ['country', this.filters.country], ['equipment', this.filters.equipment],
+                ['software', this.filters.software], ['looks', this.filters.looks]]
+                .forEach(([key, val]) => { if (val) out.push({ kind: key, value: val, label: val }); });
+            if (this.filters.q) out.push({ kind: 'q', value: this.filters.q, label: `“${this.filters.q}”` });
+            return out;
+        },
+
+        typeName(slug) {
+            const type = this.types.find((x) => x.slug === slug);
+            return type ? this.t(type.name) : slug;
+        },
+
+        iconFor(type) {
+            const inner = this.skillIcons[type?.icon] || this._fallbackIcon;
+            return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-full w-full" aria-hidden="true">${inner}</svg>`;
+        },
+
+        // --- Query <-> URL --------------------------------------------------
+        buildQuery(page, forUrl = false) {
             const p = new URLSearchParams();
             if (this.filters.type.length) p.set('filter[type]', this.filters.type.join(','));
-            if (this.filters.availability) p.set('filter[availability]', this.filters.availability);
             if (this.filters.city) p.set('filter[city]', this.filters.city);
+            if (this.filters.country) p.set('filter[country]', this.filters.country);
             if (this.filters.equipment) p.set('filter[equipment]', this.filters.equipment);
             if (this.filters.software) p.set('filter[software]', this.filters.software);
+            if (this.filters.looks) p.set('filter[looks]', this.filters.looks);
             if (this.filters.q) p.set('filter[q]', this.filters.q);
-            p.set('page', page);
+            if (forUrl) { if (page > 1) p.set('page', page); } else { p.set('page', page); }
             return p.toString();
         },
 
-        async search(page = 1) {
+        hydrateFromUrl() {
+            const p = new URLSearchParams(window.location.search);
+            const type = p.get('filter[type]');
+            this.filters.type = type ? type.split(',').filter(Boolean) : [];
+            this.filters.city = p.get('filter[city]') || '';
+            this.filters.country = p.get('filter[country]') || '';
+            this.filters.equipment = p.get('filter[equipment]') || '';
+            this.filters.software = p.get('filter[software]') || '';
+            this.filters.looks = p.get('filter[looks]') || '';
+            this.filters.q = p.get('filter[q]') || '';
+            this.pruneScopedFilters();
+            this.page = parseInt(p.get('page') || '1', 10) || 1;
+        },
+
+        // mode: 'push' (discrete change) | 'replace' (typing/initial) | 'none' (popstate).
+        syncUrl(mode) {
+            if (mode === 'none') return;
+            const qs = this.buildQuery(this.page, true);
+            const url = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
+            if (mode === 'replace') window.history.replaceState({ discover: true }, '', url);
+            else window.history.pushState({ discover: true }, '', url);
+        },
+
+        async runSearch(page = 1, mode = 'push') {
+            this.page = page;
             this.loading = true;
             try {
                 const { data, meta } = await get(`/discover/search?${this.buildQuery(page)}`);
                 this.results = data;
                 this.meta = meta;
+                this.syncUrl(mode);
             } finally {
                 this.loading = false;
             }
         },
 
+        // Public entry point: discrete changes push history; typing replaces it.
+        search(page = 1, opts = {}) {
+            return this.runSearch(page, opts.replace ? 'replace' : 'push');
+        },
+
+        // --- Skill chips (LIVE — the sticky bar; applies immediately) -------
         toggleType(slug) {
             const i = this.filters.type.indexOf(slug);
             if (i >= 0) this.filters.type.splice(i, 1);
             else this.filters.type.push(slug);
+            this.pruneScopedFilters();
             this.search();
         },
 
-        reset() {
-            this.filters = { type: [], availability: '', city: '', equipment: '', software: '', q: '' };
+        clearSkills() {
+            if (!this.filters.type.length) return;
+            this.filters.type = [];
+            this.pruneScopedFilters();
             this.search();
+        },
+
+        // --- Skill chips (STAGED — inside the modal; no search until Apply) -
+        toggleDraftType(slug) {
+            const i = this.draft.type.indexOf(slug);
+            if (i >= 0) this.draft.type.splice(i, 1);
+            else this.draft.type.push(slug);
+            this.pruneDraftScoped();
+        },
+
+        clearDraftSkills() {
+            if (!this.draft.type.length) return;
+            this.draft.type = [];
+            this.pruneDraftScoped();
+        },
+
+        // Drop any scoped filter whose scope is no longer covered (self-contained
+        // so it doesn't depend on the draft-based show getters).
+        pruneScopedFilters() {
+            const scopes = this.selectedScopes;
+            const none = this.filters.type.length === 0;
+            if (!(none || scopes.has('crew'))) this.filters.equipment = '';
+            if (!(none || scopes.has('creative'))) this.filters.software = '';
+            if (!(none || scopes.has('model'))) this.filters.looks = '';
+        },
+
+        pruneDraftScoped() {
+            if (!this.showEquipment) this.draft.equipment = '';
+            if (!this.showSoftware) this.draft.software = '';
+            if (!this.showLooks) this.draft.looks = '';
+        },
+
+        // Remove one chip from the active-filter summary row.
+        removeFilter(item) {
+            if (item.kind === 'type') { this.toggleType(item.value); return; }
+            this.filters[item.kind] = '';
+            this.pruneScopedFilters();
+            this.search();
+        },
+
+        clearAll() {
+            this.filters = { type: [], city: '', country: '', equipment: '', software: '', looks: '', q: '' };
+            this.search();
+        },
+
+        // --- Advanced-filters modal (teleported, scroll-locked, focus-trapped) --
+        // We DON'T use Alpine x-transition here: its leave transition doesn't complete
+        // for x-teleport'd nodes (the overlay stays display:flex and traps clicks). So
+        // x-show plainly toggles display, and enter/leave animate via :class + CSS. A
+        // mount→activate→(leave)→unmount cycle gives a real leave transition + reliable hide.
+        get modalMotionMs() {
+            return window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 200;
+        },
+
+        openFilters() {
+            if (this.modalOpen) return;
+            this.triggerEl = document.activeElement;
+            // Snapshot the applied filters — the modal edits this draft only.
+            this.draft = {
+                type: [...this.filters.type],
+                city: this.filters.city,
+                country: this.filters.country,
+                equipment: this.filters.equipment,
+                software: this.filters.software,
+                looks: this.filters.looks,
+            };
+            this.modalOpen = true;   // mount (display)
+            this.lockScroll();
+            // $nextTick (not rAF — rAF is throttled/paused in background tabs) flips the
+            // animation state after the mount paints so CSS transitions it in.
+            this.$nextTick(() => {
+                this.modalActive = true;
+                this.$refs.dialog?.focus();
+            });
+        },
+
+        closeFilters() {
+            if (!this.modalOpen) return;
+            this.modalActive = false;   // animate out
+            this.unlockScroll();
+            const done = () => { this.modalOpen = false; this.$nextTick(() => this.triggerEl?.focus?.()); };
+            if (this.modalMotionMs === 0) done();
+            else setTimeout(done, this.modalMotionMs + 20);
+        },
+
+        // Commit the staged draft → applied filters, then search + close. (The only
+        // path that applies the modal's changes; the free-text `q` is untouched.)
+        applyFilters() {
+            this.filters.type = [...this.draft.type];
+            this.filters.city = this.draft.city;
+            this.filters.country = this.draft.country;
+            this.filters.equipment = this.draft.equipment;
+            this.filters.software = this.draft.software;
+            this.filters.looks = this.draft.looks;
+            this.pruneScopedFilters();
+            this.closeFilters();
+            this.search();
+        },
+
+        // Reset the draft in place (skills + location + scoped groups). Does NOT
+        // apply — the visitor still presses "Apply filters" to commit.
+        clearModalFilters() {
+            this.draft = { type: [], city: '', country: '', equipment: '', software: '', looks: '' };
+        },
+
+        // Freeze the page behind the dialog, preserving scroll position.
+        lockScroll() {
+            this._scrollY = window.scrollY;
+            const body = document.body;
+            body.style.position = 'fixed';
+            body.style.top = `-${this._scrollY}px`;
+            body.style.insetInlineStart = '0';
+            body.style.width = '100%';
+        },
+
+        unlockScroll() {
+            const body = document.body;
+            body.style.position = '';
+            body.style.top = '';
+            body.style.insetInlineStart = '';
+            body.style.width = '';
+            window.scrollTo(0, this._scrollY || 0);
+        },
+
+        // Keep Tab focus inside the dialog; wrap at both ends.
+        trapFocus(e) {
+            if (e.key !== 'Tab' || !this.modalOpen) return;
+            const dialog = this.$refs.dialog;
+            if (!dialog) return;
+            const focusables = Array.from(dialog.querySelectorAll(
+                'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+            )).filter((el) => el.offsetParent !== null);
+            if (!focusables.length) return;
+            const first = focusables[0];
+            const last = focusables[focusables.length - 1];
+            const active = document.activeElement;
+            if (e.shiftKey && (active === first || active === dialog)) { e.preventDefault(); last.focus(); }
+            else if (!e.shiftKey && active === last) { e.preventDefault(); first.focus(); }
         },
     }));
 
-    // --- Generic list CRUD (services, reviews, affiliations, press, content) -
+    // --- Generic list CRUD (reviews, content) -------------------------------
     Alpine.data('crudList', (config) => ({
         items: [],
         meta: null,

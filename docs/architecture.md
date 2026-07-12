@@ -78,9 +78,12 @@ Three login entities, each its own session guard + Eloquent provider (`config/au
 - **RTL**: `<html dir>` comes from the locale; headings swap to the Arabic face via `--font-head`, and
   logical utilities (`ms-*`, `pe-*`, `text-start`, …) mirror the layout for `/ar`.
 - **Public talent profile** (`GET /{slug}` → `TalentProfileController` → `talent/profile.blade.php`):
-  renders the hero/identity header, then `profile_blocks` in `position` order, each block dispatched to
-  a `talent/blocks/{key}` partial (gallery, comp_card, services, reviews, brand_collabs, looks,
-  digitals, showreel, equipment, …) reading from eager-loaded relations. Missing media falls back to
+  renders the **Instagram-style, avatar-led header (no cover image — ADR-O)** — circular avatar,
+  display_name + @username, primary-skill/headline line, a Projects · Views · Rating stats row, bio,
+  optional link, the Pricing-rate chip, and Contact / Leave-a-review CTAs — then `profile_blocks` in
+  `position` order (skipping the `hero` block), each dispatched to a `talent/blocks/{key}` partial
+  (gallery, comp_card, reviews, brand_collabs, looks, digitals, showreel, equipment, …) reading from
+  eager-loaded relations. Missing media falls back to
   tasteful gradient/initials placeholders.
 - `resources/js/http.js` is the shared fetch wrapper: it attaches CSRF + `X-Requested-With` +
   `Accept: application/json`, parses the envelope, and throws `ApiError` (with the field error bag) so
@@ -91,8 +94,10 @@ Three login entities, each its own session guard + Eloquent provider (`config/au
 The talent "living creative passport" is a core (`talents`) plus a **malleable block system** and a set
 of content tables (`app/Models`, schema in `docs/schema.md`).
 
-- **Professions.** `talents` ⇄ `talent_types` many-to-many via `talent_talent_type` (`is_primary` leads
+- **Skills.** `talents` ⇄ `talent_types` many-to-many via `talent_talent_type` (`is_primary` leads
   the headline, `position` orders). Each `talent_type` carries `default_blocks` (ordered block keys).
+  `talent_types` is the **Skills catalog** — "Skills" is the product term; the table name is unchanged
+  (ADR-N).
 - **Block catalog.** `block_types` is the admin-governed catalog. `availability` gates who can add a
   block: `universal` | `by_category` (→ `block_type_category`) | `by_type` (→ `block_type_talent_type`).
   `content_source` says whether the block stores data inline (JSON) or in a rich content table.
@@ -103,7 +108,7 @@ of content tables (`app/Models`, schema in `docs/schema.md`).
 - **Media.** Every model holding uploaded files is `HasMedia` with single-file collections + a `thumb`
   conversion; `*_url` accessors resolve from the library (ADR-5, list in `docs/conventions.md`). External
   links/embeds stay as plain columns.
-- **Seeders.** `TalentTypeSeeder` (six professions) + `BlockTypeSeeder` (catalog) are the canonical
+- **Seeders.** `TalentTypeSeeder` (six skills) + `BlockTypeSeeder` (catalog) are the canonical
   reference data; `TalentDemoSeeder` builds one rich multi-type (model + photographer) talent for later
   phases to render.
 
@@ -116,18 +121,22 @@ Business logic lives in **services** (orchestration + transactions) and single-p
 lifecycles are **state machines**; side effects are **events**.
 
 **Actions** (`app/Actions`, invokable):
-- `MergeDefaultBlocksForTypes` — merge + de-dupe the `default_blocks` of a talent's types (ordered).
-- `SeedProfileBlocks` — seed `profile_blocks` from the merged defaults (idempotent; each default block
-  once), then move the profile `Created → Draft`.
+- `SeedBlocksForSkill` — seed **one skill's** `default_blocks` into that skill's tab (stamped with
+  `talent_type_id`, positioned + de-duped **within the scope**), then move the profile `Created → Draft`
+  (ADR-Q; replaces the old global-merge `MergeDefaultBlocksForTypes` / `SeedProfileBlocks`).
 
 **Services** (`app/Services`, extend `Service`; every multi-write op is `runInTransaction` + fail-logged):
-- `ProfileBlockService` — `availableBlockTypes()` (the picker: active + eligible − non-repeatable
-  already present), `addBlock`, `fillBlock`, `reorder`, `setVisibility`, `removeBlock`. Rendering
+- `ProfileBlockService` — **scope-aware** (ADR-Q). `availableBlockTypes($talent, ?$scope)` is the
+  per-scope picker (active + eligible in that scope − non-repeatable already present there; universal
+  blocks in any tab or the universal section, gated blocks only in an eligible skill's tab); `addBlock`
+  (into a scope), `fillBlock`, `reorder` (within a scope), `moveBlock` (re-stamp `talent_type_id`,
+  validated for eligibility + per-scope repeatability), `setVisibility`, `removeBlock`. Rendering
   resolves via `block_type_id → block_types`, so deactivated (grandfathered) blocks still render.
-- `ProfessionsService` — `addType` (merges defaults, seeds missing, dedupes), `removeType`,
-  `setPrimary`, `reorderTypes`.
-- `TalentProfileService` — core fields, hero image, availability, publish/unpublish, rate-card CRUD,
-  reviews moderation, affiliations & press.
+- `SkillsService` — `addType` (seeds **that skill's** tab via `SeedBlocksForSkill`), `removeType`
+  (deletes the tab's blocks but **preserves content** — items un-linked, projects un-scoped — and logs
+  it), `setPrimary`, `reorderTypes`. (Skills manager; renamed from `ProfessionsService` — ADR-N.)
+- `TalentProfileService` — core fields, the Pricing rate (`updatePricingRate`, all-or-nothing),
+  publish/unpublish, reviews moderation. *(The hero/cover uploader was removed — ADR-O.)*
 
 **State machines** (`app/States`, spatie/laravel-model-states). Each has explicit allowed transitions;
 the state is authoritative and a synced boolean/timestamp **projection** (kept by `SyncStateProjections`)
@@ -136,12 +145,11 @@ serves the Phase 1A queries/views.
 | Machine | Column | States | Projection |
 |---|---|---|---|
 | TalentProfile | `talents.status` | created → draft → live ⇄ unpublished → suspended/archived | `is_published` + `published_at` (via guarded `ToLive`) |
-| Availability | `talents.availability_status` | available ⇄ booked ⇄ unavailable | — |
 | Block | `profile_blocks.status` | visible ⇄ hidden | `is_visible` |
 | Review | `reviews.status` | pending → approved \| rejected | `is_approved` |
-| Service | `services.status` | active ⇄ paused | `is_active` |
-| Affiliation | `agency_affiliations.status` | current → past | `is_current` |
 | PortfolioMedia | `portfolio_items.status` | uploaded → processed → ordered → visible → archived | — |
+
+*(The Availability, Service, and Affiliation state machines were removed with their features — ADR-K/L/M.)*
 
 **Events / listeners** (auto-discovered in `app/Listeners` by handle() type-hint):
 - `TalentProfileViewed` → `IncrementProfileViewCount` (bumps `view_count`; controller dispatches it).
@@ -150,8 +158,8 @@ serves the Phase 1A queries/views.
 - medialibrary `ConversionHasBeenCompletedEvent` → `AdvancePortfolioMediaState` (uploaded → processed).
 
 **Policies** (`app/Policies`, auto-discovered): a talent may only manage its own resources
-(`TalentPolicy`, `ProfileBlockPolicy`, `ServicePolicy`, `ReviewPolicy`, `AgencyAffiliationPolicy`,
-`PortfolioItemPolicy`, `PressFeaturePolicy`), all via `BasePolicy::owns`.
+(`TalentPolicy`, `ProfileBlockPolicy`, `ReviewPolicy`, `PortfolioItemPolicy`), all via
+`BasePolicy::owns`.
 
 ## Talent dashboard (Phase 1C)
 
@@ -161,15 +169,20 @@ the shared `http.js` wrapper — pages render a shell, every interaction is Ajax
 endpoints, nothing reloads.
 
 - **Thin controllers → services.** Controllers validate (Form Requests in `app/Http/Requests/Talent`),
-  call the Phase 1B services (ProfileBlockService / ProfessionsService / TalentProfileService), and
+  call the Phase 1B services (ProfileBlockService / SkillsService / TalentProfileService), and
   return Resources (`app/Http/Resources`) wrapped in the envelope. `TalentController::ensureOwns()`
   enforces own-resource access (403); `BlockContentController` resolves the model then `ensureOwns`.
-- **Pages.** Home (stats + deals slot), Profile editor (core fields + reorderable blocks + eligibility
-  picker + hero upload), Professions, Block content editors (a registry-driven controller serving every
-  "table" block — gallery/digitals/showreel/equipment/projects/software/brand-collabs/looks — with
-  medialibrary upload), Rate card, Availability, Reviews moderation, Affiliations & press, Account.
-- **Front-end** (`resources/js/dashboard.js`, Alpine): `profileEditor` (optimistic drag-reorder,
-  inline errors, hero upload), `professionsManager`, and a generic `crudList` (paginated load,
+- **Sidebar (ADR-N).** Reduced to **Home · Profile · Content · Reviews · Deals** — the standalone
+  Professions and Account tabs were folded into the Profile editor.
+- **Pages.** Home (stats + deals slot); the **Profile editor** — the single profile surface: identity +
+  **Username** (`slug`), the **Skills** section (`SkillController` under `/talent/profile/skills*`),
+  the **Pricing rate**, the **Publish** toggle (`PATCH /talent/profile/publish`), and the reorderable
+  blocks + eligibility picker; Block content editors (a registry-driven controller serving
+  every "table" block — gallery/digitals/showreel/equipment/projects/software/brand-collabs/looks — with
+  medialibrary upload); Reviews moderation. *(The hero/cover uploader was removed — ADR-O.)*
+- **Front-end** (`resources/js/dashboard.js`, Alpine): `profileEditor` (core + username + Skills +
+  pricing + publish + blocks; optimistic drag-reorder, inline errors — the old
+  `professionsManager` is folded in) and a generic `crudList` (paginated load,
   create/remove/act, media quick-add, drag-reorder). `x-talent-layout` is the sidebar shell (dark + RTL).
 - **Error envelopes.** `bootstrap/app.php` renders `ValidationException`/`InvalidArgumentException`/
   `CouldNotPerformTransition` as 422 (and `AuthenticationException` as 401) for JSON/Ajax requests, so
@@ -190,7 +203,7 @@ through `x-public-layout`. All resolve **published** talents only.
   form that writes a pending review; the talent moderates it from the dashboard queue.
 - **Discovery** (`DiscoveryController` → `public/discover`, `talentSearch` Alpine) — a Blade shell whose
   results come from an Ajax endpoint backed by **`App\Queries\TalentSearch`**, a query object over
-  spatie/laravel-query-builder. Filters (type/category through the pivot, availability, city, country,
+  spatie/laravel-query-builder. Filters (type/category through the pivot, city, country,
   equipment, software, free-text) map to `filter[...]` params; results are paginated, eager-loaded
   (`talentTypes` + `media`), and shaped by `TalentCardResource`. Backed by the Phase 1C search indexes
   (see docs/schema.md).
@@ -237,8 +250,9 @@ every completion posts a `system_event`, and running out of pending steps comple
 its action(s) in a transaction with fail-logging.
 
 **Booking CTA / deal initiation**: the public profile Contact button → `EnquiryController` writes a
-`deal_enquiries` row (availability-checked, no login); it converts to a deal after the visitor
-authenticates as a brand (Phase 2). Talent deal UI: `Talent\DealController` (deal room + inbox) acts as
+`deal_enquiries` row (always allowed — no availability gate, ADR-L; no login); it converts to a deal
+after the visitor authenticates as a brand (Phase 2). The deal amount comes from the flow's form/quote
+step, not a service (ADR-K). Talent deal UI: `Talent\DealController` (deal room + inbox) acts as
 the `talent` role; the Alpine `dealRoom`/`dealsInbox` components (`resources/js/deals.js`) render a
 turn-aware action panel by `step_type` and the interleaved message/system_event timeline.
 

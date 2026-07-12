@@ -2,30 +2,19 @@
 
 namespace App\Services;
 
-use App\Models\AgencyAffiliation;
-use App\Models\PressFeature;
 use App\Models\Review;
-use App\Models\Service as ServiceModel;
 use App\Models\Talent;
-use App\States\Affiliation\Past;
-use App\States\Availability\Available;
-use App\States\Availability\Booked;
-use App\States\Availability\Unavailable;
 use App\States\Review\Approved;
 use App\States\Review\Rejected;
-use App\States\ServiceStatus\Active;
-use App\States\ServiceStatus\Paused;
 use App\States\TalentProfile\Live;
 use App\States\TalentProfile\Unpublished;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
-use InvalidArgumentException;
 
 /**
  * Orchestrates talent profile management (talent-spec workflows #10, #16–#20):
- * core identity fields, availability, publish/unpublish, the rate card,
- * reviews moderation, and affiliations/press. State changes go through the
- * relevant state machine; every multi-write op is transactional + fail-logged.
+ * core identity fields, the pricing rate, publish/unpublish, and reviews
+ * moderation. State changes go through the relevant state machine; every
+ * multi-write op is transactional + fail-logged.
  */
 class TalentProfileService extends Service
 {
@@ -42,7 +31,6 @@ class TalentProfileService extends Service
             $talent->fill(Arr::only($data, [
                 'display_name', 'headline', 'bio', 'slug',
                 'base_city', 'base_country', 'booking_type', 'booking_value',
-                'willing_to_travel', 'travel_regions', 'rate_tier',
             ]));
             $talent->save();
 
@@ -51,35 +39,30 @@ class TalentProfileService extends Service
     }
 
     /**
-     * Replace the hero image (uploaded → media library, single file).
+     * Set (or clear) the indicative pricing rate (ADR-N). The three fields are
+     * all-or-nothing: a blank amount clears the whole rate; otherwise the currency
+     * is normalised to upper-case ISO. Validation lives in UpdatePricingRateRequest.
+     *
+     * @param  array<string, mixed>  $data
      */
-    public function setHeroImage(Talent $talent, UploadedFile $file): Talent
+    public function updatePricingRate(Talent $talent, array $data): Talent
     {
-        return $this->runInTransaction(function () use ($talent, $file): Talent {
-            $talent->addMedia($file)->toMediaCollection('hero');
+        return $this->runInTransaction(function () use ($talent, $data): Talent {
+            $amount = $data['rate_amount'] ?? null;
 
-            return $talent;
-        }, ['talent_id' => $talent->id], 'media');
-    }
-
-    /**
-     * Move availability (available ⇄ booked ⇄ unavailable). Idempotent.
-     */
-    public function setAvailability(Talent $talent, string $status): Talent
-    {
-        return $this->runInTransaction(function () use ($talent, $status): Talent {
-            $target = match ($status) {
-                'available' => Available::class,
-                'booked' => Booked::class,
-                'unavailable' => Unavailable::class,
-                default => throw new InvalidArgumentException("Unknown availability [{$status}]."),
-            };
-
-            if ($talent->availability_status->canTransitionTo($target)) {
-                $talent->availability_status->transitionTo($target);
+            if ($amount === null || $amount === '') {
+                $talent->fill(['rate_unit' => null, 'rate_amount' => null, 'rate_currency' => null]);
+            } else {
+                $talent->fill([
+                    'rate_unit' => $data['rate_unit'],
+                    'rate_amount' => $amount,
+                    'rate_currency' => strtoupper($data['rate_currency']),
+                ]);
             }
 
-            return $talent->refresh();
+            $talent->save();
+
+            return $talent;
         }, ['talent_id' => $talent->id]);
     }
 
@@ -107,57 +90,6 @@ class TalentProfileService extends Service
         }, ['talent_id' => $talent->id]);
     }
 
-    // ----- Rate card ---------------------------------------------------------
-
-    /**
-     * @param  array<string, mixed>  $data
-     */
-    public function addService(Talent $talent, array $data): ServiceModel
-    {
-        return $this->runInTransaction(
-            fn (): ServiceModel => $talent->services()->create(Arr::only($data, [
-                'name', 'description', 'price', 'currency', 'price_unit', 'duration_minutes', 'position',
-            ])),
-            ['talent_id' => $talent->id],
-        );
-    }
-
-    /**
-     * @param  array<string, mixed>  $data
-     */
-    public function updateService(ServiceModel $service, array $data): ServiceModel
-    {
-        return $this->runInTransaction(function () use ($service, $data): ServiceModel {
-            $service->fill(Arr::only($data, [
-                'name', 'description', 'price', 'currency', 'price_unit', 'duration_minutes', 'position',
-            ]));
-            $service->save();
-
-            return $service;
-        }, ['service_id' => $service->id]);
-    }
-
-    /**
-     * Pause a service (Active → Paused). Idempotent.
-     */
-    public function pauseService(ServiceModel $service): ServiceModel
-    {
-        return $this->transitionIfPossible($service, 'status', Paused::class, ['service_id' => $service->id]);
-    }
-
-    /**
-     * Reactivate a service (Paused → Active). Idempotent.
-     */
-    public function activateService(ServiceModel $service): ServiceModel
-    {
-        return $this->transitionIfPossible($service, 'status', Active::class, ['service_id' => $service->id]);
-    }
-
-    public function removeService(ServiceModel $service): void
-    {
-        $this->runInTransaction(fn () => $service->delete(), ['service_id' => $service->id]);
-    }
-
     // ----- Reviews moderation ------------------------------------------------
 
     /**
@@ -174,52 +106,6 @@ class TalentProfileService extends Service
     public function rejectReview(Review $review): Review
     {
         return $this->transitionIfPossible($review, 'status', Rejected::class, ['review_id' => $review->id]);
-    }
-
-    // ----- Affiliations & press ---------------------------------------------
-
-    /**
-     * @param  array<string, mixed>  $data
-     */
-    public function addAffiliation(Talent $talent, array $data): AgencyAffiliation
-    {
-        return $this->runInTransaction(
-            fn (): AgencyAffiliation => $talent->agencyAffiliations()->create(Arr::only($data, [
-                'agency_name', 'agency_url', 'representation_type', 'region',
-            ])),
-            ['talent_id' => $talent->id],
-        );
-    }
-
-    /**
-     * Mark an affiliation as past (Current → Past).
-     */
-    public function endAffiliation(AgencyAffiliation $affiliation): AgencyAffiliation
-    {
-        return $this->transitionIfPossible($affiliation, 'status', Past::class, ['affiliation_id' => $affiliation->id]);
-    }
-
-    public function removeAffiliation(AgencyAffiliation $affiliation): void
-    {
-        $this->runInTransaction(fn () => $affiliation->delete(), ['affiliation_id' => $affiliation->id]);
-    }
-
-    /**
-     * @param  array<string, mixed>  $data
-     */
-    public function addPressFeature(Talent $talent, array $data): PressFeature
-    {
-        return $this->runInTransaction(
-            fn (): PressFeature => $talent->pressFeatures()->create(Arr::only($data, [
-                'publication', 'title', 'url', 'published_date', 'position',
-            ])),
-            ['talent_id' => $talent->id],
-        );
-    }
-
-    public function removePressFeature(PressFeature $feature): void
-    {
-        $this->runInTransaction(fn () => $feature->delete(), ['press_feature_id' => $feature->id]);
     }
 
     // ----- Internal ----------------------------------------------------------

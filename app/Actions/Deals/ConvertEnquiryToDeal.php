@@ -11,7 +11,7 @@ use InvalidArgumentException;
 
 /**
  * Convert a pre-auth enquiry into a real deal once the visitor has become a
- * brand. Initiates the deal from the enquiry's brief/service, then marks the
+ * brand. Initiates the deal from the enquiry's brief, then marks the
  * enquiry converted and links `converted_deal_id`.
  */
 class ConvertEnquiryToDeal implements Action
@@ -29,7 +29,6 @@ class ConvertEnquiryToDeal implements Action
         $deal = ($this->initiate)([
             'brand_id' => $brand->getKey(),
             'talent_id' => $enquiry->talent_id,
-            'service_id' => $enquiry->service_id,
             'title' => 'Booking with '.($enquiry->talent?->display_name ?? 'talent'),
             'brief' => $enquiry->brief,
             'initiated_by' => 'brand',

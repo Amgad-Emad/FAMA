@@ -63,7 +63,7 @@ conversion; the dropped `*_url` columns are replaced by accessors that resolve f
 
 | Model | Collection(s) → accessor |
 |---|---|
-| `Talent` | `hero` → `hero_image_url`, `avatar` → `avatar_url` |
+| `Talent` | `avatar` → `avatar_url` *(the `hero`/cover collection + `hero_image_url` were removed with the IG-style header — ADR-O)* |
 | `PortfolioItem` | `gallery` → `media_url` / `thumbnail_url` (embed items use `embed_url`) |
 | `Digital` | `digital` → `media_url` / `thumbnail_url` |
 | `BrandCollab` | `logo` → `brand_logo_url` |
@@ -71,8 +71,6 @@ conversion; the dropped `*_url` columns are replaced by accessors that resolve f
 | `Showreel` | `thumbnail` → `thumbnail_url` (video stays `video_url`) |
 | `Project` | `cover` → `cover_image_url` |
 | `SoftwareStack` | `icon` → `icon_url` |
-| `AgencyAffiliation` | `logo` → `agency_logo_url` |
-| `PressFeature` | `thumbnail` → `thumbnail_url` |
 
 Accessors call `loadMissing('media')` so they are safe under `preventLazyLoading`; controllers should
 still eager-load `media` on lists.
@@ -80,7 +78,7 @@ still eager-load `media` on lists.
 ## Translatable attributes (spatie/laravel-translatable)
 Fama is bilingual (en/ar). Policy:
 - **Translate** free-text, human-facing copy that a user would reasonably localise: e.g. `headline`,
-  `bio`, block `title`, service `name`/`description`, project `title`/`summary`/`body`, campaign
+  `bio`, block `title`, project `title`/`summary`/`body`, campaign
   `title`/`description`, deal-flow step `name`/`instructions`.
 - **Do NOT translate:** identifiers, slugs, enums, emails, numbers, dates, URLs, foreign keys, or
   machine keys (`block_types.key`, `deal_flow_steps.key`).
@@ -98,7 +96,6 @@ Fama is bilingual (en/ar). Policy:
 | `TalentType` | `name`, `description` |
 | `BlockType` | `name`, `description` |
 | `ProfileBlock` | `title` |
-| `Service` | `name`, `description` |
 | `Project` | `title`, `role`, `summary`, `body` |
 | `LookType` | `name` |
 | `Showreel` | `title` |
@@ -107,8 +104,21 @@ Fama is bilingual (en/ar). Policy:
 | `Equipment` | `notes` |
 
 **Deliberately NOT translatable:** identifiers/slugs/enums/keys; proper nouns (`brand_name`,
-`client_name`, `agency_name`, `software_name`, equipment `brand`/`model`/`name`); `Review.body` and
-`PressFeature.title`/`publication` (external text kept in its original language).
+`client_name`, `software_name`, equipment `brand`/`model`/`name`); `Review.body` (external text kept
+in its original language); the Pricing rate (`rate_unit`/`rate_amount`/`rate_currency`) — numbers/enum/
+ISO code, ADR-N.
+
+**UI relabels (copy only, columns unchanged):** the public `slug` is shown as **"Username"** in the
+talent UI + validation messages (`UpdateCoreProfileRequest::attributes()`); "Professions" is shown as
+**"Skills"** everywhere (the `talent_types` table is unchanged — ADR-N).
+
+**Skill naming — disciplines, not people (ADR-S):** the six seeded skills are named for the
+**discipline/activity** — Modeling, Photography, Cinematography, Creative Direction, Styling, Graphic
+Design (slugs `modeling` / `photography` / `cinematography` / `creative-direction` / `styling` /
+`graphic-design`). The `category` **enum stays** `model | crew | creative` (it gates blocks) — only its
+**display labels** are Modeling / Crew / Creative, and a single-chip category group whose label would
+duplicate its lone chip (Modeling) **suppresses the redundant header**. Renaming kept the `talent_types`
+IDs, so every FK is intact; old `?skill=` deep links break (accepted pre-launch, no redirects).
 
 ## RTL / i18n in views
 - Set direction from the locale (`<html dir>` in the layouts). Prefer **logical** Tailwind utilities
@@ -137,35 +147,89 @@ slug `demo-talent`). Every dashboard interaction is Ajax — **no full page relo
 logout. Toggle theme + locale on each page and confirm both render.
 
 **Public pages** (no login)
-- [ ] `/{slug}` profile — hero/avatar images, primary profession leads the headline, availability badge,
-      visible blocks in order, `view_count` increments on reload. Contact + Leave-a-review CTAs work.
+- [ ] `/{slug}` profile — **Instagram-style header (ADR-O), no cover image**: circular avatar
+      (initials fallback), display_name + **@username**, primary skill / headline secondary line,
+      stats row **Projects · Views · Rating** (Rating hidden when no approved reviews), bio, optional
+      external link, and the **Pricing rate** chip ("From EGP 5,000 / day", hidden when
+      unset). **The header no longer shows skill chips** (the tab bar is the navigation). Message +
+      Leave-a-review CTAs work. **Two regions (ADR-R):** identity + universal/meta + the **universal
+      profile-level blocks**, then **skill tabs**.
+- [ ] `/{slug}` **skill tab bar** — reads as **primary navigation**: a **sticky** (under the site header),
+      horizontally-scrollable **pill/segmented** bar separated from the identity region by a divider, each
+      tab showing the skill **icon**, name, and a **count badge**. The **active** tab is **filled** (accent
+      + contrasting label + weight), inactive tabs legible with hover + **focus-visible ring**. Primary tab
+      **active by default**; one tab per skill **with visible blocks** (block-less skill → no tab; single
+      skill → **no tab bar**). Clicking a tab **lazy-loads** that skill's blocks (no reload, with a
+      reduced-motion-aware fade) and updates the URL (`?skill=slug`, shareable + back-button); the panel
+      shows the **active skill's name as a heading** and only that skill's blocks (a **different gallery per
+      tab** + only that skill's **Projects**). `view_count` bumps once (not per tab switch). **Keyboard:**
+      `Tab` reaches the active tab, **arrow / Home / End** move between tabs (RTL-aware, activation follows
+      focus). **On mobile** the tabs scroll horizontally with **edge fades** and never wrap. **Scroll down,
+      then confirm the bar stays pinned under the header.** Verify **dark + light + RTL**. (No availability
+      badge — ADR-L.)
 - [ ] `/{slug}/work/{project}` — one project expands (cover, client/role/year, summary, results, body).
       A foreign/unpublished project 404s.
 - [ ] `/{slug}/review` — submit writes a **pending** review (shows in the talent's moderation queue).
-- [ ] `/{slug}/enquire` — submit lands in `deal_enquiries`; an unavailable talent is blocked (422).
-- [ ] `/discover` — 11 talents, images, availability badges. Filters (profession, availability, city,
-      equipment, software) narrow results; pagination works; "Reset filters" clears.
+- [ ] `/{slug}/enquire` — submit lands in `deal_enquiries` (always allowed — no availability gate).
+- [ ] `/discover` — **skills-first**: the primary **Skills** control is a **sticky bar** (sticks under the
+      header while results scroll) with a **Skills** heading, a **selected-count** badge, and an **"All"**
+      reset chip **beside** the groups (**"All" is a neutral reset — NOT a default selection**: no filled state,
+      disabled while nothing is chosen). Skills are **multi-select chips grouped by scope** (Modeling / Crew /
+      Creative — the groups sit **side by side** as divider-separated columns on one line), each with
+      its **icon** and real states — hover, **focus-visible ring**, and a filled-accent **selected** state with a
+      **check** (`aria-pressed` toggle buttons in a labelled `role="group"`, keyboard-operable). A **result count**
+      ("N talents") shows above the grid; an **active-filter summary row** lists removable chips ("Modeling ×",
+      "Cairo ×") with **"Clear all"**. Selecting/removing narrows results (Ajax, no reload) with **skeleton loaders**;
+      an **empty state** with "Clear filters" shows when nothing matches. Active filters **sync to the URL** — a
+      filtered view is **shareable** and the **back button restores** it; **pagination holds** the filters. The
+      demoted **secondary search** (`q`, by name) still filters live.
+- [ ] `/discover` **Advanced filters modal** — a **wide** dialog (`sm:max-w-3xl`) with a title + subtitle, a
+      **Skills** section, a divider, a **Location** section, and a **Skill-specific** section (scoped selects in a
+      2-col grid) that shows a filter **only once its skill is selected** — **crew → Equipment**, **creative →
+      Software**, **modeling → Looks**; with **no skill selected** it shows a hint ("Select a skill to reveal its
+      filters."), and picking a skill reveals the filter that narrows it. The
+      **"Advanced filters"** button (with an active-filter count)
+      opens a dialog **teleported to `<body>`** that **always opens centred in the viewport** — **scroll down first,
+      then open, and confirm it appears in front of you (not at the page top)**. Body scroll is **locked** (position
+      preserved on close). Closes on **×, backdrop click, and ESC**; **focus is trapped** and returns to the trigger.
+      The modal is a **staging** area: changes edit a **draft** and
+      **nothing applies to the results until "Apply filters"** — verify that toggling a skill / typing a city in
+      the modal does **not** change the grid until Apply; ×/backdrop/ESC **discards**; "Clear filters" resets the
+      draft without applying. On small screens it's a **bottom sheet** whose **body scrolls**
+      (not the page). Verify **dark/light + RTL** (modal, scrim, and bottom sheet mirror) and
+      **prefers-reduced-motion**. (No availability filter — ADR-L.)
 
-**Talent dashboard** (`auth:talent`)
+**Talent dashboard** (`auth:talent`) — sidebar is **Home · Profile · Content · Reviews · Deals**
 - [ ] Home — status (draft/live), views, pending-reviews count, **active deals with whose-turn**
       (awaiting_talent highlighted), quick links.
-- [ ] Profile editor — edit core fields (inline save), add block from the eligibility picker, drag to
-      reorder (persists), toggle visibility, remove, upload hero. Ineligible block → 422 inline.
-- [ ] Professions — add/remove/reorder, set primary; duplicate → 422.
+- [ ] Profile editor — the single profile surface:
+      - Publish/unpublish toggle (moved from Account); publishing a no-display-name profile → 422.
+      - Core fields inline save; **Username** field (the `slug`); a taken username → "username" 422.
+      - **Skills** section — add/remove/reorder, set primary; duplicate → 422; adding a skill seeds new blocks.
+      - **Pricing rate** — set unit/amount/currency (all-or-nothing; partial → 422; blank clears); currency upper-cased.
+      - Blocks — **organised by scope (ADR-Q)**: a Universal / profile-level section + one section per
+        skill (primary first). Per scope: add from the scope-eligible picker, drag to reorder (persists,
+        scoped), toggle visibility, remove, and **move** a block to another scope (only eligible targets
+        shown). Adding a skill creates its tab + seeds its blocks; **removing a skill** confirms first,
+        then deletes that tab's blocks while preserving content. Ineligible add/move → 422. (No hero/cover
+        uploader — ADR-O.)
+      - Projects editor — each project has a **Skill** selector (defaults to the primary skill).
 - [ ] Content editors (gallery/projects/digitals/…) — upload image (appears in grid), add via fields,
       reorder, remove. Switch content types via the tabs.
-- [ ] Rate card — create/pause/remove a service.
-- [ ] Availability — change status + travel + rate tier; saved inline.
 - [ ] Reviews — approve/reject in the moderation queue; filter by status.
-- [ ] Affiliations & press — add/end/remove.
-- [ ] Account — change slug, publish/unpublish toggle.
+- [ ] No standalone **Professions** or **Account** tabs remain (folded into Profile).
 
 **Deals**
 - [ ] Inbox — deals listed with status + current step; `awaiting_talent` highlighted; status filter works;
       paginated.
-- [ ] Deal room — stepper reflects progress; the action panel matches the current `step_type`
-      (form/approval/upload/payment/contract/schedule/message/info); timeline interleaves messages +
-      system events; free messaging works. When it's not the talent's turn the panel is read-only.
+- [ ] Deal room — **timeline-first layout**: header on top (reference/title/counterparty/status/amount +
+      "← All deals"); the **message timeline is the central, wide column** (messages + system_events
+      interleaved, newest at bottom) with the composer; the **side panel** (narrower, right) holds the
+      **current-step action panel** at the top then the **Phases stepper** below it. The action panel
+      matches the current `step_type` (form/approval/upload/payment/contract/schedule/message/info) and is
+      read-only when it's not the talent's turn. Sending a message and acting on a step both update the
+      timeline + stepper via **Ajax with no reload**. On narrow screens the side panel stacks under the
+      timeline. Verify **dark/light + RTL** (the whole layout mirrors).
 - [ ] The seeded deals cover three states: **awaiting_talent** (quote), **awaiting_brand** (approval),
       **completed** (full loop).
 

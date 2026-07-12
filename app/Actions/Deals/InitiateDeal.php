@@ -20,7 +20,7 @@ class InitiateDeal implements Action
     ) {}
 
     /**
-     * @param  array<string, mixed>  $attributes  brand_id, talent_id, service_id?, title, brief?, currency?, initiated_by, start_date?, end_date?
+     * @param  array<string, mixed>  $attributes  brand_id, talent_id, title, brief?, currency?, initiated_by, start_date?, end_date?
      */
     public function __invoke(array $attributes, DealFlow $flow): Deal
     {

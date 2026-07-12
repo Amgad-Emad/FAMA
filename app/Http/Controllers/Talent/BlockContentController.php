@@ -58,7 +58,7 @@ class BlockContentController extends TalentController
                 ['name', 'text', ['required']],
                 ['notes', 'translatable', []],
             ]],
-            'projects' => ['model' => Project::class, 'relation' => 'projects', 'label' => 'Projects', 'labelField' => 'title', 'media' => 'cover', 'thumb' => 'cover_image_url', 'fields' => [
+            'projects' => ['model' => Project::class, 'relation' => 'projects', 'label' => 'Projects', 'labelField' => 'title', 'media' => 'cover', 'thumb' => 'cover_image_url', 'skill_scoped' => true, 'fields' => [
                 ['title', 'translatable', ['required']],
                 ['client_name', 'text', []],
                 ['summary', 'translatable', []],
@@ -97,6 +97,11 @@ class BlockContentController extends TalentController
                 'label' => $config['label'],
                 'media' => $config['media'],
                 'fields' => array_map(fn ($f) => ['name' => $f[0], 'kind' => $f[1], 'options' => $f[2]], $config['fields']),
+                // Skill-scoped content (projects) exposes a skill selector (ADR-Q).
+                'skill_scoped' => $config['skill_scoped'] ?? false,
+                'skills' => ($config['skill_scoped'] ?? false)
+                    ? $this->talent()->talentTypes->map(fn ($s) => ['id' => $s->id, 'name' => $s->getTranslations('name')])->values()
+                    : [],
             ],
             'types' => collect($this->registry())->map(fn ($c, $k) => ['type' => $k, 'label' => $c['label']])->values(),
         ]);
@@ -120,6 +125,10 @@ class BlockContentController extends TalentController
         // Append at the end when no position is given (the front-end blank sends
         // null); `position` is a NOT NULL column, so never insert null.
         $data['position'] = $data['position'] ?? $this->talent()->{$config['relation']}()->count();
+        // Skill-scoped content defaults to the talent's primary skill (ADR-Q).
+        if (($config['skill_scoped'] ?? false) && empty($data['talent_type_id'])) {
+            $data['talent_type_id'] = $this->talent()->talentTypes()->wherePivot('is_primary', true)->value('talent_types.id');
+        }
         $item = $this->talent()->{$config['relation']}()->create($data);
 
         return response()->success($this->present($item, $config), __('Added.'), status: 201);
@@ -187,6 +196,12 @@ class BlockContentController extends TalentController
     {
         $rules = ['position' => ['nullable', 'integer']];
 
+        if ($config['skill_scoped'] ?? false) {
+            // Must be one of the talent's own skills (or null = un-scoped).
+            $skillIds = $this->talent()->talentTypes()->pluck('talent_types.id')->all();
+            $rules['talent_type_id'] = ['nullable', 'integer', Rule::in($skillIds)];
+        }
+
         foreach ($config['fields'] as [$name, $kind, $options]) {
             match ($kind) {
                 'translatable' => $rules = $rules + [
@@ -222,6 +237,6 @@ class BlockContentController extends TalentController
             'position' => (int) $item->position,
             'label' => $label,
             'thumb' => $config['thumb'] ? $item->{$config['thumb']} : null,
-        ];
+        ] + (($config['skill_scoped'] ?? false) ? ['talent_type_id' => $item->getAttribute('talent_type_id')] : []);
     }
 }

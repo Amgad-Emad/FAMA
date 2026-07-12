@@ -28,7 +28,6 @@ class DealResource extends BaseResource
             'initiated_by' => $this->initiated_by,
             'is_talent_turn' => (string) $this->status === 'awaiting_talent',
             'brand' => $this->whenLoaded('brand', fn () => ['name' => $this->brand?->name]),
-            'service' => $this->whenLoaded('service', fn () => $this->service ? ['name' => $this->service->getTranslation('name', app()->getLocale())] : null),
             'current_step' => $this->whenLoaded('currentStep', fn () => $this->currentStep ? [
                 'key' => $this->currentStep->key,
                 'name' => $this->currentStep->name,

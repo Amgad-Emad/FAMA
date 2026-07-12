@@ -3,6 +3,10 @@
     foreach ($config['fields'] as $f) {
         $blank[$f['name']] = $f['kind'] === 'translatable' ? ['en' => '', 'ar' => ''] : '';
     }
+    // Skill-scoped content (projects, ADR-Q) carries a talent_type_id.
+    if ($config['skill_scoped'] ?? false) {
+        $blank['talent_type_id'] = '';
+    }
 @endphp
 
 <x-talent-layout :title="__($config['label'])">
@@ -54,6 +58,20 @@
                         <p x-show="errors[field.name] || errors[field.name + '.en']" x-cloak class="mt-1 text-xs text-danger" x-text="(errors[field.name] || errors[field.name + '.en'])?.[0]"></p>
                     </div>
                 </template>
+
+                {{-- Skill selector for skill-scoped content (projects) — defaults to the primary skill. --}}
+                @if (($config['skill_scoped'] ?? false) && count($config['skills']))
+                    <div>
+                        <label class="mb-1 block text-sm font-medium text-ink">{{ __('Skill') }}</label>
+                        <select x-model="form.talent_type_id" class="w-full rounded-md border-line bg-elevated text-ink shadow-sm focus:border-accent focus:ring-accent">
+                            <option value="">{{ __('Primary skill') }}</option>
+                            @foreach ($config['skills'] as $skill)
+                                <option value="{{ $skill['id'] }}">{{ $skill['name'][app()->getLocale()] ?? $skill['name']['en'] ?? '' }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                @endif
+
                 <div class="sm:col-span-2">
                     <x-ui.button variant="accent" x-on:click="create()" x-bind:disabled="saving">{{ __('Add item') }}</x-ui.button>
                 </div>

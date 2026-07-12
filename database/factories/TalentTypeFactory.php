@@ -14,23 +14,23 @@ class TalentTypeFactory extends Factory
     protected $model = TalentType::class;
 
     /**
-     * A profession lookup row.
+     * A skill catalog row (`talent_types`).
      *
      * @return array<string, mixed>
      */
     public function definition(): array
     {
-        $profession = fake()->randomElement([
-            'Model', 'Photographer', 'Cinematographer', 'Creative Director', 'Stylist', 'Graphic Designer',
+        $skill = fake()->randomElement([
+            'Modeling', 'Photography', 'Cinematography', 'Creative Direction', 'Styling', 'Graphic Design',
         ]);
 
         return [
-            'name' => ['en' => $profession, 'ar' => $profession],
-            'slug' => Str::slug($profession).'-'.fake()->unique()->numerify('###'),
+            'name' => ['en' => $skill, 'ar' => $skill],
+            'slug' => Str::slug($skill).'-'.fake()->unique()->numerify('###'),
             'category' => fake()->randomElement(['model', 'crew', 'creative']),
             'default_blocks' => ['hero', 'gallery'],
-            'icon' => 'lucide-'.Str::slug($profession),
-            'description' => ['en' => fake()->sentence(), 'ar' => 'وصف المهنة'],
+            'icon' => 'lucide-'.Str::slug($skill),
+            'description' => ['en' => fake()->sentence(), 'ar' => 'وصف المهارة'],
         ];
     }
 }

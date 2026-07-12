@@ -8,11 +8,12 @@
         <!-- Account type (role-aware login: selects the guard) -->
         <div>
             <x-input-label for="role" :value="__('I am a')" />
+            @php($defaultRole = old('role', request('role', 'admin')))
             <select id="role" name="role"
                     class="block mt-1 w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
-                <option value="talent" @selected(old('role', 'admin') === 'talent')>{{ __('Talent') }}</option>
-                <option value="brand" @selected(old('role', 'admin') === 'brand')>{{ __('Brand') }}</option>
-                <option value="admin" @selected(old('role', 'admin') === 'admin')>{{ __('Admin') }}</option>
+                <option value="talent" @selected($defaultRole === 'talent')>{{ __('Talent') }}</option>
+                <option value="brand" @selected($defaultRole === 'brand')>{{ __('Brand') }}</option>
+                <option value="admin" @selected($defaultRole === 'admin')>{{ __('Admin') }}</option>
             </select>
             <x-input-error :messages="$errors->get('role')" class="mt-2" />
         </div>

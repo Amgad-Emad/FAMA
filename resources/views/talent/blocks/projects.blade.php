@@ -1,4 +1,8 @@
-@php $projects = $talent->projects; @endphp
+@php
+    // Projects are skill-scoped (ADR-Q): a projects block shows the projects belonging
+    // to its tab's skill (or the un-scoped ones for a universal projects block).
+    $projects = $talent->projects->where('talent_type_id', $block->talent_type_id);
+@endphp
 
 @if ($projects->isNotEmpty())
     <x-ui.section :title="$block->title ?: $block->blockType->name" :eyebrow="__('Selected work')">

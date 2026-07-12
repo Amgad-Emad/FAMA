@@ -22,6 +22,8 @@ class ReorderRequest extends FormRequest
         return [
             'order' => ['required', 'array', 'min:1'],
             'order.*' => ['integer'],
+            // Optional scope (block reorder is per-tab); ignored by other reorders.
+            'talent_type_id' => ['nullable', 'integer', 'exists:talent_types,id'],
         ];
     }
 

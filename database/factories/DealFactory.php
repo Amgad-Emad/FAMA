@@ -24,7 +24,6 @@ class DealFactory extends Factory
             'reference' => 'FAMA-2026-'.fake()->unique()->numerify('#####'),
             'brand_id' => Brand::factory(),
             'talent_id' => Talent::factory(),
-            'service_id' => null,
             'deal_flow_id' => DealFlow::factory(),
             'current_step_id' => null,
             'status' => 'draft',

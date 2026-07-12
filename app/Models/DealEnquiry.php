@@ -21,7 +21,7 @@ class DealEnquiry extends Model
      * @var list<string>
      */
     protected $fillable = [
-        'talent_id', 'service_id', 'contact_name', 'contact_email',
+        'talent_id', 'contact_name', 'contact_email',
         'contact_company', 'brief', 'status', 'converted_deal_id',
     ];
 
@@ -31,14 +31,6 @@ class DealEnquiry extends Model
     public function talent(): BelongsTo
     {
         return $this->belongsTo(Talent::class);
-    }
-
-    /**
-     * @return BelongsTo<Service, $this>
-     */
-    public function service(): BelongsTo
-    {
-        return $this->belongsTo(Service::class);
     }
 
     /**

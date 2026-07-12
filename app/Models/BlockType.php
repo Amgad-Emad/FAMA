@@ -12,7 +12,7 @@ use Spatie\Translatable\HasTranslations;
 /**
  * BlockType — the admin-governed block catalog (schema-master §1). `availability`
  * decides whether every talent can add the block (universal) or only certain
- * categories (by_category → block_type_category) or professions (by_type →
+ * categories (by_category → block_type_category) or skills (by_type →
  * block_type_talent_type). name/description are translatable.
  */
 class BlockType extends Model
@@ -63,7 +63,7 @@ class BlockType extends Model
     }
 
     /**
-     * Professions this block is gated to (when availability = by_type).
+     * Skills this block is gated to (when availability = by_type).
      *
      * @return BelongsToMany<TalentType, $this>
      */

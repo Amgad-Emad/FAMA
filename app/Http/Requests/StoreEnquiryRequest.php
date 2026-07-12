@@ -17,7 +17,6 @@ class StoreEnquiryRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'service_id' => ['nullable', 'integer', 'exists:services,id'],
             'contact_name' => ['required', 'string', 'max:255'],
             'contact_email' => ['required', 'email', 'max:255'],
             'contact_company' => ['nullable', 'string', 'max:255'],
