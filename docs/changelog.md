@@ -2,6 +2,16 @@
 
 Notable changes to the Fama project. Newest first.
 
+## 2026-07-12 — Fix: MariaDB deploy failure on the Looks functional-index migration
+
+- **Migration `2026_07_11_000100_add_look_types_name_index` failed on MariaDB** (production) with a
+  `1064` syntax error: MariaDB has **no functional/expression indexes**, and the old
+  `getDriverName() !== 'mysql'` guard didn't catch it because **Laravel reports MariaDB's PDO driver as
+  `mysql`**. The migration now inspects `VERSION()` and creates the functional index **only on genuine
+  MySQL 8.0.13+**, **skipping it on MariaDB / older MySQL** (the model-scope **Looks** filter still works
+  unindexed — `look_types` is a tiny lookup table). `down()` drops the index only if it exists. No change on
+  MySQL 8 (dev/CI): the index is still created; **full Pest suite green (193)**. docs/schema.md updated. No git.
+
 ## 2026-07-12 — Discovery: scoped filters appear only after a skill is selected
 
 - **Scoped filters are now skill-gated.** In the Advanced-filters modal, a skill-specific filter shows **only

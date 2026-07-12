@@ -76,9 +76,12 @@ needed promoting on the talent side — only these indexes:
 - `equipment`: `category`; `software_stack`: `software_name` (cross-talent gear/tool filters; the
   existing composite indexes are `talent_id`-first).
 - `look_types`: **functional index** `look_types_name_en_index` on `CAST(name->>'$.en' AS CHAR(191))`
-  (migration `2026_07_11_000100`, MySQL-only). `name` is a translatable JSON column, so it can't be
-  indexed directly; the model-scope **Looks** filter matches the English name path, which this index
-  covers. (Comp-card attribute *ranges* are a noted future enhancement — not built.)
+  (migration `2026_07_11_000100`). `name` is a translatable JSON column, so it can't be indexed directly;
+  the model-scope **Looks** filter matches the English name path, which this index covers. **Created only
+  on genuine MySQL 8.0.13+** (functional key parts); **skipped on MariaDB** (no expression indexes — Laravel
+  reports MariaDB as the `mysql` driver, so the migration inspects `VERSION()` to detect it) and on older
+  MySQL. The Looks filter still works unindexed there — `look_types` is a tiny lookup table. (Comp-card
+  attribute *ranges* are a noted future enhancement — not built.)
 
 Consumed by `App\Queries\TalentSearch` (spatie/laravel-query-builder) via `filter[type|category|
 city|country|equipment|software|looks|q]`.
