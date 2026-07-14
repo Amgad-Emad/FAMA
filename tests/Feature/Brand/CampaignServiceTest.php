@@ -12,8 +12,8 @@ beforeEach(fn () => $this->seed(TalentTypeSeeder::class));
 it('creates a campaign with roles and walks draft → open → in_progress → completed', function () {
     $brand = Brand::factory()->create();
     $service = app(CampaignService::class);
-    $model = TalentType::where('slug', 'model')->firstOrFail();
-    $photographer = TalentType::where('slug', 'photographer')->firstOrFail();
+    $model = TalentType::where('slug', 'modeling')->firstOrFail();
+    $photographer = TalentType::where('slug', 'photography')->firstOrFail();
 
     $campaign = $service->create($brand, [
         'title' => 'Autumn Launch', 'type' => 'campaign', 'budget_min' => 10000, 'budget_max' => 40000,

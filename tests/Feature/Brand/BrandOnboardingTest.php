@@ -20,7 +20,7 @@ it('walks the 6-step wizard and flips is_complete', function () {
     expect($brand->fresh()->base_city)->toBe('Cairo');
 
     // 3 — creative needs (pivots)
-    $typeIds = TalentType::whereIn('slug', ['model', 'photographer'])->pluck('id')->all();
+    $typeIds = TalentType::whereIn('slug', ['modeling', 'photography'])->pluck('id')->all();
     $need = $service->creativeNeeds($brand, ['talent_type_ids' => $typeIds, 'project_types' => ['campaign_video', 'lookbook'], 'project_frequency' => 'monthly']);
     expect($need->talentTypes()->count())->toBe(2);
     expect($need->projectTypes()->count())->toBe(2);
@@ -42,7 +42,7 @@ it('walks the 6-step wizard and flips is_complete', function () {
 it('is idempotent per step (re-running does not duplicate pivots or re-transition)', function () {
     $brand = Brand::factory()->create(['status' => 'registered', 'is_complete' => false]);
     $service = app(BrandOnboardingService::class);
-    $typeIds = TalentType::whereIn('slug', ['model'])->pluck('id')->all();
+    $typeIds = TalentType::whereIn('slug', ['modeling'])->pluck('id')->all();
 
     $service->identity($brand, ['name' => 'X']);
     $service->identity($brand, ['name' => 'X again']); // still onboarding, no error

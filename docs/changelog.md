@@ -2,6 +2,28 @@
 
 Notable changes to the Fama project. Newest first.
 
+## 2026-07-12 — Reconcile the brand slice with the talent-side edits (post-merge fixes)
+
+After merging `main` (talent side) into `brand-phase`, the brand code broke against changes it predated.
+Fixed so `migrate:fresh --seed` and the full suite are green again (255 tests):
+
+- **Skill rename (ADR-S).** The brand slice referenced the old person-noun `talent_types` slugs, which no
+  longer resolve → `BrandDemoSeeder` inserted an empty `campaign_talent_types.talent_type_id` (`1366`).
+  Updated the seeder (`model`→`modeling`, `photographer`→`photography`, `cinematographer`→`cinematography`)
+  and every brand test slug lookup + the `assertSee('Model')` → `'Modeling'` role-name assertion.
+- **Availability removed (ADR-L).** `App\Queries\BrandTalentFeed` filtered on the dropped
+  `talents.availability_status` column — removed that `AllowedFilter`.
+- **Services removed (ADR-K).** `Brand\DealController` eager-loaded the deleted `Deal::service` relationship
+  (`data()` + `thread()`) → 500. Dropped `'service'` from both `with()`/`load()` calls.
+- **Merge artifacts (missing `use` imports).** `routes/web.php` used `BrandProfileController::class` without
+  importing it → `ReflectionException` (500 on every public brand/campaign page). And
+  `App\Listeners\SyncStateProjections` referenced `Brand`/`BrandReview` without importing them, so
+  `instanceof` silently returned false and the brand/review projections (`is_complete`, `is_published`,
+  `is_approved`) never synced → onboarding/publish/review assertions failed. Added both imports.
+- **Verified:** `migrate:fresh --seed` completes (campaign roles resolve to `modeling`/`photography`, zero
+  orphan pivots); **full Pest suite green (255)**; brand public profile + campaign detail render 200
+  in-browser with the new discipline role names. No git.
+
 ## 2026-07-12 — Talent profile image (avatar) uploader
 
 - **Added the missing profile-image uploader** to the Profile editor's Identity/Core-details section. A

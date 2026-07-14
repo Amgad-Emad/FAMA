@@ -61,7 +61,7 @@ class BrandDemoSeeder extends Seeder
 
             // Creative needs + promoted pivots.
             $need = $brand->creativeNeed()->updateOrCreate([], ['project_frequency' => 'monthly', 'budget_tier' => '2000_10000']);
-            $need->talentTypes()->sync(TalentType::whereIn('slug', ['model', 'photographer', 'cinematographer'])->pluck('id'));
+            $need->talentTypes()->sync(TalentType::whereIn('slug', ['modeling', 'photography', 'cinematography'])->pluck('id'));
             $need->projectTypes()->delete();
             foreach (['campaign_video', 'social_content', 'lookbook'] as $projectType) {
                 $need->projectTypes()->create(['project_type' => $projectType]);
@@ -99,8 +99,8 @@ class BrandDemoSeeder extends Seeder
             $campaign->clearMediaCollection('cover');
             $campaign->addMedia($this->cover('autumn-cover', 1600, 900))->toMediaCollection('cover');
             $campaign->talentTypes()->sync([
-                TalentType::where('slug', 'model')->value('id') => ['quantity' => 1],
-                TalentType::where('slug', 'photographer')->value('id') => ['quantity' => 1],
+                TalentType::where('slug', 'modeling')->value('id') => ['quantity' => 1],
+                TalentType::where('slug', 'photography')->value('id') => ['quantity' => 1],
             ]);
             $campaign->gallery->each->delete();
             foreach (['Behind the scenes', 'Menu stills', 'Café interior'] as $i => $caption) {
@@ -118,7 +118,7 @@ class BrandDemoSeeder extends Seeder
             $showcase->clearMediaCollection('cover');
             $showcase->addMedia($this->cover('ramadan-cover', 1600, 900))->toMediaCollection('cover');
             $showcase->talentTypes()->sync([
-                TalentType::where('slug', 'photographer')->value('id') => ['quantity' => 1],
+                TalentType::where('slug', 'photography')->value('id') => ['quantity' => 1],
             ]);
 
             // A deal running under the open campaign (deals.campaign_id), so the

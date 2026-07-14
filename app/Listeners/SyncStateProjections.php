@@ -2,6 +2,8 @@
 
 namespace App\Listeners;
 
+use App\Models\Brand;
+use App\Models\BrandReview;
 use App\Models\ProfileBlock;
 use App\Models\Review;
 use App\Models\Talent;

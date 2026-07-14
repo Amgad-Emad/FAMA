@@ -24,7 +24,7 @@ it('renders the onboarding wizard for an incomplete brand', function () {
 
 it('completes onboarding through the wizard endpoints and flips is_complete', function () {
     $brand = Brand::factory()->create(['status' => 'registered', 'is_complete' => false, 'is_published' => false]);
-    $typeIds = TalentType::whereIn('slug', ['model', 'photographer'])->pluck('id')->all();
+    $typeIds = TalentType::whereIn('slug', ['modeling', 'photography'])->pluck('id')->all();
 
     $this->actingAs($brand, 'brand')->postJson('/brand/onboarding/identity', ['name' => 'Nomad', 'industry' => 'food_beverage', 'brand_stage' => 'growing'])->assertOk();
     $this->actingAs($brand, 'brand')->postJson('/brand/onboarding/location', ['base_city' => 'Cairo', 'base_country' => 'Egypt', 'geographic_reach' => 'mena'])->assertOk();
@@ -48,7 +48,7 @@ it('renders every dashboard page for a complete brand', function () {
 it('returns a personalised discovery feed and records a browse signal', function () {
     $brand = Brand::factory()->create(['geographic_reach' => 'mena']);
     $need = $brand->creativeNeed()->create([]);
-    $photographer = TalentType::where('slug', 'photographer')->firstOrFail();
+    $photographer = TalentType::where('slug', 'photography')->firstOrFail();
     $need->talentTypes()->attach($photographer->id);
     $talent = Talent::factory()->create();
     $talent->talentTypes()->attach($photographer->id, ['is_primary' => true, 'position' => 0]);
@@ -74,7 +74,7 @@ it('records a save signal from the feed', function () {
 
 it('creates a campaign and opens it through the controller', function () {
     $brand = Brand::factory()->create();
-    $model = TalentType::where('slug', 'model')->firstOrFail();
+    $model = TalentType::where('slug', 'modeling')->firstOrFail();
 
     $response = $this->actingAs($brand, 'brand')->postJson('/brand/campaigns', [
         'title' => 'Autumn Launch', 'type' => 'campaign',

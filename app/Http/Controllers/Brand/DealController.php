@@ -32,7 +32,7 @@ class DealController extends BrandController
 
         $query = Deal::query()
             ->where('brand_id', $this->brand()->getKey())
-            ->with(['talent', 'service', 'currentStep'])
+            ->with(['talent', 'currentStep'])
             ->latest();
 
         if (in_array($status, ['awaiting_brand', 'awaiting_talent', 'awaiting_admin', 'completed', 'draft', 'cancelled', 'declined', 'expired'], true)) {
@@ -56,7 +56,7 @@ class DealController extends BrandController
         $this->ensureOwns($deal);
         $this->deals->markThreadRead($deal, 'brand');
 
-        $deal->load(['talent', 'service', 'currentStep', 'steps', 'messages']);
+        $deal->load(['talent', 'currentStep', 'steps', 'messages']);
 
         return response()->success([
             'deal' => new DealResource($deal),

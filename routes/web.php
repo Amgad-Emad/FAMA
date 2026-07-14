@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Brand\TalentMessageController;
+use App\Http\Controllers\BrandProfileController;
 use App\Http\Controllers\DiscoveryController;
 use App\Http\Controllers\EnquiryController;
 use App\Http\Controllers\ProfileController;

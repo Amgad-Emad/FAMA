@@ -40,15 +40,15 @@ it('renders a public campaign detail with roles sought and gallery facts', funct
         'title' => 'Autumn Menu', 'slug' => 'autumn-menu', 'is_public' => true, 'status' => 'open',
         'budget_min' => 10000, 'budget_max' => 40000, 'location_city' => 'Cairo', 'currency' => 'EGP',
     ]);
-    $model = TalentType::where('slug', 'model')->firstOrFail();
+    $model = TalentType::where('slug', 'modeling')->firstOrFail();
     $campaign->talentTypes()->attach($model->id, ['quantity' => 3]);
 
     $this->get('/brands/nomad-coffee/campaigns/autumn-menu')
         ->assertOk()
         ->assertSee('Autumn Menu')
         ->assertSee('Cairo')
-        ->assertSee('Model')   // role name
-        ->assertSee('× 3');    // quantity
+        ->assertSee('Modeling')   // role name (discipline — ADR-S)
+        ->assertSee('× 3');       // quantity
 });
 
 it('404s a private campaign detail', function () {

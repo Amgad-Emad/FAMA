@@ -67,13 +67,13 @@ it('promotes creative-need talent types + project types to pivots (ADR-6)', func
     $this->seed(TalentTypeSeeder::class);
     $brand = Brand::factory()->create();
     $need = $brand->creativeNeed()->save(BrandCreativeNeed::factory()->make());
-    $photographer = TalentType::where('slug', 'photographer')->firstOrFail();
+    $photographer = TalentType::where('slug', 'photography')->firstOrFail();
 
     $need->talentTypes()->attach($photographer->id);
     $need->projectTypes()->create(['project_type' => 'campaign_video']);
 
     // "all brands needing photographers"
-    $found = Brand::whereHas('creativeNeed.talentTypes', fn ($q) => $q->where('slug', 'photographer'))->pluck('id');
+    $found = Brand::whereHas('creativeNeed.talentTypes', fn ($q) => $q->where('slug', 'photography'))->pluck('id');
     expect($found)->toContain($brand->id);
     expect($need->projectTypes->pluck('project_type')->all())->toBe(['campaign_video']);
 });
@@ -91,7 +91,7 @@ it('averages the three brand-review sub-ratings and defaults to pending', functi
 it('links a campaign to its roles (with quantity) and gallery', function () {
     $this->seed(TalentTypeSeeder::class);
     $campaign = Campaign::factory()->open()->create();
-    $model = TalentType::where('slug', 'model')->firstOrFail();
+    $model = TalentType::where('slug', 'modeling')->firstOrFail();
 
     $campaign->talentTypes()->attach($model->id, ['quantity' => 2]);
     $campaign->gallery()->save(CampaignMedia::factory()->make());
