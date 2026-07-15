@@ -42,7 +42,7 @@ it('renders every dashboard page for a complete brand', function () {
 
     // (Account + Creative needs were folded into Profile — its editor now holds the
     // Settings, Visibility, and Creative-needs sections.)
-    foreach (['dashboard', 'profile', 'campaigns', 'discover', 'deals', 'reviews'] as $page) {
+    foreach (['dashboard', 'profile', 'projects', 'discover', 'contracts', 'reviews'] as $page) {
         $this->actingAs($brand, 'brand')->get("/brand/{$page}")->assertOk();
     }
 
@@ -82,15 +82,15 @@ it('creates a campaign and opens it through the controller', function () {
     $brand = Brand::factory()->create();
     $model = TalentType::where('slug', 'modeling')->firstOrFail();
 
-    $response = $this->actingAs($brand, 'brand')->postJson('/brand/campaigns', [
+    $response = $this->actingAs($brand, 'brand')->postJson('/brand/projects', [
         'title' => 'Autumn Launch', 'type' => 'campaign',
-        'roles' => [['talent_type_id' => $model->id, 'quantity' => 2]],
+        'talent_type_id' => $model->id,
     ])->assertCreated();
 
     $id = $response->json('data.id');
 
     $this->actingAs($brand, 'brand')
-        ->patchJson("/brand/campaigns/{$id}/status", ['action' => 'open'])
+        ->patchJson("/brand/projects/{$id}/status", ['action' => 'open'])
         ->assertOk()
         ->assertJsonPath('data.status', 'open');
 });

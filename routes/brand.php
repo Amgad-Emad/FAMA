@@ -1,10 +1,10 @@
 <?php
 
 use App\Http\Controllers\Brand\AccountController;
-use App\Http\Controllers\Brand\CampaignController;
+use App\Http\Controllers\Brand\ProjectController;
 use App\Http\Controllers\Brand\CreativeNeedsController;
 use App\Http\Controllers\Brand\DashboardController;
-use App\Http\Controllers\Brand\DealController;
+use App\Http\Controllers\Brand\ContractController;
 use App\Http\Controllers\Brand\DiscoveryController;
 use App\Http\Controllers\Brand\OnboardingController;
 use App\Http\Controllers\Brand\ProfileEditorController;
@@ -51,18 +51,18 @@ Route::delete('/social/{handle}', [ProfileEditorController::class, 'removeSocial
 Route::get('/creative-needs', [CreativeNeedsController::class, 'edit'])->name('creative-needs');
 Route::patch('/creative-needs', [CreativeNeedsController::class, 'update'])->name('creative-needs.update');
 
-// --- Campaigns manager + workspace ------------------------------------------
-Route::get('/campaigns', [CampaignController::class, 'index'])->name('campaigns');
-Route::get('/campaigns/data', [CampaignController::class, 'data'])->name('campaigns.data');
-Route::post('/campaigns', [CampaignController::class, 'store'])->name('campaigns.store');
-Route::get('/campaigns/{campaign}', [CampaignController::class, 'show'])->name('campaigns.show');
-Route::get('/campaigns/{campaign}/data', [CampaignController::class, 'showData'])->name('campaigns.show.data');
-Route::patch('/campaigns/{campaign}', [CampaignController::class, 'update'])->name('campaigns.update');
-Route::patch('/campaigns/{campaign}/status', [CampaignController::class, 'status'])->name('campaigns.status');
-Route::patch('/campaigns/{campaign}/public', [CampaignController::class, 'setPublic'])->name('campaigns.public');
-Route::post('/campaigns/{campaign}/media', [CampaignController::class, 'addMedia'])->name('campaigns.media');
-Route::delete('/campaigns/{campaign}/media/{media}', [CampaignController::class, 'removeMedia'])->name('campaigns.media.destroy');
-Route::delete('/campaigns/{campaign}', [CampaignController::class, 'destroy'])->name('campaigns.destroy');
+// --- Projects manager + workspace ------------------------------------------
+Route::get('/projects', [ProjectController::class, 'index'])->name('projects');
+Route::get('/projects/data', [ProjectController::class, 'data'])->name('projects.data');
+Route::post('/projects', [ProjectController::class, 'store'])->name('projects.store');
+Route::get('/projects/{campaign}', [ProjectController::class, 'show'])->name('projects.show');
+Route::get('/projects/{campaign}/data', [ProjectController::class, 'showData'])->name('projects.show.data');
+Route::patch('/projects/{campaign}', [ProjectController::class, 'update'])->name('projects.update');
+Route::patch('/projects/{campaign}/status', [ProjectController::class, 'status'])->name('projects.status');
+Route::patch('/projects/{campaign}/public', [ProjectController::class, 'setPublic'])->name('projects.public');
+Route::post('/projects/{campaign}/media', [ProjectController::class, 'addMedia'])->name('projects.media');
+Route::delete('/projects/{campaign}/media/{media}', [ProjectController::class, 'removeMedia'])->name('projects.media.destroy');
+Route::delete('/projects/{campaign}', [ProjectController::class, 'destroy'])->name('projects.destroy');
 
 // --- Discovery feed ---------------------------------------------------------
 Route::get('/discover', [DiscoveryController::class, 'index'])->name('discover');
@@ -70,15 +70,15 @@ Route::get('/discover/feed', [DiscoveryController::class, 'feed'])->name('discov
 Route::post('/discover/save', [DiscoveryController::class, 'save'])->name('discover.save');
 Route::post('/discover/brief', [DiscoveryController::class, 'brief'])->name('discover.brief');
 
-// --- Deals inbox + brand deal room (shared engine, brand actor) -------------
-Route::get('/deals', [DealController::class, 'index'])->name('deals');
-Route::get('/deals/data', [DealController::class, 'data'])->name('deals.data');
-Route::get('/deals/{deal}', [DealController::class, 'show'])->name('deals.show');
-Route::get('/deals/{deal}/thread', [DealController::class, 'thread'])->name('deals.thread');
-Route::post('/deals/{deal}/advance', [DealController::class, 'advance'])->name('deals.advance');
-Route::post('/deals/{deal}/reject', [DealController::class, 'reject'])->name('deals.reject');
-Route::post('/deals/{deal}/skip', [DealController::class, 'skip'])->name('deals.skip');
-Route::post('/deals/{deal}/message', [DealController::class, 'message'])->name('deals.message');
+// --- Contracts inbox + brand contract room (shared engine, brand actor) -------------
+Route::get('/contracts', [ContractController::class, 'index'])->name('contracts');
+Route::get('/contracts/data', [ContractController::class, 'data'])->name('contracts.data');
+Route::get('/contracts/{contract}', [ContractController::class, 'show'])->name('contracts.show');
+Route::get('/contracts/{contract}/thread', [ContractController::class, 'thread'])->name('contracts.thread');
+Route::post('/contracts/{contract}/advance', [ContractController::class, 'advance'])->name('contracts.advance');
+Route::post('/contracts/{contract}/reject', [ContractController::class, 'reject'])->name('contracts.reject');
+Route::post('/contracts/{contract}/skip', [ContractController::class, 'skip'])->name('contracts.skip');
+Route::post('/contracts/{contract}/message', [ContractController::class, 'message'])->name('contracts.message');
 
 // --- Reviews received (read-only) -------------------------------------------
 Route::get('/reviews', [ReviewController::class, 'index'])->name('reviews');

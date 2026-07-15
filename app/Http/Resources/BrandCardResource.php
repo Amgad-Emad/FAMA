@@ -28,7 +28,7 @@ class BrandCardResource extends BaseResource
             'location' => collect([$this->base_city, $this->base_country])->filter()->implode(', ') ?: null,
             'tagline' => $this->getTranslation('description', app()->getLocale(), false) ?: null,
             'is_verified' => (bool) $this->is_verified,
-            'campaigns_count' => $this->whenCounted('campaigns'),
+            'projects_count' => $this->whenCounted('projects'),
         ];
     }
 }

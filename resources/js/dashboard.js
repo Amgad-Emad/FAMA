@@ -909,11 +909,11 @@ document.addEventListener('alpine:init', () => {
         },
     }));
 
-    // --- Public campaign browsing (talent-facing opportunities) -------------
+    // --- Public project browsing (talent-facing opportunities) -------------
     // Mirrors talentSearch: a primary Discipline chip bar (live, grouped by scope via
     // the shared skill-filter-chips partial) + an advanced-filters modal (Type / Budget
     // / Location, staged), active-filter summary, live count, skeleton loaders.
-    Alpine.data('campaignBrowse', (initial = {}) => ({
+    Alpine.data('projectBrowse', (initial = {}) => ({
         ...filterModal(),
         types: initial.types || [],
         scopeLabels: initial.scopeLabels || { model: 'Modeling', crew: 'Crew', creative: 'Creative' },
@@ -1022,7 +1022,7 @@ document.addEventListener('alpine:init', () => {
                 if (this.filters.budget_min) p.set('budget_min', this.filters.budget_min);
                 if (this.filters.budget_max) p.set('budget_max', this.filters.budget_max);
                 p.set('page', page);
-                const { data, meta } = await get(`/campaigns/feed?${p.toString()}`);
+                const { data, meta } = await get(`/projects/feed?${p.toString()}`);
                 this.campaigns = data;
                 this.meta = meta;
             } finally {

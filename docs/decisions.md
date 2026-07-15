@@ -20,15 +20,15 @@
 
 ### ADR-3 — State machines for every lifecycle
 - **Context:** Many entities have documented, guarded lifecycles.
-- **Decision:** `spatie/laravel-model-states` models every documented lifecycle: deal, deal_step, deal_message, campaign, brand, talent profile, review, media.
+- **Decision:** `spatie/laravel-model-states` models every documented lifecycle: contract, contract_step, contract_message, campaign, brand, talent profile, review, media.
 - **Status:** Accepted.
 - **Consequences:** Transitions are explicit, guarded, and auditable; each stateful model gets a state column + State classes (built with the model in Phase 1+). *(The availability, service, and affiliation lifecycles were removed with their features — see ADR-K/L/M.)*
 
-### ADR-4 — Configurable deal-flow steps (Strategy/Factory) + snapshot
-- **Context:** Admins configure deal flows; in-flight deals must stay stable when a flow is edited.
-- **Decision:** One `StepHandler` per `step_type` (form/approval/upload/payment/contract/message/schedule/info) via Strategy + Factory. Flow steps are **snapshotted** into `deal_steps` at deal creation.
+### ADR-4 — Configurable contract-flow steps (Strategy/Factory) + snapshot
+- **Context:** Admins configure contract flows; in-flight contracts must stay stable when a flow is edited.
+- **Decision:** One `StepHandler` per `step_type` (form/approval/upload/payment/contract/message/schedule/info) via Strategy + Factory. Flow steps are **snapshotted** into `contract_steps` at contract creation.
 - **Status:** Accepted.
-- **Consequences:** Editing/archiving a flow affects only **future** deals; adding a step type = a new handler, no schema change; final-payment automation is a handler setting (see ADR-B).
+- **Consequences:** Editing/archiving a flow affects only **future** contracts; adding a step type = a new handler, no schema change; final-payment automation is a handler setting (see ADR-B).
 
 ### ADR-5 — Media library is the source of truth for uploads
 - **Context:** Uploaded assets vs. external links/embeds.
@@ -52,7 +52,7 @@
 - **Context:** Reliability of a multi-write, money-touching domain.
 - **Decision:** Pest unit + feature tests; dedicated fail-log channels; `DB::transaction` on every multi-write operation.
 - **Status:** Accepted.
-- **Consequences:** Log channels `app`/`auth`/`deals`/`media`; `Service::runInTransaction()` wraps transaction + failure logging (catch → log to channel with context → rethrow / error envelope); green tests are part of the Definition of Done.
+- **Consequences:** Log channels `app`/`auth`/`contracts`/`media`; `Service::runInTransaction()` wraps transaction + failure logging (catch → log to channel with context → rethrow / error envelope); green tests are part of the Definition of Done.
 
 ### ADR-9 — Docs & process discipline
 - **Context:** Keep project knowledge coherent and avoid sprawl.
@@ -67,10 +67,10 @@
 - **Consequences:** v3 config files removed; `app.css` uses `@import 'tailwindcss'` + `@plugin '@tailwindcss/forms'` + `@custom-variant dark` + `@source`/`@theme`; `@tailwindcss/vite` restored in `vite.config.js`.
 
 ### ADR-K — Rate card / services removed
-- **Context:** The per-talent rate card (`services` table + `Service` state machine) duplicated pricing that is better expressed once, and it coupled the deal engine to a talent-owned catalog.
-- **Decision:** Remove services entirely (table, model, factory, state machine, policy, routes/controllers/requests/resources, the `services` profile block, and its key from every `default_blocks` seed + existing `profile_blocks`). The single Pricing rate (`talents.booking_type`/`booking_value`) replaces it. **Deal amount comes from the flow, not a service** — captured by the flow's form/quote step (`FormStepHandler` amount field). `service_id` is dropped from `deals` and `deal_enquiries` (FK + column).
+- **Context:** The per-talent rate card (`services` table + `Service` state machine) duplicated pricing that is better expressed once, and it coupled the contract engine to a talent-owned catalog.
+- **Decision:** Remove services entirely (table, model, factory, state machine, policy, routes/controllers/requests/resources, the `services` profile block, and its key from every `default_blocks` seed + existing `profile_blocks`). The single Pricing rate (`talents.booking_type`/`booking_value`) replaces it. **Contract amount comes from the flow, not a service** — captured by the flow's form/quote step (`FormStepHandler` amount field). `service_id` is dropped from `contracts` and `contract_enquiries` (FK + column).
 - **Status:** Accepted.
-- **Consequences:** Deals no longer reference a service; `DealResource`/deal payloads, `InitiateDeal`, `ConvertEnquiryToDeal`, `StoreEnquiryRequest`, and the enquiry Blade lose all service references. Append-only drop migrations (`2026_07_10_000100`, `_000300`, `_000400`) remove the schema and clean already-migrated databases.
+- **Consequences:** Contracts no longer reference a service; `ContractResource`/contract payloads, `InitiateContract`, `ConvertEnquiryToContract`, `StoreEnquiryRequest`, and the enquiry Blade lose all service references. Append-only drop migrations (`2026_07_10_000100`, `_000300`, `_000400`) remove the schema and clean already-migrated databases.
 
 ### ADR-L — Availability & travel removed
 - **Context:** The availability badge/state machine and the travel/rate-tier fields added lifecycle and UI surface that the product no longer wants; enquiries were gated by availability.
@@ -89,7 +89,7 @@
 - **Decision:**
   1. **Terminology:** "Professions" is renamed **Skills** across all user-facing copy, Blade, translation keys, and routes (route segment `professions` → `skills`; names `talent.professions*` → `talent.profile.skills*`). Talent-side symbols follow: `ProfessionsService` → `SkillsService`, `ProfessionController` → `SkillController`, `StoreProfessionRequest` → `StoreSkillRequest`.
   2. **Persistence unchanged:** the `talent_types` table, `TalentType` model, and `talent_type_id` FKs stay as the physical layer — **`talent_types` is the Skills catalog**. A physical table rename would cascade into brand creative-needs, campaigns, and API lookups, so it is a deliberate **future** migration, not done here.
-  3. **Editor consolidation:** the standalone **Professions** and **Account** tabs are folded into the **Profile editor**. The sidebar becomes **Home · Profile · Content · Reviews · Deals**. The Profile editor holds Identity, Skills, **Username** (the public `slug`, relabelled "Username" in UI + validation — column unchanged, still unique/auto-generated), Publish (`is_published`, moved from Account), Pricing rate, and Blocks. Publish moves to `PATCH /talent/profile/publish`.
+  3. **Editor consolidation:** the standalone **Professions** and **Account** tabs are folded into the **Profile editor**. The sidebar becomes **Home · Profile · Content · Reviews · Contracts**. The Profile editor holds Identity, Skills, **Username** (the public `slug`, relabelled "Username" in UI + validation — column unchanged, still unique/auto-generated), Publish (`is_published`, moved from Account), Pricing rate, and Blocks. Publish moves to `PATCH /talent/profile/publish`.
   4. **Pricing rate:** new nullable `talents` columns `rate_unit` ENUM(project, day, hour) / `rate_amount` DECIMAL(10,2) / `rate_currency` CHAR(3), edited in the Profile editor. All-or-nothing (a complete rate or none), NOT translatable. Replaces the removed rate card (ADR-K); public display is a later prompt.
 - **Status:** Accepted.
 - **Consequences:** Migration `2026_07_10_000500` adds the rate columns. The admin "profession template manager" relabel + `ProfessionCatalogService` → `SkillCatalogService` rename apply **when the admin side is built** (not present in the current talent-slice codebase). No `api-docs` regeneration was possible — the mobile API is Phase 4 and there is no `composer api-docs` script yet; `docs/api.md` (the contract doc) is updated by hand instead.
@@ -104,12 +104,12 @@
 - **Consequences:** Header stats read from already eager-loaded relations (`projects`, approved `reviews`) — no N+1. Demo/showcase seeders no longer attach a hero cover image. Everything is built from existing design tokens (`resources/css/app.css`), verified in dark, light, and RTL.
 
 ### ADR-P — Public profile primary CTA is "Message" (interim = brand-auth redirect)
-- **Context:** The public profile's primary CTA was **Contact** (the no-login enquiry/booking flow, Prompt C / ADR-O). The product wants the primary CTA to be **Message** — the entry point to the brand↔talent chat — but the chat isn't built yet. The chat is also the **deal-initiation** entry point (a brand messaging a talent starts the conversation that becomes a deal), which ties to the still-open deal-initiation slice.
+- **Context:** The public profile's primary CTA was **Contact** (the no-login enquiry/booking flow, Prompt C / ADR-O). The product wants the primary CTA to be **Message** — the entry point to the brand↔talent chat — but the chat isn't built yet. The chat is also the **contract-initiation** entry point (a brand messaging a talent starts the conversation that becomes a contract), which ties to the still-open contract-initiation slice.
 - **Decision:** The public profile's primary CTA becomes **Message** (superseding Contact; "Leave a review" stays as the secondary CTA). It points at a reserved, talent-scoped named route **`brand.talents.message`** (`GET /brand/talents/{talent:slug}/message`, `App\Http\Controllers\Brand\TalentMessageController`). The route is public and branches on brand auth itself:
   - **Not authenticated as a brand** → store this talent's public profile as the intended return URL (`url.intended`) and redirect to brand authentication (`route('login', ['role' => 'brand'])`; the login view pre-selects the Brand role from `?role`), so a later iteration can open the chat straight after auth.
-  - **Authenticated as a brand** → interim stub: redirect back to the profile with a **"Messaging coming soon"** flash. A clearly-marked `TODO(brand-messaging)` hook marks where the real brand↔talent chat (`deal_messages`) / deal initiation attaches.
+  - **Authenticated as a brand** → interim stub: redirect back to the profile with a **"Messaging coming soon"** flash. A clearly-marked `TODO(brand-messaging)` hook marks where the real brand↔talent chat (`contract_messages`) / contract initiation attaches.
 - **Status:** Accepted (interim). No new tables, no chat wiring yet.
-- **Consequences:** The `talent.enquire` route/controller (deal_enquiries) is untouched — only the CTA changed. When the brand↔talent chat / deal-initiation slice lands, it replaces the stub body in `TalentMessageController` (and the brand deal room, Phase 2C, hangs off the same thread). **This is the concrete home for the open deal-initiation decision** — see the deal-initiation notes in `talent-spec.md`.
+- **Consequences:** The `talent.enquire` route/controller (contract_enquiries) is untouched — only the CTA changed. When the brand↔talent chat / contract-initiation slice lands, it replaces the stub body in `TalentMessageController` (and the brand contract room, Phase 2C, hangs off the same thread). **This is the concrete home for the open contract-initiation decision** — see the contract-initiation notes in `talent-spec.md`.
 
 ### ADR-Q — Profile blocks & projects are skill-scoped (`talent_type_id`)
 - **Context:** A talent can have several skills. The product wants the public profile to render **one tab per skill**, so blocks (and projects) must belong to a skill rather than sitting in one flat list.
@@ -151,7 +151,7 @@
 - **Context:** Whether the last payment step auto-completes or requires a manual confirmation.
 - **Decision:** TBD — manual confirm vs. auto, expressed as a `PaymentStepHandler` setting.
 - **Status:** OPEN — needs owner (**Kanta / billing**).
-- **Consequences:** Defines `PaymentStepHandler` config and what triggers deal completion (ADR-4).
+- **Consequences:** Defines `PaymentStepHandler` config and what triggers contract completion (ADR-4).
 
 ### ADR-C — Talent admission flow
 - **Context:** Open self-signup vs. an admin-approval gate for talents.
@@ -172,12 +172,12 @@
   transcription (all pages, workflows, lifecycles) and covers every schema-master §4/§5 table; no gaps.
 - **Consequences:** Phase 2 (brand) build unblocked; Phase 2A schema shipped against the confirmed spec.
 
-### ADR-F — `deals.campaign_id` FK *(retained from Phase 0)*
-- **Context:** Brand/campaign workflows reference a deal running under a campaign, but the FK isn't in the `deals` definition.
-- **Decision:** Add `campaign_id → campaigns (nullable, nullOnDelete)` on `deals`.
+### ADR-F — `contracts.campaign_id` FK *(retained from Phase 0)*
+- **Context:** Brand/campaign workflows reference a contract running under a campaign, but the FK isn't in the `contracts` definition.
+- **Decision:** Add `campaign_id → campaigns (nullable, nullOnDelete)` on `contracts`.
 - **Status:** **Resolved (Accepted)** — added in Phase 2B (`add_brand_state_and_campaign_link`) once
-  `campaigns` existed. `Deal::campaign()` / `Campaign::deals()` relations wired.
-- **Consequences:** A campaign groups many deals; a completed public campaign is a profile showcase.
+  `campaigns` existed. `Contract::campaign()` / `Campaign::contracts()` relations wired.
+- **Consequences:** A campaign groups many contracts; a completed public campaign is a profile showcase.
 
 ### ADR-G — Brand/talent password-reset tables *(retained from Phase 0)*
 - **Context:** Phase 0 points the `brands`/`talents` password brokers at the shared `password_reset_tokens` table (inert — unused yet).

@@ -1,7 +1,7 @@
 /**
  * Brand dashboard Alpine components. Every mutation goes through the shared
  * http.js wrapper (JSON envelope) so pages never reload; validation errors are
- * surfaced inline from `envelope.errors`. The deal room mirrors the talent side
+ * surfaced inline from `envelope.errors`. The contract room mirrors the talent side
  * but acts as the `brand` role (awaiting_brand highlighted).
  */
 import { del, get, patch, post, ApiError } from './http';
@@ -254,8 +254,8 @@ document.addEventListener('alpine:init', () => {
 
     // (The standalone Creative-needs editor was folded into brandProfile.)
 
-    // --- Campaigns manager --------------------------------------------------
-    Alpine.data('brandCampaigns', (initial) => ({
+    // --- Projects manager --------------------------------------------------
+    Alpine.data('brandProjects', (initial) => ({
         campaigns: [],
         meta: null,
         loading: true,
@@ -263,7 +263,8 @@ document.addEventListener('alpine:init', () => {
         creating: false,
         errors: {},
         types: initial.types,
-        form: { title: '', type: 'campaign', budget_min: null, budget_max: null, is_public: false, roles: [] },
+        // One role, one position — a single discipline; budget private by default.
+        form: { title: '', type: 'campaign', description: { en: '', ar: '' }, budget_min: null, budget_max: null, is_public: false, budget_is_public: false, talent_type_id: null },
         t,
 
         async init() { await this.load(); },
@@ -271,7 +272,7 @@ document.addEventListener('alpine:init', () => {
         async load(page = 1) {
             this.loading = true;
             try {
-                const { data, meta } = await get(`/brand/campaigns/data?page=${page}`);
+                const { data, meta } = await get(`/brand/projects/data?page=${page}`);
                 this.campaigns = data;
                 this.meta = meta;
             } finally {
@@ -279,15 +280,12 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
-        addRole() { this.form.roles.push({ talent_type_id: this.types[0]?.id, quantity: 1 }); },
-        removeRole(i) { this.form.roles.splice(i, 1); },
-
         async create() {
             this.errors = {};
             this.creating = true;
             try {
-                const { data } = await post('/brand/campaigns', this.form);
-                window.location.href = `/brand/campaigns/${data.id}`;
+                const { data } = await post('/brand/projects', this.form);
+                window.location.href = `/brand/projects/${data.id}`;
             } catch (e) {
                 if (e instanceof ApiError) this.errors = e.errors || { _: [e.message] };
             } finally {
@@ -296,11 +294,11 @@ document.addEventListener('alpine:init', () => {
         },
     }));
 
-    // --- Single campaign workspace ------------------------------------------
-    Alpine.data('brandCampaign', (id, initial = {}) => ({
+    // --- Single project workspace ------------------------------------------
+    Alpine.data('brandProject', (id, initial = {}) => ({
         id,
         campaign: null,
-        deals: [],
+        contracts: [],
         loading: true,
         acting: false,
         types: initial.types || [],
@@ -321,18 +319,12 @@ document.addEventListener('alpine:init', () => {
         // Ordered lifecycle stage index (−1 for cancelled) — drives the stepper.
         get statusIndex() { return ['draft', 'open', 'in_progress', 'completed'].indexOf(this.campaign?.status); },
 
-        // Sum of positions across all roles (falls back to role count).
-        get totalPositions() {
-            const roles = this.campaign?.roles || [];
-            return roles.reduce((sum, r) => sum + (Number(r.quantity) || 0), 0);
-        },
-
         async refresh() {
             this.loading = true;
             try {
-                const { data } = await get(`/brand/campaigns/${this.id}/data`);
+                const { data } = await get(`/brand/projects/${this.id}/data`);
                 this.campaign = data.campaign;
-                this.deals = data.deals;
+                this.contracts = data.contracts;
             } finally {
                 this.loading = false;
             }
@@ -344,6 +336,7 @@ document.addEventListener('alpine:init', () => {
             this.form = {
                 title: c.title || '',
                 type: c.type || 'campaign',
+                description: { en: c.description?.en || '', ar: c.description?.ar || '' },
                 budget_min: c.budget_min,
                 budget_max: c.budget_max,
                 currency: c.currency || 'EGP',
@@ -352,7 +345,8 @@ document.addEventListener('alpine:init', () => {
                 start_date: c.start_date || '',
                 end_date: c.end_date || '',
                 is_public: !!c.is_public,
-                roles: (c.roles || []).map((r) => ({ talent_type_id: r.talent_type_id, quantity: r.quantity })),
+                budget_is_public: !!c.budget_is_public,
+                talent_type_id: c.talent_type_id ?? c.role?.talent_type_id ?? null,
             };
             this.errors = {};
             this.editing = true;
@@ -360,14 +354,11 @@ document.addEventListener('alpine:init', () => {
 
         cancelEdit() { this.editing = false; this.errors = {}; },
 
-        addRole() { this.form.roles.push({ talent_type_id: this.types[0]?.id, quantity: 1 }); },
-        removeRole(i) { this.form.roles.splice(i, 1); },
-
         async save() {
             this.saving = true;
             this.errors = {};
             try {
-                await patch(`/brand/campaigns/${this.id}`, this.form);
+                await patch(`/brand/projects/${this.id}`, this.form);
                 this.editing = false;
                 this.saved = true;
                 setTimeout(() => (this.saved = false), 2000);
@@ -382,7 +373,7 @@ document.addEventListener('alpine:init', () => {
         async transition(action) {
             this.acting = true;
             try {
-                await patch(`/brand/campaigns/${this.id}/status`, { action });
+                await patch(`/brand/projects/${this.id}/status`, { action });
                 await this.refresh();
             } catch (e) {
                 if (e instanceof ApiError) window.alert(e.message);
@@ -392,7 +383,7 @@ document.addEventListener('alpine:init', () => {
         },
 
         async togglePublic() {
-            await patch(`/brand/campaigns/${this.id}/public`, { public: !this.campaign.is_public });
+            await patch(`/brand/projects/${this.id}/public`, { public: !this.campaign.is_public });
             await this.refresh();
         },
 
@@ -402,7 +393,7 @@ document.addEventListener('alpine:init', () => {
             const body = new FormData();
             body.append('file', file);
             try {
-                await post(`/brand/campaigns/${this.id}/media`, body);
+                await post(`/brand/projects/${this.id}/media`, body);
                 await this.refresh();
             } catch (e) {
                 if (e instanceof ApiError) window.alert(e.message);
@@ -413,7 +404,7 @@ document.addEventListener('alpine:init', () => {
 
         async removeMedia(mediaId) {
             try {
-                await del(`/brand/campaigns/${this.id}/media/${mediaId}`);
+                await del(`/brand/projects/${this.id}/media/${mediaId}`);
                 await this.refresh();
             } catch (e) {
                 if (e instanceof ApiError) window.alert(e.message);
@@ -424,8 +415,8 @@ document.addEventListener('alpine:init', () => {
         async destroy() {
             this.deleting = true;
             try {
-                await del(`/brand/campaigns/${this.id}`);
-                window.location.href = '/brand/campaigns';
+                await del(`/brand/projects/${this.id}`);
+                window.location.href = '/brand/projects';
             } catch (e) {
                 if (e instanceof ApiError) window.alert(e.message);
                 this.deleting = false;
@@ -524,9 +515,9 @@ document.addEventListener('alpine:init', () => {
         },
     }));
 
-    // --- Deals inbox (brand) ------------------------------------------------
-    Alpine.data('brandDealsInbox', () => ({
-        deals: [],
+    // --- Contracts inbox (brand) ------------------------------------------------
+    Alpine.data('brandContractsInbox', () => ({
+        contracts: [],
         meta: null,
         loading: true,
         status: '',
@@ -543,7 +534,7 @@ document.addEventListener('alpine:init', () => {
         async load(page = 1) {
             this.loading = true;
             try {
-                this.deals = await this.fetch(page);
+                this.contracts = await this.fetch(page);
             } finally {
                 this.loading = false;
             }
@@ -553,7 +544,7 @@ document.addEventListener('alpine:init', () => {
         async poll() {
             if (document.hidden) return;
             try {
-                this.deals = await this.fetch(this.page);
+                this.contracts = await this.fetch(this.page);
             } catch (e) { /* ignore transient poll errors */ }
         },
 
@@ -561,7 +552,7 @@ document.addEventListener('alpine:init', () => {
             const params = new URLSearchParams();
             if (this.status) params.set('status', this.status);
             params.set('page', page);
-            const { data, meta } = await get(`/brand/deals/data?${params.toString()}`);
+            const { data, meta } = await get(`/brand/contracts/data?${params.toString()}`);
             this.meta = meta;
             this.page = page;
             return data;
@@ -570,11 +561,11 @@ document.addEventListener('alpine:init', () => {
         setStatus(status) { this.status = status; this.load(); },
     }));
 
-    // --- Deal room (brand actor) --------------------------------------------
-    Alpine.data('brandDealRoom', (dealId, labels = {}) => ({
-        dealId,
+    // --- Contract room (brand actor) --------------------------------------------
+    Alpine.data('brandContractRoom', (contractId, labels = {}) => ({
+        contractId,
         labels,
-        deal: null,
+        contract: null,
         steps: [],
         messages: [],
         canAct: false,
@@ -601,9 +592,9 @@ document.addEventListener('alpine:init', () => {
         async poll() {
             if (document.hidden) return;
             try {
-                const { data } = await get(`/brand/deals/${this.dealId}/thread`);
+                const { data } = await get(`/brand/contracts/${this.contractId}/thread`);
                 const prevStepId = this.currentStep?.id ?? null;
-                this.deal = data.deal;
+                this.contract = data.contract;
                 this.steps = data.steps;
                 this.messages = data.messages;
                 this.canAct = data.can_act;
@@ -613,11 +604,11 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
-        // Key/value detail rows for the "Deal details" card: the brief fields the
+        // Key/value detail rows for the "Contract details" card: the brief fields the
         // brand submitted, plus the agreed dates + who initiated it.
         get detailRows() {
             const rows = [];
-            const brief = this.deal?.brief;
+            const brief = this.contract?.brief;
             if (typeof brief === 'string' && brief.trim()) {
                 rows.push({ label: this.labels.brief || 'Brief', value: brief, wide: true });
             } else if (brief && typeof brief === 'object') {
@@ -628,9 +619,9 @@ document.addEventListener('alpine:init', () => {
                     }
                 });
             }
-            if (this.deal?.start_date) rows.push({ label: this.labels.startDate || 'Start date', value: this.deal.start_date });
-            if (this.deal?.end_date) rows.push({ label: this.labels.endDate || 'End date', value: this.deal.end_date });
-            if (this.deal?.initiated_by) rows.push({ label: this.labels.initiatedBy || 'Initiated by', value: this.deal.initiated_by });
+            if (this.contract?.start_date) rows.push({ label: this.labels.startDate || 'Start date', value: this.contract.start_date });
+            if (this.contract?.end_date) rows.push({ label: this.labels.endDate || 'End date', value: this.contract.end_date });
+            if (this.contract?.initiated_by) rows.push({ label: this.labels.initiatedBy || 'Initiated by', value: this.contract.initiated_by });
             return rows;
         },
 
@@ -641,8 +632,8 @@ document.addEventListener('alpine:init', () => {
         async refresh() {
             this.loading = true;
             try {
-                const { data } = await get(`/brand/deals/${this.dealId}/thread`);
-                this.deal = data.deal;
+                const { data } = await get(`/brand/contracts/${this.contractId}/thread`);
+                this.contract = data.contract;
                 this.steps = data.steps;
                 this.messages = data.messages;
                 this.canAct = data.can_act;
@@ -669,7 +660,7 @@ document.addEventListener('alpine:init', () => {
             this.acting = true;
             this.errors = {};
             try {
-                await post(`/brand/deals/${this.dealId}/advance`, payload);
+                await post(`/brand/contracts/${this.contractId}/advance`, payload);
                 await this.refresh();
             } catch (e) {
                 if (e instanceof ApiError) this.errors = e.errors || { _: [e.message] };
@@ -693,7 +684,7 @@ document.addEventListener('alpine:init', () => {
         async reject() {
             this.acting = true;
             try {
-                await post(`/brand/deals/${this.dealId}/reject`, { reason: this.form.note || '' });
+                await post(`/brand/contracts/${this.contractId}/reject`, { reason: this.form.note || '' });
                 await this.refresh();
             } catch (e) {
                 if (e instanceof ApiError) window.alert(e.message);
@@ -705,7 +696,7 @@ document.addEventListener('alpine:init', () => {
         async skip() {
             this.acting = true;
             try {
-                await post(`/brand/deals/${this.dealId}/skip`, {});
+                await post(`/brand/contracts/${this.contractId}/skip`, {});
                 await this.refresh();
             } catch (e) {
                 if (e instanceof ApiError) window.alert(e.message);
@@ -718,7 +709,7 @@ document.addEventListener('alpine:init', () => {
             if (!this.messageBody.trim()) return;
             this.sending = true;
             try {
-                await post(`/brand/deals/${this.dealId}/message`, { body: this.messageBody });
+                await post(`/brand/contracts/${this.contractId}/message`, { body: this.messageBody });
                 this.messageBody = '';
                 await this.refresh();
             } catch (e) {

@@ -31,28 +31,28 @@
         <x-ui.stat :label="__('Blocks · skills')" :value="$stats['blocks'].' · '.$stats['skills']" />
     </div>
 
-    <x-ui.section class="mt-10" :title="__('Active deals')" :eyebrow="__('Whose turn')">
-        @if ($activeDeals->isEmpty())
+    <x-ui.section class="mt-10" :title="__('Active contracts')" :eyebrow="__('Whose turn')">
+        @if ($activeContracts->isEmpty())
             <x-ui.card class="flex items-center justify-between gap-4">
-                <p class="text-muted">{{ __('No active deals yet — enquiries from brands will open here.') }}</p>
-                <a href="{{ route('talent.deals') }}" class="shrink-0 text-xs text-accent-ink underline">{{ __('All deals') }}</a>
+                <p class="text-muted">{{ __('No active contracts yet — enquiries from brands will open here.') }}</p>
+                <a href="{{ route('talent.contracts') }}" class="shrink-0 text-xs text-accent-ink underline">{{ __('All contracts') }}</a>
             </x-ui.card>
         @else
             <div class="space-y-2">
-                @foreach ($activeDeals as $deal)
-                    <a href="{{ route('talent.deals.show', $deal) }}"
-                       class="flex items-center justify-between gap-3 rounded-lg border border-line bg-surface p-4 transition hover:border-line-strong {{ $deal->status->getValue() === 'awaiting_talent' ? 'ring-1 ring-accent' : '' }}">
+                @foreach ($activeContracts as $contract)
+                    <a href="{{ route('talent.contracts.show', $contract) }}"
+                       class="flex items-center justify-between gap-3 rounded-lg border border-line bg-surface p-4 transition hover:border-line-strong {{ $contract->status->getValue() === 'awaiting_talent' ? 'ring-1 ring-accent' : '' }}">
                         <div class="min-w-0">
-                            <div class="font-mono text-[10px] uppercase tracking-wider text-subtle">{{ $deal->reference }}</div>
-                            <div class="font-display text-lg text-ink">{{ $deal->title }}</div>
-                            <div class="text-sm text-muted">{{ $deal->brand?->name }}</div>
+                            <div class="font-mono text-[10px] uppercase tracking-wider text-subtle">{{ $contract->reference }}</div>
+                            <div class="font-display text-lg text-ink">{{ $contract->title }}</div>
+                            <div class="text-sm text-muted">{{ $contract->brand?->name }}</div>
                         </div>
                         <div class="shrink-0 text-end">
-                            <span class="rounded-pill px-2 py-1 text-[10px] font-medium {{ $deal->status->getValue() === 'awaiting_talent' ? 'bg-accent text-on-accent' : 'border border-line bg-surface text-muted' }}">
-                                {{ $deal->status->getValue() === 'awaiting_talent' ? __('Your turn') : str_replace('_', ' ', $deal->status->getValue()) }}
+                            <span class="rounded-pill px-2 py-1 text-[10px] font-medium {{ $contract->status->getValue() === 'awaiting_talent' ? 'bg-accent text-on-accent' : 'border border-line bg-surface text-muted' }}">
+                                {{ $contract->status->getValue() === 'awaiting_talent' ? __('Your turn') : str_replace('_', ' ', $contract->status->getValue()) }}
                             </span>
-                            @if ($deal->currentStep)
-                                <div class="mt-1 text-xs text-subtle">{{ $deal->currentStep->name }}</div>
+                            @if ($contract->currentStep)
+                                <div class="mt-1 text-xs text-subtle">{{ $contract->currentStep->name }}</div>
                             @endif
                         </div>
                     </a>
@@ -66,7 +66,7 @@
             @foreach ([
                 ['talent.profile.edit', __('Profile'), __('Identity, skills, username, publishing, pricing & blocks')],
                 ['talent.reviews', __('Reviews'), __('Moderate testimonials')],
-                ['talent.deals', __('Deals'), __('Your active bookings')],
+                ['talent.contracts', __('Contracts'), __('Your active bookings')],
             ] as [$route, $label, $desc])
                 <a href="{{ route($route) }}" class="group rounded-lg border border-line bg-surface p-5 transition hover:border-line-strong hover:shadow-e1">
                     <div class="font-medium text-ink group-hover:text-accent-ink">{{ $label }}</div>

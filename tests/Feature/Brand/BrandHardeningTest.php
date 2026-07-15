@@ -2,7 +2,7 @@
 
 use App\Models\Brand;
 use App\Models\BrandReview;
-use App\Models\Campaign;
+use App\Models\BrandProject;
 use App\Models\Talent;
 use App\Services\BrandOnboardingService;
 use Illuminate\Database\QueryException;
@@ -18,7 +18,7 @@ it('renders the public brand profile with a flat query count (no N+1)', function
         $brand = Brand::factory()->create(['slug' => $slug, 'name' => strtoupper($slug)]);
         $brand->credibility()->create(['completed_projects_count' => 1, 'response_rate_pct' => 80]);
         for ($i = 0; $i < $n; $i++) {
-            Campaign::factory()->for($brand)->create(['slug' => "{$slug}-c{$i}", 'is_public' => true, 'status' => 'open']);
+            BrandProject::factory()->for($brand)->create(['slug' => "{$slug}-c{$i}", 'is_public' => true, 'status' => 'open']);
             $brand->images()->create(['position' => $i]);
             BrandReview::factory()->for($brand)->create(['is_approved' => true, 'status' => 'approved']);
         }
@@ -63,18 +63,18 @@ it('paginates the discovery feed without per-talent queries (no N+1)', function 
 
 it('paginates the campaigns list with a flat query count (no N+1)', function () {
     $brand = Brand::factory()->create();
-    Campaign::factory()->count(2)->for($brand)->create();
+    BrandProject::factory()->count(2)->for($brand)->create();
 
-    $this->actingAs($brand, 'brand')->getJson('/brand/campaigns/data'); // warm up
+    $this->actingAs($brand, 'brand')->getJson('/brand/projects/data'); // warm up
 
     DB::flushQueryLog();
     DB::enableQueryLog();
-    $this->actingAs($brand, 'brand')->getJson('/brand/campaigns/data')->assertOk();
+    $this->actingAs($brand, 'brand')->getJson('/brand/projects/data')->assertOk();
     $qA = count(DB::getQueryLog());
 
-    Campaign::factory()->count(4)->for($brand)->create();
+    BrandProject::factory()->count(4)->for($brand)->create();
     DB::flushQueryLog();
-    $this->actingAs($brand, 'brand')->getJson('/brand/campaigns/data')->assertOk();
+    $this->actingAs($brand, 'brand')->getJson('/brand/projects/data')->assertOk();
     $qB = count(DB::getQueryLog());
 
     expect($qB)->toBe($qA);
@@ -123,10 +123,10 @@ it('publishes then unpublishes a complete brand', function () {
 it('rejects an illegal campaign transition over HTTP (422)', function () {
     $this->seed(TalentTypeSeeder::class);
     $brand = Brand::factory()->create();
-    $campaign = Campaign::factory()->for($brand)->create(['status' => 'draft']);
+    $campaign = BrandProject::factory()->for($brand)->create(['status' => 'draft']);
 
     $this->actingAs($brand, 'brand')
-        ->patchJson("/brand/campaigns/{$campaign->id}/status", ['action' => 'complete'])
+        ->patchJson("/brand/projects/{$campaign->id}/status", ['action' => 'complete'])
         ->assertStatus(422);
 });
 
@@ -136,11 +136,11 @@ it('rejects an illegal campaign transition over HTTP (422)', function () {
 
 it('scopes the campaign showcase to completed public campaigns', function () {
     $brand = Brand::factory()->create();
-    Campaign::factory()->for($brand)->create(['is_public' => true, 'status' => 'completed', 'slug' => 'show-a']);
-    Campaign::factory()->for($brand)->create(['is_public' => false, 'status' => 'completed', 'slug' => 'show-b']);
-    Campaign::factory()->for($brand)->create(['is_public' => true, 'status' => 'open', 'slug' => 'show-c']);
+    BrandProject::factory()->for($brand)->create(['is_public' => true, 'status' => 'completed', 'slug' => 'show-a']);
+    BrandProject::factory()->for($brand)->create(['is_public' => false, 'status' => 'completed', 'slug' => 'show-b']);
+    BrandProject::factory()->for($brand)->create(['is_public' => true, 'status' => 'open', 'slug' => 'show-c']);
 
-    expect(Campaign::showcase()->pluck('slug')->all())->toBe(['show-a']);
+    expect(BrandProject::showcase()->pluck('slug')->all())->toBe(['show-a']);
 });
 
 it('records a brief signal from the feed', function () {

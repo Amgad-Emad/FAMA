@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schema;
  * Drops the tables of the three removed talent features — the rate card
  * (`services`, ADR-K), affiliations (`agency_affiliations`) and press
  * (`press_features`) — the latter two per ADR-M. Runs after
- * `deals.service_id` / `deal_enquiries.service_id` have been dropped
+ * `contracts.service_id` / `contract_enquiries.service_id` have been dropped
  * (2026_07_10_000100).
  */
 return new class extends Migration

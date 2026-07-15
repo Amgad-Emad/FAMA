@@ -33,13 +33,13 @@ Catch → log to the **dedicated channel** with context → rethrow (or return a
 try {
     return DB::transaction(fn () => /* ... */);
 } catch (\Throwable $e) {
-    Log::channel('deals')->error($e->getMessage(), ['deal_id' => $id, 'exception' => $e]);
+    Log::channel('contracts')->error($e->getMessage(), ['contract_id' => $id, 'exception' => $e]);
     throw $e;
 }
 ```
 
 `Service::runInTransaction($cb, $context, $channel)` encapsulates exactly this. Channels: `app`
-(default), `auth`, `deals`, `media`.
+(default), `auth`, `contracts`, `media`.
 
 ## Transactions
 Any operation that writes to more than one table/row is wrapped in a transaction (via
@@ -79,9 +79,9 @@ still eager-load `media` on lists.
 Fama is bilingual (en/ar). Policy:
 - **Translate** free-text, human-facing copy that a user would reasonably localise: e.g. `headline`,
   `bio`, block `title`, project `title`/`summary`/`body`, campaign
-  `title`/`description`, deal-flow step `name`/`instructions`.
+  `title`/`description`, contract-flow step `name`/`instructions`.
 - **Do NOT translate:** identifiers, slugs, enums, emails, numbers, dates, URLs, foreign keys, or
-  machine keys (`block_types.key`, `deal_flow_steps.key`).
+  machine keys (`block_types.key`, `contract_flow_steps.key`).
 - Storage: translatable columns are `JSON`, declared via `use HasTranslations;` +
   `public array $translatable = ['headline', 'bio', ...];`. Read/write resolve to the active locale;
   use `->getTranslation($attr, $locale)` / `->setTranslation(...)` for explicit locales.
@@ -145,8 +145,9 @@ IDs, so every FK is intact; old `?skill=` deep links break (accepted pre-launch,
 
 ## QA checklist — talent slice (manual)
 
-Run against the seeded demo (`php artisan migrate:fresh --seed`; talent `demo.talent@fama.test`,
-slug `demo-talent`). Every dashboard interaction is Ajax — **no full page reload** should occur except
+Run against the seeded demo (`php artisan migrate:fresh --seed`; talent `talent-demo@fama.test`,
+brand `brand-demo@fama.test`, password `password`; slug `demo-talent`). Every dashboard interaction is
+Ajax — **no full page reload** should occur except
 logout. Toggle theme + locale on each page and confirm both render.
 
 **Public pages** (no login)
@@ -173,7 +174,7 @@ logout. Toggle theme + locale on each page and confirm both render.
 - [ ] `/{slug}/work/{project}` — one project expands (cover, client/role/year, summary, results, body).
       A foreign/unpublished project 404s.
 - [ ] `/{slug}/review` — submit writes a **pending** review (shows in the talent's moderation queue).
-- [ ] `/{slug}/enquire` — submit lands in `deal_enquiries` (always allowed — no availability gate).
+- [ ] `/{slug}/enquire` — submit lands in `contract_enquiries` (always allowed — no availability gate).
 - [ ] `/discover` — **skills-first**: the primary **Skills** control is a **sticky bar** (sticks under the
       header while results scroll) with a **Skills** heading, a **selected-count** badge, and an **"All"**
       reset chip **beside** the groups (**"All" is a neutral reset — NOT a default selection**: no filled state,
@@ -202,8 +203,8 @@ logout. Toggle theme + locale on each page and confirm both render.
       (not the page). Verify **dark/light + RTL** (modal, scrim, and bottom sheet mirror) and
       **prefers-reduced-motion**. (No availability filter — ADR-L.)
 
-**Talent dashboard** (`auth:talent`) — sidebar is **Home · Profile · Content · Reviews · Deals**
-- [ ] Home — status (draft/live), views, pending-reviews count, **active deals with whose-turn**
+**Talent dashboard** (`auth:talent`) — sidebar is **Home · Profile · Content · Reviews · Contracts**
+- [ ] Home — status (draft/live), views, pending-reviews count, **active contracts with whose-turn**
       (awaiting_talent highlighted), quick links.
 - [ ] Profile editor — the single profile surface:
       - Publish/unpublish toggle (moved from Account); publishing a no-display-name profile → 422.
@@ -225,24 +226,24 @@ logout. Toggle theme + locale on each page and confirm both render.
 - [ ] Reviews — approve/reject in the moderation queue; filter by status.
 - [ ] No standalone **Professions** or **Account** tabs remain (folded into Profile).
 
-**Deals**
-- [ ] Inbox — deals listed with status + current step; `awaiting_talent` highlighted; status filter works;
+**Contracts**
+- [ ] Inbox — contracts listed with status + current step; `awaiting_talent` highlighted; status filter works;
       paginated.
-- [ ] Deal room — **timeline-first layout**: header on top (reference/title/counterparty/status/amount +
-      "← All deals"); the **message timeline is the central, wide column** (messages + system_events
+- [ ] Contract room — **timeline-first layout**: header on top (reference/title/counterparty/status/amount +
+      "← All contracts"); the **message timeline is the central, wide column** (messages + system_events
       interleaved, newest at bottom) with the composer; the **side panel** (narrower, right) holds the
       **current-step action panel** at the top then the **Phases stepper** below it. The action panel
       matches the current `step_type` (form/approval/upload/payment/contract/schedule/message/info) and is
       read-only when it's not the talent's turn. Sending a message and acting on a step both update the
       timeline + stepper via **Ajax with no reload**. On narrow screens the side panel stacks under the
       timeline. Verify **dark/light + RTL** (the whole layout mirrors).
-- [ ] The seeded deals cover three states: **awaiting_talent** (quote), **awaiting_brand** (approval),
+- [ ] The seeded contracts cover three states: **awaiting_talent** (quote), **awaiting_brand** (approval),
       **completed** (full loop).
 
 **Cross-cutting**
 - [ ] Dark ⇄ light toggle persists across pages; RTL (`/ar`) mirrors layout and shows Arabic strings;
       EN switch returns to the default locale.
-- [ ] Acting on another talent's resource → 403; acting out of turn on a deal → 422.
+- [ ] Acting on another talent's resource → 403; acting out of turn on a contract → 422.
 - [ ] No `LazyLoadingViolationException` on any page (preventLazyLoading is on outside production);
       every list is paginated + eager-loaded.
 
@@ -267,28 +268,28 @@ logout. Toggle theme + locale on each page and confirm both render (all colours 
       finish); finishing flips `is_complete` and lands on the dashboard with the first feed.
 
 **Brand dashboard** (`auth:brand`, complete brand)
-- [ ] Home — publish status, completed-projects / active-deals / campaigns counts, **active deals with
+- [ ] Home — publish status, completed-projects / active-contracts / campaigns counts, **active contracts with
       whose-turn** (awaiting_brand highlighted), recent campaigns, discovery entry.
 - [ ] Profile editor — core fields (inline save), logo/cover upload, aesthetic + mood tags, image gallery
       add/remove, social handles add/remove.
 - [ ] Creative needs — talent types / project types / frequency / budget; saved inline (reshapes the feed).
 - [ ] Campaigns — create (with roles + quantities); workspace: lifecycle buttons (open → start → complete
-      / cancel — illegal transition 422), public toggle, add media, deals under the campaign.
+      / cancel — illegal transition 422), public toggle, add media, contracts under the campaign.
 - [ ] Discovery — personalised feed, load-more pagination, **Save** and **Send brief** write signals.
 - [ ] Reviews received — approved-only, read-only, three sub-ratings.
 - [ ] Account — settings/slug, **publish toggle** (blocked with 422 until onboarding is complete).
 
-**Deals** (brand side of the shared engine)
-- [ ] Inbox — deals listed with status + current step; `awaiting_brand` highlighted; status filter;
+**Contracts** (brand side of the shared engine)
+- [ ] Inbox — contracts listed with status + current step; `awaiting_brand` highlighted; status filter;
       paginated.
-- [ ] Deal room — stepper + action panel keyed by `step_type` (submit brief, accept/return quote, sign,
+- [ ] Contract room — stepper + action panel keyed by `step_type` (submit brief, accept/return quote, sign,
       pay); timeline + free messaging; read-only when it's not the brand's turn.
-- [ ] The seeded demo has a deal under a campaign (`deals.campaign_id`) and two campaigns at different
+- [ ] The seeded demo has a contract under a campaign (`contracts.campaign_id`) and two campaigns at different
       statuses (open + completed showcase).
 
 **Cross-cutting**
 - [ ] Dark ⇄ light toggle persists across pages; RTL (`/ar`) mirrors layout + shows Arabic strings.
-- [ ] Acting on another brand's resource (deal/campaign) → 403; illegal campaign transition or premature
+- [ ] Acting on another brand's resource (contract/campaign) → 403; illegal campaign transition or premature
       publish → 422.
 - [ ] No `LazyLoadingViolationException`; every list is paginated + eager-loaded (query counts stay flat
       as campaigns/images/talents grow — see `BrandHardeningTest`).

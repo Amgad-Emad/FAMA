@@ -8,9 +8,9 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\View\View;
 
 /**
- * Deal initiation — the booking CTA (talent-spec). Public, no-login: a visitor's
- * enquiry (a brief only) lands in `deal_enquiries` and converts to a real deal
- * once they authenticate as a brand (ConvertEnquiryToDeal, brand-side Phase 2).
+ * Contract initiation — the booking CTA (talent-spec). Public, no-login: a visitor's
+ * enquiry (a brief only) lands in `contract_enquiries` and converts to a real contract
+ * once they authenticate as a brand (ConvertEnquiryToContract, brand-side Phase 2).
  * Enquiries are always allowed — there is no availability gate.
  */
 class EnquiryController extends Controller
@@ -26,7 +26,7 @@ class EnquiryController extends Controller
     {
         $talent = $this->publishedTalent($slug);
 
-        $talent->dealEnquiries()->create($request->validated() + ['status' => 'new']);
+        $talent->contractEnquiries()->create($request->validated() + ['status' => 'new']);
 
         return response()->success(null, __('Your enquiry has been sent. The talent will be in touch.'), status: 201);
     }

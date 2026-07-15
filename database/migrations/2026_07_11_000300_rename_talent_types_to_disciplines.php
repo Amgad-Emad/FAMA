@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
  * DISCIPLINE/ACTIVITY, not the person (ADR-S): "Modeling", not "Model". Only
  * `name` (translatable en+ar), `slug`, `icon` (slug-derived) and `description`
  * change — **IDs are unchanged**, so every FK (talent_talent_type,
- * block_type_talent_type, campaign_talent_types, brand_creative_need_talent_type,
+ * block_type_talent_type, brand_project_talent_types, brand_creative_need_talent_type,
  * profile_blocks.talent_type_id, projects.talent_type_id) is untouched.
  *
  * On a fresh `migrate:fresh --seed` this is a no-op (talent_types is empty when the

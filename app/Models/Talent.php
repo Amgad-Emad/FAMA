@@ -189,23 +189,23 @@ class Talent extends Authenticatable implements HasMedia
     }
 
     /**
-     * Deals this talent is party to.
+     * Contracts this talent is party to.
      *
-     * @return HasMany<Deal, $this>
+     * @return HasMany<Contract, $this>
      */
-    public function deals(): HasMany
+    public function contracts(): HasMany
     {
-        return $this->hasMany(Deal::class);
+        return $this->hasMany(Contract::class);
     }
 
     /**
      * Pre-auth booking enquiries for this talent.
      *
-     * @return HasMany<DealEnquiry, $this>
+     * @return HasMany<ContractEnquiry, $this>
      */
-    public function dealEnquiries(): HasMany
+    public function contractEnquiries(): HasMany
     {
-        return $this->hasMany(DealEnquiry::class);
+        return $this->hasMany(ContractEnquiry::class);
     }
 
     /**

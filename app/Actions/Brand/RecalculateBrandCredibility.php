@@ -5,33 +5,33 @@ namespace App\Actions\Brand;
 use App\Actions\Contracts\Action;
 use App\Models\Brand;
 use App\Models\BrandCredibility;
-use App\Models\DealStep;
+use App\Models\ContractStep;
 
 /**
- * Recompute a brand's denormalized credibility counters from its deals
+ * Recompute a brand's denormalized credibility counters from its contracts
  * (brand-spec workflow 8). `completed_projects_count` is monotonic (completed
- * deals only accrue); response metrics recalculate; `brief_quality_score` is
- * internal. Idempotent — safe to run on every deal completion.
+ * contracts only accrue); response metrics recalculate; `brief_quality_score` is
+ * internal. Idempotent — safe to run on every contract completion.
  */
 class RecalculateBrandCredibility implements Action
 {
     public function __invoke(Brand $brand): BrandCredibility
     {
-        $deals = $brand->deals()->get(['id', 'status', 'created_at']);
-        $total = $deals->count();
-        $completed = $deals->filter(fn ($deal) => $deal->status->getValue() === 'completed')->count();
-        $engaged = $deals->filter(fn ($deal) => ! in_array($deal->status->getValue(), ['draft', 'declined', 'expired'], true))->count();
+        $contracts = $brand->contracts()->get(['id', 'status', 'created_at']);
+        $total = $contracts->count();
+        $completed = $contracts->filter(fn ($contract) => $contract->status->getValue() === 'completed')->count();
+        $engaged = $contracts->filter(fn ($contract) => ! in_array($contract->status->getValue(), ['draft', 'declined', 'expired'], true))->count();
 
         $responseRate = $total > 0 ? (int) round($engaged / $total * 100) : null;
 
-        // Average hours from a deal's creation to the brand's first completed step.
-        $brandSteps = DealStep::query()
-            ->whereIn('deal_id', $deals->pluck('id'))
+        // Average hours from a contract's creation to the brand's first completed step.
+        $brandSteps = ContractStep::query()
+            ->whereIn('contract_id', $contracts->pluck('id'))
             ->where('actor', 'brand')->where('status', 'completed')->whereNotNull('completed_at')
-            ->with('deal:id,created_at')
+            ->with('contract:id,created_at')
             ->get();
         $avgHours = $brandSteps->isNotEmpty()
-            ? round((float) $brandSteps->avg(fn ($step) => abs($step->deal->created_at->diffInMinutes($step->completed_at)) / 60), 2)
+            ? round((float) $brandSteps->avg(fn ($step) => abs($step->contract->created_at->diffInMinutes($step->completed_at)) / 60), 2)
             : null;
 
         // Internal brief-quality proxy: approved-review "creative respect" sentiment.

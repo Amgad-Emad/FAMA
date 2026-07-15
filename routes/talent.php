@@ -1,8 +1,9 @@
 <?php
 
+use App\Http\Controllers\Talent\ApplicationController;
 use App\Http\Controllers\Talent\BlockContentController;
 use App\Http\Controllers\Talent\DashboardController;
-use App\Http\Controllers\Talent\DealController;
+use App\Http\Controllers\Talent\ContractController;
 use App\Http\Controllers\Talent\ProfileEditorController;
 use App\Http\Controllers\Talent\ReviewController;
 use App\Http\Controllers\Talent\SkillController;
@@ -17,7 +18,7 @@ use Illuminate\Support\Facades\Route;
 | Page routes (GET) return Blade shells; every other action returns the shared
 | JSON envelope for the http.js/Alpine front-end (no page reloads).
 |
-| The sidebar is: Home · Profile · Content · Reviews · Deals. The Profile editor
+| The sidebar is: Home · Profile · Content · Reviews · Contracts. The Profile editor
 | is the single profile surface — identity, Skills, username, publish, pricing
 | rate, and the reorderable blocks (the old Professions + Account tabs folded in).
 |
@@ -54,15 +55,19 @@ Route::get('/reviews/data', [ReviewController::class, 'data'])->name('reviews.da
 Route::patch('/reviews/{review}/approve', [ReviewController::class, 'approve'])->name('reviews.approve');
 Route::patch('/reviews/{review}/reject', [ReviewController::class, 'reject'])->name('reviews.reject');
 
-// --- Deal room + inbox ------------------------------------------------------
-Route::get('/deals', [DealController::class, 'index'])->name('deals');
-Route::get('/deals/data', [DealController::class, 'data'])->name('deals.data');
-Route::get('/deals/{deal}', [DealController::class, 'show'])->name('deals.show');
-Route::get('/deals/{deal}/thread', [DealController::class, 'thread'])->name('deals.thread');
-Route::post('/deals/{deal}/advance', [DealController::class, 'advance'])->name('deals.advance');
-Route::post('/deals/{deal}/reject', [DealController::class, 'reject'])->name('deals.reject');
-Route::post('/deals/{deal}/skip', [DealController::class, 'skip'])->name('deals.skip');
-Route::post('/deals/{deal}/message', [DealController::class, 'message'])->name('deals.message');
+// --- Applications (talent applies to a brand project) -----------------------
+Route::get('/applications/mentions', [ApplicationController::class, 'mentions'])->name('applications.mentions');
+Route::post('/applications/{brandProject}', [ApplicationController::class, 'store'])->name('applications.store');
+
+// --- Contract room + inbox ------------------------------------------------------
+Route::get('/contracts', [ContractController::class, 'index'])->name('contracts');
+Route::get('/contracts/data', [ContractController::class, 'data'])->name('contracts.data');
+Route::get('/contracts/{contract}', [ContractController::class, 'show'])->name('contracts.show');
+Route::get('/contracts/{contract}/thread', [ContractController::class, 'thread'])->name('contracts.thread');
+Route::post('/contracts/{contract}/advance', [ContractController::class, 'advance'])->name('contracts.advance');
+Route::post('/contracts/{contract}/reject', [ContractController::class, 'reject'])->name('contracts.reject');
+Route::post('/contracts/{contract}/skip', [ContractController::class, 'skip'])->name('contracts.skip');
+Route::post('/contracts/{contract}/message', [ContractController::class, 'message'])->name('contracts.message');
 
 // --- Block content editors (child tables; content_source-aware) -------------
 Route::get('/content/{type}', [BlockContentController::class, 'index'])->name('content');

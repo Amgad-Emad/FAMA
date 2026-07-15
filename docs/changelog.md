@@ -2,6 +2,79 @@
 
 Notable changes to the Fama project. Newest first.
 
+> Note: entries below this one predate the Deal → Contract rename and still say "deal" — they are a
+> historical record and are intentionally left as written.
+
+## 2026-07-15 — Repo-wide rename: Deal → Contract
+
+- **Every "deal" is now a "contract"** — 122 files, ~1,555 occurrences, zero `deal` identifiers left in
+  `app/ database/ routes/ resources/ tests/ config/ lang/ docs/`.
+- **Models/tables:** `Deal`→`Contract`, `DealStep`→`ContractStep`, `DealMessage`→`ContractMessage`,
+  `DealFlow`→`ContractFlow`, `DealFlowStep`→`ContractFlowStep`, `DealEnquiry`→`ContractEnquiry`; tables
+  `deals`→`contracts`, `deal_steps`→`contract_steps`, `deal_messages`→`contract_messages`,
+  `deal_flows`→`contract_flows`, `deal_flow_steps`→`contract_flow_steps`,
+  `deal_enquiries`→`contract_enquiries`; FKs `deal_id`→`contract_id`, `deal_step_id`→`contract_step_id`,
+  `deal_flow_id`→`contract_flow_id`. Migrations edited in place → `php artisan migrate:fresh --seed`.
+- **Two naming collisions resolved** (both would have broken conventions):
+  `app/Deals/` → **`app/Contracting/`** and `app/Actions/Deals/` → **`app/Actions/Contracting/`** —
+  *not* `App\Contracts`, which is Laravel's convention for interfaces and already holds
+  `App\Actions\Contracts\Action`. The **`'contract'` step_type is unchanged** (it's the signing step, a
+  sub-type — so a Contract legitimately contains a contract-signing step).
+- Also renamed: `ContractService`, `ContractProgression`, `ContractCompleted`, the Initiate/Advance/
+  Convert actions, all three states, resources, both controllers, factories, `ContractFlowSeeder`,
+  routes (`/brand/contracts`, `/talent/contracts`, `*.contracts.*`), views (`*/contracts/`),
+  `resources/js/contracts.js` + its Alpine components (`contractsInbox`, `contractRoom`,
+  `brandContractRoom`, `brandContractsInbox`), tests (`tests/Feature/Contracts/`), and the **`contracts`
+  log channel** (`config/logging.php` + `storage/logs/contracts.log`).
+- **i18n:** keys renamed (Deal→Contract) *and* the Arabic values retuned from صفقة/صفقات → عقد/عقود,
+  including the gender agreement (صفقة is feminine, عقد masculine → "انتهى هذا العقد").
+- Docs + CLAUDE.md project-state updated in place. **Full Pest suite green (277)** — first run, no
+  regressions. No git.
+
+## 2026-07-15 — Apply to a project (rich-text brief + @mentions + attachments)
+
+- **The public project CTA is now "Apply", not "Message brand".** A talent opens a modal, writes a
+  **rich-text brief** (why they're a fit), can **@-mention their own portfolio projects**, and **attaches
+  files**; submitting opens (or reuses) the talent↔brand deal scoped to that project and posts the brief as its
+  opening message, then lands them in the deal room. Guests/brands get a talent-login link instead.
+- **Backend** (`Talent\ApplicationController`, talent-guarded): `GET /talent/applications/mentions` (the
+  talent's projects for the @-picker, filtered in PHP to dodge MySQL's case-sensitive JSON collation);
+  `POST /talent/applications/{brandProject}` (open+public+published only) → `DealService::applyToProject`
+  (reuse/open deal, post a rich message, attach media in one transaction).
+- **Security:** the brief is the ONLY user HTML Fama renders un-escaped, so it's sanitized server-side to a
+  strict allowlist (`App\Support\Html\BriefSanitizer`, DOMDocument): keeps p/br/b/i/u/ul/ol/li + mention
+  spans, strips every attribute (except `class="mention"`) and every disallowed tag (script/img/anchors
+  unwrapped). Messages carry an `is_rich` flag — rich briefs render via `x-html`, plain chat stays `x-text`.
+- **Attachments:** `DealMessage` is now `HasMedia` (an `attachments` collection); the deal-room timeline
+  (both sides) renders the brief HTML + downloadable file chips (media eager-loaded, no N+1).
+- **Editor:** a lightweight `contenteditable` rich editor (bold/italic/bullets via execCommand) with a
+  caret-anchored @-mention dropdown (keyboard-navigable), teleported + scroll-locked + focus-trapped modal.
+- **+6 tests** (mentions filter, application creates a talent-initiated deal + rich message + attachment,
+  sanitization strips scripts/handlers/images, empty-brief 422, closed/private 404, re-apply reuses the deal).
+  **Full Pest suite green (277).** No git.
+
+## 2026-07-15 — "Campaigns" → "Projects" rename, single-role projects, budget privacy
+
+- **Repo-wide rename Campaign → BrandProject** (the brand "Campaigns" feature is now "Projects" everywhere
+  users see it). The literal name `Project`/`projects` was already taken by the talent portfolio model/table, so
+  the brand code uses **`BrandProject` / `brand_projects`** (tables `brand_project_media`, FK
+  `brand_project_id`; the roles pivot was dropped — see below). All URLs/routes are `projects`
+  (`/brand/projects`, `/projects`, `/brands/{brand}/projects/{project}`), route names `*.projects.*` /
+  `projects.browse` / `brand.project.public`, Alpine components `brandProjects` / `brandProject` /
+  `projectBrowse`, and all UI text + Arabic are "Project(s)". The `type` enum keeps its `campaign`/`shoot`
+  values (a project's *kind*), and talent-portfolio "Campaign" sample strings are untouched (a different
+  concept). Migrations edited in place → run `php artisan migrate:fresh --seed`.
+- **Each project = one role, one position.** Dropped the multi-role `brand_project_talent_types` pivot +
+  `positions_count`; added `brand_projects.talent_type_id` (a single discipline). Service/requests/resources/
+  views/JS simplified from a roles editor to one discipline select.
+- **Budget public/private flag (ADR).** New `brand_projects.budget_is_public` (**private by default**). The
+  owning brand always sees the budget (with a Public/Private tag); the public project detail, opportunities
+  cards, and profile cards expose the budget **only when the brand opts in** (`PublicProjectCardResource`
+  nulls it otherwise; the detail view gates it server-side).
+- **"Message brand" removed from the public brand profile** (per request) — the CTA stays on the Opportunities
+  cards + project detail.
+- **Full Pest suite green (271).** No git.
+
 ## 2026-07-14 — Filters on the talent-facing discovery pages
 
 - **Discover brands** and **Opportunities** now filter **the same way as Discover talent**: a sticky primary

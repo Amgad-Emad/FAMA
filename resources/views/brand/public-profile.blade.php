@@ -69,8 +69,7 @@
                 @if ($brand->website)
                     <x-ui.button :href="$brand->website" variant="outline" size="sm" target="_blank" rel="noopener nofollow">{{ __('Website') }} ↗</x-ui.button>
                 @endif
-                <x-ui.button href="#campaigns" variant="outline" size="sm">{{ __('View campaigns') }}</x-ui.button>
-                <x-ui.button :href="route('brand.message', $brand->slug)" variant="primary" size="sm">{{ __('Message brand') }}</x-ui.button>
+                <x-ui.button href="#projects" variant="primary" size="sm">{{ __('View projects') }}</x-ui.button>
             </div>
         </x-ui.card>
     </section>
@@ -154,21 +153,21 @@
             </section>
 
             {{-- CAMPAIGNS --}}
-            <section id="campaigns" class="scroll-mt-24">
+            <section id="projects" class="scroll-mt-24">
                 <x-ui.eyebrow>{{ __('On Fama') }}</x-ui.eyebrow>
-                <h2 class="mt-1 font-display text-2xl tracking-tight text-ink sm:text-3xl">{{ __('Campaigns on FAMA') }}</h2>
-                @if ($brand->campaigns->isNotEmpty())
+                <h2 class="mt-1 font-display text-2xl tracking-tight text-ink sm:text-3xl">{{ __('Projects on FAMA') }}</h2>
+                @if ($brand->projects->isNotEmpty())
                     <div class="mt-5 grid gap-4 sm:grid-cols-2">
-                        @foreach ($brand->campaigns as $campaign)
+                        @foreach ($brand->projects as $campaign)
                             @php $budget = collect([$campaign->budget_min, $campaign->budget_max])->filter(fn ($v) => $v !== null); @endphp
-                            <a href="{{ route('brand.campaign.public', [$brand, $campaign]) }}"
+                            <a href="{{ route('brand.project.public', [$brand, $campaign]) }}"
                                class="group block overflow-hidden rounded-md border border-line bg-elevated shadow-e1 transition hover:-translate-y-0.5 hover:shadow-e3">
                                 <div class="relative aspect-[16/10] bg-surface bg-cover bg-center"
                                      @style([
                                          "background-image:url('{$campaign->cover_image_url}')" => $campaign->cover_image_url,
                                          'background-image:repeating-linear-gradient(135deg, var(--line) 0 1px, transparent 1px 12px)' => ! $campaign->cover_image_url,
                                      ])>
-                                    @if ($budget->isNotEmpty())
+                                    @if ($campaign->budget_is_public && $budget->isNotEmpty())
                                         <span class="absolute start-2.5 top-2.5 rounded-pill bg-surface/90 px-2.5 py-1 font-mono text-[10px] text-accent-ink backdrop-blur">{{ $budget->map(fn ($v) => number_format((float) $v))->implode('–') }} {{ $campaign->currency }}</span>
                                     @endif
                                 </div>
@@ -182,7 +181,7 @@
                         @endforeach
                     </div>
                 @else
-                    <x-ui.card class="mt-5 text-center text-sm text-muted">{{ __('No public campaigns yet.') }}</x-ui.card>
+                    <x-ui.card class="mt-5 text-center text-sm text-muted">{{ __('No public projects yet.') }}</x-ui.card>
                 @endif
             </section>
         </div>

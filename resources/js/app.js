@@ -7,9 +7,12 @@ window.Alpine = Alpine;
 
 // Talent dashboard Alpine components (register on alpine:init before start()).
 import './dashboard';
-import './deals';
+import './contracts';
 
 // Brand dashboard Alpine components.
 import './brand';
+
+// Apply-to-project modal (public project detail).
+import './apply';
 
 Alpine.start();

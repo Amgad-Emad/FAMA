@@ -3,30 +3,30 @@
 namespace App\Http\Controllers;
 
 use App\Models\Brand;
-use App\Models\Campaign;
-use App\Models\Deal;
-use App\Models\DealFlow;
-use App\Services\DealService;
+use App\Models\BrandProject;
+use App\Models\Contract;
+use App\Models\ContractFlow;
+use App\Services\ContractService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 /**
  * Talent↔brand messaging entry — the mirror of Brand\TalentMessageController
- * (ADR-P). A talent messages a brand inside a deal (the public brand profile and
+ * (ADR-P). A talent messages a brand inside a contract (the public brand profile and
  * the campaign browser both point their "Message" CTA here), so this opens the
  * brand↔talent thread:
  *  - Guest / non-talent → talent authentication, returning here afterwards.
- *  - Authenticated talent → the most recent deal with this brand, or a fresh one
+ *  - Authenticated talent → the most recent contract with this brand, or a fresh one
  *    started on the default flow (optionally tagged to the campaign the talent
- *    messaged about), then straight into the talent deal room.
+ *    messaged about), then straight into the talent contract room.
  */
 class BrandMessageController extends Controller
 {
-    public function __construct(private readonly DealService $deals) {}
+    public function __construct(private readonly ContractService $contracts) {}
 
     /**
-     * Open (or lazily start) the talent↔brand deal for $brand and land in its room.
+     * Open (or lazily start) the talent↔brand contract for $brand and land in its room.
      */
     public function __invoke(Request $request, Brand $brand): RedirectResponse
     {
@@ -42,31 +42,31 @@ class BrandMessageController extends Controller
 
         $talent = Auth::guard('talent')->user();
 
-        // Reuse the latest existing deal with this brand, else start one so there is
+        // Reuse the latest existing contract with this brand, else start one so there is
         // always a thread to message in.
-        $deal = Deal::where('brand_id', $brand->id)->where('talent_id', $talent->id)->latest()->first();
+        $contract = Contract::where('brand_id', $brand->id)->where('talent_id', $talent->id)->latest()->first();
 
-        if ($deal === null) {
-            $flow = DealFlow::where('is_default', true)->first() ?? DealFlow::query()->firstOrFail();
+        if ($contract === null) {
+            $flow = ContractFlow::where('is_default', true)->first() ?? ContractFlow::query()->firstOrFail();
 
-            $deal = $this->deals->initiate([
+            $contract = $this->contracts->initiate([
                 'brand_id' => $brand->id,
                 'talent_id' => $talent->id,
                 'title' => __('Conversation with :name', ['name' => $brand->name]),
                 'initiated_by' => 'talent',
             ], $flow);
 
-            // Tag the deal to the campaign the talent messaged about, when it belongs
-            // to this brand (campaign_id is force-filled — it is not mass-assignable).
-            $campaignId = $request->integer('campaign');
+            // Tag the contract to the campaign the talent messaged about, when it belongs
+            // to this brand (brand_project_id is force-filled — it is not mass-assignable).
+            $campaignId = $request->integer('project');
             if ($campaignId > 0) {
-                $campaign = Campaign::where('id', $campaignId)->where('brand_id', $brand->id)->first();
+                $campaign = BrandProject::where('id', $campaignId)->where('brand_id', $brand->id)->first();
                 if ($campaign !== null) {
-                    $deal->forceFill(['campaign_id' => $campaign->id])->save();
+                    $contract->forceFill(['brand_project_id' => $campaign->id])->save();
                 }
             }
         }
 
-        return redirect()->route('talent.deals.show', $deal);
+        return redirect()->route('talent.contracts.show', $contract);
     }
 }

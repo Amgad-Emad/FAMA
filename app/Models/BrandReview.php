@@ -11,7 +11,7 @@ use Spatie\ModelStates\HasStates;
 
 /**
  * Brand review (schema-master §4) — a talent rating a brand on three axes
- * (communication / fairness / creative respect), tied to a completed deal.
+ * (communication / fairness / creative respect), tied to a completed contract.
  * Mirrors the talent-side review lifecycle; `status` becomes a state machine in
  * Phase 2B with `is_approved` as its projection. `body` is kept in its original
  * language (not translatable), like talent reviews.
@@ -25,7 +25,7 @@ class BrandReview extends Model
      * @var list<string>
      */
     protected $fillable = [
-        'brand_id', 'talent_id', 'deal_id', 'communication_rating', 'fairness_rating',
+        'brand_id', 'talent_id', 'contract_id', 'communication_rating', 'fairness_rating',
         'creative_respect_rating', 'body', 'is_approved', 'status',
     ];
 
@@ -63,9 +63,9 @@ class BrandReview extends Model
         return $this->belongsTo(Talent::class);
     }
 
-    /** @return BelongsTo<Deal, $this> */
-    public function deal(): BelongsTo
+    /** @return BelongsTo<Contract, $this> */
+    public function contract(): BelongsTo
     {
-        return $this->belongsTo(Deal::class);
+        return $this->belongsTo(Contract::class);
     }
 }

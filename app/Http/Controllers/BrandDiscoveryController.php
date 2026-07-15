@@ -47,7 +47,7 @@ class BrandDiscoveryController extends Controller
             ->when(in_array($reach, self::REACH, true), fn ($query) => $query->where('geographic_reach', $reach))
             ->when($request->boolean('verified'), fn ($query) => $query->where('is_verified', true))
             ->with('media') // logo_url resolves from the media library
-            ->withCount(['campaigns' => fn ($query) => $query->where('is_public', true)->where('status', '!=', 'cancelled')])
+            ->withCount(['projects' => fn ($query) => $query->where('is_public', true)->where('status', '!=', 'cancelled')])
             ->orderByDesc('is_verified')
             ->latest()
             ->paginate(12)

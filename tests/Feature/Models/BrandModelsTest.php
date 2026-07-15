@@ -7,8 +7,8 @@ use App\Models\BrandCredibility;
 use App\Models\BrandReview;
 use App\Models\BrandSignal;
 use App\Models\BrandSocialHandle;
-use App\Models\Campaign;
-use App\Models\CampaignMedia;
+use App\Models\BrandProject;
+use App\Models\BrandProjectMedia;
 use App\Models\TalentType;
 use Database\Seeders\TalentTypeSeeder;
 use Illuminate\Http\UploadedFile;
@@ -23,7 +23,7 @@ it('wires the brand satellite relationships', function () {
     $brand->socialHandles()->save(BrandSocialHandle::factory()->make());
     $brand->signals()->save(BrandSignal::factory()->make(['talent_id' => null]));
     BrandReview::factory()->for($brand)->create();
-    Campaign::factory()->for($brand)->create();
+    BrandProject::factory()->for($brand)->create();
 
     $brand->refresh();
     expect($brand->aesthetic)->toBeInstanceOf(BrandAesthetic::class);
@@ -32,7 +32,7 @@ it('wires the brand satellite relationships', function () {
     expect($brand->socialHandles)->toHaveCount(1);
     expect($brand->signals)->toHaveCount(1);
     expect($brand->brandReviews)->toHaveCount(1);
-    expect($brand->campaigns)->toHaveCount(1);
+    expect($brand->projects)->toHaveCount(1);
 });
 
 it('translates the brand description', function () {
@@ -88,16 +88,14 @@ it('averages the three brand-review sub-ratings and defaults to pending', functi
     expect($review->status->getValue())->toBe('pending');
 });
 
-it('links a campaign to its roles (with quantity) and gallery', function () {
+it('links a project to its single role and gallery', function () {
     $this->seed(TalentTypeSeeder::class);
-    $campaign = Campaign::factory()->open()->create();
     $model = TalentType::where('slug', 'modeling')->firstOrFail();
+    $campaign = BrandProject::factory()->open()->create(['talent_type_id' => $model->id]);
 
-    $campaign->talentTypes()->attach($model->id, ['quantity' => 2]);
-    $campaign->gallery()->save(CampaignMedia::factory()->make());
+    $campaign->gallery()->save(BrandProjectMedia::factory()->make());
 
-    expect($campaign->talentTypes)->toHaveCount(1);
-    expect((int) $campaign->talentTypes->first()->pivot->quantity)->toBe(2);
+    expect($campaign->talentType->slug)->toBe('modeling');
     expect($campaign->gallery)->toHaveCount(1);
     expect($campaign->status->getValue())->toBe('open');
 });

@@ -3,7 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Brand;
-use App\Models\DealFlow;
+use App\Models\ContractFlow;
 use App\Models\Talent;
 use App\Models\TalentType;
 use Database\Seeders\Concerns\GeneratesCoverImages;
@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Hash;
  * One rich demo brand (Nomad Coffee Co., slug `nomad-coffee`) with the full
  * satellite graph + campaigns, so the brand profile, discovery, and campaign pages
  * have real data to render. Enriches the SAME `nomad-coffee` brand TalentDemoSeeder
- * creates for the demo talent's deals (matched on slug), so its deals and profile
+ * creates for the demo talent's contracts (matched on slug), so its contracts and profile
  * line up, and sets the demo brand login: **brand-demo@fama.test / password**.
  * Idempotent. Requires TalentTypeSeeder + runs after TalentDemoSeeder.
  */
@@ -27,7 +27,7 @@ class BrandDemoSeeder extends Seeder
     {
         DB::transaction(function (): void {
             // Keyed on the stable `slug` (not email): TalentDemoSeeder creates this
-            // same brand first for the demo talent's deals, so matching on slug
+            // same brand first for the demo talent's contracts, so matching on slug
             // enriches THAT brand and sets the demo login email (brand-demo@fama.test)
             // — matching on email would try to insert a duplicate `nomad-coffee` slug.
             $brand = Brand::updateOrCreate(['slug' => 'nomad-coffee'], [
@@ -89,47 +89,42 @@ class BrandDemoSeeder extends Seeder
                 ]);
             }
 
-            // A public campaign with roles + gallery.
-            $campaign = $brand->campaigns()->updateOrCreate(['slug' => 'autumn-menu-launch'], [
+            // A public project — one role (photography), public budget, + gallery.
+            $campaign = $brand->projects()->updateOrCreate(['slug' => 'autumn-menu-launch'], [
                 'title' => 'Autumn Menu Launch', 'type' => 'campaign',
                 'description' => ['en' => 'A lifestyle campaign introducing the autumn menu across three Cairo cafés.', 'ar' => 'حملة نمط حياة لتقديم قائمة الخريف في ثلاثة مقاهٍ بالقاهرة.'],
                 'status' => 'open', 'budget_min' => 20000, 'budget_max' => 60000, 'currency' => 'EGP',
-                'location_city' => 'Cairo', 'location_country' => 'Egypt', 'is_public' => true, 'positions_count' => 3,
+                'location_city' => 'Cairo', 'location_country' => 'Egypt', 'is_public' => true, 'budget_is_public' => true,
+                'talent_type_id' => TalentType::where('slug', 'photography')->value('id'),
             ]);
             $campaign->clearMediaCollection('cover');
             $campaign->addMedia($this->cover('autumn-cover', 1600, 900))->toMediaCollection('cover');
-            $campaign->talentTypes()->sync([
-                TalentType::where('slug', 'modeling')->value('id') => ['quantity' => 1],
-                TalentType::where('slug', 'photography')->value('id') => ['quantity' => 1],
-            ]);
             $campaign->gallery->each->delete();
             foreach (['Behind the scenes', 'Menu stills', 'Café interior'] as $i => $caption) {
                 $item = $campaign->gallery()->create(['media_type' => 'image', 'caption' => ['en' => $caption, 'ar' => $caption], 'position' => $i]);
                 $item->addMedia($this->cover('autumn-g'.$i, 1200, 800))->toMediaCollection('media');
             }
 
-            // A second campaign — a completed showcase (different status).
-            $showcase = $brand->campaigns()->updateOrCreate(['slug' => 'ramadan-lantern-series'], [
+            // A second project — a completed showcase (one role, private budget).
+            $showcase = $brand->projects()->updateOrCreate(['slug' => 'ramadan-lantern-series'], [
                 'title' => 'Ramadan Lantern Series', 'type' => 'shoot',
                 'description' => ['en' => 'A completed editorial series shot across old Cairo.', 'ar' => 'سلسلة تحريرية مكتملة صُوّرت في القاهرة القديمة.'],
                 'status' => 'completed', 'budget_min' => 15000, 'budget_max' => 35000, 'currency' => 'EGP',
-                'location_city' => 'Cairo', 'location_country' => 'Egypt', 'is_public' => true, 'positions_count' => 1,
+                'location_city' => 'Cairo', 'location_country' => 'Egypt', 'is_public' => true, 'budget_is_public' => false,
+                'talent_type_id' => TalentType::where('slug', 'photography')->value('id'),
             ]);
             $showcase->clearMediaCollection('cover');
             $showcase->addMedia($this->cover('ramadan-cover', 1600, 900))->toMediaCollection('cover');
-            $showcase->talentTypes()->sync([
-                TalentType::where('slug', 'photography')->value('id') => ['quantity' => 1],
-            ]);
 
-            // A COMPLETED deal running under the open campaign (deals.campaign_id), so
-            // the campaign workspace and deals inbox line up. Created THROUGH the deal
+            // A COMPLETED contract running under the open campaign (contracts.brand_project_id), so
+            // the campaign workspace and contracts inbox line up. Created THROUGH the contract
             // engine (not raw) so it has real snapshotted steps + a full message/step
-            // history — the deal room renders the counterparty, brief, and stepper.
-            $flow = DealFlow::where('slug', 'standard-booking')->first() ?? DealFlow::query()->first();
-            if ($flow !== null && isset($talent) && ! $brand->deals()->where('reference', 'NOMAD-AUTUMN-01')->exists()) {
-                $deals = app(\App\Services\DealService::class);
+            // history — the contract room renders the counterparty, brief, and stepper.
+            $flow = ContractFlow::where('slug', 'standard-booking')->first() ?? ContractFlow::query()->first();
+            if ($flow !== null && isset($talent) && ! $brand->contracts()->where('reference', 'NOMAD-AUTUMN-01')->exists()) {
+                $contracts = app(\App\Services\ContractService::class);
 
-                $deal = $deals->initiate([
+                $contract = $contracts->initiate([
                     'brand_id' => $brand->id, 'talent_id' => $talent->id,
                     'title' => 'Autumn Menu — lead photographer', 'initiated_by' => 'brand',
                     'brief' => 'Two-day lifestyle shoot for the autumn menu launch across three Cairo cafés.',
@@ -137,18 +132,19 @@ class BrandDemoSeeder extends Seeder
 
                 // Walk the whole loop to completed (mirrors the standard-booking flow).
                 $brief = ['fields' => ['scope' => 'Autumn menu lifestyle shoot', 'dates' => 'Oct 12–14', 'budget' => 'EGP 30,000']];
-                $deals->advance($deal, $brief, 'brand', $brand);
-                $deals->advance($deal, ['fields' => ['amount' => 28000, 'note' => 'Includes usage rights']], 'talent', $talent);
-                $deals->advance($deal, ['note' => 'Approved — excited to start'], 'brand', $brand);
-                $deals->skip($deal, 'brand', $brand);
-                $deals->advance($deal, ['attachments' => ['autumn-final-delivery.zip']], 'talent', $talent);
-                $deals->advance($deal, ['note' => 'Beautiful work, thank you'], 'brand', $brand);
+                $contracts->advance($contract, $brief, 'brand', $brand);
+                $contracts->advance($contract, ['fields' => ['amount' => 28000, 'note' => 'Includes usage rights']], 'talent', $talent);
+                $contracts->advance($contract, ['note' => 'Approved — excited to start'], 'brand', $brand);
+                // The deposit is mandatory (never skippable) — pay it.
+                $contracts->advance($contract, ['confirmed' => true, 'reference' => 'DEP-NOMAD-01'], 'brand', $brand);
+                $contracts->advance($contract, ['attachments' => ['autumn-final-delivery.zip']], 'talent', $talent);
+                $contracts->advance($contract, ['note' => 'Beautiful work, thank you'], 'brand', $brand);
 
                 // Stamp the demo reference + campaign link (the engine assigns its own reference).
-                $deal->forceFill(['reference' => 'NOMAD-AUTUMN-01', 'campaign_id' => $campaign->id])->save();
+                $contract->forceFill(['reference' => 'NOMAD-AUTUMN-01', 'brand_project_id' => $campaign->id])->save();
             }
 
-            // Credibility counters — set LAST: completing the deal above fires the
+            // Credibility counters — set LAST: completing the contract above fires the
             // "recalc credibility" side effect, so these curated demo numbers win.
             $brand->credibility()->updateOrCreate([], [
                 'completed_projects_count' => 18, 'avg_response_time_hours' => 4.5,

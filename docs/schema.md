@@ -28,7 +28,7 @@
 
 > **Removed features (ADR-K/L/M):** `services`, `agency_affiliations`, `press_features` (tables +
 > models + block types), the `talents` columns `availability_status` / `rate_tier` /
-> `willing_to_travel` / `travel_regions`, and `deals.service_id` / `deal_enquiries.service_id` were
+> `willing_to_travel` / `travel_regions`, and `contracts.service_id` / `contract_enquiries.service_id` were
 > dropped by the `2026_07_10_0001–0004` migrations.
 
 Deviations from the canonical schema (deliberate, per the standing decisions):
@@ -86,29 +86,29 @@ needed promoting on the talent side — only these indexes:
 Consumed by `App\Queries\TalentSearch` (spatie/laravel-query-builder) via `filter[type|category|
 city|country|equipment|software|looks|q]`.
 
-## Deal engine (Phase 1E — migrated)
+## Contract engine (Phase 1E — migrated)
 
-**Templates:** `deal_flows` (named, `applies_to` category scope, `is_default`), `deal_flow_steps`
+**Templates:** `contract_flows` (named, `applies_to` category scope, `is_default`), `contract_flow_steps`
 (ordered; `actor`, `step_type`, `is_required`/`is_skippable`, `settings` JSON).
 
-**Instances:** `deals` (soft deletes; `reference` unique, FK brand/talent/deal_flow;
-`current_step_id` → deal_steps; `status` state machine; headline brief/amount/dates; `initiated_by`),
-`deal_steps` (per-deal snapshot; `status` state machine; `payload` JSON; polymorphic `completed_by`),
-`deal_messages` (thread; `type` message/system_event/action_summary; polymorphic `sender`; `status`
-sent→read state machine + `read_at` projection), `deal_enquiries` (pre-auth Contact capture; converts
-to a deal, `converted_deal_id`).
+**Instances:** `contracts` (soft deletes; `reference` unique, FK brand/talent/contract_flow;
+`current_step_id` → contract_steps; `status` state machine; headline brief/amount/dates; `initiated_by`),
+`contract_steps` (per-contract snapshot; `status` state machine; `payload` JSON; polymorphic `completed_by`),
+`contract_messages` (thread; `type` message/system_event/action_summary; polymorphic `sender`; `status`
+sent→read state machine + `read_at` projection), `contract_enquiries` (pre-auth Contact capture; converts
+to a contract, `converted_contract_id`).
 
 Deviations (deliberate):
 
 - **`brands` is a MINIMAL stub** (`create_brands_stub_table`): auth surface + `name`/`slug` +
-  `is_complete` deal gate + flags, so `deals.brand_id` can FK and tests can seed brands. The full brand
+  `is_complete` contract gate + flags, so `contracts.brand_id` can FK and tests can seed brands. The full brand
   core & satellites (schema-master §4) are Phase 1B and **extend** this table.
-- **`deal_steps` snapshots `settings` + `is_required` + `is_skippable`** (not in schema-master's column
+- **`contract_steps` snapshots `settings` + `is_required` + `is_skippable`** (not in schema-master's column
   list). Required by ADR-4 — the handler config must be frozen at creation so template edits never
-  change an in-flight deal. `settings.instructions` carries the step's help text.
-- **`deal_messages.status`** (sent/read) is the DealMessage state-machine column; `read_at` is its
+  change an in-flight contract. `settings.instructions` carries the step's help text.
+- **`contract_messages.status`** (sent/read) is the ContractMessage state-machine column; `read_at` is its
   synced projection (same convention as the Phase 1B state columns).
-- **`campaign_id`** on deals is still deferred (ADR-F), added with campaigns.
+- **`campaign_id`** on contracts is still deferred (ADR-F), added with campaigns.
 
 ## Brand core & satellites (Phase 2A — migrated)
 
@@ -147,6 +147,6 @@ UNIQUE(campaign_id, talent_type_id), `quantity`), `campaign_media` (gallery; upl
 - **Platform:** `settings` (key-value config).
 
 ## Open schema items (from the specs / decisions)
-- `deals.campaign_id` — FK deals → campaigns (ADR-F), added when the campaign⇄deal link is finalised
-  (campaigns now exist, so this can land in the brand deal phase, 2C).
+- `contracts.campaign_id` — FK contracts → campaigns (ADR-F), added when the campaign⇄contract link is finalised
+  (campaigns now exist, so this can land in the brand contract phase, 2C).
 - Discovery/search (ADR-6): **applied for both talent (Phase 1C) and brand (Phase 2A)** sides.

@@ -1,10 +1,10 @@
 <?php
 
 use App\Models\Brand;
-use App\Models\DealFlow;
+use App\Models\ContractFlow;
 use App\Models\Talent;
 use App\Models\User;
-use App\Services\DealService;
+use App\Services\ContractService;
 use Database\Seeders\BlockTypeSeeder;
 use Database\Seeders\TalentTypeSeeder;
 
@@ -13,15 +13,15 @@ beforeEach(function () {
     $this->seed([TalentTypeSeeder::class, BlockTypeSeeder::class]);
 });
 
-it('shows active deals with whose-turn on the dashboard home', function () {
+it('shows active contracts with whose-turn on the dashboard home', function () {
     $talent = Talent::factory()->create();
-    $deals = app(DealService::class);
-    $deal = $deals->initiate([
+    $contracts = app(ContractService::class);
+    $contract = $contracts->initiate([
         'brand_id' => Brand::factory()->create()->id, 'talent_id' => $talent->id,
         'title' => 'Autumn campaign shoot', 'initiated_by' => 'brand',
-    ], DealFlow::factory()->standard()->create());
+    ], ContractFlow::factory()->standard()->create());
     // brand submits the brief → now it's the talent's turn (awaiting_talent).
-    $deals->advance($deal, ['fields' => ['scope' => 'x', 'dates' => 'y', 'budget' => 'z']], 'brand', $deal->brand);
+    $contracts->advance($contract, ['fields' => ['scope' => 'x', 'dates' => 'y', 'budget' => 'z']], 'brand', $contract->brand);
 
     $this->actingAs($talent, 'talent')->get(route('talent.dashboard'))
         ->assertOk()

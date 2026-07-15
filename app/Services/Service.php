@@ -20,7 +20,7 @@ abstract class Service
 {
     /**
      * The default log channel for this service's failures. Override per domain
-     * service (e.g. 'deals', 'media'); defaults to the app channel.
+     * service (e.g. 'contracts', 'media'); defaults to the app channel.
      */
     protected string $logChannel = 'app';
 
