@@ -69,7 +69,8 @@
                 @if ($brand->website)
                     <x-ui.button :href="$brand->website" variant="outline" size="sm" target="_blank" rel="noopener nofollow">{{ __('Website') }} ↗</x-ui.button>
                 @endif
-                <x-ui.button href="#campaigns" variant="primary" size="sm">{{ __('View campaigns') }}</x-ui.button>
+                <x-ui.button href="#campaigns" variant="outline" size="sm">{{ __('View campaigns') }}</x-ui.button>
+                <x-ui.button :href="route('brand.message', $brand->slug)" variant="primary" size="sm">{{ __('Message brand') }}</x-ui.button>
             </div>
         </x-ui.card>
     </section>

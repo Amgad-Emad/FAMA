@@ -122,7 +122,8 @@
                             </div>
                         @endforeach
                     </div>
-                    <x-ui.button :href="route('brand.public', $brand)" variant="primary" class="w-full">{{ __('View brand') }}</x-ui.button>
+                    <x-ui.button :href="route('brand.message', ['brand' => $brand->slug, 'campaign' => $campaign->id])" variant="primary" class="w-full">{{ __('Message brand') }}</x-ui.button>
+                    <x-ui.button :href="route('brand.public', $brand)" variant="outline" class="w-full">{{ __('View brand') }}</x-ui.button>
                 </x-ui.card>
             </aside>
         </div>

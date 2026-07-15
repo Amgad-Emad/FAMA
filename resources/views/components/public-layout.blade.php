@@ -24,6 +24,8 @@
                 </a>
                 <div class="flex items-center gap-3">
                     <a href="{{ route('discover') }}" class="hidden text-sm font-medium text-muted hover:text-ink sm:inline">{{ __('Discover') }}</a>
+                    <a href="{{ route('brands.discover') }}" class="hidden text-sm font-medium text-muted hover:text-ink sm:inline">{{ __('Brands') }}</a>
+                    <a href="{{ route('campaigns.browse') }}" class="hidden text-sm font-medium text-muted hover:text-ink sm:inline">{{ __('Opportunities') }}</a>
                     <x-public-locale-switcher />
                     <x-theme-toggle />
                 </div>

@@ -1,7 +1,10 @@
 <?php
 
 use App\Http\Controllers\Brand\TalentMessageController;
+use App\Http\Controllers\BrandDiscoveryController;
+use App\Http\Controllers\BrandMessageController;
 use App\Http\Controllers\BrandProfileController;
+use App\Http\Controllers\CampaignDiscoveryController;
 use App\Http\Controllers\DiscoveryController;
 use App\Http\Controllers\EnquiryController;
 use App\Http\Controllers\ProfileController;
@@ -73,6 +76,22 @@ Route::group([
     // --- Public discovery + talent sub-pages (before the {slug} catch-all) ---
     Route::get('/discover', [DiscoveryController::class, 'index'])->name('discover');
     Route::get('/discover/search', [DiscoveryController::class, 'search'])->name('discover.search');
+
+    // Public brand discovery (talent-facing). The static `/brands` + `/brands/feed`
+    // paths MUST be registered before the `/brands/{brand:slug}` binding, else
+    // "feed" is swallowed as a slug.
+    Route::get('/brands', [BrandDiscoveryController::class, 'index'])->name('brands.discover');
+    Route::get('/brands/feed', [BrandDiscoveryController::class, 'feed'])->name('brands.discover.feed');
+
+    // Public campaign browsing (talent-facing "opportunities" board).
+    Route::get('/campaigns', [CampaignDiscoveryController::class, 'index'])->name('campaigns.browse');
+    Route::get('/campaigns/feed', [CampaignDiscoveryController::class, 'feed'])->name('campaigns.browse.feed');
+
+    // Talent→brand messaging entry (mirror of brand.talents.message, ADR-P): the
+    // public brand profile / campaign browser "Message" CTA points here. Public on
+    // purpose — it branches on talent auth itself (guest → talent login with the
+    // return URL kept; talent → the brand↔talent deal room).
+    Route::get('/brands/{brand:slug}/message', BrandMessageController::class)->name('brand.message');
 
     // Public brand profile + campaign detail (two-segment paths, so they never
     // collide with the single-segment /{slug} talent catch-all; kept here for

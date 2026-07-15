@@ -7,6 +7,7 @@ use App\Http\Requests\Brand\UpdateCampaignRequest;
 use App\Http\Resources\CampaignResource;
 use App\Http\Resources\DealResource;
 use App\Models\Campaign;
+use App\Models\CampaignMedia;
 use App\Models\TalentType;
 use App\Services\CampaignService;
 use Illuminate\Http\JsonResponse;
@@ -110,6 +111,15 @@ class CampaignController extends BrandController
             __('Media added.'),
             status: 201,
         );
+    }
+
+    public function removeMedia(Campaign $campaign, CampaignMedia $media): JsonResponse
+    {
+        $this->ensureOwns($campaign);
+        abort_unless($media->campaign_id === $campaign->id, 404);
+        $media->delete();
+
+        return response()->success(null, __('Media removed.'));
     }
 
     public function destroy(Campaign $campaign): JsonResponse

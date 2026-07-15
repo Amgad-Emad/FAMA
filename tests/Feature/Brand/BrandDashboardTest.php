@@ -40,9 +40,15 @@ it('completes onboarding through the wizard endpoints and flips is_complete', fu
 it('renders every dashboard page for a complete brand', function () {
     $brand = Brand::factory()->create();
 
-    foreach (['dashboard', 'profile', 'creative-needs', 'campaigns', 'discover', 'deals', 'reviews', 'account'] as $page) {
+    // (Account + Creative needs were folded into Profile — its editor now holds the
+    // Settings, Visibility, and Creative-needs sections.)
+    foreach (['dashboard', 'profile', 'campaigns', 'discover', 'deals', 'reviews'] as $page) {
         $this->actingAs($brand, 'brand')->get("/brand/{$page}")->assertOk();
     }
+
+    // The old Account + Creative-needs URLs now redirect into the Profile editor.
+    $this->actingAs($brand, 'brand')->get('/brand/account')->assertRedirect(route('brand.profile'));
+    $this->actingAs($brand, 'brand')->get('/brand/creative-needs')->assertRedirect(route('brand.profile'));
 });
 
 it('returns a personalised discovery feed and records a browse signal', function () {

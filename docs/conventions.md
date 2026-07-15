@@ -248,7 +248,7 @@ logout. Toggle theme + locale on each page and confirm both render.
 
 ## QA checklist — brand slice (manual)
 
-Run against the seeded demo (`php artisan migrate:fresh --seed`; brand `nomad-coffee@fama.test` /
+Run against the seeded demo (`php artisan migrate:fresh --seed`; brand `brand-demo@fama.test` /
 `password`, slug `nomad-coffee`). Every dashboard interaction is Ajax — **no full page reload** except
 logout. Toggle theme + locale on each page and confirm both render (all colours are tokens; layouts are
 `dir`-aware — verified: no hardcoded colours in `resources/views/brand`, logical `start/end` props used).

@@ -36,7 +36,7 @@
         </div>
 
         {{-- Discovery entry --}}
-        <a href="{{ route('brand.discover') }}" class="flex items-center justify-between rounded-xl border border-line bg-accent-weak p-6 hover:opacity-90">
+        <a href="{{ route('discover') }}" class="flex items-center justify-between rounded-xl border border-line bg-accent-weak p-6 hover:opacity-90">
             <div>
                 <h3 class="font-display text-lg text-accent-ink">{{ __('Discover talent') }}</h3>
                 <p class="text-sm text-accent-ink/80">{{ __('A feed matched to your creative needs.') }}</p>

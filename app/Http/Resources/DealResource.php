@@ -28,7 +28,24 @@ class DealResource extends BaseResource
             'initiated_by' => $this->initiated_by,
             'is_talent_turn' => (string) $this->status === 'awaiting_talent',
             'is_brand_turn' => (string) $this->status === 'awaiting_brand',
-            'brand' => $this->whenLoaded('brand', fn () => ['name' => $this->brand?->name]),
+            'brand' => $this->whenLoaded('brand', fn () => $this->brand ? [
+                'name' => $this->brand->name,
+                'slug' => $this->brand->slug,
+            ] : null),
+            // The talent counterparty (shown in the brand deal room + inbox).
+            'talent' => $this->whenLoaded('talent', fn () => $this->talent ? [
+                'display_name' => $this->talent->display_name,
+                'slug' => $this->talent->slug,
+                'avatar_url' => $this->talent->avatar_url,
+            ] : null),
+            // The campaign this deal runs under, if any (ADR-F).
+            'campaign' => $this->whenLoaded('campaign', fn () => $this->campaign ? [
+                'title' => $this->campaign->title,
+                'slug' => $this->campaign->slug,
+            ] : null),
+            // Unread free-messages for the current viewer (set by the inbox withCount,
+            // scoped to the viewer's role — 0 when not counted).
+            'unread_count' => (int) ($this->unread_count ?? 0),
             'current_step' => $this->whenLoaded('currentStep', fn () => $this->currentStep ? [
                 'key' => $this->currentStep->key,
                 'name' => $this->currentStep->name,

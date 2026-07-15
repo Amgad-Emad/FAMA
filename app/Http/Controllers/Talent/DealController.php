@@ -30,6 +30,8 @@ class DealController extends TalentController
 
         $query = Deal::forTalent($this->talent()->getKey())
             ->with(['brand', 'currentStep'])
+            // Count the brand's unread free-messages so the inbox can badge them.
+            ->withCount(['messages as unread_count' => fn ($q) => $q->humanUnreadFor('talent')])
             ->latest();
 
         if (in_array($status, ['awaiting_talent', 'awaiting_brand', 'awaiting_admin', 'completed', 'draft', 'cancelled', 'declined', 'expired'], true)) {

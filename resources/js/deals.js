@@ -14,23 +14,41 @@ document.addEventListener('alpine:init', () => {
         meta: null,
         loading: true,
         status: '',
+        page: 1,
 
         async init() {
             await this.load();
+            // Live inbox: refresh unread badges + statuses every 20s (skip when hidden).
+            this._pollTimer = setInterval(() => this.poll(), 20000);
         },
+
+        destroy() { if (this._pollTimer) clearInterval(this._pollTimer); },
 
         async load(page = 1) {
             this.loading = true;
             try {
-                const params = new URLSearchParams();
-                if (this.status) params.set('status', this.status);
-                params.set('page', page);
-                const { data, meta } = await get(`/talent/deals/data?${params.toString()}`);
-                this.deals = data;
-                this.meta = meta;
+                this.deals = await this.fetch(page);
             } finally {
                 this.loading = false;
             }
+        },
+
+        // Quiet background refresh — keeps the current filter/page, no loading flag.
+        async poll() {
+            if (document.hidden) return;
+            try {
+                this.deals = await this.fetch(this.page);
+            } catch (e) { /* ignore transient poll errors */ }
+        },
+
+        async fetch(page) {
+            const params = new URLSearchParams();
+            if (this.status) params.set('status', this.status);
+            params.set('page', page);
+            const { data, meta } = await get(`/talent/deals/data?${params.toString()}`);
+            this.meta = meta;
+            this.page = page;
+            return data;
         },
 
         setStatus(status) {
@@ -55,6 +73,13 @@ document.addEventListener('alpine:init', () => {
 
         async init() {
             await this.refresh();
+            // Live thread: poll for new messages / step changes every 20s (skip when
+            // the tab is hidden). Cleared on teardown.
+            this._pollTimer = setInterval(() => this.poll(), 20000);
+        },
+
+        destroy() {
+            if (this._pollTimer) clearInterval(this._pollTimer);
         },
 
         async refresh() {
@@ -68,6 +93,24 @@ document.addEventListener('alpine:init', () => {
                 this.resetForm();
             } finally {
                 this.loading = false;
+            }
+        },
+
+        // Quiet background refresh — no loading flag, and it only resets the action
+        // form when the active step actually changed (so it never wipes what the
+        // user is typing).
+        async poll() {
+            if (document.hidden) return;
+            try {
+                const { data } = await get(`/talent/deals/${this.dealId}/thread`);
+                const prevStepId = this.currentStep?.id ?? null;
+                this.deal = data.deal;
+                this.steps = data.steps;
+                this.messages = data.messages;
+                this.canAct = data.can_act;
+                if ((this.currentStep?.id ?? null) !== prevStepId) this.resetForm();
+            } catch (e) {
+                /* ignore transient poll errors */
             }
         },
 

@@ -2,6 +2,84 @@
 
 Notable changes to the Fama project. Newest first.
 
+## 2026-07-14 — Filters on the talent-facing discovery pages
+
+- **Discover brands** and **Opportunities** now filter **the same way as Discover talent**: a sticky primary
+  chip bar (Brands → **Industry**; Campaigns → **Discipline** chips grouped by scope via the shared
+  `skill-filter-chips` partial) + an **Advanced filters** modal (teleported to `<body>`, scroll-locked,
+  focus-trapped, staged draft applied only on "Apply"), an active-filter summary row (removable chips + Clear
+  all), a live result count, and skeleton loaders.
+  - Brands advanced facets: **stage · reach · verified-only**. Campaigns advanced facets: **type · budget
+    min/max · city**.
+- **Backend:** `BrandDiscoveryController@feed` gained `industry`/`brand_stage`/`geographic_reach`/`verified`;
+  `CampaignDiscoveryController@feed` gained `type` (talent_type slugs, `whereHas`), `campaign_type`,
+  `budget_min`/`budget_max` (null-safe overlap), and `city`. Both stay paginated + eager-loaded (no N+1).
+- **JS:** factored the modal machinery into a shared `filterModal()` mixin (mirrors talentSearch — teleport,
+  scroll-lock, focus-trap; no x-transition on the teleported node) + a `disciplineIcon()` helper; `brandsDiscover`
+  and `campaignBrowse` rewritten around it. **+2 filter tests; full Pest suite green (270).** No git.
+
+## 2026-07-14 — Premium redesign of the brand campaign workspace
+
+- **Campaign detail page redesigned** from a flat stack of white cards into a premium workspace: a **hero**
+  (type eyebrow + coloured status pill + title + a 4-stage lifecycle stepper Draft→Open→In progress→Completed,
+  with a cancelled banner), a **KPI strip** (Budget · Deals · Positions · Location), and a **two-column body** —
+  main column (roles as cards, gallery, deals) + a sticky **Summary** sidebar (type/dates/currency, visibility
+  toggle, "View public listing" link) and a **Danger zone** (inline-confirm delete). The contextual lifecycle
+  CTA is the filled primary; Edit/Cancel are secondary.
+- **Gallery gained removal.** New `DELETE /brand/campaigns/{campaign}/media/{media}`
+  (`CampaignController@removeMedia`, ownership-checked + scoped to the campaign) with a hover remove control and
+  a dashed empty-state uploader. `brandCampaign` gained `removeMedia`, `destroy` (inline-confirm), `statusIndex`
+  + `totalPositions` getters. **+3 media tests.**
+- **i18n kept complete** — 13 new keys translated (lifecycle labels, Danger zone, Positions, …). **Full Pest
+  suite green (268).** No git.
+
+## 2026-07-14 — Talent-facing discovery, unread indicators, profile consolidation, i18n
+
+- **Unread-message indicators (both sides).** `DealResource` now exposes `unread_count` (the counterparty's
+  unread free-messages, via the `humanUnreadFor` scope); the brand + talent `DealController@data` set it with
+  `withCount`. Both inboxes badge unread deals (accent dot + count + ring) and now **poll every 20s** so the
+  badge appears live. Message ordering is deterministic on same-second sends — `Deal::messages()` already sorts
+  by `created_at` then the auto-increment `id`, and neither deal room re-sorts.
+- **Campaign editing.** The campaign detail page was read-only; the Edit button led nowhere editable. Added an
+  in-place **Edit details** form (title, type, budget, location, dates, roles, visibility) wired to the existing
+  `PATCH /brand/campaigns/{campaign}` endpoint, plus a read-only Details section. Editing is gated to
+  non-complete/cancelled campaigns.
+- **Profile consolidation continues (ADR-N pattern).** **Creative needs** folded into the Profile editor (like
+  Account before it): its section now lives in `brand/profile.blade.php` (talent types / project types /
+  frequency / budget tier), the nav item is gone, and `GET /brand/creative-needs` redirects to the profile
+  (the `PATCH` endpoint stays). Orphan view + `brandCreativeNeeds` component removed.
+- **Brand topbar** gained a **View public profile** link (published brands only → `brand.public`).
+- **Talent-facing discovery (new).** `GET /brands` (published-brand discovery) + `GET /campaigns` (open, public
+  campaigns = the "opportunities" board), each a Blade shell + paginated, eager-loaded Ajax feed
+  (`BrandDiscoveryController`, `CampaignDiscoveryController` + `BrandCardResource`, `PublicCampaignCardResource`).
+  Added to the talent sidebar + public header nav.
+- **Talent→brand messaging (ADR-P mirror).** `GET /brands/{brand:slug}/message` (`BrandMessageController`)
+  mirrors the brand→talent flow: guest → talent login (return URL kept); talent → the latest brand↔talent deal
+  or a fresh talent-initiated one (optionally tagged to the campaign via `?campaign=`), then the talent deal
+  room. "Message brand" CTAs added on the public brand profile + campaign detail + campaign cards.
+- **i18n.** Full `ar.json` audit (script-driven): every `__()` key across views/JS/PHP now has an Arabic value
+  — 95 keys added (incl. `Public`/`Private`/`View public profile`/`Message brand`/`Opportunities`), file
+  re-sorted case-insensitively (447 → 542 entries). Only `auth.password` resolves from `lang/ar/auth.php`.
+- **Full Pest suite green (265, +9 new tests for the discovery + messaging routes).** No git.
+
+## 2026-07-14 — Brand deal room shows full deal details
+
+- **Root cause of the empty brand pages: a stale JS build.** The bundle `fama.test` loaded predated the brand
+  Alpine components, so none of them initialised (empty Ajax lists, blank forms, dead buttons). Rebuilt
+  (`npm run build`) — the fresh bundle contains all 10 brand components; all data endpoints return correct
+  data; every button handler maps to a real route. **Fix = rebuild + hard-refresh.**
+- **`DealResource` never exposed the `talent` counterparty** — so the brand deal room header and deals inbox
+  both rendered a blank counterparty (`deal.talent?.display_name`). Added `talent` (name/slug/avatar) and
+  `campaign` (title/slug) via `whenLoaded`; the brand `DealController@thread` now eager-loads `campaign`.
+- **Deal room now renders the details:** a richer header (reference, title, campaign chip, counterparty with
+  avatar, agreed amount, status), a new **Deal details** card (brief, dates, initiated-by), plus the existing
+  phases stepper + timeline. `brandDealRoom` gained a `detailRows` getter (translatable labels passed from the
+  view).
+- **Demo deal made real:** the seeded campaign deal (`NOMAD-AUTUMN-01`) was created raw (0 steps) → the
+  stepper was empty. It's now created **through the deal engine** and walked to completed, so it has 7
+  snapshotted steps + 8 messages. Its credibility counters are set **after** completion so the "recalc
+  credibility" side effect doesn't overwrite the curated demo numbers. **Full Pest suite green (255).** No git.
+
 ## 2026-07-12 — Reconcile the brand slice with the talent-side edits (post-merge fixes)
 
 After merging `main` (talent side) into `brand-phase`, the brand code broke against changes it predated.

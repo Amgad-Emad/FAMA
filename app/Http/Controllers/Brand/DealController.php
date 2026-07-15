@@ -33,6 +33,8 @@ class DealController extends BrandController
         $query = Deal::query()
             ->where('brand_id', $this->brand()->getKey())
             ->with(['talent', 'currentStep'])
+            // Count the counterparty's unread free-messages so the inbox can badge them.
+            ->withCount(['messages as unread_count' => fn ($q) => $q->humanUnreadFor('brand')])
             ->latest();
 
         if (in_array($status, ['awaiting_brand', 'awaiting_talent', 'awaiting_admin', 'completed', 'draft', 'cancelled', 'declined', 'expired'], true)) {
@@ -56,7 +58,7 @@ class DealController extends BrandController
         $this->ensureOwns($deal);
         $this->deals->markThreadRead($deal, 'brand');
 
-        $deal->load(['talent', 'currentStep', 'steps', 'messages']);
+        $deal->load(['talent', 'campaign', 'currentStep', 'steps', 'messages']);
 
         return response()->success([
             'deal' => new DealResource($deal),

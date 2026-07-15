@@ -12,10 +12,12 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 /**
- * One rich demo brand (Nomad Coffee Co.) with the full satellite graph +
- * a campaign, so the brand profile, discovery, and campaign pages have real data
- * to render. Enriches the same brand the deal seeder uses (nomad-coffee), so its
- * deals and profile line up. Idempotent. Requires TalentTypeSeeder.
+ * One rich demo brand (Nomad Coffee Co., slug `nomad-coffee`) with the full
+ * satellite graph + campaigns, so the brand profile, discovery, and campaign pages
+ * have real data to render. Enriches the SAME `nomad-coffee` brand TalentDemoSeeder
+ * creates for the demo talent's deals (matched on slug), so its deals and profile
+ * line up, and sets the demo brand login: **brand-demo@fama.test / password**.
+ * Idempotent. Requires TalentTypeSeeder + runs after TalentDemoSeeder.
  */
 class BrandDemoSeeder extends Seeder
 {
@@ -24,10 +26,14 @@ class BrandDemoSeeder extends Seeder
     public function run(): void
     {
         DB::transaction(function (): void {
-            $brand = Brand::updateOrCreate(['email' => 'nomad-coffee@fama.test'], [
+            // Keyed on the stable `slug` (not email): TalentDemoSeeder creates this
+            // same brand first for the demo talent's deals, so matching on slug
+            // enriches THAT brand and sets the demo login email (brand-demo@fama.test)
+            // — matching on email would try to insert a duplicate `nomad-coffee` slug.
+            $brand = Brand::updateOrCreate(['slug' => 'nomad-coffee'], [
+                'email' => 'brand-demo@fama.test',
                 'password' => Hash::make('password'),
                 'name' => 'Nomad Coffee Co.',
-                'slug' => 'nomad-coffee',
                 'description' => ['en' => 'Specialty coffee roasters based in Cairo.', 'ar' => 'محمصة قهوة مختصة مقرها القاهرة.'],
                 'industry' => 'food_beverage',
                 'brand_stage' => 'growing',
@@ -66,12 +72,6 @@ class BrandDemoSeeder extends Seeder
             foreach (['campaign_video', 'social_content', 'lookbook'] as $projectType) {
                 $need->projectTypes()->create(['project_type' => $projectType]);
             }
-
-            // Credibility counters.
-            $brand->credibility()->updateOrCreate([], [
-                'completed_projects_count' => 18, 'avg_response_time_hours' => 4.5,
-                'response_rate_pct' => 96, 'brief_quality_score' => 4.6,
-            ]);
 
             // Social handles.
             $brand->socialHandles()->delete();
@@ -121,20 +121,39 @@ class BrandDemoSeeder extends Seeder
                 TalentType::where('slug', 'photography')->value('id') => ['quantity' => 1],
             ]);
 
-            // A deal running under the open campaign (deals.campaign_id), so the
-            // campaign workspace and deals inbox line up. Uses a seeded flow.
-            $flow = DealFlow::query()->first();
-            if ($flow !== null && isset($talent)) {
-                $brand->deals()->updateOrCreate(['reference' => 'NOMAD-AUTUMN-01'], [
-                    'talent_id' => $talent->id,
-                    'deal_flow_id' => $flow->id,
-                    'campaign_id' => $campaign->id,
-                    'status' => 'completed',
-                    'title' => 'Autumn Menu — lead photographer',
-                    'initiated_by' => 'brand',
-                    'agreed_amount' => 28000, 'currency' => 'EGP',
-                ]);
+            // A COMPLETED deal running under the open campaign (deals.campaign_id), so
+            // the campaign workspace and deals inbox line up. Created THROUGH the deal
+            // engine (not raw) so it has real snapshotted steps + a full message/step
+            // history — the deal room renders the counterparty, brief, and stepper.
+            $flow = DealFlow::where('slug', 'standard-booking')->first() ?? DealFlow::query()->first();
+            if ($flow !== null && isset($talent) && ! $brand->deals()->where('reference', 'NOMAD-AUTUMN-01')->exists()) {
+                $deals = app(\App\Services\DealService::class);
+
+                $deal = $deals->initiate([
+                    'brand_id' => $brand->id, 'talent_id' => $talent->id,
+                    'title' => 'Autumn Menu — lead photographer', 'initiated_by' => 'brand',
+                    'brief' => 'Two-day lifestyle shoot for the autumn menu launch across three Cairo cafés.',
+                ], $flow);
+
+                // Walk the whole loop to completed (mirrors the standard-booking flow).
+                $brief = ['fields' => ['scope' => 'Autumn menu lifestyle shoot', 'dates' => 'Oct 12–14', 'budget' => 'EGP 30,000']];
+                $deals->advance($deal, $brief, 'brand', $brand);
+                $deals->advance($deal, ['fields' => ['amount' => 28000, 'note' => 'Includes usage rights']], 'talent', $talent);
+                $deals->advance($deal, ['note' => 'Approved — excited to start'], 'brand', $brand);
+                $deals->skip($deal, 'brand', $brand);
+                $deals->advance($deal, ['attachments' => ['autumn-final-delivery.zip']], 'talent', $talent);
+                $deals->advance($deal, ['note' => 'Beautiful work, thank you'], 'brand', $brand);
+
+                // Stamp the demo reference + campaign link (the engine assigns its own reference).
+                $deal->forceFill(['reference' => 'NOMAD-AUTUMN-01', 'campaign_id' => $campaign->id])->save();
             }
+
+            // Credibility counters — set LAST: completing the deal above fires the
+            // "recalc credibility" side effect, so these curated demo numbers win.
+            $brand->credibility()->updateOrCreate([], [
+                'completed_projects_count' => 18, 'avg_response_time_hours' => 4.5,
+                'response_rate_pct' => 96, 'brief_quality_score' => 4.6,
+            ]);
         });
     }
 }

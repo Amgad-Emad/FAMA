@@ -105,6 +105,19 @@ document.addEventListener('alpine:init', () => {
         coreSaved: false,
         savingAesthetic: false,
 
+        // Account settings + publish (folded in from the old Account tab).
+        account: initial.account,
+        accountErrors: {},
+        savingAccount: false,
+        accountSaved: false,
+        published: initial.published,
+        publishing: false,
+
+        // Creative needs (folded in from the old Creative needs tab).
+        needs: initial.needs,
+        savingNeeds: false,
+        needsSaved: false,
+
         async init() {
             await this.loadImages();
             await this.loadHandles();
@@ -122,6 +135,36 @@ document.addEventListener('alpine:init', () => {
                 if (e instanceof ApiError) this.errors = e.errors || { _: [e.message] };
             } finally {
                 this.savingCore = false;
+            }
+        },
+
+        // Account settings (slug, founded year, company size, phone).
+        async saveAccount() {
+            this.accountErrors = {};
+            this.savingAccount = true;
+            this.accountSaved = false;
+            try {
+                const { data } = await patch('/brand/account', this.account);
+                if (data.slug) this.account.slug = data.slug;
+                this.accountSaved = true;
+                setTimeout(() => (this.accountSaved = false), 2000);
+            } catch (e) {
+                if (e instanceof ApiError) this.accountErrors = e.errors || { _: [e.message] };
+            } finally {
+                this.savingAccount = false;
+            }
+        },
+
+        // Publish / unpublish the brand profile.
+        async togglePublish() {
+            this.publishing = true;
+            try {
+                const { data } = await patch('/brand/account/publish', { publish: !this.published });
+                this.published = data.is_published;
+            } catch (e) {
+                if (e instanceof ApiError) window.alert(e.message);
+            } finally {
+                this.publishing = false;
             }
         },
 
@@ -152,6 +195,22 @@ document.addEventListener('alpine:init', () => {
             }
         },
         toggleMood(mood) { toggleIn(this.aesthetic.mood_tags, mood); },
+
+        // Creative-needs preferences (folded in from the old Creative needs tab).
+        toggleNeed(list, value) { toggleIn(this.needs[list], value); },
+        async saveNeeds() {
+            this.savingNeeds = true;
+            this.needsSaved = false;
+            try {
+                await patch('/brand/creative-needs', this.needs);
+                this.needsSaved = true;
+                setTimeout(() => (this.needsSaved = false), 2000);
+            } catch (e) {
+                if (e instanceof ApiError) window.alert(e.message);
+            } finally {
+                this.savingNeeds = false;
+            }
+        },
 
         async loadImages() {
             const { data } = await get('/brand/profile/images');
@@ -193,30 +252,7 @@ document.addEventListener('alpine:init', () => {
         },
     }));
 
-    // --- Creative-needs editor ----------------------------------------------
-    Alpine.data('brandCreativeNeeds', (initial) => ({
-        data: initial.data,
-        saving: false,
-        saved: false,
-        errors: {},
-
-        toggle(list, value) { toggleIn(this.data[list], value); },
-
-        async save() {
-            this.errors = {};
-            this.saving = true;
-            this.saved = false;
-            try {
-                await patch('/brand/creative-needs', this.data);
-                this.saved = true;
-                setTimeout(() => (this.saved = false), 2000);
-            } catch (e) {
-                if (e instanceof ApiError) this.errors = e.errors || { _: [e.message] };
-            } finally {
-                this.saving = false;
-            }
-        },
-    }));
+    // (The standalone Creative-needs editor was folded into brandProfile.)
 
     // --- Campaigns manager --------------------------------------------------
     Alpine.data('brandCampaigns', (initial) => ({
@@ -261,15 +297,35 @@ document.addEventListener('alpine:init', () => {
     }));
 
     // --- Single campaign workspace ------------------------------------------
-    Alpine.data('brandCampaign', (id) => ({
+    Alpine.data('brandCampaign', (id, initial = {}) => ({
         id,
         campaign: null,
         deals: [],
         loading: true,
         acting: false,
+        types: initial.types || [],
+        editing: false,
+        saving: false,
+        saved: false,
+        confirmingDelete: false,
+        deleting: false,
+        errors: {},
+        form: {},
         t,
 
         async init() { await this.refresh(); },
+
+        // Editing is only offered while the campaign is still mutable.
+        get editable() { return this.campaign && !['completed', 'cancelled'].includes(this.campaign.status); },
+
+        // Ordered lifecycle stage index (−1 for cancelled) — drives the stepper.
+        get statusIndex() { return ['draft', 'open', 'in_progress', 'completed'].indexOf(this.campaign?.status); },
+
+        // Sum of positions across all roles (falls back to role count).
+        get totalPositions() {
+            const roles = this.campaign?.roles || [];
+            return roles.reduce((sum, r) => sum + (Number(r.quantity) || 0), 0);
+        },
 
         async refresh() {
             this.loading = true;
@@ -279,6 +335,47 @@ document.addEventListener('alpine:init', () => {
                 this.deals = data.deals;
             } finally {
                 this.loading = false;
+            }
+        },
+
+        // Seed the edit form from the loaded campaign and reveal it.
+        startEdit() {
+            const c = this.campaign;
+            this.form = {
+                title: c.title || '',
+                type: c.type || 'campaign',
+                budget_min: c.budget_min,
+                budget_max: c.budget_max,
+                currency: c.currency || 'EGP',
+                location_city: c.location_city || '',
+                location_country: c.location_country || '',
+                start_date: c.start_date || '',
+                end_date: c.end_date || '',
+                is_public: !!c.is_public,
+                roles: (c.roles || []).map((r) => ({ talent_type_id: r.talent_type_id, quantity: r.quantity })),
+            };
+            this.errors = {};
+            this.editing = true;
+        },
+
+        cancelEdit() { this.editing = false; this.errors = {}; },
+
+        addRole() { this.form.roles.push({ talent_type_id: this.types[0]?.id, quantity: 1 }); },
+        removeRole(i) { this.form.roles.splice(i, 1); },
+
+        async save() {
+            this.saving = true;
+            this.errors = {};
+            try {
+                await patch(`/brand/campaigns/${this.id}`, this.form);
+                this.editing = false;
+                this.saved = true;
+                setTimeout(() => (this.saved = false), 2000);
+                await this.refresh();
+            } catch (e) {
+                if (e instanceof ApiError) this.errors = e.errors || { _: [e.message] };
+            } finally {
+                this.saving = false;
             }
         },
 
@@ -309,6 +406,29 @@ document.addEventListener('alpine:init', () => {
                 await this.refresh();
             } catch (e) {
                 if (e instanceof ApiError) window.alert(e.message);
+            } finally {
+                event.target.value = '';
+            }
+        },
+
+        async removeMedia(mediaId) {
+            try {
+                await del(`/brand/campaigns/${this.id}/media/${mediaId}`);
+                await this.refresh();
+            } catch (e) {
+                if (e instanceof ApiError) window.alert(e.message);
+            }
+        },
+
+        // Soft-delete the campaign, then return to the list.
+        async destroy() {
+            this.deleting = true;
+            try {
+                await del(`/brand/campaigns/${this.id}`);
+                window.location.href = '/brand/campaigns';
+            } catch (e) {
+                if (e instanceof ApiError) window.alert(e.message);
+                this.deleting = false;
             }
         },
     }));
@@ -410,29 +530,50 @@ document.addEventListener('alpine:init', () => {
         meta: null,
         loading: true,
         status: '',
+        page: 1,
 
-        async init() { await this.load(); },
+        async init() {
+            await this.load();
+            // Live inbox: refresh unread badges + statuses every 20s (skip when hidden).
+            this._pollTimer = setInterval(() => this.poll(), 20000);
+        },
+
+        destroy() { if (this._pollTimer) clearInterval(this._pollTimer); },
 
         async load(page = 1) {
             this.loading = true;
             try {
-                const params = new URLSearchParams();
-                if (this.status) params.set('status', this.status);
-                params.set('page', page);
-                const { data, meta } = await get(`/brand/deals/data?${params.toString()}`);
-                this.deals = data;
-                this.meta = meta;
+                this.deals = await this.fetch(page);
             } finally {
                 this.loading = false;
             }
+        },
+
+        // Quiet background refresh — keeps the current filter/page, no loading flag.
+        async poll() {
+            if (document.hidden) return;
+            try {
+                this.deals = await this.fetch(this.page);
+            } catch (e) { /* ignore transient poll errors */ }
+        },
+
+        async fetch(page) {
+            const params = new URLSearchParams();
+            if (this.status) params.set('status', this.status);
+            params.set('page', page);
+            const { data, meta } = await get(`/brand/deals/data?${params.toString()}`);
+            this.meta = meta;
+            this.page = page;
+            return data;
         },
 
         setStatus(status) { this.status = status; this.load(); },
     }));
 
     // --- Deal room (brand actor) --------------------------------------------
-    Alpine.data('brandDealRoom', (dealId) => ({
+    Alpine.data('brandDealRoom', (dealId, labels = {}) => ({
         dealId,
+        labels,
         deal: null,
         steps: [],
         messages: [],
@@ -444,7 +585,58 @@ document.addEventListener('alpine:init', () => {
         form: {},
         errors: {},
 
-        async init() { await this.refresh(); },
+        async init() {
+            await this.refresh();
+            // Live thread: poll for new messages / step changes every 20s (skip when
+            // the tab is hidden). Cleared on teardown.
+            this._pollTimer = setInterval(() => this.poll(), 20000);
+        },
+
+        destroy() {
+            if (this._pollTimer) clearInterval(this._pollTimer);
+        },
+
+        // Quiet background refresh — no loading flag; only resets the action form when
+        // the active step actually changed (so it never wipes what the user is typing).
+        async poll() {
+            if (document.hidden) return;
+            try {
+                const { data } = await get(`/brand/deals/${this.dealId}/thread`);
+                const prevStepId = this.currentStep?.id ?? null;
+                this.deal = data.deal;
+                this.steps = data.steps;
+                this.messages = data.messages;
+                this.canAct = data.can_act;
+                if ((this.currentStep?.id ?? null) !== prevStepId) this.resetForm();
+            } catch (e) {
+                /* ignore transient poll errors */
+            }
+        },
+
+        // Key/value detail rows for the "Deal details" card: the brief fields the
+        // brand submitted, plus the agreed dates + who initiated it.
+        get detailRows() {
+            const rows = [];
+            const brief = this.deal?.brief;
+            if (typeof brief === 'string' && brief.trim()) {
+                rows.push({ label: this.labels.brief || 'Brief', value: brief, wide: true });
+            } else if (brief && typeof brief === 'object') {
+                const fields = brief.fields ?? brief;
+                Object.entries(fields).forEach(([k, v]) => {
+                    if (v !== null && v !== '' && typeof v !== 'object') {
+                        rows.push({ label: this.humanize(k), value: String(v) });
+                    }
+                });
+            }
+            if (this.deal?.start_date) rows.push({ label: this.labels.startDate || 'Start date', value: this.deal.start_date });
+            if (this.deal?.end_date) rows.push({ label: this.labels.endDate || 'End date', value: this.deal.end_date });
+            if (this.deal?.initiated_by) rows.push({ label: this.labels.initiatedBy || 'Initiated by', value: this.deal.initiated_by });
+            return rows;
+        },
+
+        humanize(key) {
+            return String(key).replaceAll('_', ' ').replace(/^\w/, (c) => c.toUpperCase());
+        },
 
         async refresh() {
             this.loading = true;

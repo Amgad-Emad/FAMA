@@ -18,16 +18,24 @@
         <div x-show="!loading" class="space-y-2">
             <template x-for="deal in deals" :key="deal.id">
                 <a :href="'/talent/deals/' + deal.id"
-                   class="block rounded-lg border border-line bg-surface p-4 transition hover:border-line-strong"
-                   :class="deal.is_talent_turn ? 'ring-1 ring-accent' : ''">
+                   class="block rounded-lg border bg-surface p-4 transition hover:border-line-strong"
+                   :class="(deal.is_talent_turn || deal.unread_count > 0) ? 'border-accent/60 ring-1 ring-accent/40' : 'border-line'">
                     <div class="flex items-center justify-between gap-3">
                         <div class="min-w-0">
                             <div class="font-mono text-[10px] uppercase tracking-wider text-subtle" x-text="deal.reference"></div>
-                            <div class="font-display text-lg text-ink" x-text="deal.title"></div>
+                            <div class="flex items-center gap-2">
+                                {{-- New-message dot: the brand has sent messages you haven't read. --}}
+                                <span x-show="deal.unread_count > 0" x-cloak class="h-2 w-2 shrink-0 rounded-full bg-accent"></span>
+                                <div class="font-display text-lg text-ink" x-text="deal.title"></div>
+                            </div>
                             <div class="text-sm text-muted" x-text="deal.brand?.name"></div>
                         </div>
                         <div class="shrink-0 text-end">
-                            <span class="rounded-pill px-2 py-1 text-[10px] font-medium"
+                            <span x-show="deal.unread_count > 0" x-cloak
+                                  class="mb-1 inline-flex items-center gap-1 rounded-pill bg-accent px-2 py-0.5 text-[10px] font-semibold text-on-accent">
+                                <span x-text="deal.unread_count"></span> {{ __('new') }}
+                            </span>
+                            <span class="block rounded-pill px-2 py-1 text-[10px] font-medium"
                                   :class="deal.is_talent_turn ? 'bg-accent text-on-accent' : 'border border-line bg-surface text-muted'"
                                   x-text="deal.is_talent_turn ? '{{ __('Your turn') }}' : deal.status.replaceAll('_', ' ')"></span>
                             <div class="mt-1 text-xs text-subtle" x-show="deal.current_step" x-text="deal.current_step?.name"></div>

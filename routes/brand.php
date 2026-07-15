@@ -61,6 +61,7 @@ Route::patch('/campaigns/{campaign}', [CampaignController::class, 'update'])->na
 Route::patch('/campaigns/{campaign}/status', [CampaignController::class, 'status'])->name('campaigns.status');
 Route::patch('/campaigns/{campaign}/public', [CampaignController::class, 'setPublic'])->name('campaigns.public');
 Route::post('/campaigns/{campaign}/media', [CampaignController::class, 'addMedia'])->name('campaigns.media');
+Route::delete('/campaigns/{campaign}/media/{media}', [CampaignController::class, 'removeMedia'])->name('campaigns.media.destroy');
 Route::delete('/campaigns/{campaign}', [CampaignController::class, 'destroy'])->name('campaigns.destroy');
 
 // --- Discovery feed ---------------------------------------------------------

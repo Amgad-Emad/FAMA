@@ -145,9 +145,12 @@ class TalentDemoSeeder extends Seeder
             $flow = DealFlow::where('slug', 'standard-booking')->first();
             if ($flow !== null) {
                 $deals = app(DealService::class);
+                // Match on the stable `slug` (not email) so BrandDemoSeeder can later
+                // change the demo brand's login email without this re-inserting a
+                // duplicate slug on a subsequent seed.
                 $brand = fn (string $slug, string $name) => Brand::firstOrCreate(
-                    ['email' => $slug.'@fama.test'],
-                    ['password' => Hash::make('password'), 'name' => $name, 'slug' => $slug, 'is_complete' => true, 'is_active' => true],
+                    ['slug' => $slug],
+                    ['email' => $slug.'@fama.test', 'password' => Hash::make('password'), 'name' => $name, 'is_complete' => true, 'is_active' => true],
                 );
                 $start = fn (Brand $b, string $title, string $brief) => $deals->initiate(
                     ['brand_id' => $b->id, 'talent_id' => $talent->id, 'title' => $title, 'initiated_by' => 'brand', 'brief' => $brief],

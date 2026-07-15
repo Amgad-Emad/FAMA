@@ -40,13 +40,25 @@
         <div x-show="loading" class="py-10 text-center text-sm text-muted">{{ __('Loading…') }}</div>
         <div x-show="!loading" class="grid gap-3 sm:grid-cols-2">
             <template x-for="campaign in campaigns" :key="campaign.id">
-                <a :href="`/brand/campaigns/${campaign.id}`" class="block rounded-xl border border-line bg-surface p-5 hover:border-line-strong">
-                    <div class="flex items-center justify-between">
-                        <h3 class="font-display text-lg" x-text="campaign.title"></h3>
-                        <span class="rounded-pill bg-elevated px-2 py-0.5 text-xs text-muted" x-text="campaign.status"></span>
+                <div class="rounded-xl border border-line bg-surface p-5 shadow-e1 transition hover:border-line-strong">
+                    <div class="flex items-start justify-between gap-3">
+                        <a :href="`/brand/campaigns/${campaign.id}`" class="min-w-0 font-display text-lg text-ink transition hover:text-accent-ink" x-text="campaign.title"></a>
+                        <span class="shrink-0 rounded-pill px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
+                              :class="campaign.status === 'completed' ? 'bg-success-weak text-success' : (campaign.status === 'open' ? 'bg-accent-weak text-accent-ink' : (campaign.status === 'cancelled' ? 'bg-danger-weak text-danger' : 'bg-elevated text-muted'))"
+                              x-text="campaign.status.replaceAll('_', ' ')"></span>
                     </div>
                     <p class="mt-1 text-xs text-muted"><span x-text="campaign.deals_count || 0"></span> {{ __('deals') }} · <span x-text="campaign.is_public ? '{{ __('Public') }}' : '{{ __('Private') }}'"></span></p>
-                </a>
+                    {{-- Edit only while the campaign is still editable (not completed/cancelled). --}}
+                    <div class="mt-4 flex items-center gap-2">
+                        <a :href="`/brand/campaigns/${campaign.id}`" class="rounded-pill border border-line-strong px-3 py-1.5 text-xs font-medium text-muted transition hover:border-accent hover:text-ink">{{ __('View') }}</a>
+                        <template x-if="!['completed', 'cancelled'].includes(campaign.status)">
+                            <a :href="`/brand/campaigns/${campaign.id}`" class="inline-flex items-center gap-1.5 rounded-pill bg-accent px-3 py-1.5 text-xs font-medium text-on-accent transition hover:opacity-90">
+                                <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>
+                                {{ __('Edit') }}
+                            </a>
+                        </template>
+                    </div>
+                </div>
             </template>
             <template x-if="!campaigns.length"><p class="col-span-full rounded-lg border border-dashed border-line py-10 text-center text-sm text-muted">{{ __('No campaigns yet.') }}</p></template>
         </div>
