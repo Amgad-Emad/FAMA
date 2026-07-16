@@ -24,9 +24,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             TalentTypeSeeder::class,
             BlockTypeSeeder::class,
-            DealFlowSeeder::class,
-            RolesAndPermissionsSeeder::class,
-            SettingsSeeder::class,
+            ContractFlowSeeder::class,
             TalentDemoSeeder::class,
             TalentShowcaseSeeder::class,
             BrandDemoSeeder::class,

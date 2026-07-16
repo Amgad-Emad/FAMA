@@ -25,6 +25,9 @@ class BlockTypeResource extends BaseResource
             'content_source' => $this->content_source,
             'default_layout' => $this->default_layout,
             'is_repeatable' => (bool) $this->is_repeatable,
+            // Scope gates (ADR-Q) — the editor computes per-tab eligibility from these.
+            'category_gates' => $this->whenLoaded('categories', fn () => $this->categories->pluck('category')->all(), []),
+            'type_gates' => $this->whenLoaded('talentTypes', fn () => $this->talentTypes->pluck('id')->all(), []),
         ];
     }
 }

@@ -28,7 +28,7 @@ class ProfileBlock extends Model
      * @var list<string>
      */
     protected $fillable = [
-        'talent_id', 'block_type_id', 'title', 'position', 'is_visible', 'status',
+        'talent_id', 'block_type_id', 'talent_type_id', 'title', 'position', 'is_visible', 'status',
         'layout', 'settings', 'content',
     ];
 
@@ -80,6 +80,17 @@ class ProfileBlock extends Model
     public function blockType(): BelongsTo
     {
         return $this->belongsTo(BlockType::class);
+    }
+
+    /**
+     * The skill (tab) this block belongs to; NULL = a profile-level / universal
+     * block rendered above the tabs (ADR-Q).
+     *
+     * @return BelongsTo<TalentType, $this>
+     */
+    public function talentType(): BelongsTo
+    {
+        return $this->belongsTo(TalentType::class);
     }
 
     /**

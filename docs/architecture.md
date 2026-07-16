@@ -78,9 +78,12 @@ Three login entities, each its own session guard + Eloquent provider (`config/au
 - **RTL**: `<html dir>` comes from the locale; headings swap to the Arabic face via `--font-head`, and
   logical utilities (`ms-*`, `pe-*`, `text-start`, …) mirror the layout for `/ar`.
 - **Public talent profile** (`GET /{slug}` → `TalentProfileController` → `talent/profile.blade.php`):
-  renders the hero/identity header, then `profile_blocks` in `position` order, each block dispatched to
-  a `talent/blocks/{key}` partial (gallery, comp_card, services, reviews, brand_collabs, looks,
-  digitals, showreel, equipment, …) reading from eager-loaded relations. Missing media falls back to
+  renders the **Instagram-style, avatar-led header (no cover image — ADR-O)** — circular avatar,
+  display_name + @username, primary-skill/headline line, a Projects · Views · Rating stats row, bio,
+  optional link, the Pricing-rate chip, and Contact / Leave-a-review CTAs — then `profile_blocks` in
+  `position` order (skipping the `hero` block), each dispatched to a `talent/blocks/{key}` partial
+  (gallery, comp_card, reviews, brand_collabs, looks, digitals, showreel, equipment, …) reading from
+  eager-loaded relations. Missing media falls back to
   tasteful gradient/initials placeholders.
 - `resources/js/http.js` is the shared fetch wrapper: it attaches CSRF + `X-Requested-With` +
   `Accept: application/json`, parses the envelope, and throws `ApiError` (with the field error bag) so
@@ -91,8 +94,10 @@ Three login entities, each its own session guard + Eloquent provider (`config/au
 The talent "living creative passport" is a core (`talents`) plus a **malleable block system** and a set
 of content tables (`app/Models`, schema in `docs/schema.md`).
 
-- **Professions.** `talents` ⇄ `talent_types` many-to-many via `talent_talent_type` (`is_primary` leads
+- **Skills.** `talents` ⇄ `talent_types` many-to-many via `talent_talent_type` (`is_primary` leads
   the headline, `position` orders). Each `talent_type` carries `default_blocks` (ordered block keys).
+  `talent_types` is the **Skills catalog** — "Skills" is the product term; the table name is unchanged
+  (ADR-N).
 - **Block catalog.** `block_types` is the admin-governed catalog. `availability` gates who can add a
   block: `universal` | `by_category` (→ `block_type_category`) | `by_type` (→ `block_type_talent_type`).
   `content_source` says whether the block stores data inline (JSON) or in a rich content table.
@@ -103,7 +108,7 @@ of content tables (`app/Models`, schema in `docs/schema.md`).
 - **Media.** Every model holding uploaded files is `HasMedia` with single-file collections + a `thumb`
   conversion; `*_url` accessors resolve from the library (ADR-5, list in `docs/conventions.md`). External
   links/embeds stay as plain columns.
-- **Seeders.** `TalentTypeSeeder` (six professions) + `BlockTypeSeeder` (catalog) are the canonical
+- **Seeders.** `TalentTypeSeeder` (six skills) + `BlockTypeSeeder` (catalog) are the canonical
   reference data; `TalentDemoSeeder` builds one rich multi-type (model + photographer) talent for later
   phases to render.
 
@@ -116,18 +121,22 @@ Business logic lives in **services** (orchestration + transactions) and single-p
 lifecycles are **state machines**; side effects are **events**.
 
 **Actions** (`app/Actions`, invokable):
-- `MergeDefaultBlocksForTypes` — merge + de-dupe the `default_blocks` of a talent's types (ordered).
-- `SeedProfileBlocks` — seed `profile_blocks` from the merged defaults (idempotent; each default block
-  once), then move the profile `Created → Draft`.
+- `SeedBlocksForSkill` — seed **one skill's** `default_blocks` into that skill's tab (stamped with
+  `talent_type_id`, positioned + de-duped **within the scope**), then move the profile `Created → Draft`
+  (ADR-Q; replaces the old global-merge `MergeDefaultBlocksForTypes` / `SeedProfileBlocks`).
 
 **Services** (`app/Services`, extend `Service`; every multi-write op is `runInTransaction` + fail-logged):
-- `ProfileBlockService` — `availableBlockTypes()` (the picker: active + eligible − non-repeatable
-  already present), `addBlock`, `fillBlock`, `reorder`, `setVisibility`, `removeBlock`. Rendering
+- `ProfileBlockService` — **scope-aware** (ADR-Q). `availableBlockTypes($talent, ?$scope)` is the
+  per-scope picker (active + eligible in that scope − non-repeatable already present there; universal
+  blocks in any tab or the universal section, gated blocks only in an eligible skill's tab); `addBlock`
+  (into a scope), `fillBlock`, `reorder` (within a scope), `moveBlock` (re-stamp `talent_type_id`,
+  validated for eligibility + per-scope repeatability), `setVisibility`, `removeBlock`. Rendering
   resolves via `block_type_id → block_types`, so deactivated (grandfathered) blocks still render.
-- `ProfessionsService` — `addType` (merges defaults, seeds missing, dedupes), `removeType`,
-  `setPrimary`, `reorderTypes`.
-- `TalentProfileService` — core fields, hero image, availability, publish/unpublish, rate-card CRUD,
-  reviews moderation, affiliations & press.
+- `SkillsService` — `addType` (seeds **that skill's** tab via `SeedBlocksForSkill`), `removeType`
+  (deletes the tab's blocks but **preserves content** — items un-linked, projects un-scoped — and logs
+  it), `setPrimary`, `reorderTypes`. (Skills manager; renamed from `ProfessionsService` — ADR-N.)
+- `TalentProfileService` — core fields, the Pricing rate (`updatePricingRate`, all-or-nothing),
+  publish/unpublish, reviews moderation. *(The hero/cover uploader was removed — ADR-O.)*
 
 **State machines** (`app/States`, spatie/laravel-model-states). Each has explicit allowed transitions;
 the state is authoritative and a synced boolean/timestamp **projection** (kept by `SyncStateProjections`)
@@ -136,12 +145,11 @@ serves the Phase 1A queries/views.
 | Machine | Column | States | Projection |
 |---|---|---|---|
 | TalentProfile | `talents.status` | created → draft → live ⇄ unpublished → suspended/archived | `is_published` + `published_at` (via guarded `ToLive`) |
-| Availability | `talents.availability_status` | available ⇄ booked ⇄ unavailable | — |
 | Block | `profile_blocks.status` | visible ⇄ hidden | `is_visible` |
 | Review | `reviews.status` | pending → approved \| rejected | `is_approved` |
-| Service | `services.status` | active ⇄ paused | `is_active` |
-| Affiliation | `agency_affiliations.status` | current → past | `is_current` |
 | PortfolioMedia | `portfolio_items.status` | uploaded → processed → ordered → visible → archived | — |
+
+*(The Availability, Service, and Affiliation state machines were removed with their features — ADR-K/L/M.)*
 
 **Events / listeners** (auto-discovered in `app/Listeners` by handle() type-hint):
 - `TalentProfileViewed` → `IncrementProfileViewCount` (bumps `view_count`; controller dispatches it).
@@ -150,8 +158,8 @@ serves the Phase 1A queries/views.
 - medialibrary `ConversionHasBeenCompletedEvent` → `AdvancePortfolioMediaState` (uploaded → processed).
 
 **Policies** (`app/Policies`, auto-discovered): a talent may only manage its own resources
-(`TalentPolicy`, `ProfileBlockPolicy`, `ServicePolicy`, `ReviewPolicy`, `AgencyAffiliationPolicy`,
-`PortfolioItemPolicy`, `PressFeaturePolicy`), all via `BasePolicy::owns`.
+(`TalentPolicy`, `ProfileBlockPolicy`, `ReviewPolicy`, `PortfolioItemPolicy`), all via
+`BasePolicy::owns`.
 
 ## Talent dashboard (Phase 1C)
 
@@ -161,15 +169,20 @@ the shared `http.js` wrapper — pages render a shell, every interaction is Ajax
 endpoints, nothing reloads.
 
 - **Thin controllers → services.** Controllers validate (Form Requests in `app/Http/Requests/Talent`),
-  call the Phase 1B services (ProfileBlockService / ProfessionsService / TalentProfileService), and
+  call the Phase 1B services (ProfileBlockService / SkillsService / TalentProfileService), and
   return Resources (`app/Http/Resources`) wrapped in the envelope. `TalentController::ensureOwns()`
   enforces own-resource access (403); `BlockContentController` resolves the model then `ensureOwns`.
-- **Pages.** Home (stats + deals slot), Profile editor (core fields + reorderable blocks + eligibility
-  picker + hero upload), Professions, Block content editors (a registry-driven controller serving every
-  "table" block — gallery/digitals/showreel/equipment/projects/software/brand-collabs/looks — with
-  medialibrary upload), Rate card, Availability, Reviews moderation, Affiliations & press, Account.
-- **Front-end** (`resources/js/dashboard.js`, Alpine): `profileEditor` (optimistic drag-reorder,
-  inline errors, hero upload), `professionsManager`, and a generic `crudList` (paginated load,
+- **Sidebar (ADR-N).** Reduced to **Home · Profile · Content · Reviews · Contracts** — the standalone
+  Professions and Account tabs were folded into the Profile editor.
+- **Pages.** Home (stats + contracts slot); the **Profile editor** — the single profile surface: identity +
+  **Username** (`slug`), the **Skills** section (`SkillController` under `/talent/profile/skills*`),
+  the **Pricing rate**, the **Publish** toggle (`PATCH /talent/profile/publish`), and the reorderable
+  blocks + eligibility picker; Block content editors (a registry-driven controller serving
+  every "table" block — gallery/digitals/showreel/equipment/projects/software/brand-collabs/looks — with
+  medialibrary upload); Reviews moderation. *(The hero/cover uploader was removed — ADR-O.)*
+- **Front-end** (`resources/js/dashboard.js`, Alpine): `profileEditor` (core + username + Skills +
+  pricing + publish + blocks; optimistic drag-reorder, inline errors — the old
+  `professionsManager` is folded in) and a generic `crudList` (paginated load,
   create/remove/act, media quick-add, drag-reorder). `x-talent-layout` is the sidebar shell (dark + RTL).
 - **Error envelopes.** `bootstrap/app.php` renders `ValidationException`/`InvalidArgumentException`/
   `CouldNotPerformTransition` as 422 (and `AuthenticationException` as 401) for JSON/Ajax requests, so
@@ -190,59 +203,60 @@ through `x-public-layout`. All resolve **published** talents only.
   form that writes a pending review; the talent moderates it from the dashboard queue.
 - **Discovery** (`DiscoveryController` → `public/discover`, `talentSearch` Alpine) — a Blade shell whose
   results come from an Ajax endpoint backed by **`App\Queries\TalentSearch`**, a query object over
-  spatie/laravel-query-builder. Filters (type/category through the pivot, availability, city, country,
+  spatie/laravel-query-builder. Filters (type/category through the pivot, city, country,
   equipment, software, free-text) map to `filter[...]` params; results are paginated, eager-loaded
   (`talentTypes` + `media`), and shaped by `TalentCardResource`. Backed by the Phase 1C search indexes
   (see docs/schema.md).
 
-## Deal engine (Phase 1E — shared infrastructure)
+## Contract engine (Phase 1E — shared infrastructure)
 
-The configurable brand ↔ talent deal loop. Admin-authored flows (`deal_flows` +
-`deal_flow_steps`) are **snapshotted** into a deal's `deal_steps` at creation (ADR-4), so template
-edits never affect in-flight deals. Brand (Phase 2) and Admin (Phase 3) extend the same engine.
+The configurable brand ↔ talent contract loop. Admin-authored flows (`contract_flows` +
+`contract_flow_steps`) are **snapshotted** into a contract's `contract_steps` at creation (ADR-4), so template
+edits never affect in-flight contracts. Brand (Phase 2) and Admin (Phase 3) extend the same engine.
 
-**Strategy + Factory — one handler per `step_type`** (`app/Deals/Steps`, resolved by
-`App\Deals\StepHandlerFactory`). Each handler `validate()`s the actor's input, `apply()`s side effects
-to the deal, declares `isAutomatic()`, and returns a `summary()` for the timeline:
+**Strategy + Factory — one handler per `step_type`** (`app/Contracting/Steps`, resolved by
+`App\Contracting\StepHandlerFactory`). Each handler `validate()`s the actor's input, `apply()`s side effects
+to the contract, declares `isAutomatic()`, and returns a `summary()` for the timeline:
 
 | step_type | handler | behaviour |
 |---|---|---|
-| form | FormStepHandler | validates `fields`; an `amount_field` sets `deal.agreed_amount` |
+| form | FormStepHandler | validates `fields`; an `amount_field` sets `contract.agreed_amount` |
 | approval | ApprovalStepHandler | approve → advance; reject → loop back (separate path) |
 | upload | UploadStepHandler | requires ≥1 `attachments` reference |
 | payment | PaymentStepHandler | **ADR-B**: `settings.confirmation` = manual \| auto (default **manual**); auto (or system actor) auto-completes |
 | contract | ContractStepHandler | records a signature |
 | message | MessageStepHandler | requires a body; echoes it into the thread |
-| schedule | ScheduleStepHandler | writes `start_date`/`end_date` onto the deal |
+| schedule | ScheduleStepHandler | writes `start_date`/`end_date` onto the contract |
 | info | InfoStepHandler | system-actor → auto-complete; human → acknowledge |
 
-**Actions** (`app/Actions/Deals`, single-purpose invokables): `SnapshotDealFlowSteps`, `InitiateDeal`
-(create + snapshot + activate first), `AdvanceDeal` (validate/apply → complete → advance), `RejectStep`
-(loop back — reopen the disputed step, reset the tail to pending), `ConvertEnquiryToDeal`.
+**Actions** (`app/Actions/Contracting`, single-purpose invokables): `SnapshotContractFlowSteps`, `InitiateContract`
+(create + snapshot + activate first), `AdvanceContract` (validate/apply → complete → advance), `RejectStep`
+(loop back — reopen the disputed step, reset the tail to pending), `ConvertEnquiryToContract`.
 
-**DealProgression** (`app/Deals`) is the engine the actions share. It holds the invariants: exactly one
-step active/awaiting_action at a time, `deal.status` mirrors the current step's actor
+**ContractProgression** (`app/Contracting`) is the engine the actions share. It holds the invariants: exactly one
+step active/awaiting_action at a time, `contract.status` mirrors the current step's actor
 (awaiting_brand ⇄ awaiting_talent ⇄ awaiting_admin), automatic steps complete themselves and recurse,
-every completion posts a `system_event`, and running out of pending steps completes the deal.
+every completion posts a `system_event`, and running out of pending steps completes the contract.
 
-**State machines** (`app/States/Deal|DealStep|DealMessage`, spatie/laravel-model-states):
-- **Deal**: draft → awaiting_* (interchangeable) → completed; terminal cancelled/declined/expired; soft-delete.
-- **DealStep**: pending → active → awaiting_action → completed; side exits skipped/rejected; reject-loop
+**State machines** (`app/States/Contract|ContractStep|ContractMessage`, spatie/laravel-model-states):
+- **Contract**: draft → awaiting_* (interchangeable) → completed; terminal cancelled/declined/expired; soft-delete.
+- **ContractStep**: pending → active → awaiting_action → completed; side exits skipped/rejected; reject-loop
   uses completed→rejected→awaiting_action (redo) and completed/awaiting_action→pending (tail reset).
-- **DealMessage**: sent → read (`read_at` is the projection); system_event/action_summary are immutable
+- **ContractMessage**: sent → read (`read_at` is the projection); system_event/action_summary are immutable
   (never marked read).
 
-**DealService** (`app/Services/DealService`, `deals` log channel) is the single façade controllers call:
+**ContractService** (`app/Services/ContractService`, `contracts` log channel) is the single façade controllers call:
 `initiate`, `advance`, `reject`, `skip`, `convertEnquiry`, `postMessage`, `markThreadRead` — each wraps
 its action(s) in a transaction with fail-logging.
 
-**Booking CTA / deal initiation**: the public profile Contact button → `EnquiryController` writes a
-`deal_enquiries` row (availability-checked, no login); it converts to a deal after the visitor
-authenticates as a brand (Phase 2). Talent deal UI: `Talent\DealController` (deal room + inbox) acts as
-the `talent` role; the Alpine `dealRoom`/`dealsInbox` components (`resources/js/deals.js`) render a
+**Booking CTA / contract initiation**: the public profile Contact button → `EnquiryController` writes a
+`contract_enquiries` row (always allowed — no availability gate, ADR-L; no login); it converts to a contract
+after the visitor authenticates as a brand (Phase 2). The contract amount comes from the flow's form/quote
+step, not a service (ADR-K). Talent contract UI: `Talent\ContractController` (contract room + inbox) acts as
+the `talent` role; the Alpine `contractRoom`/`contractsInbox` components (`resources/js/contracts.js`) render a
 turn-aware action panel by `step_type` and the interleaved message/system_event timeline.
 
-> **Brands stub**: `deals.brand_id` needs a `brands` table, which is Phase 1B. Phase 1E ships a
+> **Brands stub**: `contracts.brand_id` needs a `brands` table, which is Phase 1B. Phase 1E ships a
 > **minimal** brands table (auth surface + name/slug + `is_complete` gate) so the engine references and
 > tests can seed brands; Phase 1B adds the full brand core (see docs/schema.md).
 
@@ -265,11 +279,11 @@ dashboard are Phase 2B/2C (same split as talent 1A → 1B).
   with an editorial mood / running campaign videos".
 - **Campaigns.** `Campaign` (translatable description, cover media, soft-delete, `status` lifecycle)
   `belongsToMany` `TalentType` via `campaign_talent_types` (roles + `quantity`) and `hasMany`
-  `CampaignMedia` (`gallery()`, uploads via medialibrary). A campaign groups many deals (the
-  `deals.campaign_id` FK lands in Phase 2C, ADR-F).
+  `CampaignMedia` (`gallery()`, uploads via medialibrary). A campaign groups many contracts (the
+  `contracts.campaign_id` FK lands in Phase 2C, ADR-F).
 - **Demo data.** `BrandDemoSeeder` builds a full brand (Nomad Coffee) — aesthetic + moods, creative
   needs + pivots, credibility, images, social handles, a talent review, and a public campaign with roles
-  + gallery — enriching the same brand the deal seeder uses.
+  + gallery — enriching the same brand the contract seeder uses.
 
 ## Brand domain logic — services, state machines & events (Phase 2B)
 
@@ -291,12 +305,12 @@ authoritative, flags are synced projections via `SyncStateProjections`):
   per step.
 - `CampaignService` — create/edit, `syncRoles` (talent types + quantity), `addMedia`, and the status
   transitions (open/start/complete/cancel, `setPublic`).
-- `BrandReviewService` — talent `submit` (guards deal completed + one-per-deal → pending), admin
+- `BrandReviewService` — talent `submit` (guards contract completed + one-per-contract → pending), admin
   `approve`/`reject`. No edit path (the brand can never edit a review).
 - `BrandSignalService` — append-only view/save/brief_sent/profile_open writes.
 - `BrandCredibilityService` — wraps the `RecalculateBrandCredibility` action.
 
-**Accrual (event-driven).** `DealProgression` fires **`DealCompleted`** when a deal reaches `completed`;
+**Accrual (event-driven).** `ContractProgression` fires **`ContractCompleted`** when a contract reaches `completed`;
 the auto-discovered **`AccrueBrandCredibility`** listener recomputes the brand's credibility
 (`RecalculateBrandCredibility`): monotonic `completed_projects_count`, `response_rate_pct`,
 `avg_response_time_hours`, internal `brief_quality_score`. Automatic — the brand takes no action. The
@@ -309,7 +323,7 @@ hard filter needs a talent-side aesthetic signal, so `brand_aesthetics` informs 
 selection.
 
 > Update-in-place satellites (aesthetics, creative needs, images, social handles) have no terminal state
-> of their own; `brand_signals` is append-only. Deals link to a campaign via `deals.campaign_id` (ADR-F).
+> of their own; `brand_signals` is append-only. Contracts link to a campaign via `contracts.campaign_id` (ADR-F).
 
 ### Brand dashboard (Phase 2C)
 
@@ -318,8 +332,8 @@ The brand-guard dashboard (`routes/brand.php`, `app/Http/Controllers/Brand/*`, `
 no reloads, ownership 403 / domain 422. Controllers are thin and delegate to the Phase 2B services — the
 6-step **onboarding wizard** (persists per step, flips `is_complete`, then drops the brand into its first
 feed), **profile editor** (core + aesthetic + images + social), **creative-needs** editor, **campaigns**
-manager + workspace (roles, media, lifecycle buttons, the deals running under the campaign), the
-**discovery feed** (infinite/paginated via `BrandTalentFeed`, save/brief write signals), the **brand deal
+manager + workspace (roles, media, lifecycle buttons, the contracts running under the campaign), the
+**discovery feed** (infinite/paginated via `BrandTalentFeed`, save/brief write signals), the **brand contract
 room** (the `brand` side of the shared engine — `awaiting_brand` highlighted, action panel keyed by
 `step_type`), read-only **reviews received**, and **account** (settings + publish toggle). An incomplete
 brand is redirected into onboarding by the dashboard.
@@ -375,7 +389,7 @@ timeline), a searchable **activity-log viewer**, the **settings** screen, and **
 
 ## Cross-cutting
 
-- **Logging:** dedicated channels `app`, `auth`, `deals`, `media` (`config/logging.php`). Failure
+- **Logging:** dedicated channels `app`, `auth`, `contracts`, `media` (`config/logging.php`). Failure
   convention: catch → log to channel with context → rethrow / return error envelope
   (`Service::runInTransaction`).
 - **Transactions:** multi-write operations run through `Service::runInTransaction()` /

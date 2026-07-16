@@ -2,210 +2,587 @@
 
 Notable changes to the Fama project. Newest first.
 
-## 2026-07-09 — Brand i18n completion + dashboard width
+> Note: entries below this one predate the Deal → Contract rename and still say "deal" — they are a
+> historical record and are intentionally left as written.
 
-- **Arabic translations completed:** extracted every `__()` string across views/JS (410 used) and added the
-  **166 missing** keys to `lang/ar.json` (now 481, 0 missing) — the whole brand dashboard/onboarding +
-  public brand/campaign pages, plus runtime enum labels (industries, stages, company sizes, reach, moods,
-  project types, deal/campaign statuses, frequency). Verified on `/ar/brand/*`; only user data
-  (campaign/deal titles, proper nouns) stays in its source language.
-- **Dashboard content width:** brand + talent layouts widened `max-w-5xl → max-w-7xl` so content fills the
-  space instead of leaving large gaps beside the sidebar.
-- **Full-surface QA:** every authenticated page for both guards returns 200 on a live session; the 224
-  feature tests cover all mutations.
+## 2026-07-15 — Repo-wide rename: Deal → Contract
 
-## 2026-07-09 — Auth fixes: single active identity + explicit login role
+- **Every "deal" is now a "contract"** — 122 files, ~1,555 occurrences, zero `deal` identifiers left in
+  `app/ database/ routes/ resources/ tests/ config/ lang/ docs/`.
+- **Models/tables:** `Deal`→`Contract`, `DealStep`→`ContractStep`, `DealMessage`→`ContractMessage`,
+  `DealFlow`→`ContractFlow`, `DealFlowStep`→`ContractFlowStep`, `DealEnquiry`→`ContractEnquiry`; tables
+  `deals`→`contracts`, `deal_steps`→`contract_steps`, `deal_messages`→`contract_messages`,
+  `deal_flows`→`contract_flows`, `deal_flow_steps`→`contract_flow_steps`,
+  `deal_enquiries`→`contract_enquiries`; FKs `deal_id`→`contract_id`, `deal_step_id`→`contract_step_id`,
+  `deal_flow_id`→`contract_flow_id`. Migrations edited in place → `php artisan migrate:fresh --seed`.
+- **Two naming collisions resolved** (both would have broken conventions):
+  `app/Deals/` → **`app/Contracting/`** and `app/Actions/Deals/` → **`app/Actions/Contracting/`** —
+  *not* `App\Contracts`, which is Laravel's convention for interfaces and already holds
+  `App\Actions\Contracts\Action`. The **`'contract'` step_type is unchanged** (it's the signing step, a
+  sub-type — so a Contract legitimately contains a contract-signing step).
+- Also renamed: `ContractService`, `ContractProgression`, `ContractCompleted`, the Initiate/Advance/
+  Convert actions, all three states, resources, both controllers, factories, `ContractFlowSeeder`,
+  routes (`/brand/contracts`, `/talent/contracts`, `*.contracts.*`), views (`*/contracts/`),
+  `resources/js/contracts.js` + its Alpine components (`contractsInbox`, `contractRoom`,
+  `brandContractRoom`, `brandContractsInbox`), tests (`tests/Feature/Contracts/`), and the **`contracts`
+  log channel** (`config/logging.php` + `storage/logs/contracts.log`).
+- **i18n:** keys renamed (Deal→Contract) *and* the Arabic values retuned from صفقة/صفقات → عقد/عقود,
+  including the gender agreement (صفقة is feminine, عقد masculine → "انتهى هذا العقد").
+- Docs + CLAUDE.md project-state updated in place. **Full Pest suite green (277)** — first run, no
+  regressions. No git.
 
-- **Single active identity per session:** `LoginRequest::authenticate()` now logs the session out of every
-  *other* Fama guard after a successful login. Previously a session could hold multiple guards at once, so
-  the priority-ordered `Guards::current()` kept resolving a stale higher-priority guard (e.g. logging in as
-  a talent while a brand session was live landed you back on the brand dashboard). Regression test in
-  `MultiGuardTest` (brand → talent switch → talent wins, brand dropped).
-- **Login role is required:** the "I am a" selector no longer defaults to Admin (`old('role','admin')`),
-  which silently authenticated brand/talent credentials against the admin guard and failed. It now shows a
-  disabled "Select…" placeholder and is `required`, so the guard is always an explicit choice. (The
-  role-less API/`LoginRequest` default stays admin for Breeze test compatibility.)
-- **No cross-guard intended-URL bounce:** the login redirect no longer follows `session('url.intended')`.
-  A guest touching a `/brand/*` route captures it as the intended URL; logging in as a *talent* then
-  redirected there → the brand guard rejected the talent → bounced back to login ("talent login doesn't
-  work"). Login now always lands on the authenticated guard's own dashboard via `route('dashboard')`.
-  Regression test in `MultiGuardTest`.
-- 224 tests green.
+## 2026-07-15 — Apply to a project (rich-text brief + @mentions + attachments)
 
-## 2026-07-09 — Admin slice: production-grade sign-off
+- **The public project CTA is now "Apply", not "Message brand".** A talent opens a modal, writes a
+  **rich-text brief** (why they're a fit), can **@-mention their own portfolio projects**, and **attaches
+  files**; submitting opens (or reuses) the talent↔brand deal scoped to that project and posts the brief as its
+  opening message, then lands them in the deal room. Guests/brands get a talent-login link instead.
+- **Backend** (`Talent\ApplicationController`, talent-guarded): `GET /talent/applications/mentions` (the
+  talent's projects for the @-picker, filtered in PHP to dodge MySQL's case-sensitive JSON collation);
+  `POST /talent/applications/{brandProject}` (open+public+published only) → `DealService::applyToProject`
+  (reuse/open deal, post a rich message, attach media in one transaction).
+- **Security:** the brief is the ONLY user HTML Fama renders un-escaped, so it's sanitized server-side to a
+  strict allowlist (`App\Support\Html\BriefSanitizer`, DOMDocument): keeps p/br/b/i/u/ul/ol/li + mention
+  spans, strips every attribute (except `class="mention"`) and every disallowed tag (script/img/anchors
+  unwrapped). Messages carry an `is_rich` flag — rich briefs render via `x-html`, plain chat stays `x-text`.
+- **Attachments:** `DealMessage` is now `HasMedia` (an `attachments` collection); the deal-room timeline
+  (both sides) renders the brief HTML + downloadable file chips (media eager-loaded, no N+1).
+- **Editor:** a lightweight `contenteditable` rich editor (bold/italic/bullets via execCommand) with a
+  caret-anchored @-mention dropdown (keyboard-navigable), teleported + scroll-locked + focus-trapped modal.
+- **+6 tests** (mentions filter, application creates a talent-initiated deal + rich message + attachment,
+  sanitization strips scripts/handlers/images, empty-brief 422, closed/private 404, re-apply reuses the deal).
+  **Full Pest suite green (277).** No git.
 
-- **Every admin mutation audited** (verified): flow lifecycle transitions (activate/archive/markDefault →
-  LogsActivity), settings updates, admin-user create/roles/delete, and the 3A moderation/intervention
-  services — all with the admin as causer.
-- **Transactions + fail-logs verified** (rollback + fail-log to the `admin` channel on a forced service
-  failure). **N+1 clean** — moderation queues, deal console, and activity log stay flat as rows grow
-  (query-count tests); every list paginated + eager-loaded (brand/talent/step/causer/roles).
-- **Admin demo data:** `AdminDemoSeeder` — two extra deal flows (draft + active with steps), items pending
-  moderation (talent review + brand review), and real audit entries (the seeder mutes model events, so
-  authoring is recorded explicitly + a moderation action logs).
-- **Dark/light + RTL verified** on all admin pages (token-only colours, `dir`-aware layout, logical
-  props); no Blade reloads (Ajax only). QA checklist — admin slice added to `docs/conventions.md`.
-- **+7 tests (275 green).** README + CLAUDE updated (admin phase COMPLETE → Phase 4A). No git.
+## 2026-07-15 — "Campaigns" → "Projects" rename, single-role projects, budget privacy
 
-## 2026-07-09 — Phase 3B: admin dashboard UI
+- **Repo-wide rename Campaign → BrandProject** (the brand "Campaigns" feature is now "Projects" everywhere
+  users see it). The literal name `Project`/`projects` was already taken by the talent portfolio model/table, so
+  the brand code uses **`BrandProject` / `brand_projects`** (tables `brand_project_media`, FK
+  `brand_project_id`; the roles pivot was dropped — see below). All URLs/routes are `projects`
+  (`/brand/projects`, `/projects`, `/brands/{brand}/projects/{project}`), route names `*.projects.*` /
+  `projects.browse` / `brand.project.public`, Alpine components `brandProjects` / `brandProject` /
+  `projectBrowse`, and all UI text + Arabic are "Project(s)". The `type` enum keeps its `campaign`/`shoot`
+  values (a project's *kind*), and talent-portfolio "Campaign" sample strings are untouched (a different
+  concept). Migrations edited in place → run `php artisan migrate:fresh --seed`.
+- **Each project = one role, one position.** Dropped the multi-role `brand_project_talent_types` pivot +
+  `positions_count`; added `brand_projects.talent_type_id` (a single discipline). Service/requests/resources/
+  views/JS simplified from a roles editor to one discipline select.
+- **Budget public/private flag (ADR).** New `brand_projects.budget_is_public` (**private by default**). The
+  owning brand always sees the budget (with a Public/Private tag); the public project detail, opportunities
+  cards, and profile cards expose the budget **only when the brand opts in** (`PublicProjectCardResource`
+  nulls it otherwise; the detail view gates it server-side).
+- **"Message brand" removed from the public brand profile** (per request) — the CTA stays on the Opportunities
+  cards + project detail.
+- **Full Pest suite green (271).** No git.
 
-- **Admin guard dashboard** — `routes/admin.php` (permission-gated `can:` groups), 8 thin controllers
-  under `Admin\*` delegating to the 3A services, `<x-admin-layout>`, `resources/js/admin.js`; resources
-  `DealFlowResource`/`DealFlowStepResource`/`ActivityResource`/`AdminUserResource`.
-- **Flow builder UI** (drag-order steps, configure actor/step_type/required/skippable/settings, set
-  default, scope by category, activate/archive); **moderation queues** (tabbed: talents/reviews/brands/
-  brand-reviews/campaigns — batch approve/reject, suspend/verify/unpublish/delete/cancel/force-private);
-  **profession/template manager** (visual default_blocks editor + add profession); **deal intervention
-  console** (override / advance-as-admin / nudge / reassign / cancel + timeline); searchable
-  **activity-log viewer**; **settings** screen; **admin-users** management (+ role assignment).
-- **Two-layer authz:** `can:` middleware gates pages (403 for a powerless admin) + the service
-  re-authorizes/audits each action.
-- **Tests +10 (268 green):** every admin page renders for a super-admin + 403 for a powerless admin;
-  flow build/activate, moderation actions (incl. batch), template edits, deal override/cancel, settings +
-  admin-user create — each with a non-admin policy-rejection case. Docs (api + architecture) + CLAUDE
-  updated. No git.
+## 2026-07-14 — Filters on the talent-facing discovery pages
 
-## 2026-07-09 — Phase 3A: admin domain logic (flow builder, moderation, intervention)
+- **Discover brands** and **Opportunities** now filter **the same way as Discover talent**: a sticky primary
+  chip bar (Brands → **Industry**; Campaigns → **Discipline** chips grouped by scope via the shared
+  `skill-filter-chips` partial) + an **Advanced filters** modal (teleported to `<body>`, scroll-locked,
+  focus-trapped, staged draft applied only on "Apply"), an active-filter summary row (removable chips + Clear
+  all), a live result count, and skeleton loaders.
+  - Brands advanced facets: **stage · reach · verified-only**. Campaigns advanced facets: **type · budget
+    min/max · city**.
+- **Backend:** `BrandDiscoveryController@feed` gained `industry`/`brand_stage`/`geographic_reach`/`verified`;
+  `CampaignDiscoveryController@feed` gained `type` (talent_type slugs, `whereHas`), `campaign_type`,
+  `budget_min`/`budget_max` (null-safe overlap), and `city`. Both stay paginated + eager-loaded (no N+1).
+- **JS:** factored the modal machinery into a shared `filterModal()` mixin (mirrors talentSearch — teleport,
+  scroll-lock, focus-trap; no x-transition on the teleported node) + a `disciplineIcon()` helper; `brandsDiscover`
+  and `campaignBrowse` rewritten around it. **+2 filter tests; full Pest suite green (270).** No git.
 
-- **`AdminService` base** — admin log channel + `authorizeAdmin()`/`authorizePermission()` (policy/permission
-  gating) + `record()` (activity log, admin as causer). Every action transactional + fail-logged.
-- **Deal-flow builder** (`DealFlowBuilderService`) + **template state machine** (`DealFlowState`:
-  draft → active → archived, `is_active` synced via `SyncStateProjections`, `is_default` unique per
-  `applies_to`). Author flows + ordered steps, reorder, mark default, activate/archive. Edits affect
-  future deals only (snapshot isolation, tested). `DealFlow`/`DealFlowStep` audited via `LogsActivity`.
-- **Moderation services:** `TalentModerationService` (suspend/unpublish/soft-delete/restore),
-  `BrandModerationService` (verify one-way + suspend/unpublish/soft-delete), `ReviewModerationService`
-  (approve/reject talent reviews incl. batch + brand reviews), `CampaignOversightService`
-  (filter/cancel/force-private).
-- **`ProfessionCatalogService`** — edit `talent_types.default_blocks` (new seeds only) + add professions
-  without code. **`MediaOversightService`** — surface + re-queue ungenerated conversions.
-- **`DealInterventionService`** — reuses the 1E engine: advance as admin actor, override a stuck step,
-  nudge, reassign, cancel — all logged + posting system events.
-- **Policies (auto-discovered)** for every capability (DealFlow/TalentType/Deal/Brand/BrandReview/Campaign
-  + Talent/Review `moderate`), each gating a spatie permission on the admin guard.
-- **Tests +21 (258 green):** flow builder (+ state machine + snapshot isolation), each moderation path,
-  profession-template edits, media retry, deal intervention/override — each with activitylog assertions
-  and a policy-denied case. Docs (architecture) + CLAUDE updated. No git.
+## 2026-07-14 — Premium redesign of the brand campaign workspace
 
-## 2026-07-09 — Phase 3A: admin foundation (RBAC + settings + audit)
+- **Campaign detail page redesigned** from a flat stack of white cards into a premium workspace: a **hero**
+  (type eyebrow + coloured status pill + title + a 4-stage lifecycle stepper Draft→Open→In progress→Completed,
+  with a cancelled banner), a **KPI strip** (Budget · Deals · Positions · Location), and a **two-column body** —
+  main column (roles as cards, gallery, deals) + a sticky **Summary** sidebar (type/dates/currency, visibility
+  toggle, "View public listing" link) and a **Danger zone** (inline-confirm delete). The contextual lifecycle
+  CTA is the filled primary; Edit/Cancel are secondary.
+- **Gallery gained removal.** New `DELETE /brand/campaigns/{campaign}/media/{media}`
+  (`CampaignController@removeMedia`, ownership-checked + scoped to the campaign) with a hover remove control and
+  a dashed empty-state uploader. `brandCampaign` gained `removeMedia`, `destroy` (inline-confirm), `statusIndex`
+  + `totalPositions` getters. **+3 media tests.**
+- **i18n kept complete** — 13 new keys translated (lifecycle labels, Danger zone, Positions, …). **Full Pest
+  suite green (268).** No git.
 
-- **users refined** for admin (schema-master §6): `phone`, `avatar_url`, `locale` enum(en, ar),
-  `last_login_at`, `is_active`, and **soft deletes**. `User` gains `SoftDeletes` + spatie `HasRoles`
-  (guard `admin`). (Breeze self-delete now soft-deletes — `ProfileTest` updated.)
-- **Admin RBAC (ADR-H):** installed **spatie/laravel-permission** on the `admin` guard;
-  `RolesAndPermissionsSeeder` seeds roles **super-admin/moderator/support** + permissions
-  **manage-flows, moderate-content, intervene-deals, manage-settings, manage-users**, and grants the demo
-  admin super-admin.
-- **settings** table (key→JSON) + **`SettingsService`** — cached key→value map, transactional writes
-  (fail-log to a new `admin` channel), typed globals (default currency, default deal flow, feature flags).
-  `SettingsSeeder` seeds the defaults.
-- **activity_log confirmed** recording subject + causer + changes; `DealFlow`/`DealFlowStep` now log
-  activity (name `deal_flow`) for the coming authoring layer. This version stores model old/new under
-  `attribute_changes`.
-- **Tests +13 (237 green):** admin user (soft delete, admin-guard roles, granular permissions, locale/
-  is_active), SettingsService (get/set/default/cache/typed/forget), activitylog (subject/causer/changes,
-  logOnlyDirty). Docs (schema + decisions ADR-H) + CLAUDE updated. No git.
+## 2026-07-14 — Talent-facing discovery, unread indicators, profile consolidation, i18n
 
-## 2026-07-09 — Public brand pages restyled to the Fama design system
+- **Unread-message indicators (both sides).** `DealResource` now exposes `unread_count` (the counterparty's
+  unread free-messages, via the `humanUnreadFor` scope); the brand + talent `DealController@data` set it with
+  `withCount`. Both inboxes badge unread deals (accent dot + count + ring) and now **poll every 20s** so the
+  badge appears live. Message ordering is deterministic on same-second sends — `Deal::messages()` already sorts
+  by `created_at` then the auto-increment `id`, and neither deal room re-sorts.
+- **Campaign editing.** The campaign detail page was read-only; the Edit button led nowhere editable. Added an
+  in-place **Edit details** form (title, type, budget, location, dates, roles, visibility) wired to the existing
+  `PATCH /brand/campaigns/{campaign}` endpoint, plus a read-only Details section. Editing is gated to
+  non-complete/cancelled campaigns.
+- **Profile consolidation continues (ADR-N pattern).** **Creative needs** folded into the Profile editor (like
+  Account before it): its section now lives in `brand/profile.blade.php` (talent types / project types /
+  frequency / budget tier), the nav item is gone, and `GET /brand/creative-needs` redirects to the profile
+  (the `PATCH` endpoint stays). Orphan view + `brandCreativeNeeds` component removed.
+- **Brand topbar** gained a **View public profile** link (published brands only → `brand.public`).
+- **Talent-facing discovery (new).** `GET /brands` (published-brand discovery) + `GET /campaigns` (open, public
+  campaigns = the "opportunities" board), each a Blade shell + paginated, eager-loaded Ajax feed
+  (`BrandDiscoveryController`, `CampaignDiscoveryController` + `BrandCardResource`, `PublicCampaignCardResource`).
+  Added to the talent sidebar + public header nav.
+- **Talent→brand messaging (ADR-P mirror).** `GET /brands/{brand:slug}/message` (`BrandMessageController`)
+  mirrors the brand→talent flow: guest → talent login (return URL kept); talent → the latest brand↔talent deal
+  or a fresh talent-initiated one (optionally tagged to the campaign via `?campaign=`), then the talent deal
+  room. "Message brand" CTAs added on the public brand profile + campaign detail + campaign cards.
+- **i18n.** Full `ar.json` audit (script-driven): every `__()` key across views/JS/PHP now has an Arabic value
+  — 95 keys added (incl. `Public`/`Private`/`View public profile`/`Message brand`/`Opportunities`), file
+  re-sorted case-insensitively (447 → 542 entries). Only `auth.password` resolves from `lang/ar/auth.php`.
+- **Full Pest suite green (265, +9 new tests for the discovery + messaging routes).** No git.
 
-- Rebuilt `brand/public-profile` and `brand/public-campaign` to match the `public/fama-front`
-  reference designs (Brand Profile + Campaign Detail), the same way the talent public profile was done:
-  cover + floating identity card, mono eyebrows, credibility stat cards, an aggregated three-axis rating
-  visual, campaign cards, and a snapshot/handles sidebar (profile); overlay title on the gradient cover,
-  meta strip, brief, role cards, mood-board gallery, and brand mini-card sidebar (campaign).
-- Composed from the shared `x-ui.*` components (`card`, `stat`, `chip`, `eyebrow`, `avatar`, `button`)
-  and design tokens — no new colours. Verified in-browser: **light + dark + RTL** on the profile and the
-  campaign detail (assets rebuilt). 222 tests green.
+## 2026-07-14 — Brand deal room shows full deal details
 
-## 2026-07-09 — Brand slice: production-grade sign-off
+- **Root cause of the empty brand pages: a stale JS build.** The bundle `fama.test` loaded predated the brand
+  Alpine components, so none of them initialised (empty Ajax lists, blank forms, dead buttons). Rebuilt
+  (`npm run build`) — the fresh bundle contains all 10 brand components; all data endpoints return correct
+  data; every button handler maps to a real route. **Fix = rebuild + hard-refresh.**
+- **`DealResource` never exposed the `talent` counterparty** — so the brand deal room header and deals inbox
+  both rendered a blank counterparty (`deal.talent?.display_name`). Added `talent` (name/slug/avatar) and
+  `campaign` (title/slug) via `whenLoaded`; the brand `DealController@thread` now eager-loads `campaign`.
+- **Deal room now renders the details:** a richer header (reference, title, campaign chip, counterparty with
+  avatar, agreed amount, status), a new **Deal details** card (brief, dates, initiated-by), plus the existing
+  phases stepper + timeline. `brandDealRoom` gained a `detailRows` getter (translatable labels passed from the
+  view).
+- **Demo deal made real:** the seeded campaign deal (`NOMAD-AUTUMN-01`) was created raw (0 steps) → the
+  stepper was empty. It's now created **through the deal engine** and walked to completed, so it has 7
+  snapshotted steps + 8 messages. Its credibility counters are set **after** completion so the "recalc
+  credibility" side effect doesn't overwrite the curated demo numbers. **Full Pest suite green (255).** No git.
 
-- **N+1 audit clean:** eager-loaded `media` everywhere a media accessor renders in a list/loop — public
-  profile (`media`, `images.media`, `campaigns.media`), campaign detail (`media`, `gallery.media`),
-  campaigns list + workspace, profile-editor images. Proven with query-count tests (flat as
-  campaigns/images grow; ≤10 queries for a 10-talent feed).
-- **Coverage raised** (`BrandHardeningTest` + `BrandDemoSeederTest` + deal-room message tests): N+1
-  proofs, transaction rollback + fail-log to the `brands` channel, publish gate (422 before complete),
-  illegal campaign transition (422), showcase scope, brief signal, free deal-room message + validation.
-- **Realistic demo:** `BrandDemoSeeder` now seeds two campaigns at different statuses (open + a completed
-  showcase) and a **deal under a campaign** (`deals.campaign_id`), alongside the existing aesthetic /
-  creative-needs / credibility / reviews / images graph. Idempotent; locked by `BrandDemoSeederTest`.
-- **Dark/light + RTL verified** on all brand pages (token-only colours, `dir`-aware layouts, logical
-  props); no Blade reloads (Ajax only, logout aside). QA checklist — brand slice added to
-  `docs/conventions.md`.
-- **222 tests green.** README + CLAUDE updated (brand phase COMPLETE → Phase 3A). No git.
+## 2026-07-12 — Reconcile the brand slice with the talent-side edits (post-merge fixes)
 
-## 2026-07-09 — Public brand pages (profile + campaign detail)
+After merging `main` (talent side) into `brand-phase`, the brand code broke against changes it predated.
+Fixed so `migrate:fresh --seed` and the full suite are green again (255 tests):
 
-- **Brand profile** `GET /brands/{slug}` (`BrandProfileController@show`) — published brands only (404
-  otherwise); header from `brands`, credibility block, **approved** brand reviews, "Campaigns on FAMA"
-  (public, non-cancelled campaigns), social handles + aesthetic moods. Fully eager-loaded (no N+1).
-- **Campaign detail** `GET /brands/{slug}/campaigns/{campaign-slug}` (`@campaign`) — public campaigns
-  only; title/description/cover/budget/location/dates + roles sought (`campaign_talent_types`) + gallery
-  (`campaign_media`). Nested binding `->scopeBindings()` so the campaign must belong to the brand.
-- Routes registered before the single-segment `/{slug}` talent catch-all; views on `<x-public-layout>`.
-- **Tests +6 (208 green):** profile renders with only approved reviews + only public campaigns;
-  unpublished brand 404; campaign detail renders roles + facts; private campaign 404; cross-brand
-  campaign 404 (scoped); public campaign under unpublished brand 404. Docs (api) updated. No git.
+- **Skill rename (ADR-S).** The brand slice referenced the old person-noun `talent_types` slugs, which no
+  longer resolve → `BrandDemoSeeder` inserted an empty `campaign_talent_types.talent_type_id` (`1366`).
+  Updated the seeder (`model`→`modeling`, `photographer`→`photography`, `cinematographer`→`cinematography`)
+  and every brand test slug lookup + the `assertSee('Model')` → `'Modeling'` role-name assertion.
+- **Availability removed (ADR-L).** `App\Queries\BrandTalentFeed` filtered on the dropped
+  `talents.availability_status` column — removed that `AllowedFilter`.
+- **Services removed (ADR-K).** `Brand\DealController` eager-loaded the deleted `Deal::service` relationship
+  (`data()` + `thread()`) → 500. Dropped `'service'` from both `with()`/`load()` calls.
+- **Merge artifacts (missing `use` imports).** `routes/web.php` used `BrandProfileController::class` without
+  importing it → `ReflectionException` (500 on every public brand/campaign page). And
+  `App\Listeners\SyncStateProjections` referenced `Brand`/`BrandReview` without importing them, so
+  `instanceof` silently returned false and the brand/review projections (`is_complete`, `is_published`,
+  `is_approved`) never synced → onboarding/publish/review assertions failed. Added both imports.
+- **Verified:** `migrate:fresh --seed` completes (campaign roles resolve to `modeling`/`photography`, zero
+  orphan pivots); **full Pest suite green (255)**; brand public profile + campaign detail render 200
+  in-browser with the new discipline role names. No git.
 
-## 2026-07-09 — Phase 2C: brand dashboard (onboarding + deal room + discovery)
+## 2026-07-12 — Talent profile image (avatar) uploader
 
-- **Brand guard dashboard** — `routes/brand.php` (47 routes), 9 controllers under `Brand\*` (thin,
-  delegating to the 2B services), `<x-brand-layout>`, and `resources/js/brand.js` (Alpine on http.js,
-  no reloads, JSON envelopes, ownership 403 / domain 422).
-- **Onboarding wizard** (6 steps, step-by-step Ajax → BrandOnboardingService; flips `is_complete`);
-  **dashboard home** (completion, active deals + whose-turn, recent campaigns, feed entry); **profile
-  editor** (core + aesthetic + mood tags + images CRUD + social handles); **creative-needs** editor.
-- **Campaigns** manager + single-campaign workspace (roles-with-quantity, media, lifecycle transitions,
-  public toggle, and the deals running under `deals.campaign_id`); `Store/UpdateCampaignRequest`.
-- **Discovery feed** — paginated via `BrandTalentFeed`; save/brief write `save`/`brief_sent` signals
-  (added `id` to `TalentCardResource`).
-- **Brand deal room + inbox** — the `brand` side of the shared engine wired (submit brief, accept/return
-  quotes, sign, pay), `awaiting_brand` highlighted; added `is_brand_turn` + `talent` to `DealResource`.
-- **Reviews received** (approved-only, read-only) + **account/settings** (slug, settings fields,
-  publish ⇄ unpublish toggle).
-- **Tests +12 (202 green):** onboarding completion, every dashboard page renders, discovery feed +
-  signal, campaign create/lifecycle, approved-only reviews, brand deal actions + ownership 403. Docs
-  (api + architecture) + CLAUDE updated. No git.
+- **Added the missing profile-image uploader** to the Profile editor's Identity/Core-details section. A
+  talent can now **Upload / Change / Remove** their avatar — Ajax, no reload: the preview updates in place
+  and falls back to the initials avatar when removed. The image goes to the existing `avatar` single-file
+  media collection (ADR-O — only the circular avatar; no cover/hero).
+- **Endpoints:** `POST /talent/profile/avatar` (update) and `DELETE /talent/profile/avatar` (remove), both
+  returning `{ avatar_url }`. Thin controller (`ProfileEditorController::updateAvatar/removeAvatar`) →
+  `TalentProfileService::updateAvatar/removeAvatar` (media ops, fail-logged to the `media` channel).
+  Validation via `UpdateAvatarRequest` (`image|mimes:jpg,jpeg,png,webp|max:5120`).
+- **Front-end:** `profileEditor` (dashboard.js) gains `avatarUrl` + `uploadAvatar()`/`removeAvatar()` and an
+  `avatarInitials` getter; a reactive avatar preview + hidden file input in the editor blade.
+- **Tests:** `ProfileEditorTest` gains 7 cases — the uploader renders; upload returns a URL + adds media;
+  re-upload replaces (single-file); remove clears it; non-image / >5 MB → 422; guests are redirected.
+  **Full Pest suite green (199).** Verified in-browser (uploader renders with the seeded avatar; Remove →
+  initials reactively, no reload; DELETE endpoint works) — console clean. Docs updated. No git.
 
-## 2026-07-09 — Phase 2B: brand domain logic (services, states, accrual)
+## 2026-07-12 — Fix: MariaDB deploy failure on the Looks functional-index migration
 
-- **State machines** (status authoritative, flags synced via `SyncStateProjections`): Brand
-  (registered→onboarding→complete→published⇄unpublished→suspended; `is_verified` orthogonal one-way),
-  Campaign (draft→open→in_progress→completed; cancellable; `is_public` independent; `showcase()` scope),
-  BrandReview (pending→approved/rejected). Migration adds `brands.status` + **`deals.campaign_id`**
-  (ADR-F resolved) with `Deal::campaign()`/`Campaign::deals()`.
-- **Services** (transactional, `brands` log channel): `BrandOnboardingService` (6-step wizard, flips
-  `is_complete`), `CampaignService` (create/edit/roles/media/transitions), `BrandReviewService`
-  (submit-pending/approve/reject, no brand edit path), `BrandSignalService` (append-only),
-  `BrandCredibilityService`.
-- **Credibility accrual (event-driven):** `DealProgression` fires **`DealCompleted`** → auto-discovered
-  `AccrueBrandCredibility` listener → `RecalculateBrandCredibility` (monotonic project count, response
-  metrics, internal brief score). Brand takes no action.
-- **Discovery feed:** `App\Queries\BrandTalentFeed` (spatie/laravel-query-builder) — personalised by the
-  brand's creative-need talent types (pivot) + geographic_reach; paginated + eager-loaded; writes a
-  browse signal. Aesthetic weighting deferred (documented).
-- **Tests +14 (190 green):** onboarding (6 steps + idempotency), credibility accrual (+ monotonic),
-  review flow (submit/guard/approve/no-edit), campaign transitions (+ illegal + showcase), discovery
-  feed (needs/geo/pagination + signal). Docs (architecture) + ADR-F resolved + CLAUDE updated. No git.
+- **Migration `2026_07_11_000100_add_look_types_name_index` failed on MariaDB** (production) with a
+  `1064` syntax error: MariaDB has **no functional/expression indexes**, and the old
+  `getDriverName() !== 'mysql'` guard didn't catch it because **Laravel reports MariaDB's PDO driver as
+  `mysql`**. The migration now inspects `VERSION()` and creates the functional index **only on genuine
+  MySQL 8.0.13+**, **skipping it on MariaDB / older MySQL** (the model-scope **Looks** filter still works
+  unindexed — `look_types` is a tiny lookup table). `down()` drops the index only if it exists. No change on
+  MySQL 8 (dev/CI): the index is still created; **full Pest suite green (193)**. docs/schema.md updated. No git.
 
-## 2026-07-08 — Phase 2A: brand core & satellites + campaigns (schema)
+## 2026-07-12 — Discovery: scoped filters appear only after a skill is selected
 
-- **ADR-E resolved:** brand-spec confirmed complete (no gaps) — Phase 2 unblocked.
-- **Migrations:** extended the `brands` stub into the full identity (nullable onboarding/settings fields
-  + discovery indexes; logo/cover via medialibrary); satellites `brand_aesthetics`, `brand_images`,
-  `brand_creative_needs`, `brand_credibility`, `brand_reviews` (three sub-ratings), `brand_social_handles`,
-  `brand_signals` (append-only); `campaigns` + `campaign_talent_types` + `campaign_media`.
-- **ADR-6 applied (brand side):** `mood_tags` → `brand_mood_tags`; creative-need `talent_types` →
-  `brand_creative_need_talent_type` (M:N); `project_types` → `brand_creative_need_project_type` — all
-  indexed for discovery. Free-text references + internal `budget_tier`/`brief_quality_score` kept.
-- **Models + factories** for all of the above (Brand extended: media, translatable `description`,
-  full relations; Campaign: roles-with-quantity pivot + `gallery()`; append-only `BrandSignal`).
-- **`BrandDemoSeeder`** — a full demo brand (Nomad Coffee: aesthetic+moods, needs+pivots, credibility,
-  images, social handles, a talent review, a public campaign with roles + gallery), with generated
-  images, enriching the deal seeder's brand.
-- **Tests +8 (176 green):** relationships, translatable, media accessors, both ADR-6 pivots
-  (discovery-shaped queries), brand-review average + pending, campaign roles/quantity/gallery,
-  append-only signals. Docs (schema/architecture/conventions) + CLAUDE updated. No git.
+- **Scoped filters are now skill-gated.** In the Advanced-filters modal, a skill-specific filter shows **only
+  once its related skill is selected** (crew → Equipment, creative → Software, modeling → Looks) — previously
+  they all showed when nothing was selected. With **no skill selected** the Skill-specific section shows a hint
+  ("Select a skill to reveal its filters."); picking a skill reveals the filter that narrows it further. The JS
+  getters dropped the `|| draft.type.length === 0` clause (`showEquipment = draftScopes.has('crew')`, etc.), and
+  a new `hasScopedFilters` getter gates the grid-vs-hint. **Full Pest suite green (193).** Verified in-browser
+  (no skill → hint; Photography → Equipment only) — console clean. No git.
+
+## 2026-07-12 — Discovery: scoped filters restored to the modal (shown by selected skill)
+
+- **Reverted the "hide scoped filters" change.** The **Skill-specific** section (Equipment / Software / Looks)
+  is back in the (still `max-w-3xl`) Advanced-filters modal, **shown based on the selected skills** — with no
+  skill selected all three show; a crew skill reveals **Equipment**, a creative skill **Software**, modeling
+  **Looks**. The JS visibility getters (`showEquipment/Software/Looks`, `draftScopes`) were already intact, so
+  only the modal markup + subtitle + the two translation strings + `DiscoveryTest` were restored. **Full Pest
+  suite green (193).** Verified in-browser (no-skill → all groups; Modeling → Looks only) — console clean. No git.
+
+## 2026-07-12 — Discovery: wider Advanced-filters modal + scoped filters hidden
+
+- **Wider modal.** The Advanced-filters dialog grew from `max-w-2xl` to **`max-w-3xl`**.
+- **Skill-specific scoped filters hidden.** The Equipment / Software / Looks group (the filters that show
+  based on the selected skill's category) is **removed from the modal UI** — the modal now holds only a
+  **Skills** section and a **Location** section (subtitle updated to "Refine by skill and location."). The
+  scoped filters remain valid `TalentSearch`/URL filters and stay covered by the backend scoping test; the
+  `showEquipment/draftScopes` JS getters remain but are now UI-unused. `DiscoveryTest`'s modal-groups test now
+  asserts the modal shows Skills + Location and **does not** render the scoped selects. **Full Pest suite green
+  (193).** Verified dark + RTL; console clean. No git.
+
+## 2026-07-12 — Discovery: bigger, polished Advanced-filters modal + "All" no longer a default
+
+- **"All" is a neutral reset, not a default selection.** The "All" chip no longer shows a filled/selected
+  state and is **disabled while nothing is chosen** — an unfiltered view highlights no chip (in both the
+  sticky bar and the modal, via the shared partial).
+- **Bigger, enhanced modal.** The Advanced-filters dialog is now a **large** card (`sm:max-w-2xl`,
+  `rounded-2xl`) with a **title + subtitle**, a Skills section (with its own selected-count badge), a
+  divider, a **Location** section, and a **Skill-specific** section whose scoped `<select>`s sit in a
+  **2-column grid** (using the extra width). Roomier padding, larger rounded inputs/selects, and a larger
+  "Apply filters" button. Verified dark/light + RTL; console clean; **full Pest suite green (193)**. No git.
+
+## 2026-07-12 — Discovery: skills groups side-by-side, skills-in-modal, staged modal
+
+- **Scope groups side by side, on one line.** The primary Skills filter lays its scope groups (Modeling /
+  Crew / Creative) out **horizontally** as divider-separated **columns** (was a vertical stack), and the
+  sticky bar now keeps them all on **one line** (`nowrap` + `overflow-x-auto`, hidden scrollbar) so they sit
+  beside each other. The **"All"** reset (renamed from "All skills") sits **beside** the groups, not above.
+  The single-chip **Modeling** group keeps an **invisible** label placeholder so its chip stays aligned.
+  RTL-mirrored (logical `border-s`). Chips extracted to a shared partial
+  `public/partials/skill-filter-chips` (`$nowrap`, `$staged` flags).
+- **Skills selector inside the Advanced-filters modal.** The modal now includes the same grouped skill chips
+  at the top, so a visitor can pick skills there and the scoped groups below react. With **no skill selected**
+  ("All"), **every** scoped group shows (Equipment · Crew, Software · Creative, Looks · Modeling); once skills
+  are selected only the groups **matching those categories** remain. The obsolete "Choose … skills for …"
+  hint was removed.
+- **Modal is now a staging area.** The sticky bar still applies **live**, but the modal edits a **draft**
+  snapshot (`draft.*`) and **nothing commits to the results until "Apply filters"**: `applyFilters()` copies
+  the draft into `filters` then searches; ×/backdrop/ESC **discards** the draft; **"Clear filters"** resets
+  the draft in place without applying. The trigger's filter-count badge reflects the **applied** filters, not
+  the unsaved draft. `pruneScopedFilters` (live) was made self-contained on `selectedScopes` so it no longer
+  depends on the now-draft-based `showEquipment/Software/Looks` getters.
+- **Docs/tests:** talent-spec + conventions + CLAUDE.md updated; `DiscoveryTest`'s scoped-groups test asserts
+  the by-scope groups. **Full Pest suite green (193).** Verified in-browser: side-by-side one-line groups, "All"
+  beside the groups, skills-in-modal narrowing the scoped groups, and staging (toggling a skill / typing a city
+  in the modal leaves the grid unchanged until Apply; discard on close) — dark + RTL, console clean. No git.
+
+## 2026-07-12 — Public profile: skill tabs elevated to primary navigation (presentation-only)
+
+- **Prominent, sticky tab bar.** The skill tabs are now the profile's main navigation: a **sticky** (under
+  the site header, `top-16`), horizontally-scrollable **pill / segmented** control, separated from the
+  identity region by a divider. Each tab shows the skill's **`icon`** (new self-contained `<x-skill-icon>`
+  component, mirroring the discovery chips), its **name**, and a **count badge** (visible blocks in that
+  skill).
+- **Unmistakable active state.** The active tab is **filled** (`bg-accent` + `text-on-accent` +
+  `font-semibold` + shadow), not a faint underline; inactive tabs stay legible (surface + border) with
+  **hover** and **`focus-visible`** rings.
+- **Accessibility.** Proper `role="tablist"` / `role="tab"` / `role="tabpanel"` with `aria-selected`,
+  `aria-controls` / `aria-labelledby`, **roving `tabindex`** (only the active tab is tabbable), and
+  **arrow / Home / End** keyboard navigation (RTL-aware; activation follows focus). Visible focus ring.
+- **Panel.** Renders the **active skill's name as a heading** (context when the bar scrolls out on mobile)
+  and **fades on switch** (reduced-motion-aware — a forced-reflow opacity swap, no `requestAnimationFrame`
+  so it's background-tab-safe). **Mobile:** the tabs scroll horizontally with **snap + edge fades** and
+  never wrap.
+- **De-duplicated:** the header's **skill chips were removed** (the tab bar is the navigation); the
+  **primary-skill line** in the header stays.
+- **Prompt-H behaviour preserved:** primary tab active by default; tabs **lazy-load** via Ajax on first
+  click and cache; `?skill=` deep-link + back-button sync; single-skill talents show **no tab bar**; skills
+  with no visible blocks show **no tab**; `view_count` bumps **once** per profile view (server-side), not
+  per switch. No schema/query changes.
+- **JS:** `profileTabs` (`resources/js/dashboard.js`) gains `labels`, `onTabKey` (keyboard nav), and
+  `swapPanel` (fade); the now-unused `jump()` (header chips) was removed.
+- **Docs/tests:** talent-spec (prominent tab bar, chips removed) + conventions (QA checklist) + CLAUDE.md
+  updated. `ProfileTabsTest` gains: the accessible tab bar with the primary tab active + panel heading; the
+  keyboard-nav / roving-tabindex wiring; and the header-no-longer-renders-chips check; the single-skill test
+  now asserts no `role="tablist"`. **Full Pest suite green (193, 625 assertions).** Verified in-browser:
+  tab switch updates panel + URL without reload, sticky-under-header, arrow-key nav, filled active state —
+  dark / light / RTL. No git.
+
+## 2026-07-12 — Discovery: primary skills filter + teleported viewport-centred modal
+
+- **Modal positioning bug fixed (Part 1):** the "Advanced filters" dialog is now **teleported to `<body>`**
+  (`x-teleport`) so no transformed/`overflow` ancestor (the filter card, or `main.animate-fade-in-up`'s
+  transform) can trap its `position: fixed`. It **always opens centred in the viewport** regardless of scroll,
+  over a token **scrim** (`--scrim`, added to the design tokens). Body scroll is **locked** (position preserved
+  and restored on close); it closes on **×, backdrop click, and ESC**; **focus is trapped** and returns to the
+  trigger; `role="dialog"` + `aria-modal` + `aria-labelledby`; on small screens it's a **bottom sheet whose body
+  scrolls** (not the page). Enter/leave use the motion tokens and honour `prefers-reduced-motion`.
+  - **Gotcha recorded:** Alpine's `x-transition` **leave** never completes for an `x-teleport`'d node, leaving a
+    `display:flex` overlay that traps clicks. Fix: plain `x-show` for display + enter/leave via `:class` + CSS
+    transitions on a **mount → `$nextTick`(activate) → (leave) → unmount** cycle, with **`pointer-events-none`
+    while inactive** so the page is never trapped during the fade-out. (`$nextTick`, not `requestAnimationFrame`,
+    because rAF is paused in background tabs.)
+- **Primary skills filter (Part 2):** the Skills selector is now **the** primary control — a **sticky** bar
+  (`top-16`) with a **Skills** heading, **selected-count**, and an **"All skills"** clear affordance. Skills are
+  **multi-select chips grouped by scope** (Modeling / Crew / Creative) rendering `talent_types.icon` with real
+  **states** (hover, `focus-visible` ring, filled-accent **selected + check**); accessible **`aria-pressed`
+  toggle buttons** in a labelled `role="group"`. Below: an **active-filter summary row** of removable chips
+  ("Modeling ×", "Cairo ×") + **"Clear all"**, and a live **result count** ("N talents"). Applying filters is
+  **Ajax** with **skeleton loaders** and an **empty state** (Clear filters); active filters **sync to the URL**
+  (shareable + **back/forward** via `popstate`; discrete changes push, typing replaces, **pagination holds
+  filters**). `filter[type]` is **multi-select** (comma-separated slugs). The free-text `q` search stays a small
+  **secondary** control.
+- **Scoped filters (Part 3):** Location stays always-visible; the bare "select a skill" line is replaced by a
+  hint that **names** what each selection reveals ("Choose Crew skills for Equipment · Creative for Software ·
+  Modeling for Looks"); selecting skills reveals exactly those scoped groups (crew → Equipment, creative →
+  Software, modeling → Looks). Apply / Clear re-run the search.
+- **Docs/tests:** talent-spec (discovery) + conventions (QA checklist incl. "modal opens in the viewport when
+  scrolled") + CLAUDE.md updated. `DiscoveryTest` gains multi-select-type, pagination-holds-multi-filter, the
+  primary-control render (sticky, `aria-pressed`, `role="group"`, summary, count), the teleported-modal a11y
+  wiring (`x-teleport`, `role=dialog`, `aria-modal`, focus trap, `var(--scrim)`), and the named scoped-groups
+  empty state. **Full Pest suite green (190, 608 assertions).** Verified in-browser: modal centred-when-scrolled,
+  scroll-lock, ESC/backdrop close, multi-select + summary removal, URL sync + back-button, scoped groups per
+  category — dark/light + RTL. No git.
+
+## 2026-07-11 — Skills named as disciplines, not people (ADR-S)
+
+- **Renamed the six `talent_types` (the Skills catalog)** from person-nouns to disciplines/activities:
+  Model → **Modeling** (`modeling`), Photographer → **Photography** (`photography`), Cinematographer (DOP)
+  → **Cinematography** (`cinematography`), Creative Director → **Creative Direction** (`creative-direction`),
+  Stylist → **Styling** (`styling`), Graphic Designer → **Graphic Design** (`graphic-design`). Both `name`
+  (en+ar), `slug`, `icon` (`lucide-<slug>`), and `description` change.
+- **Migration `2026_07_11_000300_rename_talent_types_to_disciplines`** renames existing rows in place and
+  is a **no-op on a fresh DB** (the table is empty when it runs; `TalentTypeSeeder` seeds the new values),
+  so `migrate:fresh --seed` and an in-place `migrate` converge. **IDs are unchanged**, so every FK
+  (`talent_talent_type`, `block_type_talent_type`, `campaign_talent_types`,
+  `brand_creative_need_talent_type`, `profile_blocks.talent_type_id`, `projects.talent_type_id`) is
+  untouched — verified on the dev DB (pivot counts identical before/after; `down()` reverses to the
+  person-nouns).
+- **`category` enum unchanged** (`model | crew | creative` — it gates blocks and scopes discovery filters);
+  only its **display labels** are now Modeling / Crew / Creative (`discover.blade.php` + `dashboard.js`
+  `scopeLabels`, plus the editor's per-skill category label). A single-chip category group whose label
+  duplicates its lone chip (Modeling) **suppresses the redundant header**.
+- **Ripples (all data-driven, auto-updated):** talent-card kicker, public-profile secondary line + skill
+  chips, admin Skills catalog, brand creative-needs, API lookup now read the new names. Deep links change:
+  `?skill=photographer` → `?skill=photography`; **old links break — accepted pre-launch, no redirects.**
+- **Seeders/factories/tests:** `TalentTypeSeeder`, `TalentTypeFactory`, `TalentDemoSeeder`,
+  `TalentShowcaseSeeder` and every test referencing an old slug/name literal were updated; nothing
+  references `photographer` / `stylist` / etc. as a slug literal. `lang/ar.json` gains `Modeling`.
+- **⚠ Arabic copy is a first pass — stakeholders should confirm the AR names** (`عرض الأزياء` /
+  `التصوير الفوتوغرافي` / `التصوير السينمائي` / `الإدارة الإبداعية` / `تنسيق الأزياء` / `التصميم الجرافيكي`).
+- **Docs:** ADR-S (decisions.md); schema-master + conventions + api.md + README + CLAUDE.md updated.
+  `brand-spec.md` needed no change (it references the Skills catalog only abstractly). **Full Pest suite
+  green (185, 579 assertions).** No `composer api-docs` (mobile API is Phase 4). No git.
+
+## 2026-07-11 — Public profile: identity/universal region + lazy, deep-linked skill tabs (ADR-R)
+
+- **Two stacked regions** (`talent/profile.blade.php`): **Region 1** (always visible) = the IG identity
+  header + universal/meta (location, **Pricing rate**, and **clickable skill chips** that activate a tab)
+  + the **profile-level blocks** (`talent_type_id = NULL`, visible, in position order). **Region 2** =
+  **skill tabs** — one tab per linked skill **with visible blocks** (ordered primary-first, primary active
+  by default); a block-less skill has **no tab**; a **single-skill** talent shows no tab bar (renders
+  directly). A tab shows only that skill's visible blocks (via the existing partials; grandfathered types
+  still render), and its **Projects** block lists only that skill's projects.
+- **Lazy + deep-linked:** the active (primary, or `?skill=`) tab renders **server-side**; other tabs are
+  fetched on first click via **`GET /{slug}/tab/{skill}`** (`TalentProfileController@tab` → envelope
+  `{ html }`, eager-loaded, no N+1) and **cached client-side** (re-click is instant). The active tab is
+  mirrored in the URL (`?skill={slug}`) so it's shareable and the **back button** works (`popstate`).
+  `view_count` bumps once per profile view (not per tab switch). New `profileTabs` Alpine component; a
+  reusable `talent/partials/skill-blocks` partial renders a tab (used server-side + by the lazy endpoint).
+- **API contract:** `App\Http\Resources\PublicProfileResource` defines the Phase-4 public-profile shape —
+  `identity` (header + universal/meta + pricing rate + skills), `universal_blocks`, and `skills[]` each
+  with `blocks[]` (mirrors the two regions). Documented in `docs/api.md`.
+- **Docs/tests:** ADR-R; talent-spec + api.md + conventions (QA checklist) + CLAUDE.md + README updated.
+  New `ProfileTabsTest` covers: identity + universal + a tab per skill with the primary active server-side;
+  a lazy tab returns ONLY that skill's visible blocks (projects scoped); the Projects link to
+  `/{slug}/work/{project}`; single-skill → no tab bar; a block-less skill → no tab (its lazy endpoint
+  404s); deep-link `?skill=` opens the right tab; unpublished/foreign/unknown-skill 404; and the resource
+  shape. Verified in-browser (lazy load, `?skill=` URL, back button, dark/light + `/ar` RTL with
+  locale-aware fetch). **Full Pest suite green (185).** No `composer api-docs` (mobile API Phase 4). No git.
+
+## 2026-07-11 — Skill-scoped blocks & projects — one tab per skill (ADR-Q)
+
+- **Schema (`2026_07_11_000200`):** added nullable `talent_type_id` FKs (nullOnDelete) to `profile_blocks`
+  and `projects` — NULL = profile-level / universal (above the tabs), NOT NULL = that skill's tab.
+  `profile_blocks.position` is now ordered **within a scope** (index `(talent_id, talent_type_id,
+  position)`; `projects.talent_type_id` indexed). The migration **backfills** (projects → primary skill;
+  blocks → the single skill their gate matches, else NULL) and reports the counts.
+- **Seeding is now per-skill (behavioural change):** adding a skill seeds **that skill's** `default_blocks`
+  into its own tab (`SeedBlocksForSkill`, replacing the global-merge `MergeDefaultBlocksForTypes` /
+  `SeedProfileBlocks`). Dedupe is scoped to (talent, skill, block_type) — a model-photographer gets its
+  own **gallery in both tabs** (each with its own `portfolio_items` via `block_id`). `is_repeatable` now
+  means "once **per scope**".
+- **`ProfileBlockService` is scope-aware:** the picker is per-scope (`availableBlockTypes($talent,
+  ?$scope)` — universal blocks in any tab or the universal section; gated blocks only in an eligible
+  skill's tab; per-scope repeatability). `addBlock`/`reorder` take a scope; new **`moveBlock`** re-stamps
+  `talent_type_id` (validated). New route `PATCH /talent/profile/blocks/{block}/move`; add/reorder accept
+  `talent_type_id`; `ProfileBlockResource` + the block-type catalog expose the scope + gate metadata.
+- **Removing a skill preserves content:** `SkillsService::removeType` deletes the skill's tab blocks but
+  un-links gallery items (`block_id` → NULL) and un-scopes its projects (`talent_type_id` → NULL); the
+  editor confirms first and the removal is logged.
+- **Profile editor (tab-aware):** blocks are grouped into a Universal / profile-level section + one
+  section per skill (primary first) — per-scope add picker, scoped drag-reorder, move-between-scopes
+  (only eligible targets), and a confirm-to-remove skill. The **projects editor** gains a Skill selector
+  (defaults to the primary skill).
+- **Public profile:** renders the universal section, then **one Alpine tab per skill** (no reload) — each
+  tab shows its own blocks + gallery. Gallery/projects partials are now block-/skill-scoped. Demo &
+  showcase seeders curate a clean tabbed layout (universal talent-level blocks at profile level, gated +
+  gallery blocks per tab).
+- **Docs/tests:** ADR-Q; schema-master + talent-spec + schema.md + architecture + conventions + api.md +
+  CLAUDE.md updated. Tests cover per-skill seeding (2nd gallery, no cross-skill dedupe), per-scope picker
+  eligibility + repeatability, scoped reorder, move-between-scopes (+ validation), skill-removal content
+  preservation, projects-carry-a-skill, and the backfill via a clean `migrate:fresh`. Verified in-browser
+  (profile tabs switch galleries; editor scope groups + move-eligibility). **Full Pest suite green (175).**
+  No mobile-API doc regeneration (Phase 4; no `composer api-docs`). No git.
+
+## 2026-07-11 — Discovery: skills-first with an advanced-filters modal + scoped filters
+
+- **Skills-first UI** (`resources/views/public/discover.blade.php`, `talentSearch` Alpine component): the
+  primary filter is **Skills** (the `talent_types` catalog), a prominent selector **grouped by scope**
+  (Models / Crew / Creative) from the skills' `category`. Selecting skill(s) filters live (Ajax, envelope,
+  paginated, eager-loaded — no reload).
+- **"Advanced filters" modal**: a button (with an **active-filter count** badge) opens a modal holding the
+  full filter set, **scoped by the selected skills' category** — **Location** (city, country) always,
+  **crew → Equipment**, **creative → Software**, **model → Looks**; out-of-scope groups are hidden (and
+  their values pruned). **Apply filters** re-runs the paginated search. The free-text `q` search is
+  demoted to a small **secondary** control.
+- **New `looks` filter (model scope)**: `App\Queries\TalentSearch` gains a whitelisted `filter[looks]`
+  matching `look_types.name` on the English path (`name->en`). Because `name` is a translatable **JSON**
+  column, a plain index is impossible — migration `2026_07_11_000100` adds a **functional index**
+  `look_types_name_en_index` on `CAST(name->>'$.en' AS CHAR(191))` (MySQL-only, guarded by driver).
+  Confirmed the removed **availability** filter is gone (ADR-L). Everything stays eager-loaded + paginated
+  (no N+1). `country` is now also surfaced in the UI (was already whitelisted).
+- **Docs/tests.** talent-spec (skills-first discovery, advanced-filters modal, scoped filters, secondary
+  search, Looks filter + a comp-card-ranges future note), `docs/schema.md` (the functional index),
+  `docs/conventions.md` (refreshed discovery QA checklist), `docs/api.md` (`looks` filter), CLAUDE.md.
+  `DiscoveryTest` gains scoped-filter coverage (crew→equipment, creative→software, **model→looks**),
+  country + secondary-`q` filtering, and filtered-pagination; the render test asserts the skills-first +
+  advanced-filters entry. Verified in-browser (dark, light, `/ar` RTL — skills groups + modal mirror).
+  **Full Pest suite green (171).** No mobile-API doc regeneration (Phase 4; no `composer api-docs`). No git.
+
+## 2026-07-11 — Public profile primary CTA: "Message" (interim brand-auth redirect, ADR-P)
+
+- **CTA swap.** The public profile's primary CTA is now **Message** (was **Contact** — Prompt C/ADR-O);
+  "Leave a review" stays as the secondary CTA. Message points at a reserved, talent-scoped named route
+  **`brand.talents.message`** (`GET /brand/talents/{talent:slug}/message`,
+  `App\Http\Controllers\Brand\TalentMessageController`).
+- **Interim behaviour (no chat wiring, no new tables).** The route is public and branches on brand auth:
+  a visitor **not** authenticated as a brand is redirected to brand auth (`route('login', ['role' =>
+  'brand'])` — the login view now pre-selects the Brand role from `?role`) with this talent's public
+  profile stored as `url.intended`; an **authenticated brand** gets a **"Messaging coming soon"** flash
+  back on the profile. A clearly-marked `TODO(brand-messaging)` hook marks where the real brand↔talent
+  chat (`deal_messages`) / deal initiation attaches later. `talent.enquire` (deal_enquiries) is untouched.
+- **Supporting bits.** Added a token-based flash banner to `public-layout` (renders `session('status')`);
+  new `Message` / `Messaging coming soon` / `Dismiss` strings in `ar.json`.
+- **Docs/tests.** ADR-P added to `docs/decisions.md`; talent-spec (public-profile CTA), CLAUDE.md, and this
+  changelog updated. `TalentProfileTest` now asserts the **Message** CTA (and no "Contact") and that it
+  links to `brand.talents.message`; new `tests/Feature/Brand/TalentMessageTest` covers the guest→brand-auth
+  redirect (return URL preserved), the authed-brand "coming soon" stub, and a 404 for an unknown slug.
+  Verified in-browser (Message CTA → `/login?role=brand` with Brand pre-selected). **Full Pest suite green
+  (168).** No git.
+
+## 2026-07-11 — Deal room: timeline-first layout (message thread central)
+
+- **Layout-only swap** of the talent deal room (`resources/views/talent/deals/show.blade.php`): the
+  **message timeline** is now the primary, central, wide column (conversation view — messages +
+  system_events interleaved, newest at the bottom — with the composer), and the **current-step action
+  panel** + **phases stepper** moved into the narrower **side panel** (action panel on top, stepper
+  below). The header stays on top (reference, title, counterparty, status badge, amount) and now carries
+  the "← All deals" link. Added `Phases` / `Current step` section labels (+ `ar.json`).
+- **No behaviour change:** the `dealRoom` Alpine component, all endpoints
+  (`thread`/`advance`/`reject`/`skip`/`message`), and `DealService` are untouched — sending a message and
+  acting on a step still update the timeline + stepper via **Ajax with no reload**. No schema, no
+  state-machine, no service changes.
+- **Responsive + themed:** the side panel stacks under the timeline on narrow screens; verified in-browser
+  in **dark, light, and `/ar` RTL** (the whole layout mirrors correctly).
+- **Docs/tests:** talent-spec (deal-room: timeline-primary, phases in the side panel), conventions
+  (refreshed deal-room QA checklist), CLAUDE.md. `DealRoomTest` gains a structural render assertion
+  (`assertSeeInOrder`: All deals → Timeline → composer → Current step → Phases); message-send + step-action
+  tests unchanged and green. **Full Pest suite green (164).** No git. *(Only the talent deal room exists;
+  the brand deal room is Phase 2C and should reuse this layout.)*
+
+## 2026-07-10 — Instagram-style public profile header + Pricing rate shown (ADR-O)
+
+- **Cover/hero image removed.** Deprecated the `hero` media collection + `hero_image_url` accessor on
+  `Talent`; removed the editor's hero uploader (`ProfileEditorController::uploadHero`, the `profile.hero`
+  route, `TalentProfileService::setHeroImage`, and the Alpine hero state in `dashboard.js`). No column
+  drop (hero was a media-library accessor). The **`avatar`** collection stays. The `hero` **block type**
+  in the catalog/`default_blocks` is a separate concept and is untouched (still skipped in the render
+  loop — the header replaces it). Demo/showcase seeders no longer attach a hero cover.
+- **Instagram-style header** (`resources/views/talent/profile.blade.php`, token-only, dark + light +
+  RTL): a thin brand accent strip; a large **circular avatar** (`avatar` collection; initials/gradient
+  fallback — a new `2xl` size on `x-ui.avatar`); **display_name** + **@username** (the `slug`) + an
+  optional "…" menu (copy profile link); a secondary line (primary **Skill** or headline); a three-item
+  **stats row** — **Projects** (count of `projects`) · **Views** (`view_count`) · **Rating** (avg of
+  approved reviews, hidden when none); the **bio**; an optional external-link row; and **Contact** /
+  **Leave a review** CTAs. Header stats read from already eager-loaded relations — no N+1.
+- **Pricing rate shown** (ADR-N) near the identity as a "From {currency} {amount} / {unit}" chip
+  (formatted, e.g. "From EGP 5,000 / day"), hidden entirely when no rate is set.
+- **Consistency:** confirmed the header carries no availability badge and no services/affiliations/press
+  (ADR-K/L/M); remaining blocks still render in position order.
+- **Docs/tests:** talent-spec (IG header, no cover, pricing shown), conventions (media map: `hero`
+  removed; refreshed QA checklist), decisions (ADR-O), CLAUDE.md, README, changelog. `TalentProfileTest`
+  gains header / @username / stats / pricing / rating-visibility coverage; the `Talent` media-collection
+  test drops `hero`. Verified in-browser (dark, light, `/ar` RTL). **Full Pest suite green (163).** No git.
+
+## 2026-07-10 — Profile consolidation, "Professions → Skills" rename & Pricing rate (ADR-N)
+
+- **Skills rename.** "Professions" is now **Skills** across all user-facing copy, Blade, translation keys
+  and routes (route segment `professions` → `skills`; names `talent.professions*` →
+  `talent.profile.skills*`). Talent-side symbols renamed to match: `ProfessionsService` → `SkillsService`,
+  `ProfessionController` → `SkillController`, `StoreProfessionRequest` → `StoreSkillRequest`. The
+  `talent_types` table + `TalentType` model + `talent_type_id` FKs are **kept** as the physical layer —
+  `talent_types` is the **Skills catalog** (a physical rename would cascade into brands/campaigns; noted
+  as a deliberate future migration in `schema-master.md` + ADR-N).
+- **Editor consolidation.** The standalone **Professions** and **Account** tabs are folded into the
+  **Profile editor**, so the talent sidebar is now **Home · Profile · Content · Reviews · Deals**. The
+  Profile editor is the single profile surface: Identity, **Skills** (`SkillController` under
+  `/talent/profile/skills*`), **Username** (the public `slug`, relabelled "Username" in UI + validation
+  via `UpdateCoreProfileRequest::attributes()`; column unchanged), **Publish**
+  (`PATCH /talent/profile/publish`, moved from Account), **Pricing rate**, and Blocks. Removed
+  `AccountController` + `UpdateAccountRequest` + the `account`/`professions` routes, views and the
+  `professionsManager` Alpine component (folded into `profileEditor`).
+- **Pricing rate (replaces the removed rate card).** Migration `2026_07_10_000500` adds `rate_unit`
+  ENUM(project, day, hour) / `rate_amount` DECIMAL(10,2) / `rate_currency` CHAR(3) to `talents` (nullable,
+  NOT translatable). `PATCH /talent/profile/pricing` via `TalentProfileService::updatePricingRate` +
+  `UpdatePricingRateRequest` — **all-or-nothing** (`required_with` makes any one field require the other
+  two; a blank amount clears the whole rate; currency upper-cased). Demo talent seeded with a sample rate.
+- **Docs.** talent-spec (Skills section + Account/Publish merged + Pricing rate), schema-master
+  (`talent_types` = Skills catalog note + `rate_*` on `talents`), `docs/schema.md`, `docs/architecture.md`,
+  `docs/api.md` (routes: skills under profile, publish/pricing, Account removed), `docs/conventions.md`
+  (rate not translatable, "slug shown as Username", refreshed QA checklist), `docs/decisions.md` (ADR-N),
+  CLAUDE.md and README updated in place.
+- **Tests.** `ProfessionsServiceTest` → `SkillsServiceTest`, `ProfessionsTest` → `SkillsTest` (routes under
+  `/talent/profile/skills*`); publish + username now tested via the profile routes; new pricing-rate CRUD
+  + all-or-nothing 422 + username-relabel-message coverage; consolidated-editor render test. No
+  "profession" left in user-facing copy or routes. **Full Pest suite green (160).** *(No `composer
+  api-docs` run — the mobile API is Phase 4 and no `api-docs` script exists yet; `docs/api.md` updated by
+  hand. The admin "Skills" relabel + `ProfessionCatalogService` → `SkillCatalogService` apply when the
+  admin side is built — not present in this talent-slice codebase.)*
+
+## 2026-07-10 — Remove three talent features (rate card, availability & travel, affiliations & press)
+
+- **Removed entirely (ADR-K/L/M):** the rate card / **services**, **availability & travel**, and
+  **affiliations & press** talent features — every trace across the codebase.
+  - **Rate card / services (ADR-K):** dropped the `services` table, `Service` model/factory/state
+    machine/policy, the `services` block (catalog row + content editor + public partial + its key in
+    every `default_blocks`), and the rate-card routes/controller/request/resource. **Deal-engine ripple:**
+    `service_id` dropped from `deals` + `deal_enquiries` (FK + column); `service()` relations,
+    `DealResource`/deal payloads, `InitiateDeal`, `ConvertEnquiryToDeal`, `StoreEnquiryRequest`, and the
+    enquiry Blade stripped. Deal amount now comes from the flow's form/quote step; the single Pricing rate
+    (`booking_type`/`booking_value`) replaces the rate card.
+  - **Availability & travel (ADR-L):** dropped `availability_status` (+ its discovery index and the
+    `Availability` state machine), the public-profile availability badge, the enquiry availability gate
+    (**enquiries are always allowed now**), and `willing_to_travel` / `travel_regions` / `rate_tier`
+    (superseded by the Pricing rate). Removed the dashboard route/controller/request/resource, sidebar
+    entry, Alpine handler, discovery filter, and dashboard-home badge.
+  - **Affiliations & press (ADR-M):** dropped `agency_affiliations` + `press_features` (tables, models,
+    factories, the `Affiliation` state machine, both policies), the `press` block (catalog row + content
+    editor + public partial + its key in `default_blocks`), the affiliations section, and the
+    routes/controllers/requests/resources.
+- **Migrations (append-only):** `2026_07_10_0001` drops `deals`/`deal_enquiries` `service_id`; `_0002`
+  drops the availability/travel columns (index first); `_0003` drops the three tables; `_0004` removes the
+  three block types + their category/type gates + any existing `profile_blocks` rows (no-op on fresh).
+- **Seeders:** stripped `services`/`press` from every `default_blocks`, removed the three block-type rows,
+  and cleaned the demo/showcase seeders of all availability/travel/rate-card/affiliation references.
+- **Docs:** ADR-K/L/M added to `docs/decisions.md`; talent-spec, schema-master, `docs/schema.md`,
+  `docs/architecture.md`, `docs/api.md`, `docs/conventions.md` (media map + translatable list + QA
+  checklist), CLAUDE.md, and README updated in place.
+- **Tests:** removed/adjusted the removed-features' tests; **full Pest suite green (155)**; migrations run
+  clean on `fama_test`; `migrate:fresh --seed` completes; app boots; public profile + talent dashboard
+  render with the features gone (no dead routes/blocks/badge/imports). No git.
 
 ## 2026-07-08 — Talent slice: production-grade sign-off
 

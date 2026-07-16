@@ -1,7 +1,7 @@
 <x-public-layout :title="__('Contact :name', ['name' => $talent->display_name])">
     <div class="mx-auto max-w-lg px-4 py-10 sm:px-6"
          x-data="{
-            form: { service_id: '', contact_name: '', contact_email: '', contact_company: '', brief: '' },
+            form: { contact_name: '', contact_email: '', contact_company: '', brief: '' },
             errors: {}, saving: false, done: false,
             async submit() {
                 this.saving = true; this.errors = {};
@@ -17,7 +17,7 @@
             ← {{ $talent->display_name }}
         </a>
         <h1 class="mt-4 font-display text-3xl text-ink">{{ __('Start a booking') }}</h1>
-        <p class="mt-1 text-sm text-muted">{{ __('Tell :name about your project — they will be in touch to open a deal.', ['name' => $talent->display_name]) }}</p>
+        <p class="mt-1 text-sm text-muted">{{ __('Tell :name about your project — they will be in touch to open a contract.', ['name' => $talent->display_name]) }}</p>
 
         <template x-if="done">
             <x-ui.card class="mt-8 text-center">
@@ -30,18 +30,6 @@
         <template x-if="!done">
             <x-ui.card class="mt-8 space-y-4">
                 <p x-show="errors._" x-cloak class="rounded-md bg-danger-weak px-3 py-2 text-sm text-danger" x-text="errors._?.[0]"></p>
-
-                @if ($talent->services->isNotEmpty())
-                    <div>
-                        <label class="mb-1 block text-sm font-medium text-ink">{{ __('Service') }}</label>
-                        <select x-model="form.service_id" class="w-full rounded-md border-line bg-elevated text-ink shadow-sm focus:border-accent focus:ring-accent">
-                            <option value="">{{ __('General enquiry') }}</option>
-                            @foreach ($talent->services as $service)
-                                <option value="{{ $service->id }}">{{ $service->getTranslation('name', app()->getLocale()) }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                @endif
 
                 <div>
                     <label class="mb-1 block text-sm font-medium text-ink">{{ __('Your name') }}</label>

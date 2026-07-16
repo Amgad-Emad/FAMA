@@ -5,21 +5,23 @@ namespace App\Http\Controllers\Brand;
 use App\States\Brand\Published;
 use App\States\Brand\Unpublished;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
-use Illuminate\View\View;
 use InvalidArgumentException;
 
 /**
  * Brand account / settings (brand-spec) — settings-stage fields, slug, and the
  * publish toggle (the status machine's published ⇄ unpublished; is_published is
- * a synced projection).
+ * a synced projection). The Account page was folded into the Profile editor, so
+ * the old index redirects there; the update + publish endpoints stay (the Profile
+ * editor's Settings + Visibility sections call them).
  */
 class AccountController extends BrandController
 {
-    public function index(): View
+    public function index(): RedirectResponse
     {
-        return view('brand.account', ['brand' => $this->brand()]);
+        return redirect()->route('brand.profile');
     }
 
     public function update(Request $request): JsonResponse

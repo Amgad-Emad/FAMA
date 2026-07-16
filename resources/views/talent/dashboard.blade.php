@@ -4,7 +4,6 @@
             <x-ui.eyebrow>{{ __('Welcome back') }}</x-ui.eyebrow>
             <h2 class="mt-1 font-display text-3xl text-ink">{{ $talent->display_name ?: $talent->email }}</h2>
         </div>
-        <x-ui.badge :status="$talent->availability_status->getValue()" />
     </div>
 
     <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -14,7 +13,7 @@
                 <span class="h-2.5 w-2.5 rounded-pill {{ $stats['is_published'] ? 'bg-success' : 'bg-warn' }}"></span>
                 <span class="font-display text-xl text-ink">{{ $stats['is_published'] ? __('Live') : __(ucfirst($stats['status'])) }}</span>
             </div>
-            <a href="{{ route('talent.account') }}" class="mt-3 inline-block text-xs text-accent-ink underline">
+            <a href="{{ route('talent.profile.edit') }}" class="mt-3 inline-block text-xs text-accent-ink underline">
                 {{ $stats['is_published'] ? __('Manage publishing') : __('Publish your profile') }}
             </a>
         </x-ui.card>
@@ -29,31 +28,31 @@
             @endif
         </x-ui.card>
 
-        <x-ui.stat :label="__('Blocks · professions')" :value="$stats['blocks'].' · '.$stats['professions']" />
+        <x-ui.stat :label="__('Blocks · skills')" :value="$stats['blocks'].' · '.$stats['skills']" />
     </div>
 
-    <x-ui.section class="mt-10" :title="__('Active deals')" :eyebrow="__('Whose turn')">
-        @if ($activeDeals->isEmpty())
+    <x-ui.section class="mt-10" :title="__('Active contracts')" :eyebrow="__('Whose turn')">
+        @if ($activeContracts->isEmpty())
             <x-ui.card class="flex items-center justify-between gap-4">
-                <p class="text-muted">{{ __('No active deals yet — enquiries from brands will open here.') }}</p>
-                <a href="{{ route('talent.deals') }}" class="shrink-0 text-xs text-accent-ink underline">{{ __('All deals') }}</a>
+                <p class="text-muted">{{ __('No active contracts yet — enquiries from brands will open here.') }}</p>
+                <a href="{{ route('talent.contracts') }}" class="shrink-0 text-xs text-accent-ink underline">{{ __('All contracts') }}</a>
             </x-ui.card>
         @else
             <div class="space-y-2">
-                @foreach ($activeDeals as $deal)
-                    <a href="{{ route('talent.deals.show', $deal) }}"
-                       class="flex items-center justify-between gap-3 rounded-lg border border-line bg-surface p-4 transition hover:border-line-strong {{ $deal->status->getValue() === 'awaiting_talent' ? 'ring-1 ring-accent' : '' }}">
+                @foreach ($activeContracts as $contract)
+                    <a href="{{ route('talent.contracts.show', $contract) }}"
+                       class="flex items-center justify-between gap-3 rounded-lg border border-line bg-surface p-4 transition hover:border-line-strong {{ $contract->status->getValue() === 'awaiting_talent' ? 'ring-1 ring-accent' : '' }}">
                         <div class="min-w-0">
-                            <div class="font-mono text-[10px] uppercase tracking-wider text-subtle">{{ $deal->reference }}</div>
-                            <div class="font-display text-lg text-ink">{{ $deal->title }}</div>
-                            <div class="text-sm text-muted">{{ $deal->brand?->name }}</div>
+                            <div class="font-mono text-[10px] uppercase tracking-wider text-subtle">{{ $contract->reference }}</div>
+                            <div class="font-display text-lg text-ink">{{ $contract->title }}</div>
+                            <div class="text-sm text-muted">{{ $contract->brand?->name }}</div>
                         </div>
                         <div class="shrink-0 text-end">
-                            <span class="rounded-pill px-2 py-1 text-[10px] font-medium {{ $deal->status->getValue() === 'awaiting_talent' ? 'bg-accent text-on-accent' : 'border border-line bg-surface text-muted' }}">
-                                {{ $deal->status->getValue() === 'awaiting_talent' ? __('Your turn') : str_replace('_', ' ', $deal->status->getValue()) }}
+                            <span class="rounded-pill px-2 py-1 text-[10px] font-medium {{ $contract->status->getValue() === 'awaiting_talent' ? 'bg-accent text-on-accent' : 'border border-line bg-surface text-muted' }}">
+                                {{ $contract->status->getValue() === 'awaiting_talent' ? __('Your turn') : str_replace('_', ' ', $contract->status->getValue()) }}
                             </span>
-                            @if ($deal->currentStep)
-                                <div class="mt-1 text-xs text-subtle">{{ $deal->currentStep->name }}</div>
+                            @if ($contract->currentStep)
+                                <div class="mt-1 text-xs text-subtle">{{ $contract->currentStep->name }}</div>
                             @endif
                         </div>
                     </a>
@@ -65,12 +64,9 @@
     <x-ui.section class="mt-10" :title="__('Manage your profile')">
         <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             @foreach ([
-                ['talent.profile.edit', __('Profile editor'), __('Blocks, layout & core details')],
-                ['talent.professions', __('Professions'), __('Your creative disciplines')],
-                ['talent.services', __('Rate card'), __('Services & pricing')],
+                ['talent.profile.edit', __('Profile'), __('Identity, skills, username, publishing, pricing & blocks')],
                 ['talent.reviews', __('Reviews'), __('Moderate testimonials')],
-                ['talent.availability', __('Availability'), __('Status, travel & rate tier')],
-                ['talent.account', __('Account'), __('Slug, publishing & prefs')],
+                ['talent.contracts', __('Contracts'), __('Your active bookings')],
             ] as [$route, $label, $desc])
                 <a href="{{ route($route) }}" class="group rounded-lg border border-line bg-surface p-5 transition hover:border-line-strong hover:shadow-e1">
                     <div class="font-medium text-ink group-hover:text-accent-ink">{{ $label }}</div>

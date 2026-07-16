@@ -7,7 +7,7 @@ namespace App\Actions\Contracts;
  *
  * Convention (see CLAUDE.md pattern map):
  *  - One action does exactly one discrete operation (seed profile blocks,
- *    snapshot flow steps, initiate/advance a deal, convert enquiry -> deal,
+ *    snapshot flow steps, initiate/advance a contract, convert enquiry -> contract,
  *    recalc credibility, ...).
  *  - Actions are invokable: implement `public function __invoke(...)` with your
  *    own typed parameters and return type.

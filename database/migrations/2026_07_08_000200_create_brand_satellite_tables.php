@@ -93,7 +93,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('brand_id')->constrained('brands')->cascadeOnDelete();
             $table->foreignId('talent_id')->constrained('talents')->cascadeOnDelete();
-            $table->foreignId('deal_id')->nullable()->constrained('deals')->nullOnDelete();
+            $table->foreignId('contract_id')->nullable()->constrained('contracts')->nullOnDelete();
             $table->unsignedTinyInteger('communication_rating');
             $table->unsignedTinyInteger('fairness_rating');
             $table->unsignedTinyInteger('creative_respect_rating');

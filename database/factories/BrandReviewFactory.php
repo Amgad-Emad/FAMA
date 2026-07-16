@@ -22,7 +22,7 @@ class BrandReviewFactory extends Factory
         return [
             'brand_id' => Brand::factory(),
             'talent_id' => Talent::factory(),
-            'deal_id' => null,
+            'contract_id' => null,
             'communication_rating' => fake()->numberBetween(3, 5),
             'fairness_rating' => fake()->numberBetween(3, 5),
             'creative_respect_rating' => fake()->numberBetween(3, 5),

@@ -1,16 +1,12 @@
 <?php
 
-use App\Http\Controllers\Talent\AccountController;
-use App\Http\Controllers\Talent\AffiliationController;
-use App\Http\Controllers\Talent\AvailabilityController;
+use App\Http\Controllers\Talent\ApplicationController;
 use App\Http\Controllers\Talent\BlockContentController;
 use App\Http\Controllers\Talent\DashboardController;
-use App\Http\Controllers\Talent\DealController;
-use App\Http\Controllers\Talent\PressController;
-use App\Http\Controllers\Talent\ProfessionController;
+use App\Http\Controllers\Talent\ContractController;
 use App\Http\Controllers\Talent\ProfileEditorController;
 use App\Http\Controllers\Talent\ReviewController;
-use App\Http\Controllers\Talent\ServiceController;
+use App\Http\Controllers\Talent\SkillController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -22,41 +18,36 @@ use Illuminate\Support\Facades\Route;
 | Page routes (GET) return Blade shells; every other action returns the shared
 | JSON envelope for the http.js/Alpine front-end (no page reloads).
 |
+| The sidebar is: Home · Profile · Content · Reviews · Contracts. The Profile editor
+| is the single profile surface — identity, Skills, username, publish, pricing
+| rate, and the reorderable blocks (the old Professions + Account tabs folded in).
+|
 */
 
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-// --- Profile editor ---------------------------------------------------------
+// --- Profile editor (the single profile surface) ----------------------------
 Route::get('/profile', [ProfileEditorController::class, 'edit'])->name('profile.edit');
 Route::patch('/profile', [ProfileEditorController::class, 'updateCore'])->name('profile.update');
-Route::post('/profile/hero', [ProfileEditorController::class, 'uploadHero'])->name('profile.hero');
+Route::post('/profile/avatar', [ProfileEditorController::class, 'updateAvatar'])->name('profile.avatar.update');
+Route::delete('/profile/avatar', [ProfileEditorController::class, 'removeAvatar'])->name('profile.avatar.destroy');
+Route::patch('/profile/pricing', [ProfileEditorController::class, 'updatePricingRate'])->name('profile.pricing');
+Route::patch('/profile/publish', [ProfileEditorController::class, 'publish'])->name('profile.publish');
 Route::get('/profile/blocks', [ProfileEditorController::class, 'blocks'])->name('profile.blocks');
 Route::get('/profile/block-picker', [ProfileEditorController::class, 'picker'])->name('profile.picker');
 Route::post('/profile/blocks', [ProfileEditorController::class, 'addBlock'])->name('profile.blocks.store');
 Route::patch('/profile/blocks/reorder', [ProfileEditorController::class, 'reorderBlocks'])->name('profile.blocks.reorder');
+Route::patch('/profile/blocks/{block}/move', [ProfileEditorController::class, 'moveBlock'])->name('profile.blocks.move');
 Route::patch('/profile/blocks/{block}', [ProfileEditorController::class, 'fillBlock'])->name('profile.blocks.update');
 Route::patch('/profile/blocks/{block}/visibility', [ProfileEditorController::class, 'toggleBlock'])->name('profile.blocks.visibility');
 Route::delete('/profile/blocks/{block}', [ProfileEditorController::class, 'removeBlock'])->name('profile.blocks.destroy');
 
-// --- Professions ------------------------------------------------------------
-Route::get('/professions', [ProfessionController::class, 'index'])->name('professions');
-Route::get('/professions/data', [ProfessionController::class, 'data'])->name('professions.data');
-Route::post('/professions', [ProfessionController::class, 'store'])->name('professions.store');
-Route::patch('/professions/reorder', [ProfessionController::class, 'reorder'])->name('professions.reorder');
-Route::patch('/professions/{type}/primary', [ProfessionController::class, 'primary'])->name('professions.primary');
-Route::delete('/professions/{type}', [ProfessionController::class, 'destroy'])->name('professions.destroy');
-
-// --- Services / rate card ---------------------------------------------------
-Route::get('/services', [ServiceController::class, 'index'])->name('services');
-Route::get('/services/data', [ServiceController::class, 'data'])->name('services.data');
-Route::post('/services', [ServiceController::class, 'store'])->name('services.store');
-Route::patch('/services/{service}', [ServiceController::class, 'update'])->name('services.update');
-Route::patch('/services/{service}/toggle', [ServiceController::class, 'toggle'])->name('services.toggle');
-Route::delete('/services/{service}', [ServiceController::class, 'destroy'])->name('services.destroy');
-
-// --- Availability & travel --------------------------------------------------
-Route::get('/availability', [AvailabilityController::class, 'index'])->name('availability');
-Route::patch('/availability', [AvailabilityController::class, 'update'])->name('availability.update');
+// --- Skills (a section inside the Profile editor) ---------------------------
+Route::get('/profile/skills', [SkillController::class, 'data'])->name('profile.skills.data');
+Route::post('/profile/skills', [SkillController::class, 'store'])->name('profile.skills.store');
+Route::patch('/profile/skills/reorder', [SkillController::class, 'reorder'])->name('profile.skills.reorder');
+Route::patch('/profile/skills/{type}/primary', [SkillController::class, 'primary'])->name('profile.skills.primary');
+Route::delete('/profile/skills/{type}', [SkillController::class, 'destroy'])->name('profile.skills.destroy');
 
 // --- Reviews moderation -----------------------------------------------------
 Route::get('/reviews', [ReviewController::class, 'index'])->name('reviews');
@@ -64,31 +55,19 @@ Route::get('/reviews/data', [ReviewController::class, 'data'])->name('reviews.da
 Route::patch('/reviews/{review}/approve', [ReviewController::class, 'approve'])->name('reviews.approve');
 Route::patch('/reviews/{review}/reject', [ReviewController::class, 'reject'])->name('reviews.reject');
 
-// --- Affiliations & press ---------------------------------------------------
-Route::get('/affiliations', [AffiliationController::class, 'index'])->name('affiliations');
-Route::get('/affiliations/data', [AffiliationController::class, 'data'])->name('affiliations.data');
-Route::post('/affiliations', [AffiliationController::class, 'store'])->name('affiliations.store');
-Route::patch('/affiliations/{affiliation}', [AffiliationController::class, 'update'])->name('affiliations.update');
-Route::patch('/affiliations/{affiliation}/end', [AffiliationController::class, 'end'])->name('affiliations.end');
-Route::delete('/affiliations/{affiliation}', [AffiliationController::class, 'destroy'])->name('affiliations.destroy');
-Route::get('/press/data', [PressController::class, 'data'])->name('press.data');
-Route::post('/press', [PressController::class, 'store'])->name('press.store');
-Route::delete('/press/{press}', [PressController::class, 'destroy'])->name('press.destroy');
+// --- Applications (talent applies to a brand project) -----------------------
+Route::get('/applications/mentions', [ApplicationController::class, 'mentions'])->name('applications.mentions');
+Route::post('/applications/{brandProject}', [ApplicationController::class, 'store'])->name('applications.store');
 
-// --- Account / settings -----------------------------------------------------
-Route::get('/account', [AccountController::class, 'index'])->name('account');
-Route::patch('/account', [AccountController::class, 'update'])->name('account.update');
-Route::patch('/account/publish', [AccountController::class, 'publish'])->name('account.publish');
-
-// --- Deal room + inbox ------------------------------------------------------
-Route::get('/deals', [DealController::class, 'index'])->name('deals');
-Route::get('/deals/data', [DealController::class, 'data'])->name('deals.data');
-Route::get('/deals/{deal}', [DealController::class, 'show'])->name('deals.show');
-Route::get('/deals/{deal}/thread', [DealController::class, 'thread'])->name('deals.thread');
-Route::post('/deals/{deal}/advance', [DealController::class, 'advance'])->name('deals.advance');
-Route::post('/deals/{deal}/reject', [DealController::class, 'reject'])->name('deals.reject');
-Route::post('/deals/{deal}/skip', [DealController::class, 'skip'])->name('deals.skip');
-Route::post('/deals/{deal}/message', [DealController::class, 'message'])->name('deals.message');
+// --- Contract room + inbox ------------------------------------------------------
+Route::get('/contracts', [ContractController::class, 'index'])->name('contracts');
+Route::get('/contracts/data', [ContractController::class, 'data'])->name('contracts.data');
+Route::get('/contracts/{contract}', [ContractController::class, 'show'])->name('contracts.show');
+Route::get('/contracts/{contract}/thread', [ContractController::class, 'thread'])->name('contracts.thread');
+Route::post('/contracts/{contract}/advance', [ContractController::class, 'advance'])->name('contracts.advance');
+Route::post('/contracts/{contract}/reject', [ContractController::class, 'reject'])->name('contracts.reject');
+Route::post('/contracts/{contract}/skip', [ContractController::class, 'skip'])->name('contracts.skip');
+Route::post('/contracts/{contract}/message', [ContractController::class, 'message'])->name('contracts.message');
 
 // --- Block content editors (child tables; content_source-aware) -------------
 Route::get('/content/{type}', [BlockContentController::class, 'index'])->name('content');

@@ -140,9 +140,9 @@ return [
             'replace_placeholders' => true,
         ],
 
-        'deals' => [
+        'contracts' => [
             'driver' => 'daily',
-            'path' => storage_path('logs/deals.log'),
+            'path' => storage_path('logs/contracts.log'),
             'level' => env('LOG_LEVEL', 'debug'),
             'days' => env('LOG_DAILY_DAYS', 90),
             'replace_placeholders' => true,

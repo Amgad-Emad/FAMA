@@ -6,9 +6,11 @@ use App\Models\TalentType;
 use Illuminate\Database\Seeder;
 
 /**
- * Seeds the six canonical professions. `default_blocks` (ordered block_type keys)
- * decides which blocks a new talent of that type gets pre-loaded. Idempotent on
- * `slug`.
+ * Seeds the six canonical skills (the `talent_types` catalog — ADR-N). Skills are
+ * named as the DISCIPLINE/ACTIVITY, not the person (ADR-S): "Modeling", not "Model".
+ * `default_blocks` (ordered block_type keys) decides which blocks a new talent of
+ * that skill gets pre-loaded. `category` stays the DB enum (model/crew/creative).
+ * Idempotent on `slug`.
  */
 class TalentTypeSeeder extends Seeder
 {
@@ -16,28 +18,28 @@ class TalentTypeSeeder extends Seeder
     {
         $types = [
             [
-                'slug' => 'model', 'en' => 'Model', 'ar' => 'عارض/عارضة', 'category' => 'model',
-                'default_blocks' => ['hero', 'gallery', 'comp_card', 'look_types', 'digitals', 'brand_collabs', 'reviews', 'services'],
+                'slug' => 'modeling', 'en' => 'Modeling', 'ar' => 'عرض الأزياء', 'category' => 'model',
+                'default_blocks' => ['hero', 'gallery', 'comp_card', 'look_types', 'digitals', 'brand_collabs', 'reviews'],
             ],
             [
-                'slug' => 'photographer', 'en' => 'Photographer', 'ar' => 'مصور', 'category' => 'crew',
-                'default_blocks' => ['hero', 'gallery', 'showreel', 'equipment', 'brand_collabs', 'reviews', 'services'],
+                'slug' => 'photography', 'en' => 'Photography', 'ar' => 'التصوير الفوتوغرافي', 'category' => 'crew',
+                'default_blocks' => ['hero', 'gallery', 'showreel', 'equipment', 'brand_collabs', 'reviews'],
             ],
             [
-                'slug' => 'cinematographer', 'en' => 'Cinematographer (DOP)', 'ar' => 'مدير تصوير', 'category' => 'crew',
-                'default_blocks' => ['hero', 'showreel', 'equipment', 'projects', 'reviews', 'services'],
+                'slug' => 'cinematography', 'en' => 'Cinematography', 'ar' => 'التصوير السينمائي', 'category' => 'crew',
+                'default_blocks' => ['hero', 'showreel', 'equipment', 'projects', 'reviews'],
             ],
             [
-                'slug' => 'creative-director', 'en' => 'Creative Director', 'ar' => 'مدير إبداعي', 'category' => 'creative',
-                'default_blocks' => ['hero', 'gallery', 'projects', 'brand_collabs', 'reviews', 'services'],
+                'slug' => 'creative-direction', 'en' => 'Creative Direction', 'ar' => 'الإدارة الإبداعية', 'category' => 'creative',
+                'default_blocks' => ['hero', 'gallery', 'projects', 'brand_collabs', 'reviews'],
             ],
             [
-                'slug' => 'stylist', 'en' => 'Stylist', 'ar' => 'ستايليست', 'category' => 'creative',
-                'default_blocks' => ['hero', 'gallery', 'brand_collabs', 'reviews', 'services'],
+                'slug' => 'styling', 'en' => 'Styling', 'ar' => 'تنسيق الأزياء', 'category' => 'creative',
+                'default_blocks' => ['hero', 'gallery', 'brand_collabs', 'reviews'],
             ],
             [
-                'slug' => 'graphic-designer', 'en' => 'Graphic Designer', 'ar' => 'مصمم جرافيك', 'category' => 'creative',
-                'default_blocks' => ['hero', 'gallery', 'projects', 'software_stack', 'reviews', 'services'],
+                'slug' => 'graphic-design', 'en' => 'Graphic Design', 'ar' => 'التصميم الجرافيكي', 'category' => 'creative',
+                'default_blocks' => ['hero', 'gallery', 'projects', 'software_stack', 'reviews'],
             ],
         ];
 

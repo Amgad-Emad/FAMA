@@ -137,15 +137,15 @@ class Brand extends Authenticatable implements HasMedia
         return $this->hasMany(BrandSignal::class);
     }
 
-    /** @return HasMany<Campaign, $this> */
-    public function campaigns(): HasMany
+    /** @return HasMany<BrandProject, $this> */
+    public function projects(): HasMany
     {
-        return $this->hasMany(Campaign::class);
+        return $this->hasMany(BrandProject::class);
     }
 
-    /** @return HasMany<Deal, $this> */
-    public function deals(): HasMany
+    /** @return HasMany<Contract, $this> */
+    public function contracts(): HasMany
     {
-        return $this->hasMany(Deal::class);
+        return $this->hasMany(Contract::class);
     }
 }

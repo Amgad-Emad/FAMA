@@ -24,11 +24,21 @@
                 </a>
                 <div class="flex items-center gap-3">
                     <a href="{{ route('discover') }}" class="hidden text-sm font-medium text-muted hover:text-ink sm:inline">{{ __('Discover') }}</a>
+                    <a href="{{ route('brands.discover') }}" class="hidden text-sm font-medium text-muted hover:text-ink sm:inline">{{ __('Brands') }}</a>
+                    <a href="{{ route('projects.browse') }}" class="hidden text-sm font-medium text-muted hover:text-ink sm:inline">{{ __('Opportunities') }}</a>
                     <x-public-locale-switcher />
                     <x-theme-toggle />
                 </div>
             </div>
         </header>
+
+        @if (session('status'))
+            <div x-data="{ show: true }" x-show="show" x-transition
+                 class="mx-auto mt-4 flex max-w-6xl items-center justify-between gap-3 rounded-lg border border-line bg-accent-weak px-4 py-3 text-sm text-accent-ink sm:px-6">
+                <span>{{ session('status') }}</span>
+                <button @click="show = false" class="text-accent-ink/70 hover:text-accent-ink" aria-label="{{ __('Dismiss') }}">✕</button>
+            </div>
+        @endif
 
         <main class="animate-fade-in-up">
             {{ $slot }}

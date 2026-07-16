@@ -3,7 +3,6 @@
 use App\Models\CompCard;
 use App\Models\PortfolioItem;
 use App\Models\ProfileBlock;
-use App\Models\Service;
 use App\Models\Showreel;
 use App\Models\Talent;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -42,18 +41,6 @@ it('uploaded portfolio items have null media accessors until a file is attached'
 
     expect($item->media_url)->toBeNull();
     expect(collect($item->getRegisteredMediaCollections())->pluck('name'))->toContain('gallery');
-});
-
-it('service casts price to a 2-dp decimal and translates name/description', function () {
-    $service = Service::factory()->create([
-        'price' => 1200.5,
-        'name' => ['en' => 'Half-day shoot', 'ar' => 'تصوير نصف يوم'],
-    ]);
-
-    $fresh = Service::find($service->id);
-
-    expect($fresh->price)->toBe('1200.50');
-    expect($fresh->getTranslation('name', 'ar'))->toBe('تصوير نصف يوم');
 });
 
 it('keeps a comp card one-to-one with the talent', function () {

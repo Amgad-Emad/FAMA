@@ -26,7 +26,6 @@ class TalentCardResource extends BaseResource
             'avatar_url' => $this->avatar_url,
             'city' => $this->base_city,
             'country' => $this->base_country,
-            'availability' => (string) $this->availability_status,
             'view_count' => (int) $this->view_count,
             'primary_type' => $primary ? [
                 'slug' => $primary->slug,

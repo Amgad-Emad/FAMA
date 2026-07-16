@@ -17,6 +17,7 @@ class ProfileBlockResource extends BaseResource
     {
         return [
             'id' => $this->id,
+            'talent_type_id' => $this->talent_type_id,
             'position' => (int) $this->position,
             'is_visible' => (bool) $this->is_visible,
             'status' => (string) $this->status,

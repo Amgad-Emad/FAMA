@@ -32,10 +32,17 @@ class UpdateCoreProfileRequest extends FormRequest
             'base_country' => ['nullable', 'string', 'max:255'],
             'booking_type' => ['nullable', Rule::in(['email', 'calendar', 'form', 'external'])],
             'booking_value' => ['nullable', 'string', 'max:255'],
-            'willing_to_travel' => ['boolean'],
-            'travel_regions' => ['nullable', 'array'],
-            'travel_regions.*' => ['string', 'max:100'],
-            'rate_tier' => ['nullable', Rule::in(['emerging', 'established', 'premium', 'elite'])],
         ];
+    }
+
+    /**
+     * The public `slug` is surfaced as "Username" in the UI, so validation
+     * messages read naturally (e.g. "The username has already been taken.").
+     *
+     * @return array<string, string>
+     */
+    public function attributes(): array
+    {
+        return ['slug' => __('username')];
     }
 }
