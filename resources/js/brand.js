@@ -1,7 +1,7 @@
 /**
  * Brand dashboard Alpine components. Every mutation goes through the shared
  * http.js wrapper (JSON envelope) so pages never reload; validation errors are
- * surfaced inline from `envelope.errors`. The deal room mirrors the talent side
+ * surfaced inline from `envelope.errors`. The contract room mirrors the talent side
  * but acts as the `brand` role (awaiting_brand highlighted).
  */
 import { del, get, patch, post, ApiError } from './http';
@@ -105,6 +105,19 @@ document.addEventListener('alpine:init', () => {
         coreSaved: false,
         savingAesthetic: false,
 
+        // Account settings + publish (folded in from the old Account tab).
+        account: initial.account,
+        accountErrors: {},
+        savingAccount: false,
+        accountSaved: false,
+        published: initial.published,
+        publishing: false,
+
+        // Creative needs (folded in from the old Creative needs tab).
+        needs: initial.needs,
+        savingNeeds: false,
+        needsSaved: false,
+
         async init() {
             await this.loadImages();
             await this.loadHandles();
@@ -122,6 +135,36 @@ document.addEventListener('alpine:init', () => {
                 if (e instanceof ApiError) this.errors = e.errors || { _: [e.message] };
             } finally {
                 this.savingCore = false;
+            }
+        },
+
+        // Account settings (slug, founded year, company size, phone).
+        async saveAccount() {
+            this.accountErrors = {};
+            this.savingAccount = true;
+            this.accountSaved = false;
+            try {
+                const { data } = await patch('/brand/account', this.account);
+                if (data.slug) this.account.slug = data.slug;
+                this.accountSaved = true;
+                setTimeout(() => (this.accountSaved = false), 2000);
+            } catch (e) {
+                if (e instanceof ApiError) this.accountErrors = e.errors || { _: [e.message] };
+            } finally {
+                this.savingAccount = false;
+            }
+        },
+
+        // Publish / unpublish the brand profile.
+        async togglePublish() {
+            this.publishing = true;
+            try {
+                const { data } = await patch('/brand/account/publish', { publish: !this.published });
+                this.published = data.is_published;
+            } catch (e) {
+                if (e instanceof ApiError) window.alert(e.message);
+            } finally {
+                this.publishing = false;
             }
         },
 
@@ -152,6 +195,22 @@ document.addEventListener('alpine:init', () => {
             }
         },
         toggleMood(mood) { toggleIn(this.aesthetic.mood_tags, mood); },
+
+        // Creative-needs preferences (folded in from the old Creative needs tab).
+        toggleNeed(list, value) { toggleIn(this.needs[list], value); },
+        async saveNeeds() {
+            this.savingNeeds = true;
+            this.needsSaved = false;
+            try {
+                await patch('/brand/creative-needs', this.needs);
+                this.needsSaved = true;
+                setTimeout(() => (this.needsSaved = false), 2000);
+            } catch (e) {
+                if (e instanceof ApiError) window.alert(e.message);
+            } finally {
+                this.savingNeeds = false;
+            }
+        },
 
         async loadImages() {
             const { data } = await get('/brand/profile/images');
@@ -193,33 +252,10 @@ document.addEventListener('alpine:init', () => {
         },
     }));
 
-    // --- Creative-needs editor ----------------------------------------------
-    Alpine.data('brandCreativeNeeds', (initial) => ({
-        data: initial.data,
-        saving: false,
-        saved: false,
-        errors: {},
+    // (The standalone Creative-needs editor was folded into brandProfile.)
 
-        toggle(list, value) { toggleIn(this.data[list], value); },
-
-        async save() {
-            this.errors = {};
-            this.saving = true;
-            this.saved = false;
-            try {
-                await patch('/brand/creative-needs', this.data);
-                this.saved = true;
-                setTimeout(() => (this.saved = false), 2000);
-            } catch (e) {
-                if (e instanceof ApiError) this.errors = e.errors || { _: [e.message] };
-            } finally {
-                this.saving = false;
-            }
-        },
-    }));
-
-    // --- Campaigns manager --------------------------------------------------
-    Alpine.data('brandCampaigns', (initial) => ({
+    // --- Projects manager --------------------------------------------------
+    Alpine.data('brandProjects', (initial) => ({
         campaigns: [],
         meta: null,
         loading: true,
@@ -227,7 +263,8 @@ document.addEventListener('alpine:init', () => {
         creating: false,
         errors: {},
         types: initial.types,
-        form: { title: '', type: 'campaign', budget_min: null, budget_max: null, is_public: false, roles: [] },
+        // One role, one position — a single discipline; budget private by default.
+        form: { title: '', type: 'campaign', description: { en: '', ar: '' }, budget_min: null, budget_max: null, is_public: false, budget_is_public: false, talent_type_id: null },
         t,
 
         async init() { await this.load(); },
@@ -235,7 +272,7 @@ document.addEventListener('alpine:init', () => {
         async load(page = 1) {
             this.loading = true;
             try {
-                const { data, meta } = await get(`/brand/campaigns/data?page=${page}`);
+                const { data, meta } = await get(`/brand/projects/data?page=${page}`);
                 this.campaigns = data;
                 this.meta = meta;
             } finally {
@@ -243,15 +280,12 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
-        addRole() { this.form.roles.push({ talent_type_id: this.types[0]?.id, quantity: 1 }); },
-        removeRole(i) { this.form.roles.splice(i, 1); },
-
         async create() {
             this.errors = {};
             this.creating = true;
             try {
-                const { data } = await post('/brand/campaigns', this.form);
-                window.location.href = `/brand/campaigns/${data.id}`;
+                const { data } = await post('/brand/projects', this.form);
+                window.location.href = `/brand/projects/${data.id}`;
             } catch (e) {
                 if (e instanceof ApiError) this.errors = e.errors || { _: [e.message] };
             } finally {
@@ -260,32 +294,86 @@ document.addEventListener('alpine:init', () => {
         },
     }));
 
-    // --- Single campaign workspace ------------------------------------------
-    Alpine.data('brandCampaign', (id) => ({
+    // --- Single project workspace ------------------------------------------
+    Alpine.data('brandProject', (id, initial = {}) => ({
         id,
         campaign: null,
-        deals: [],
+        contracts: [],
         loading: true,
         acting: false,
+        types: initial.types || [],
+        editing: false,
+        saving: false,
+        saved: false,
+        confirmingDelete: false,
+        deleting: false,
+        errors: {},
+        form: {},
         t,
 
         async init() { await this.refresh(); },
 
+        // Editing is only offered while the campaign is still mutable.
+        get editable() { return this.campaign && !['completed', 'cancelled'].includes(this.campaign.status); },
+
+        // Ordered lifecycle stage index (−1 for cancelled) — drives the stepper.
+        get statusIndex() { return ['draft', 'open', 'in_progress', 'completed'].indexOf(this.campaign?.status); },
+
         async refresh() {
             this.loading = true;
             try {
-                const { data } = await get(`/brand/campaigns/${this.id}/data`);
+                const { data } = await get(`/brand/projects/${this.id}/data`);
                 this.campaign = data.campaign;
-                this.deals = data.deals;
+                this.contracts = data.contracts;
             } finally {
                 this.loading = false;
+            }
+        },
+
+        // Seed the edit form from the loaded campaign and reveal it.
+        startEdit() {
+            const c = this.campaign;
+            this.form = {
+                title: c.title || '',
+                type: c.type || 'campaign',
+                description: { en: c.description?.en || '', ar: c.description?.ar || '' },
+                budget_min: c.budget_min,
+                budget_max: c.budget_max,
+                currency: c.currency || 'EGP',
+                location_city: c.location_city || '',
+                location_country: c.location_country || '',
+                start_date: c.start_date || '',
+                end_date: c.end_date || '',
+                is_public: !!c.is_public,
+                budget_is_public: !!c.budget_is_public,
+                talent_type_id: c.talent_type_id ?? c.role?.talent_type_id ?? null,
+            };
+            this.errors = {};
+            this.editing = true;
+        },
+
+        cancelEdit() { this.editing = false; this.errors = {}; },
+
+        async save() {
+            this.saving = true;
+            this.errors = {};
+            try {
+                await patch(`/brand/projects/${this.id}`, this.form);
+                this.editing = false;
+                this.saved = true;
+                setTimeout(() => (this.saved = false), 2000);
+                await this.refresh();
+            } catch (e) {
+                if (e instanceof ApiError) this.errors = e.errors || { _: [e.message] };
+            } finally {
+                this.saving = false;
             }
         },
 
         async transition(action) {
             this.acting = true;
             try {
-                await patch(`/brand/campaigns/${this.id}/status`, { action });
+                await patch(`/brand/projects/${this.id}/status`, { action });
                 await this.refresh();
             } catch (e) {
                 if (e instanceof ApiError) window.alert(e.message);
@@ -295,7 +383,7 @@ document.addEventListener('alpine:init', () => {
         },
 
         async togglePublic() {
-            await patch(`/brand/campaigns/${this.id}/public`, { public: !this.campaign.is_public });
+            await patch(`/brand/projects/${this.id}/public`, { public: !this.campaign.is_public });
             await this.refresh();
         },
 
@@ -305,10 +393,33 @@ document.addEventListener('alpine:init', () => {
             const body = new FormData();
             body.append('file', file);
             try {
-                await post(`/brand/campaigns/${this.id}/media`, body);
+                await post(`/brand/projects/${this.id}/media`, body);
                 await this.refresh();
             } catch (e) {
                 if (e instanceof ApiError) window.alert(e.message);
+            } finally {
+                event.target.value = '';
+            }
+        },
+
+        async removeMedia(mediaId) {
+            try {
+                await del(`/brand/projects/${this.id}/media/${mediaId}`);
+                await this.refresh();
+            } catch (e) {
+                if (e instanceof ApiError) window.alert(e.message);
+            }
+        },
+
+        // Soft-delete the campaign, then return to the list.
+        async destroy() {
+            this.deleting = true;
+            try {
+                await del(`/brand/projects/${this.id}`);
+                window.location.href = '/brand/projects';
+            } catch (e) {
+                if (e instanceof ApiError) window.alert(e.message);
+                this.deleting = false;
             }
         },
     }));
@@ -404,36 +515,57 @@ document.addEventListener('alpine:init', () => {
         },
     }));
 
-    // --- Deals inbox (brand) ------------------------------------------------
-    Alpine.data('brandDealsInbox', () => ({
-        deals: [],
+    // --- Contracts inbox (brand) ------------------------------------------------
+    Alpine.data('brandContractsInbox', () => ({
+        contracts: [],
         meta: null,
         loading: true,
         status: '',
+        page: 1,
 
-        async init() { await this.load(); },
+        async init() {
+            await this.load();
+            // Live inbox: refresh unread badges + statuses every 20s (skip when hidden).
+            this._pollTimer = setInterval(() => this.poll(), 20000);
+        },
+
+        destroy() { if (this._pollTimer) clearInterval(this._pollTimer); },
 
         async load(page = 1) {
             this.loading = true;
             try {
-                const params = new URLSearchParams();
-                if (this.status) params.set('status', this.status);
-                params.set('page', page);
-                const { data, meta } = await get(`/brand/deals/data?${params.toString()}`);
-                this.deals = data;
-                this.meta = meta;
+                this.contracts = await this.fetch(page);
             } finally {
                 this.loading = false;
             }
         },
 
+        // Quiet background refresh — keeps the current filter/page, no loading flag.
+        async poll() {
+            if (document.hidden) return;
+            try {
+                this.contracts = await this.fetch(this.page);
+            } catch (e) { /* ignore transient poll errors */ }
+        },
+
+        async fetch(page) {
+            const params = new URLSearchParams();
+            if (this.status) params.set('status', this.status);
+            params.set('page', page);
+            const { data, meta } = await get(`/brand/contracts/data?${params.toString()}`);
+            this.meta = meta;
+            this.page = page;
+            return data;
+        },
+
         setStatus(status) { this.status = status; this.load(); },
     }));
 
-    // --- Deal room (brand actor) --------------------------------------------
-    Alpine.data('brandDealRoom', (dealId) => ({
-        dealId,
-        deal: null,
+    // --- Contract room (brand actor) --------------------------------------------
+    Alpine.data('brandContractRoom', (contractId, labels = {}) => ({
+        contractId,
+        labels,
+        contract: null,
         steps: [],
         messages: [],
         canAct: false,
@@ -444,13 +576,64 @@ document.addEventListener('alpine:init', () => {
         form: {},
         errors: {},
 
-        async init() { await this.refresh(); },
+        async init() {
+            await this.refresh();
+            // Live thread: poll for new messages / step changes every 20s (skip when
+            // the tab is hidden). Cleared on teardown.
+            this._pollTimer = setInterval(() => this.poll(), 20000);
+        },
+
+        destroy() {
+            if (this._pollTimer) clearInterval(this._pollTimer);
+        },
+
+        // Quiet background refresh — no loading flag; only resets the action form when
+        // the active step actually changed (so it never wipes what the user is typing).
+        async poll() {
+            if (document.hidden) return;
+            try {
+                const { data } = await get(`/brand/contracts/${this.contractId}/thread`);
+                const prevStepId = this.currentStep?.id ?? null;
+                this.contract = data.contract;
+                this.steps = data.steps;
+                this.messages = data.messages;
+                this.canAct = data.can_act;
+                if ((this.currentStep?.id ?? null) !== prevStepId) this.resetForm();
+            } catch (e) {
+                /* ignore transient poll errors */
+            }
+        },
+
+        // Key/value detail rows for the "Contract details" card: the brief fields the
+        // brand submitted, plus the agreed dates + who initiated it.
+        get detailRows() {
+            const rows = [];
+            const brief = this.contract?.brief;
+            if (typeof brief === 'string' && brief.trim()) {
+                rows.push({ label: this.labels.brief || 'Brief', value: brief, wide: true });
+            } else if (brief && typeof brief === 'object') {
+                const fields = brief.fields ?? brief;
+                Object.entries(fields).forEach(([k, v]) => {
+                    if (v !== null && v !== '' && typeof v !== 'object') {
+                        rows.push({ label: this.humanize(k), value: String(v) });
+                    }
+                });
+            }
+            if (this.contract?.start_date) rows.push({ label: this.labels.startDate || 'Start date', value: this.contract.start_date });
+            if (this.contract?.end_date) rows.push({ label: this.labels.endDate || 'End date', value: this.contract.end_date });
+            if (this.contract?.initiated_by) rows.push({ label: this.labels.initiatedBy || 'Initiated by', value: this.contract.initiated_by });
+            return rows;
+        },
+
+        humanize(key) {
+            return String(key).replaceAll('_', ' ').replace(/^\w/, (c) => c.toUpperCase());
+        },
 
         async refresh() {
             this.loading = true;
             try {
-                const { data } = await get(`/brand/deals/${this.dealId}/thread`);
-                this.deal = data.deal;
+                const { data } = await get(`/brand/contracts/${this.contractId}/thread`);
+                this.contract = data.contract;
                 this.steps = data.steps;
                 this.messages = data.messages;
                 this.canAct = data.can_act;
@@ -477,7 +660,7 @@ document.addEventListener('alpine:init', () => {
             this.acting = true;
             this.errors = {};
             try {
-                await post(`/brand/deals/${this.dealId}/advance`, payload);
+                await post(`/brand/contracts/${this.contractId}/advance`, payload);
                 await this.refresh();
             } catch (e) {
                 if (e instanceof ApiError) this.errors = e.errors || { _: [e.message] };
@@ -501,7 +684,7 @@ document.addEventListener('alpine:init', () => {
         async reject() {
             this.acting = true;
             try {
-                await post(`/brand/deals/${this.dealId}/reject`, { reason: this.form.note || '' });
+                await post(`/brand/contracts/${this.contractId}/reject`, { reason: this.form.note || '' });
                 await this.refresh();
             } catch (e) {
                 if (e instanceof ApiError) window.alert(e.message);
@@ -513,7 +696,7 @@ document.addEventListener('alpine:init', () => {
         async skip() {
             this.acting = true;
             try {
-                await post(`/brand/deals/${this.dealId}/skip`, {});
+                await post(`/brand/contracts/${this.contractId}/skip`, {});
                 await this.refresh();
             } catch (e) {
                 if (e instanceof ApiError) window.alert(e.message);
@@ -526,7 +709,7 @@ document.addEventListener('alpine:init', () => {
             if (!this.messageBody.trim()) return;
             this.sending = true;
             try {
-                await post(`/brand/deals/${this.dealId}/message`, { body: this.messageBody });
+                await post(`/brand/contracts/${this.contractId}/message`, { body: this.messageBody });
                 this.messageBody = '';
                 await this.refresh();
             } catch (e) {

@@ -6,7 +6,7 @@ use App\Models\BlockType;
 use App\Models\Brand;
 use App\Models\BrandCollab;
 use App\Models\CompCard;
-use App\Models\DealFlow;
+use App\Models\ContractFlow;
 use App\Models\Digital;
 use App\Models\Equipment;
 use App\Models\LookType;
@@ -16,7 +16,7 @@ use App\Models\Review;
 use App\Models\Showreel;
 use App\Models\Talent;
 use App\Models\TalentType;
-use App\Services\DealService;
+use App\Services\ContractService;
 use Database\Seeders\Concerns\GeneratesCoverImages;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -34,7 +34,8 @@ class TalentDemoSeeder extends Seeder
 {
     use GeneratesCoverImages;
 
-    private const EMAIL = 'demo.talent@fama.test';
+    // Mirrors the brand demo login (brand-demo@fama.test) — password: "password".
+    private const EMAIL = 'talent-demo@fama.test';
 
     public function run(): void
     {
@@ -140,16 +141,19 @@ class TalentDemoSeeder extends Seeder
                 'reviewer_name' => 'Hana Mostafa', 'reviewer_role' => 'Producer', 'reviewer_company' => 'Cairo Films', 'rating' => 5, 'body' => 'Professional and warm — a pleasure from call sheet to wrap.', 'project_type' => 'Commercial',
             ]);
 
-            // A couple of deals at different steps so the inbox, room and
+            // A couple of contracts at different steps so the inbox, room and
             // dashboard demo the whole lifecycle for manual QA.
-            $flow = DealFlow::where('slug', 'standard-booking')->first();
+            $flow = ContractFlow::where('slug', 'standard-booking')->first();
             if ($flow !== null) {
-                $deals = app(DealService::class);
+                $contracts = app(ContractService::class);
+                // Match on the stable `slug` (not email) so BrandDemoSeeder can later
+                // change the demo brand's login email without this re-inserting a
+                // duplicate slug on a subsequent seed.
                 $brand = fn (string $slug, string $name) => Brand::firstOrCreate(
-                    ['email' => $slug.'@fama.test'],
-                    ['password' => Hash::make('password'), 'name' => $name, 'slug' => $slug, 'is_complete' => true, 'is_active' => true],
+                    ['slug' => $slug],
+                    ['email' => $slug.'@fama.test', 'password' => Hash::make('password'), 'name' => $name, 'is_complete' => true, 'is_active' => true],
                 );
-                $start = fn (Brand $b, string $title, string $brief) => $deals->initiate(
+                $start = fn (Brand $b, string $title, string $brief) => $contracts->initiate(
                     ['brand_id' => $b->id, 'talent_id' => $talent->id, 'title' => $title, 'initiated_by' => 'brand', 'brief' => $brief],
                     $flow,
                 );
@@ -158,23 +162,24 @@ class TalentDemoSeeder extends Seeder
                 // 1) awaiting_talent — brand submitted the brief; talent must quote.
                 $nomad = $brand('nomad-coffee', 'Nomad Coffee Co.');
                 $d1 = $start($nomad, 'Autumn campaign shoot', 'Two-day lifestyle shoot for the autumn menu launch across three Cairo locations.');
-                $deals->advance($d1, $brief, 'brand', $nomad);
+                $contracts->advance($d1, $brief, 'brand', $nomad);
 
                 // 2) awaiting_brand — talent quoted; brand must approve.
                 $nefertari = $brand('nefertari-cosmetics', 'Nefertari Cosmetics');
                 $d2 = $start($nefertari, 'Spring beauty campaign', 'Studio beauty campaign for the spring colour range.');
-                $deals->advance($d2, $brief, 'brand', $nefertari);
-                $deals->advance($d2, ['fields' => ['amount' => 32000, 'note' => 'Includes light retouching']], 'talent', $talent);
+                $contracts->advance($d2, $brief, 'brand', $nefertari);
+                $contracts->advance($d2, ['fields' => ['amount' => 32000, 'note' => 'Includes light retouching']], 'talent', $talent);
 
                 // 3) completed — the full loop, front to back.
                 $gouna = $brand('el-gouna-resorts', 'El Gouna Resorts');
                 $d3 = $start($gouna, 'Resort lookbook', 'On-location lookbook across the marina and beach.');
-                $deals->advance($d3, $brief, 'brand', $gouna);
-                $deals->advance($d3, ['fields' => ['amount' => 25000]], 'talent', $talent);
-                $deals->advance($d3, ['note' => 'Approved'], 'brand', $gouna);
-                $deals->skip($d3, 'brand', $gouna);
-                $deals->advance($d3, ['attachments' => ['final-delivery.zip']], 'talent', $talent);
-                $deals->advance($d3, ['note' => 'Beautiful work'], 'brand', $gouna);
+                $contracts->advance($d3, $brief, 'brand', $gouna);
+                $contracts->advance($d3, ['fields' => ['amount' => 25000]], 'talent', $talent);
+                $contracts->advance($d3, ['note' => 'Approved'], 'brand', $gouna);
+                // The deposit is mandatory (never skippable) — pay it.
+                $contracts->advance($d3, ['confirmed' => true], 'brand', $gouna);
+                $contracts->advance($d3, ['attachments' => ['final-delivery.zip']], 'talent', $talent);
+                $contracts->advance($d3, ['note' => 'Beautiful work'], 'brand', $gouna);
             }
         });
     }

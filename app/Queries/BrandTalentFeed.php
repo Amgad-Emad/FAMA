@@ -41,8 +41,8 @@ class BrandTalentFeed
             $base->where('base_city', $brand->base_city);
         }
 
+        // (No availability filter — the talent `availability_status` column was removed, ADR-L.)
         $filters = [
-            AllowedFilter::exact('availability', 'availability_status'),
             AllowedFilter::partial('city', 'base_city'),
             AllowedFilter::callback('type', fn ($q, $value) => $q->whereHas(
                 'talentTypes', fn ($t) => $t->whereIn('talent_types.slug', (array) $value),

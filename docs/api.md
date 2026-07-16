@@ -68,7 +68,7 @@ the JSON envelope + `http.js`. All resolve **published** talents only (404 other
 | Discovery | `GET /discover` | search page shell |
 | Discovery search | `GET /discover/search` | paginated talent cards — envelope; filters below |
 | Booking CTA | `GET /{slug}/enquire` | booking/enquiry form (brief) |
-| Enquiry submit | `POST /{slug}/enquire` | writes a `deal_enquiries` row (always allowed) — envelope |
+| Enquiry submit | `POST /{slug}/enquire` | writes a `contract_enquiries` row (always allowed) — envelope |
 
 **Discovery filters** (spatie/laravel-query-builder, `App\Queries\TalentSearch`), passed as
 `filter[...]` query params: `type` & `category` (comma-separated slugs, through the pivot),
@@ -93,12 +93,12 @@ touching another talent's resource returns **403**. Domain-rule violations (inel
 skill, partial pricing rate) and illegal state transitions (bad publish) return **422** envelopes.
 
 The **Profile editor** is the single profile surface (sidebar: Home · Profile · Content · Reviews ·
-Deals). The old standalone Professions + Account tabs are folded into it (ADR-N): Skills, Username (the
+Contracts). The old standalone Professions + Account tabs are folded into it (ADR-N): Skills, Username (the
 `slug`), Publish, and the Pricing rate all live under `/talent/profile`.
 
 | Area | Method + path | Purpose |
 |---|---|---|
-| Home | `GET /talent/dashboard` | status overview (draft/live, views, pending reviews, deals slot) |
+| Home | `GET /talent/dashboard` | status overview (draft/live, views, pending reviews, contracts slot) |
 | Profile | `GET /talent/profile` · `PATCH /talent/profile` | editor shell · update core fields (incl. `slug`, shown as **Username**) |
 | Pricing rate | `PATCH /talent/profile/pricing` | set/clear the indicative rate (`rate_unit`/`rate_amount`/`rate_currency`; all-or-nothing) |
 | Publish | `PATCH /talent/profile/publish` | publish/unpublish toggle (`{publish: bool}`) |
@@ -107,15 +107,15 @@ Deals). The old standalone Professions + Account tabs are folded into it (ADR-N)
 | Skills | `GET /talent/profile/skills` · `POST …` · `PATCH …/{type}/primary` · `PATCH …/reorder` · `DELETE …/{type}` | manage skills (seeds blocks) |
 | Content | `GET /talent/content/{type}` (+ `/data`, `POST`, `PATCH {id}`, `DELETE {id}`, `PATCH reorder`, `POST {id}/media`) | child-table editors (gallery, digitals, showreel, equipment, projects, software, brand collabs, looks) |
 | Reviews | `GET /talent/reviews` (+ `/data?status=`, `PATCH {review}/approve`, `PATCH {review}/reject`) | moderation queue |
-| Deals inbox | `GET /talent/deals` · `GET /talent/deals/data?status=` | list, whose-turn, filter, paginated |
-| Deal room | `GET /talent/deals/{deal}` · `GET /talent/deals/{deal}/thread` | room shell · header+stepper+timeline payload (marks read) |
-| Deal actions | `POST /talent/deals/{deal}/advance` · `/reject` · `/skip` · `/message` | act on the current step / loop back / skip / chat — envelope |
+| Contracts inbox | `GET /talent/contracts` · `GET /talent/contracts/data?status=` | list, whose-turn, filter, paginated |
+| Contract room | `GET /talent/contracts/{contract}` · `GET /talent/contracts/{contract}/thread` | room shell · header+stepper+timeline payload (marks read) |
+| Contract actions | `POST /talent/contracts/{contract}/advance` · `/reject` · `/skip` · `/message` | act on the current step / loop back / skip / chat — envelope |
 
 The talent acts as the `talent` role; the current step's `step_type` selects the action shape
 (`advance` body: `{fields}` for form, `{note}` for approval, `{attachments}` for upload, `{confirmed}`
 for payment, `{signed,signatory}` for contract, `{start_date,end_date}` for schedule, `{body}` for
-message, `{}` for info). Acting out of turn → **422**; a foreign deal → **403**. All deal mutations go
-through `App\Services\DealService`.
+message, `{}` for info). Acting out of turn → **422**; a foreign contract → **403**. All contract mutations go
+through `App\Services\ContractService`.
 
 Controllers are thin and delegate to the Phase 1B services (ProfileBlockService, SkillsService,
 TalentProfileService); validation via Form Requests (`app/Http/Requests/Talent`), output via Resources
@@ -135,28 +135,28 @@ illegal state-transition violations → **422**. An **incomplete brand** (`is_co
 | Onboarding | `GET /brand/onboarding` | 6-step wizard shell (redirects to dashboard once complete) |
 | Onboarding | `POST /brand/onboarding/{identity,location,creative-needs,aesthetic,budget}` | persist each step (registered → onboarding) |
 | Onboarding | `POST /brand/onboarding/complete` | flip `is_complete` (onboarding → complete), returns redirect |
-| Home | `GET /brand/dashboard` | completion status, active deals + whose-turn, recent campaigns, feed entry |
+| Home | `GET /brand/dashboard` | completion status, active contracts + whose-turn, recent campaigns, feed entry |
 | Profile | `GET /brand/profile` · `PATCH /brand/profile` | editor shell · core fields |
 | Profile media | `POST /brand/profile/{logo,cover}` · `PATCH /brand/profile/aesthetic` | logo/cover (medialibrary) · references + mood tags |
 | Gallery | `GET /brand/profile/images` · `POST …` · `DELETE …/{image}` | brand images CRUD |
 | Social | `GET /brand/social/data` · `POST /brand/social` · `DELETE /brand/social/{handle}` | social handles |
 | Creative needs | `GET /brand/creative-needs` · `PATCH /brand/creative-needs` | talent types + project types + frequency + budget tier |
-| Campaigns | `GET /brand/campaigns` · `GET …/data` · `POST …` | manager · list (paginated, `deals_count`) · create |
-| Campaign | `GET /brand/campaigns/{c}` · `GET …/data` · `PATCH …` · `DELETE …` | workspace · payload (roles, gallery, deals) · edit · delete |
+| Campaigns | `GET /brand/campaigns` · `GET …/data` · `POST …` | manager · list (paginated, `contracts_count`) · create |
+| Campaign | `GET /brand/campaigns/{c}` · `GET …/data` · `PATCH …` · `DELETE …` | workspace · payload (roles, gallery, contracts) · edit · delete |
 | Campaign lifecycle | `PATCH …/{c}/status` (`{action: open\|start\|complete\|cancel}`) · `PATCH …/{c}/public` · `POST …/{c}/media` | transitions · list ⇄ private · add media |
 | Discovery | `GET /brand/discover` · `GET /brand/discover/feed` | feed shell · personalised paginated feed (writes a `view` signal) |
 | Discovery actions | `POST /brand/discover/save` · `POST /brand/discover/brief` (`{talent_id}`) | write `save` / `brief_sent` signals |
-| Deals inbox | `GET /brand/deals` · `GET /brand/deals/data?status=` | list, `is_brand_turn`, filter, paginated |
-| Deal room | `GET /brand/deals/{deal}` · `GET …/thread` | room shell · header+stepper+timeline (marks read) |
-| Deal actions | `POST /brand/deals/{deal}/{advance,reject,skip,message}` | act as the `brand` role (submit brief, accept quote, sign, pay) |
+| Contracts inbox | `GET /brand/contracts` · `GET /brand/contracts/data?status=` | list, `is_brand_turn`, filter, paginated |
+| Contract room | `GET /brand/contracts/{contract}` · `GET …/thread` | room shell · header+stepper+timeline (marks read) |
+| Contract actions | `POST /brand/contracts/{contract}/{advance,reject,skip,message}` | act as the `brand` role (submit brief, accept quote, sign, pay) |
 | Reviews | `GET /brand/reviews` · `GET /brand/reviews/data` | reviews received (approved only, read-only, 3 sub-ratings) |
 | Account | `GET /brand/account` · `PATCH /brand/account` · `PATCH /brand/account/publish` | settings/slug · publish toggle (published ⇄ unpublished) |
 
-The brand acts as the `brand` role on the **shared** deal engine (same `advance` body shapes as the talent
+The brand acts as the `brand` role on the **shared** contract engine (same `advance` body shapes as the talent
 side; `awaiting_brand` is highlighted). Controllers delegate to the Phase 2B services (BrandOnboardingService,
 CampaignService, BrandReviewService, BrandSignalService) and the `BrandTalentFeed` query; validation via
 Form Requests (`app/Http/Requests/Brand`) + inline rules, output via Resources (`BrandResource`,
-`CampaignResource`, `BrandReviewResource`, `TalentCardResource`, shared `DealResource`). Front-end
+`CampaignResource`, `BrandReviewResource`, `TalentCardResource`, shared `ContractResource`). Front-end
 components live in `resources/js/brand.js`.
 
 ## Mobile API endpoints

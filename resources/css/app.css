@@ -158,3 +158,22 @@ body {
 [x-cloak] {
     display: none !important;
 }
+
+/* Rich application briefs (the only user-authored HTML we render — sanitized
+   server-side to a strict allowlist). Scoped prose + mention chips. */
+.brief { line-height: 1.5; }
+.brief p { margin: 0 0 .5rem; }
+.brief p:last-child { margin-bottom: 0; }
+.brief ul, .brief ol { margin: .25rem 0 .5rem; padding-inline-start: 1.25rem; }
+.brief ul { list-style: disc; }
+.brief ol { list-style: decimal; }
+.brief li { margin: .1rem 0; }
+.brief .mention,
+.mention {
+    display: inline;
+    border-radius: 9999px;
+    padding: .05rem .4rem;
+    font-weight: 500;
+    background: color-mix(in srgb, currentColor 14%, transparent);
+    white-space: nowrap;
+}

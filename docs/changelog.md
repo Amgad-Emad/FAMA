@@ -2,6 +2,179 @@
 
 Notable changes to the Fama project. Newest first.
 
+> Note: entries below this one predate the Deal → Contract rename and still say "deal" — they are a
+> historical record and are intentionally left as written.
+
+## 2026-07-15 — Repo-wide rename: Deal → Contract
+
+- **Every "deal" is now a "contract"** — 122 files, ~1,555 occurrences, zero `deal` identifiers left in
+  `app/ database/ routes/ resources/ tests/ config/ lang/ docs/`.
+- **Models/tables:** `Deal`→`Contract`, `DealStep`→`ContractStep`, `DealMessage`→`ContractMessage`,
+  `DealFlow`→`ContractFlow`, `DealFlowStep`→`ContractFlowStep`, `DealEnquiry`→`ContractEnquiry`; tables
+  `deals`→`contracts`, `deal_steps`→`contract_steps`, `deal_messages`→`contract_messages`,
+  `deal_flows`→`contract_flows`, `deal_flow_steps`→`contract_flow_steps`,
+  `deal_enquiries`→`contract_enquiries`; FKs `deal_id`→`contract_id`, `deal_step_id`→`contract_step_id`,
+  `deal_flow_id`→`contract_flow_id`. Migrations edited in place → `php artisan migrate:fresh --seed`.
+- **Two naming collisions resolved** (both would have broken conventions):
+  `app/Deals/` → **`app/Contracting/`** and `app/Actions/Deals/` → **`app/Actions/Contracting/`** —
+  *not* `App\Contracts`, which is Laravel's convention for interfaces and already holds
+  `App\Actions\Contracts\Action`. The **`'contract'` step_type is unchanged** (it's the signing step, a
+  sub-type — so a Contract legitimately contains a contract-signing step).
+- Also renamed: `ContractService`, `ContractProgression`, `ContractCompleted`, the Initiate/Advance/
+  Convert actions, all three states, resources, both controllers, factories, `ContractFlowSeeder`,
+  routes (`/brand/contracts`, `/talent/contracts`, `*.contracts.*`), views (`*/contracts/`),
+  `resources/js/contracts.js` + its Alpine components (`contractsInbox`, `contractRoom`,
+  `brandContractRoom`, `brandContractsInbox`), tests (`tests/Feature/Contracts/`), and the **`contracts`
+  log channel** (`config/logging.php` + `storage/logs/contracts.log`).
+- **i18n:** keys renamed (Deal→Contract) *and* the Arabic values retuned from صفقة/صفقات → عقد/عقود,
+  including the gender agreement (صفقة is feminine, عقد masculine → "انتهى هذا العقد").
+- Docs + CLAUDE.md project-state updated in place. **Full Pest suite green (277)** — first run, no
+  regressions. No git.
+
+## 2026-07-15 — Apply to a project (rich-text brief + @mentions + attachments)
+
+- **The public project CTA is now "Apply", not "Message brand".** A talent opens a modal, writes a
+  **rich-text brief** (why they're a fit), can **@-mention their own portfolio projects**, and **attaches
+  files**; submitting opens (or reuses) the talent↔brand deal scoped to that project and posts the brief as its
+  opening message, then lands them in the deal room. Guests/brands get a talent-login link instead.
+- **Backend** (`Talent\ApplicationController`, talent-guarded): `GET /talent/applications/mentions` (the
+  talent's projects for the @-picker, filtered in PHP to dodge MySQL's case-sensitive JSON collation);
+  `POST /talent/applications/{brandProject}` (open+public+published only) → `DealService::applyToProject`
+  (reuse/open deal, post a rich message, attach media in one transaction).
+- **Security:** the brief is the ONLY user HTML Fama renders un-escaped, so it's sanitized server-side to a
+  strict allowlist (`App\Support\Html\BriefSanitizer`, DOMDocument): keeps p/br/b/i/u/ul/ol/li + mention
+  spans, strips every attribute (except `class="mention"`) and every disallowed tag (script/img/anchors
+  unwrapped). Messages carry an `is_rich` flag — rich briefs render via `x-html`, plain chat stays `x-text`.
+- **Attachments:** `DealMessage` is now `HasMedia` (an `attachments` collection); the deal-room timeline
+  (both sides) renders the brief HTML + downloadable file chips (media eager-loaded, no N+1).
+- **Editor:** a lightweight `contenteditable` rich editor (bold/italic/bullets via execCommand) with a
+  caret-anchored @-mention dropdown (keyboard-navigable), teleported + scroll-locked + focus-trapped modal.
+- **+6 tests** (mentions filter, application creates a talent-initiated deal + rich message + attachment,
+  sanitization strips scripts/handlers/images, empty-brief 422, closed/private 404, re-apply reuses the deal).
+  **Full Pest suite green (277).** No git.
+
+## 2026-07-15 — "Campaigns" → "Projects" rename, single-role projects, budget privacy
+
+- **Repo-wide rename Campaign → BrandProject** (the brand "Campaigns" feature is now "Projects" everywhere
+  users see it). The literal name `Project`/`projects` was already taken by the talent portfolio model/table, so
+  the brand code uses **`BrandProject` / `brand_projects`** (tables `brand_project_media`, FK
+  `brand_project_id`; the roles pivot was dropped — see below). All URLs/routes are `projects`
+  (`/brand/projects`, `/projects`, `/brands/{brand}/projects/{project}`), route names `*.projects.*` /
+  `projects.browse` / `brand.project.public`, Alpine components `brandProjects` / `brandProject` /
+  `projectBrowse`, and all UI text + Arabic are "Project(s)". The `type` enum keeps its `campaign`/`shoot`
+  values (a project's *kind*), and talent-portfolio "Campaign" sample strings are untouched (a different
+  concept). Migrations edited in place → run `php artisan migrate:fresh --seed`.
+- **Each project = one role, one position.** Dropped the multi-role `brand_project_talent_types` pivot +
+  `positions_count`; added `brand_projects.talent_type_id` (a single discipline). Service/requests/resources/
+  views/JS simplified from a roles editor to one discipline select.
+- **Budget public/private flag (ADR).** New `brand_projects.budget_is_public` (**private by default**). The
+  owning brand always sees the budget (with a Public/Private tag); the public project detail, opportunities
+  cards, and profile cards expose the budget **only when the brand opts in** (`PublicProjectCardResource`
+  nulls it otherwise; the detail view gates it server-side).
+- **"Message brand" removed from the public brand profile** (per request) — the CTA stays on the Opportunities
+  cards + project detail.
+- **Full Pest suite green (271).** No git.
+
+## 2026-07-14 — Filters on the talent-facing discovery pages
+
+- **Discover brands** and **Opportunities** now filter **the same way as Discover talent**: a sticky primary
+  chip bar (Brands → **Industry**; Campaigns → **Discipline** chips grouped by scope via the shared
+  `skill-filter-chips` partial) + an **Advanced filters** modal (teleported to `<body>`, scroll-locked,
+  focus-trapped, staged draft applied only on "Apply"), an active-filter summary row (removable chips + Clear
+  all), a live result count, and skeleton loaders.
+  - Brands advanced facets: **stage · reach · verified-only**. Campaigns advanced facets: **type · budget
+    min/max · city**.
+- **Backend:** `BrandDiscoveryController@feed` gained `industry`/`brand_stage`/`geographic_reach`/`verified`;
+  `CampaignDiscoveryController@feed` gained `type` (talent_type slugs, `whereHas`), `campaign_type`,
+  `budget_min`/`budget_max` (null-safe overlap), and `city`. Both stay paginated + eager-loaded (no N+1).
+- **JS:** factored the modal machinery into a shared `filterModal()` mixin (mirrors talentSearch — teleport,
+  scroll-lock, focus-trap; no x-transition on the teleported node) + a `disciplineIcon()` helper; `brandsDiscover`
+  and `campaignBrowse` rewritten around it. **+2 filter tests; full Pest suite green (270).** No git.
+
+## 2026-07-14 — Premium redesign of the brand campaign workspace
+
+- **Campaign detail page redesigned** from a flat stack of white cards into a premium workspace: a **hero**
+  (type eyebrow + coloured status pill + title + a 4-stage lifecycle stepper Draft→Open→In progress→Completed,
+  with a cancelled banner), a **KPI strip** (Budget · Deals · Positions · Location), and a **two-column body** —
+  main column (roles as cards, gallery, deals) + a sticky **Summary** sidebar (type/dates/currency, visibility
+  toggle, "View public listing" link) and a **Danger zone** (inline-confirm delete). The contextual lifecycle
+  CTA is the filled primary; Edit/Cancel are secondary.
+- **Gallery gained removal.** New `DELETE /brand/campaigns/{campaign}/media/{media}`
+  (`CampaignController@removeMedia`, ownership-checked + scoped to the campaign) with a hover remove control and
+  a dashed empty-state uploader. `brandCampaign` gained `removeMedia`, `destroy` (inline-confirm), `statusIndex`
+  + `totalPositions` getters. **+3 media tests.**
+- **i18n kept complete** — 13 new keys translated (lifecycle labels, Danger zone, Positions, …). **Full Pest
+  suite green (268).** No git.
+
+## 2026-07-14 — Talent-facing discovery, unread indicators, profile consolidation, i18n
+
+- **Unread-message indicators (both sides).** `DealResource` now exposes `unread_count` (the counterparty's
+  unread free-messages, via the `humanUnreadFor` scope); the brand + talent `DealController@data` set it with
+  `withCount`. Both inboxes badge unread deals (accent dot + count + ring) and now **poll every 20s** so the
+  badge appears live. Message ordering is deterministic on same-second sends — `Deal::messages()` already sorts
+  by `created_at` then the auto-increment `id`, and neither deal room re-sorts.
+- **Campaign editing.** The campaign detail page was read-only; the Edit button led nowhere editable. Added an
+  in-place **Edit details** form (title, type, budget, location, dates, roles, visibility) wired to the existing
+  `PATCH /brand/campaigns/{campaign}` endpoint, plus a read-only Details section. Editing is gated to
+  non-complete/cancelled campaigns.
+- **Profile consolidation continues (ADR-N pattern).** **Creative needs** folded into the Profile editor (like
+  Account before it): its section now lives in `brand/profile.blade.php` (talent types / project types /
+  frequency / budget tier), the nav item is gone, and `GET /brand/creative-needs` redirects to the profile
+  (the `PATCH` endpoint stays). Orphan view + `brandCreativeNeeds` component removed.
+- **Brand topbar** gained a **View public profile** link (published brands only → `brand.public`).
+- **Talent-facing discovery (new).** `GET /brands` (published-brand discovery) + `GET /campaigns` (open, public
+  campaigns = the "opportunities" board), each a Blade shell + paginated, eager-loaded Ajax feed
+  (`BrandDiscoveryController`, `CampaignDiscoveryController` + `BrandCardResource`, `PublicCampaignCardResource`).
+  Added to the talent sidebar + public header nav.
+- **Talent→brand messaging (ADR-P mirror).** `GET /brands/{brand:slug}/message` (`BrandMessageController`)
+  mirrors the brand→talent flow: guest → talent login (return URL kept); talent → the latest brand↔talent deal
+  or a fresh talent-initiated one (optionally tagged to the campaign via `?campaign=`), then the talent deal
+  room. "Message brand" CTAs added on the public brand profile + campaign detail + campaign cards.
+- **i18n.** Full `ar.json` audit (script-driven): every `__()` key across views/JS/PHP now has an Arabic value
+  — 95 keys added (incl. `Public`/`Private`/`View public profile`/`Message brand`/`Opportunities`), file
+  re-sorted case-insensitively (447 → 542 entries). Only `auth.password` resolves from `lang/ar/auth.php`.
+- **Full Pest suite green (265, +9 new tests for the discovery + messaging routes).** No git.
+
+## 2026-07-14 — Brand deal room shows full deal details
+
+- **Root cause of the empty brand pages: a stale JS build.** The bundle `fama.test` loaded predated the brand
+  Alpine components, so none of them initialised (empty Ajax lists, blank forms, dead buttons). Rebuilt
+  (`npm run build`) — the fresh bundle contains all 10 brand components; all data endpoints return correct
+  data; every button handler maps to a real route. **Fix = rebuild + hard-refresh.**
+- **`DealResource` never exposed the `talent` counterparty** — so the brand deal room header and deals inbox
+  both rendered a blank counterparty (`deal.talent?.display_name`). Added `talent` (name/slug/avatar) and
+  `campaign` (title/slug) via `whenLoaded`; the brand `DealController@thread` now eager-loads `campaign`.
+- **Deal room now renders the details:** a richer header (reference, title, campaign chip, counterparty with
+  avatar, agreed amount, status), a new **Deal details** card (brief, dates, initiated-by), plus the existing
+  phases stepper + timeline. `brandDealRoom` gained a `detailRows` getter (translatable labels passed from the
+  view).
+- **Demo deal made real:** the seeded campaign deal (`NOMAD-AUTUMN-01`) was created raw (0 steps) → the
+  stepper was empty. It's now created **through the deal engine** and walked to completed, so it has 7
+  snapshotted steps + 8 messages. Its credibility counters are set **after** completion so the "recalc
+  credibility" side effect doesn't overwrite the curated demo numbers. **Full Pest suite green (255).** No git.
+
+## 2026-07-12 — Reconcile the brand slice with the talent-side edits (post-merge fixes)
+
+After merging `main` (talent side) into `brand-phase`, the brand code broke against changes it predated.
+Fixed so `migrate:fresh --seed` and the full suite are green again (255 tests):
+
+- **Skill rename (ADR-S).** The brand slice referenced the old person-noun `talent_types` slugs, which no
+  longer resolve → `BrandDemoSeeder` inserted an empty `campaign_talent_types.talent_type_id` (`1366`).
+  Updated the seeder (`model`→`modeling`, `photographer`→`photography`, `cinematographer`→`cinematography`)
+  and every brand test slug lookup + the `assertSee('Model')` → `'Modeling'` role-name assertion.
+- **Availability removed (ADR-L).** `App\Queries\BrandTalentFeed` filtered on the dropped
+  `talents.availability_status` column — removed that `AllowedFilter`.
+- **Services removed (ADR-K).** `Brand\DealController` eager-loaded the deleted `Deal::service` relationship
+  (`data()` + `thread()`) → 500. Dropped `'service'` from both `with()`/`load()` calls.
+- **Merge artifacts (missing `use` imports).** `routes/web.php` used `BrandProfileController::class` without
+  importing it → `ReflectionException` (500 on every public brand/campaign page). And
+  `App\Listeners\SyncStateProjections` referenced `Brand`/`BrandReview` without importing them, so
+  `instanceof` silently returned false and the brand/review projections (`is_complete`, `is_published`,
+  `is_approved`) never synced → onboarding/publish/review assertions failed. Added both imports.
+- **Verified:** `migrate:fresh --seed` completes (campaign roles resolve to `modeling`/`photography`, zero
+  orphan pivots); **full Pest suite green (255)**; brand public profile + campaign detail render 200
+  in-browser with the new discipline role names. No git.
+
 ## 2026-07-12 — Talent profile image (avatar) uploader
 
 - **Added the missing profile-image uploader** to the Profile editor's Identity/Core-details section. A

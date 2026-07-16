@@ -1,10 +1,10 @@
 <?php
 
 use App\Models\Brand;
-use App\Models\Deal;
+use App\Models\Contract;
 use Database\Seeders\BlockTypeSeeder;
 use Database\Seeders\BrandDemoSeeder;
-use Database\Seeders\DealFlowSeeder;
+use Database\Seeders\ContractFlowSeeder;
 use Database\Seeders\TalentDemoSeeder;
 use Database\Seeders\TalentTypeSeeder;
 
@@ -12,7 +12,7 @@ beforeEach(function () {
     // Same prerequisite chain as DatabaseSeeder: catalogs + flows, then the demos.
     $this->seed(TalentTypeSeeder::class);
     $this->seed(BlockTypeSeeder::class);
-    $this->seed(DealFlowSeeder::class);
+    $this->seed(ContractFlowSeeder::class);
     $this->seed(TalentDemoSeeder::class); // provides demo-talent
     $this->seed(BrandDemoSeeder::class);
 });
@@ -33,16 +33,16 @@ it('seeds a fully onboarded, published demo brand with the satellite graph', fun
     expect($brand->brandReviews()->where('is_approved', true)->count())->toBe(1);
 });
 
-it('seeds two campaigns at different statuses and a deal under a campaign', function () {
+it('seeds two campaigns at different statuses and a contract under a campaign', function () {
     $brand = Brand::where('slug', 'nomad-coffee')->firstOrFail();
 
-    expect($brand->campaigns()->count())->toBe(2);
-    $statuses = $brand->campaigns()->get()->pluck('status')->map(fn ($state) => $state->getValue())->sort()->values()->all();
+    expect($brand->projects()->count())->toBe(2);
+    $statuses = $brand->projects()->get()->pluck('status')->map(fn ($state) => $state->getValue())->sort()->values()->all();
     expect($statuses)->toBe(['completed', 'open']);
 
-    $deal = Deal::whereNotNull('campaign_id')->where('brand_id', $brand->id)->first();
-    expect($deal)->not->toBeNull();
-    expect($deal->campaign->brand_id)->toBe($brand->id);
+    $contract = Contract::whereNotNull('brand_project_id')->where('brand_id', $brand->id)->first();
+    expect($contract)->not->toBeNull();
+    expect($contract->project->brand_id)->toBe($brand->id);
 });
 
 it('is idempotent (re-running does not duplicate the graph)', function () {
@@ -50,6 +50,6 @@ it('is idempotent (re-running does not duplicate the graph)', function () {
 
     $brand = Brand::where('slug', 'nomad-coffee')->firstOrFail();
     expect(Brand::where('slug', 'nomad-coffee')->count())->toBe(1);
-    expect($brand->campaigns()->count())->toBe(2);
+    expect($brand->projects()->count())->toBe(2);
     expect($brand->images()->count())->toBe(3);
 });

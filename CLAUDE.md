@@ -37,17 +37,17 @@ single source of truth for the data model, pages, workflows, and lifecycles. Arc
 ## Pattern map (the "why")
 | Concern | Pattern / Package | Where it's used in Fama |
 |---|---|---|
-| Lifecycles & state transitions | State machine — spatie/laravel-model-states | deal, deal_step, deal_message, campaign, brand, talent profile, review, media |
-| Configurable deal steps | Strategy + Factory — a StepHandler per step_type | the deal-flow engine: form / approval / upload / payment / contract / message / schedule / info |
-| Discrete operations | Action classes (single-purpose, invokable) | seed/merge profile blocks, snapshot flow steps, initiate/advance deal, convert enquiry→deal, recalc credibility |
+| Lifecycles & state transitions | State machine — spatie/laravel-model-states | contract, contract_step, contract_message, campaign, brand, talent profile, review, media |
+| Configurable contract steps | Strategy + Factory — a StepHandler per step_type | the contract-flow engine: form / approval / upload / payment / contract / message / schedule / info |
+| Discrete operations | Action classes (single-purpose, invokable) | seed/merge profile blocks, snapshot flow steps, initiate/advance contract, convert enquiry→contract, recalc credibility |
 | Orchestration, transactions, logging | Service layer | every domain area; web + API controllers both call the same services |
-| Decoupled side effects | Events / Listeners / Observers | deal completed → open review window + bump credibility + advance campaign; media uploaded → conversions; profile view → brand_signals |
+| Decoupled side effects | Events / Listeners / Observers | contract completed → open review window + bump credibility + advance campaign; media uploaded → conversions; profile view → brand_signals |
 | Authorization | Policies | own-resource edits; admin intervention/override |
 | Typed input/output | DTOs — spatie/laravel-data | Form Request → Service → Resource, shared between web and API |
-| Complex reads | Query objects / scopes + spatie/laravel-query-builder | discovery feed, deals inbox filters, talent search |
+| Complex reads | Query objects / scopes + spatie/laravel-query-builder | discovery feed, contracts inbox filters, talent search |
 | Files | spatie/laravel-medialibrary | all uploads (collections + conversions) |
 | i18n | mcamara/laravel-localization + spatie/laravel-translatable | locale routing + translatable attributes |
-| Audit | spatie/laravel-activitylog | admin edits, moderation, deal-step overrides |
+| Audit | spatie/laravel-activitylog | admin edits, moderation, contract-step overrides |
 | Mobile auth | laravel/sanctum | token auth for talents, brands, admins |
 | API docs | Scribe (knuckleswtf/scribe) | OpenAPI + Postman collection for the mobile developer |
 
@@ -114,7 +114,7 @@ are Modeling/Crew/Creative, and a single-chip group whose label duplicates its l
 suppresses the header. Old ?skill= deep links break (no redirects). AR names are a first pass — confirm
 with stakeholders.
 Talent dashboard complete (talent guard, routes/talent.php + app/Http/Controllers/Talent/*). Sidebar:
-Home · Profile · Content · Reviews · Deals. The **Profile editor** is the single profile surface —
+Home · Profile · Content · Reviews · Contracts. The **Profile editor** is the single profile surface —
 identity + the **profile image (avatar) uploader** (POST/DELETE /talent/profile/avatar →
 TalentProfileService::updateAvatar/removeAvatar → the `avatar` single-file media collection; Ajax preview,
 initials fallback; UpdateAvatarRequest validates image/mimes/≤5MB; only the circular avatar, no cover — ADR-O)
@@ -174,31 +174,31 @@ Public profile primary CTA is Message (2026-07-11, ADR-P, supersedes Contact): p
 public route brand.talents.message (App\Http\Controllers\Brand\TalentMessageController). Interim only —
 guest/non-brand → brand login (?role=brand) with the profile stored as url.intended; authed brand →
 "Messaging coming soon" flash back on the profile + a TODO(brand-messaging) hook where the real
-brand↔talent chat / deal initiation attaches. No new tables; talent.enquire is untouched.
-Deal engine complete (Phase 1E, shared infra — app/Deals, app/Actions/Deals, app/Services/DealService,
-app/States/Deal|DealStep|DealMessage): deal_flows/deal_flow_steps/deals/deal_steps/deal_messages/
-deal_enquiries + a MINIMAL brands stub table (Phase 1B extends). StepHandler Strategy+Factory (8 types;
+brand↔talent chat / contract initiation attaches. No new tables; talent.enquire is untouched.
+Contract engine complete (Phase 1E, shared infra — app/Contracting, app/Actions/Contracting, app/Services/ContractService,
+app/States/Contract|ContractStep|ContractMessage): contract_flows/contract_flow_steps/contracts/contract_steps/contract_messages/
+contract_enquiries + a MINIMAL brands stub table (Phase 1B extends). StepHandler Strategy+Factory (8 types;
 PaymentStepHandler manual-vs-auto per ADR-B, default manual); Actions Snapshot/Initiate/Advance/
-RejectStep(loop-back)/ConvertEnquiry sharing DealProgression; state machines; DealService in
-transactions (deals channel). Booking CTA GET|POST /{slug}/enquire → deal_enquiries. Talent deal room +
-inbox (routes/talent.php, resources/js/deals.js).
-Deal-room layout is timeline-first (2026-07-11, layout-only): the message timeline is the central/wide
+RejectStep(loop-back)/ConvertEnquiry sharing ContractProgression; state machines; ContractService in
+transactions (contracts channel). Booking CTA GET|POST /{slug}/enquire → contract_enquiries. Talent contract room +
+inbox (routes/talent.php, resources/js/contracts.js).
+Contract-room layout is timeline-first (2026-07-11, layout-only): the message timeline is the central/wide
 column with the composer; the narrower side panel holds the current-step action panel (top) then the
-phases stepper (below); header on top (reference/title/counterparty/status/amount + "← All deals").
-Blade-only change (resources/views/talent/deals/show.blade.php) — the dealRoom Alpine component,
-endpoints, and DealService are unchanged; messaging + step actions still Ajax with no reload; dark/light
-+ RTL verified. The brand deal room (Phase 2C) should reuse this layout.
+phases stepper (below); header on top (reference/title/counterparty/status/amount + "← All contracts").
+Blade-only change (resources/views/talent/contracts/show.blade.php) — the contractRoom Alpine component,
+endpoints, and ContractService are unchanged; messaging + step actions still Ajax with no reload; dark/light
++ RTL verified. The brand contract room (Phase 2C) should reuse this layout.
 
 TALENT PHASE COMPLETE (production-grade). Full Pest suite green; preventLazyLoading +
 preventSilentlyDiscardingAttributes on (no N+1); every list paginated + eager-loaded; every multi-write
-op wrapped in runInTransaction with fail-logging to the right channel (deals / media / app); all
+op wrapped in runInTransaction with fail-logging to the right channel (contracts / media / app); all
 colours/fonts are CSS tokens (cloud/graphite/teal + Bricolage/Sora), dark+light+RTL verified on every
 talent page; every dashboard interaction is Ajax (no reload). Demo data: multi-type demo talent with
-full blocks/content/images + three deals at different steps (awaiting_talent / awaiting_brand /
+full blocks/content/images + three contracts at different steps (awaiting_talent / awaiting_brand /
 completed), plus 10 showcase talents across all six skills. Manual QA checklist in
 docs/conventions.md ("QA checklist — talent slice").
 Three talent features removed entirely (2026-07-10, ADR-K/L/M): the rate card / **services** (+ the
-deal-engine `service_id` ripple; deal amount now comes from the flow's form/quote step, and the single
+contract-engine `service_id` ripple; contract amount now comes from the flow's form/quote step, and the single
 Pricing rate replaces the rate card), **availability & travel** (enquiries are no longer availability-
 gated; `rate_tier` superseded by the Pricing rate), and **affiliations & press**. Schema removed via
 append-only drop migrations (2026_07_10_0001–0004); their models, factories, state machines, policies,
@@ -213,5 +213,5 @@ replace the removed rate card. Admin relabel + ProfessionCatalogService→SkillC
 the admin side is built (not present yet). Suite 160 green.
 Next: Phase 2A — brand core & satellites (extend the brands stub: industry/stage/location/reach +
 brand_aesthetics/images/creative_needs/credibility/reviews/social_handles/signals), then the brand
-deal room (Phase 2C) reusing the shared deal engine; Admin authoring/intervention is Phase 3.
-deals.campaign_id (ADR-F) lands with campaigns.
+contract room (Phase 2C) reusing the shared contract engine; Admin authoring/intervention is Phase 3.
+contracts.campaign_id (ADR-F) lands with campaigns.

@@ -11,8 +11,8 @@ beforeEach(fn () => $this->seed(TalentTypeSeeder::class));
 it('personalises the feed by the brand creative needs + records a browse signal', function () {
     $brand = Brand::factory()->create(['geographic_reach' => 'mena']);
     $need = $brand->creativeNeed()->create(['project_frequency' => 'monthly']);
-    $photographer = TalentType::where('slug', 'photographer')->firstOrFail();
-    $model = TalentType::where('slug', 'model')->firstOrFail();
+    $photographer = TalentType::where('slug', 'photography')->firstOrFail();
+    $model = TalentType::where('slug', 'modeling')->firstOrFail();
     $need->talentTypes()->attach($photographer->id);
 
     $wanted = Talent::factory()->create();

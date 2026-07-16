@@ -2,18 +2,19 @@
 
 namespace App\Http\Controllers\Brand;
 
-use App\Models\TalentType;
 use App\Services\BrandOnboardingService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
-use Illuminate\View\View;
 
 /**
  * Creative-needs / preferences editor (brand-spec) — tune the talent types,
  * project types, frequency, and budget tier that drive the discovery feed.
- * Reuses the onboarding service's idempotent, transactional writes.
+ * Reuses the onboarding service's idempotent, transactional writes. The editor
+ * UI was folded into the Profile editor (like Account), so the old page now
+ * redirects there; the update endpoint stays (the Profile editor calls it).
  */
 class CreativeNeedsController extends BrandController
 {
@@ -25,16 +26,9 @@ class CreativeNeedsController extends BrandController
 
     public function __construct(private readonly BrandOnboardingService $onboarding) {}
 
-    public function edit(): View
+    public function edit(): RedirectResponse
     {
-        $brand = $this->brand()->loadMissing('creativeNeed.talentTypes', 'creativeNeed.projectTypes');
-
-        return view('brand.creative-needs', [
-            'brand' => $brand,
-            'need' => $brand->creativeNeed,
-            'talentTypes' => TalentType::orderBy('id')->get(),
-            'projectTypes' => self::PROJECT_TYPES,
-        ]);
+        return redirect()->route('brand.profile');
     }
 
     public function update(Request $request): JsonResponse

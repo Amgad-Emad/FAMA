@@ -17,7 +17,7 @@
             ← {{ $talent->display_name }}
         </a>
         <h1 class="mt-4 font-display text-3xl text-ink">{{ __('Start a booking') }}</h1>
-        <p class="mt-1 text-sm text-muted">{{ __('Tell :name about your project — they will be in touch to open a deal.', ['name' => $talent->display_name]) }}</p>
+        <p class="mt-1 text-sm text-muted">{{ __('Tell :name about your project — they will be in touch to open a contract.', ['name' => $talent->display_name]) }}</p>
 
         <template x-if="done">
             <x-ui.card class="mt-8 text-center">

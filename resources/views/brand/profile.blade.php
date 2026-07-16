@@ -16,6 +16,21 @@
             'brand_references' => $brand->aesthetic?->brand_references,
             'mood_tags' => $brand->aesthetic?->moodTags->pluck('tag')->all() ?? [],
         ],
+        // Account settings — folded in from the old Account tab.
+        'account' => [
+            'slug' => $brand->slug,
+            'founded_year' => $brand->founded_year,
+            'company_size' => $brand->company_size,
+            'phone' => $brand->phone,
+        ],
+        // Creative needs — folded in from the old Creative needs tab.
+        'needs' => [
+            'talent_type_ids' => $brand->creativeNeed?->talentTypes->pluck('id')->all() ?? [],
+            'project_types' => $brand->creativeNeed?->projectTypes->pluck('project_type')->all() ?? [],
+            'project_frequency' => $brand->creativeNeed?->project_frequency,
+            'budget_tier' => $brand->creativeNeed?->budget_tier,
+        ],
+        'published' => (bool) $brand->is_published,
         'moods' => $moods,
         'platforms' => $platforms,
     ];
@@ -23,6 +38,20 @@
 
 <x-brand-layout :title="__('Profile editor')">
     <div x-data="brandProfile(@js($initial))" class="space-y-8">
+        {{-- Publishing (folded in from the old Account tab) --}}
+        <section class="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-line bg-surface p-6 shadow-e1">
+            <div>
+                <div class="flex items-center gap-2">
+                    <span class="h-2.5 w-2.5 rounded-pill" :class="published ? 'bg-success' : 'bg-warn'"></span>
+                    <h3 class="font-display text-lg text-ink">{{ __('Visibility') }}</h3>
+                </div>
+                <p class="mt-0.5 text-sm text-muted" x-text="published ? '{{ __('Your profile is visible to talent.') }}' : '{{ __('Your profile is hidden.') }}'"></p>
+            </div>
+            <x-ui.button variant="accent" x-on:click="togglePublish()" x-bind:disabled="publishing">
+                <span x-text="published ? '{{ __('Unpublish') }}' : '{{ __('Publish') }}'"></span>
+            </x-ui.button>
+        </section>
+
         {{-- Cover + logo --}}
         <div class="overflow-hidden rounded-xl border border-line bg-surface">
             <div class="relative h-40 bg-elevated bg-cover bg-center" :style="coverUrl ? `background-image:url(${coverUrl})` : ''">
@@ -57,6 +86,36 @@
             </div>
         </section>
 
+        {{-- Settings (folded in from the old Account tab): username + company facts --}}
+        <section class="rounded-xl border border-line bg-surface p-6">
+            <h3 class="mb-4 font-display text-lg">{{ __('Settings') }}</h3>
+            <div class="space-y-4">
+                <div>
+                    <x-input-label :value="__('Profile slug')" />
+                    <div class="mt-1 flex items-center gap-2">
+                        <span class="font-mono text-sm text-subtle">fama.com/brands/</span>
+                        <x-text-input class="block w-full font-mono text-sm" x-model="account.slug" placeholder="my-brand" />
+                    </div>
+                    <template x-if="accountErrors.slug"><p class="mt-1 text-xs text-danger" x-text="accountErrors.slug[0]"></p></template>
+                </div>
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <div><x-input-label :value="__('Founded year')" /><x-text-input type="number" class="mt-1 block w-full" x-model="account.founded_year" /></div>
+                    <div>
+                        <x-input-label :value="__('Company size')" />
+                        <select class="mt-1 block w-full rounded-md border-line bg-bg" x-model="account.company_size">
+                            <option :value="null">—</option>
+                            @foreach (['solo', 'small', 'medium', 'large', 'enterprise'] as $opt)<option value="{{ $opt }}">{{ __(ucfirst($opt)) }}</option>@endforeach
+                        </select>
+                    </div>
+                </div>
+                <div><x-input-label :value="__('Phone')" /><x-text-input class="mt-1 block w-full" x-model="account.phone" /></div>
+            </div>
+            <div class="mt-4 flex items-center gap-3">
+                <button @click="saveAccount()" :disabled="savingAccount" class="rounded-pill bg-primary px-5 py-2 text-sm text-on-primary disabled:opacity-50">{{ __('Save') }}</button>
+                <span x-show="accountSaved" x-cloak class="text-xs text-ok">{{ __('Saved') }}</span>
+            </div>
+        </section>
+
         {{-- Aesthetic --}}
         <section class="rounded-xl border border-line bg-surface p-6">
             <h3 class="mb-4 font-display text-lg">{{ __('Aesthetic') }}</h3>
@@ -70,6 +129,52 @@
             </div>
             <div class="mt-4"><x-input-label :value="__('References')" /><textarea rows="2" class="mt-1 block w-full rounded-md border-line bg-bg" x-model="aesthetic.brand_references"></textarea></div>
             <button @click="saveAesthetic()" :disabled="savingAesthetic" class="mt-4 rounded-pill bg-primary px-5 py-2 text-sm text-on-primary disabled:opacity-50">{{ __('Save aesthetic') }}</button>
+        </section>
+
+        {{-- Creative needs (folded in from the old Creative needs tab) --}}
+        <section class="rounded-xl border border-line bg-surface p-6">
+            <h3 class="font-display text-lg">{{ __('Creative needs') }}</h3>
+            <p class="mb-4 mt-1 text-sm text-muted">{{ __('These preferences shape your discovery feed.') }}</p>
+
+            <x-input-label :value="__('Talent types')" />
+            <div class="mt-2 flex flex-wrap gap-2">
+                @foreach ($talentTypes as $type)
+                    <button type="button" @click="toggleNeed('talent_type_ids', {{ $type->id }})"
+                            :class="needs.talent_type_ids.includes({{ $type->id }}) ? 'border-accent bg-accent-weak text-accent-ink' : 'border-line text-muted'"
+                            class="rounded-pill border px-3 py-1.5 text-xs">{{ $type->getTranslation('name', app()->getLocale()) }}</button>
+                @endforeach
+            </div>
+
+            <div class="mt-5"><x-input-label :value="__('Project types')" /></div>
+            <div class="mt-2 flex flex-wrap gap-2">
+                @foreach ($projectTypes as $pt)
+                    <button type="button" @click="toggleNeed('project_types', '{{ $pt }}')"
+                            :class="needs.project_types.includes('{{ $pt }}') ? 'border-accent bg-accent-weak text-accent-ink' : 'border-line text-muted'"
+                            class="rounded-pill border px-3 py-1.5 text-xs">{{ __(ucfirst(str_replace('_', ' ', $pt))) }}</button>
+                @endforeach
+            </div>
+
+            <div class="mt-5 grid gap-4 sm:grid-cols-2">
+                <div>
+                    <x-input-label :value="__('Frequency')" />
+                    <select class="mt-1 block w-full rounded-md border-line bg-bg" x-model="needs.project_frequency">
+                        <option :value="null">—</option>
+                        @foreach (['occasional', 'monthly', 'weekly', 'ongoing'] as $opt)<option value="{{ $opt }}">{{ __(ucfirst($opt)) }}</option>@endforeach
+                    </select>
+                </div>
+                <div>
+                    <x-input-label :value="__('Budget tier')" />
+                    <select class="mt-1 block w-full rounded-md border-line bg-bg" x-model="needs.budget_tier">
+                        <option :value="null">—</option>
+                        @foreach (['under_500' => 'Under $500', '500_2000' => '$500–2k', '2000_10000' => '$2k–10k', '10000_plus' => '$10k+'] as $v => $l)<option value="{{ $v }}">{{ $l }}</option>@endforeach
+                    </select>
+                </div>
+            </div>
+
+            <div class="mt-5 flex items-center gap-3">
+                <button @click="saveNeeds()" :disabled="savingNeeds" class="rounded-pill bg-primary px-5 py-2 text-sm text-on-primary disabled:opacity-50">{{ __('Save preferences') }}</button>
+                <span x-show="needsSaved" x-cloak class="text-xs text-ok">{{ __('Saved') }}</span>
+            </div>
         </section>
 
         {{-- Image gallery --}}

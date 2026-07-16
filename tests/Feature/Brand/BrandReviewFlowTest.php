@@ -1,36 +1,36 @@
 <?php
 
 use App\Models\BrandReview;
-use App\Models\Deal;
+use App\Models\Contract;
 use App\Services\BrandReviewService;
 
 $ratings = ['communication_rating' => 5, 'fairness_rating' => 4, 'creative_respect_rating' => 5];
 
-it('lets a talent submit a pending review on a completed deal', function () use ($ratings) {
-    $deal = Deal::factory()->create(['status' => 'completed']);
+it('lets a talent submit a pending review on a completed contract', function () use ($ratings) {
+    $contract = Contract::factory()->create(['status' => 'completed']);
 
-    $review = app(BrandReviewService::class)->submit($deal, $ratings + ['body' => 'Fair and clear.']);
+    $review = app(BrandReviewService::class)->submit($contract, $ratings + ['body' => 'Fair and clear.']);
 
     expect($review->status->getValue())->toBe('pending');
     expect((bool) $review->is_approved)->toBeFalse();
-    expect($review->brand_id)->toBe($deal->brand_id);
-    expect($review->talent_id)->toBe($deal->talent_id);
+    expect($review->brand_id)->toBe($contract->brand_id);
+    expect($review->talent_id)->toBe($contract->talent_id);
     expect($review->average_rating)->toBe(4.7);
 });
 
-it('refuses a review until the deal is completed', function () use ($ratings) {
-    $deal = Deal::factory()->create(['status' => 'awaiting_talent']);
+it('refuses a review until the contract is completed', function () use ($ratings) {
+    $contract = Contract::factory()->create(['status' => 'awaiting_talent']);
 
-    expect(fn () => app(BrandReviewService::class)->submit($deal, $ratings))
+    expect(fn () => app(BrandReviewService::class)->submit($contract, $ratings))
         ->toThrow(InvalidArgumentException::class);
 });
 
-it('refuses a second review for the same deal', function () use ($ratings) {
-    $deal = Deal::factory()->create(['status' => 'completed']);
+it('refuses a second review for the same contract', function () use ($ratings) {
+    $contract = Contract::factory()->create(['status' => 'completed']);
     $service = app(BrandReviewService::class);
-    $service->submit($deal, $ratings);
+    $service->submit($contract, $ratings);
 
-    expect(fn () => $service->submit($deal, $ratings))->toThrow(InvalidArgumentException::class);
+    expect(fn () => $service->submit($contract, $ratings))->toThrow(InvalidArgumentException::class);
 });
 
 it('approves a review (syncs is_approved) and is not editable by the brand', function () {

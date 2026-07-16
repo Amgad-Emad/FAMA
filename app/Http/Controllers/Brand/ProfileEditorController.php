@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Brand;
 
 use App\Models\BrandImage;
 use App\Models\BrandSocialHandle;
+use App\Models\TalentType;
 use App\Services\BrandOnboardingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -27,16 +28,26 @@ class ProfileEditorController extends BrandController
 
     private const PLATFORMS = ['instagram', 'tiktok', 'x', 'linkedin', 'youtube', 'facebook', 'behance', 'website', 'other'];
 
+    // Creative-needs project types (folded into the profile editor).
+    private const PROJECT_TYPES = ['editorial', 'lookbook', 'campaign_video', 'social_content', 'brand_identity'];
+
     public function __construct(private readonly BrandOnboardingService $onboarding) {}
 
     public function edit(): View
     {
-        $brand = $this->brand()->loadMissing('aesthetic.moodTags', 'socialHandles');
+        $brand = $this->brand()->loadMissing(
+            'aesthetic.moodTags',
+            'socialHandles',
+            'creativeNeed.talentTypes',
+            'creativeNeed.projectTypes',
+        );
 
         return view('brand.profile', [
             'brand' => $brand,
             'moods' => self::MOODS,
             'platforms' => self::PLATFORMS,
+            'talentTypes' => TalentType::orderBy('id')->get(),
+            'projectTypes' => self::PROJECT_TYPES,
         ]);
     }
 
