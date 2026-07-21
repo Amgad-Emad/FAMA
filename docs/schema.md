@@ -108,7 +108,8 @@ Deviations (deliberate):
   change an in-flight contract. `settings.instructions` carries the step's help text.
 - **`contract_messages.status`** (sent/read) is the ContractMessage state-machine column; `read_at` is its
   synced projection (same convention as the Phase 1B state columns).
-- **`campaign_id`** on contracts is still deferred (ADR-F), added with campaigns.
+- **`brand_project_id`** on contracts has **landed** (ADR-F): nullable FK contracts → projects,
+  so a project groups the contracts run under it.
 
 ## Brand core & satellites (Phase 2A — migrated)
 
@@ -134,19 +135,45 @@ sub-ratings + `is_approved` + `status`), `brand_social_handles`, `brand_signals`
 > `brand_signals` is an append-only event log and a candidate for a dedicated analytics store if
 > volume grows (schema-master §4).
 
-## Campaigns (Phase 2A — migrated)
+## Projects (Phase 2A — migrated)
 
-`campaigns` (soft deletes; `slug` unique, `type` campaign/shoot, `status` draft/open/in_progress/
-completed/cancelled, budget min/max + currency, location, dates, `is_public`, `positions_count`;
-`description` translatable; cover via medialibrary), `campaign_talent_types` (roles sought,
-UNIQUE(campaign_id, talent_type_id), `quantity`), `campaign_media` (gallery; uploads via medialibrary,
-`embed_url` external, `caption` translatable).
+`brand_projects` (soft deletes; `slug` unique, `type` project/shoot, `status` draft/open/in_progress/
+completed/cancelled, budget min/max + currency, `budget_is_public`, location, dates, `is_public`,
+`talent_type_id`; `description` translatable; cover via medialibrary), `brand_project_media` (gallery;
+uploads via medialibrary, `embed_url` external, `caption` translatable).
+
+- **One role, one position.** `brand_projects.talent_type_id` (nullable FK → `talent_types`) replaces the
+  removed `brand_project_talent_types` pivot and its `quantity`/`positions_count` columns: a project seeks
+  exactly one discipline for exactly one position.
+- **`budget_is_public`** (boolean, default **false**) — the budget is private by default. When false,
+  `budget_min`/`budget_max` are withheld from every non-owning viewer (public profile, project detail,
+  talent-facing opportunity feed); only the owning brand sees them.
+
+## Platform & admin (Phase 3A — migrated)
+
+- **`users` refined** (schema-master §6): added `phone`, `avatar_url`, `locale` enum(en, ar),
+  `last_login_at`, `is_active` (default true), and **soft deletes** (`deleted_at`). No `role` column —
+  admin roles are modelled with spatie/laravel-permission (ADR-H).
+- **RBAC via spatie/laravel-permission** on the **`admin`** guard: `roles`, `permissions`,
+  `model_has_roles`, `model_has_permissions`, `role_has_permissions`. Seeded roles **super-admin /
+  moderator / support** and permissions **manage-flows, moderate-content, intervene-contracts,
+  manage-settings, manage-users** (`RolesAndPermissionsSeeder`). `User` uses `HasRoles` with
+  `$guard_name = 'admin'`.
+- **`settings`** — key (unique) → value (JSON), read/written through `App\Services\SettingsService`
+  (cached key→value map; typed globals: default currency, default contract flow, feature flags). Seeded by
+  `SettingsSeeder`.
+- **`activity_log`** (already installed, Phase 0) — records **subject + causer + changes**.
+  `ContractFlow`/`ContractFlowStep` apply `LogsActivity` with `getActivitylogOptions()` (log name
+  `contract_flow`, `logOnlyDirty()` + `dontLogEmptyChanges()`), so every admin edit to a flow template is
+  audited — a flow is snapshotted into `contract_steps`, so an edit here reshapes future contracts.
+  The causer resolves from the **`admin`** guard (`activitylog.default_auth_driver` is null → the default
+  guard, which `config/auth.php` sets to `admin`). Note: this activitylog version (5.0) stores model
+  old/new under **`attribute_changes`** (collection); `properties` holds ad-hoc custom data. The
+  `LogOptions` method is `dontLogEmptyChanges()` — there is no `dontSubmitEmptyLogs()`.
 
 ## Not yet built
 
-- **Platform:** `settings` (key-value config).
+- **Mobile API** (Phase 4) — Sanctum tokens + Scribe docs over the existing services/resources.
 
 ## Open schema items (from the specs / decisions)
-- `contracts.campaign_id` — FK contracts → campaigns (ADR-F), added when the campaign⇄contract link is finalised
-  (campaigns now exist, so this can land in the brand contract phase, 2C).
 - Discovery/search (ADR-6): **applied for both talent (Phase 1C) and brand (Phase 2A)** sides.

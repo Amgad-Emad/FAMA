@@ -189,7 +189,7 @@
                 <template x-for="image in images" :key="image.id">
                     <div class="group relative aspect-square overflow-hidden rounded-lg border border-line">
                         <img :src="image.thumbnail_url || image.image_url" class="h-full w-full object-cover" alt="">
-                        <button @click="removeImage(image.id)" class="absolute end-1 top-1 rounded-full bg-black/60 px-2 py-0.5 text-xs text-white opacity-0 group-hover:opacity-100">✕</button>
+                        <button @click="$confirm({ title: '{{ __('Remove this image?') }}', message: '{{ __('The image will be removed from your gallery.') }}', confirmLabel: '{{ __('Remove') }}' }).then(ok => ok && removeImage(image.id))" class="absolute end-1 top-1 rounded-full bg-black/60 px-2 py-0.5 text-xs text-white opacity-0 group-hover:opacity-100">✕</button>
                     </div>
                 </template>
                 <template x-if="!images.length"><p class="col-span-full py-6 text-center text-sm text-muted">{{ __('No images yet.') }}</p></template>
@@ -203,7 +203,7 @@
                 <template x-for="handle in handles" :key="handle.id">
                     <div class="flex items-center justify-between rounded-md border border-line px-3 py-2 text-sm">
                         <span><span class="font-medium" x-text="handle.platform"></span> · <span class="text-muted" x-text="handle.handle"></span></span>
-                        <button @click="removeHandle(handle.id)" class="text-xs text-danger">{{ __('Remove') }}</button>
+                        <button @click="$confirm({ title: '{{ __('Remove this social link?') }}', message: '{{ __('This social handle will be removed from your profile.') }}', confirmLabel: '{{ __('Remove') }}' }).then(ok => ok && removeHandle(handle.id))" class="text-xs text-danger">{{ __('Remove') }}</button>
                     </div>
                 </template>
             </div>

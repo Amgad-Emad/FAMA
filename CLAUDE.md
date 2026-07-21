@@ -209,9 +209,120 @@ ProfessionController→SkillController, StoreProfessionRequest→StoreSkillReque
 table stays as the Skills catalog. The standalone Professions + Account tabs folded into the Profile
 editor (Skills, Username=`slug`, Publish sections). New **Pricing rate** columns on `talents`
 (rate_unit/rate_amount/rate_currency, migration 2026_07_10_000500; all-or-nothing, not translatable)
-replace the removed rate card. Admin relabel + ProfessionCatalogService→SkillCatalogService apply when
-the admin side is built (not present yet). Suite 160 green.
-Next: Phase 2A — brand core & satellites (extend the brands stub: industry/stage/location/reach +
-brand_aesthetics/images/creative_needs/credibility/reviews/social_handles/signals), then the brand
-contract room (Phase 2C) reusing the shared contract engine; Admin authoring/intervention is Phase 3.
-contracts.campaign_id (ADR-F) lands with campaigns.
+replace the removed rate card. The admin relabel landed with the admin phase
+(ProfessionCatalogService→SkillCatalogService, ProfessionController→Admin\SkillController, routes
+/admin/skills).
+
+BRAND PHASE COMPLETE (Phases 2A–2C) — brand core + satellites, projects, brand contract room, brand
+discovery, and the talent-facing brand/opportunity pages. ADR-F has **landed**:
+`contracts.brand_project_id` (nullable, nullOnDelete) links a contract to its project.
+**One project = one role = one position** (`brand_projects.talent_type_id`) — the
+`brand_project_talent_types` pivot (many roles × `quantity`) and `positions_count` are gone.
+**`budget_is_public` defaults to false**: a private budget is withheld from every non-owning viewer in
+the payload (public profile, project detail, talent opportunity feed) — not merely hidden in the view.
+Talents apply to a project via a rich-text modal (@-mention their own projects + attachments); brief HTML
+is sanitized server-side by `App\Support\Html\BriefSanitizer` (DOMDocument allowlist).
+
+Two repo-wide renames are DONE and are the current vocabulary — use them: **Campaign → Project**
+(`brand_projects`, `BrandProject`, /brand/projects, /brands/{slug}/projects/{slug}) and **Deal →
+Contract** (`contracts`/`contract_flows`/`contract_flow_steps`/`contract_steps`/`contract_messages`/
+`contract_enquiries`, `ContractService`, permission `intervene-contracts`, log names `contract_flow` /
+`contract_intervention`). Two things deliberately KEEP the old word: the `talent_types.category` enum is
+still `model|crew|creative` (ADR-S renamed the **slugs** to disciplines — `modeling`, `photography`, … —
+not the category enum; `applies_to` on a flow uses the category), and the `project_types` enum value
+`campaign_video`. `docs/changelog.md` is dated history and intentionally still says "deal" below
+2026-07-15.
+
+ADMIN PHASE COMPLETE (Phase 3, reconciled 2026-07-16). `php artisan migrate:fresh --seed` exits 0 and the
+full Pest suite is **345/345 green**. Admin = `admin` guard + spatie/laravel-permission RBAC (roles
+super-admin/moderator/support; permissions manage-flows, moderate-content, intervene-contracts,
+manage-settings, manage-users; `User` has `$guard_name='admin'`). Surfaces: dashboard, **flow builder**
+(/admin/flows — draft→active→archived, one default per `applies_to`), **skills catalog**
+(/admin/skills), **moderation queues** (/admin/moderation/{talents,reviews,brands,brand-reviews,
+projects}), **contract intervention console** (/admin/contracts — override/advance-as-admin/nudge/
+reassign/cancel via ContractInterventionService, reusing the 1E engine at **`App\Contracting\`** — NOT
+`App\Contracts\`, which is Laravel's interface namespace), activity log, settings, admin users.
+Editing a flow affects **future contracts only** (contracts snapshot their steps at creation).
+The **Deposit step is mandatory** (`is_skippable => false`) — it locks the booking.
+Audit: `ContractFlow`/`ContractFlowStep` apply `LogsActivity` + `getActivitylogOptions()` (log
+`contract_flow`, `logOnlyDirty()`, `dontLogEmptyChanges()` — activitylog 5.0 has **no**
+`dontSubmitEmptyLogs()`); causer resolves from the `admin` guard because
+`activitylog.default_auth_driver` is null → default guard → `admin`. Model old/new live under
+**`attribute_changes`**, not `properties`.
+`DatabaseSeeder` order matters: RolesAndPermissionsSeeder → catalogs → ContractFlowSeeder →
+SettingsSeeder → demo data (AdminDemoSeeder authorizes against the RBAC; settings need the default flow).
+Demo logins: admin `admin-demo@fama.test`, talent `talent-demo@fama.test`, brand `brand-demo@fama.test` —
+all password `password`. (RolesAndPermissionsSeeder grants super-admin to `admin-demo@fama.test`.)
+
+Admin reachability + block governance split (2026-07-16, ADR-T; suite 345 green). `resources/js/admin.js`
+is now imported by `app.js` — it never was, so every admin page had shipped as a dead Alpine shell in the
+browser (HTTP tests can't see this; check the built bundle). Grouped, permission-gated sidebar
+(Moderation queues deep-link tabs via server-validated `?queue=`, URL synced with replaceState;
+`aria-current` marks the active item incl. the matching queue) + a dashboard home where EVERY page has a
+gated card/quick link: moderation counts (pending talents = created/draft, pending reviews ×2, unverified
+brands) with "All clear." empty states, contracts whose-turn card, projects-by-status card, governance
+quick links, recent activity (causer eager-loaded) — all single aggregate queries computed only when the
+admin holds the permission. **Block governance is split (ADR-T):** `/admin/blocks` (NEW permission
+`manage-blocks`, super-admin only) owns block-type existence + eligibility (availability gates synced to
+mode, `is_active` grandfathering — the talent picker filters, existing placements keep rendering;
+`key`/`content_source` locked once in use → 422; `settings_schema` must be valid JSON) via
+BlockCatalogService; `/admin/skills` now edits ONLY ordered preselection among catalog-eligible blocks
+(`ProfileBlockService::isEligibleForScope` is THE eligibility predicate — reuse it, never reimplement),
+flags stale keys "no longer eligible", and `updateDefaultBlocks` rejects ADDING an ineligible key while
+allowing reorder/removal around a stale one. Also: global review queue (`/admin/moderation/all-reviews`,
+UNION + per-kind hydration, kind routes actions), projects oversight status filter + budget always
+visible to admins (tagged private), contract console current-step filter, brand Unpublish surfaced.
+Envelope meta nests pagination under `meta.pagination.*` (http.js passes it through as-is).
+Moderation detail drawers + admin polish (2026-07-16, suite 350 green): every moderation queue row opens
+an end-side detail drawer (5 `show*` endpoints, `GET /admin/moderation/{queue}/{id}`, kind-aware actions
+inside; the global queue resolves per row). Shared admin UI kit: `<x-admin.skeleton>` loaders,
+`<x-admin.pagination>` (meta.pagination-driven), and the Alpine magic `$pill(status)` in admin.js — ONE
+semantic status→tone mapping for all admin lists. WATCH OUT: `text-ok`/`bg-ok` are NOT design tokens
+(they render as nothing) — the real tokens are `success`/`success-weak` (+ warn/danger variants).
+N+1 watch-out: medialibrary `*_url` accessors (e.g. `talent.avatar_url`) call `getFirstMediaUrl`, which
+uses `loadMissing` internally — so `preventLazyLoading` will NOT catch them. Any list whose Resource
+touches an avatar must eager-load `talent.media`.
+
+Auth + error pages are on the Fama design system (2026-07-16, presentation-only; suite 356 green).
+Breeze's low-level partials (input-label/text-input/input-error/auth-session-status/primary-button) are
+token-bound — restyle THOSE, not per-form markup; `x-text-input` takes an `error` prop (aria-invalid +
+danger border). The guest layout is the public-layout treatment (wordmark header + theme/locale toggles +
+centered surface card + `animate-fade-in-up`). Ajax is locale-aware: `http.js` prefixes same-origin requests with the active locale (from
+`<meta name="locale-prefix">` in design-head); nav links built in JS must localize via
+`window.fama.localizeUrl(...)` or they drop to the default locale. JS pills localize status via the
+`$statusLabel()` magic (label map from design-head) — never render a raw status string; likewise
+`$actorLabel`/`$stepLabel`/`$categoryLabel`/`$flowLabel`. Contract-timeline system events store a
+structured `meta` ({key,params}) on `contract_messages` and are localized at render by
+`ContractMessageResource` in the VIEWER's locale (English `body` is the fallback); actor/step display
+labels live in `App\Support\ContractLabels` (shared by the resource + design-head). When adding a new
+system-event verb, extend `ContractProgression::stepEventMeta()` + the resource's match + the AR lang
+templates. Moderation
+Suspend/Unpublish are STATE-AWARE toggles (Suspend⇄Reinstate, Publish⇄Unpublish) via
+publish()/unsuspend() on the moderation services; the shared `admin/moderation/partials/account-actions`
+partial drives both rows and the drawer.
+Destructive actions (delete/remove/cancel) MUST go through the global confirm modal: wire the button as
+`@click="$confirm({ title, message, confirmLabel, tone }).then(ok => ok && action())"` (promise-based
+Alpine store in resources/js/confirm.js; dialog partial `<x-confirm-dialog>` is already in the three
+dashboard layouts). Keep the action method unchanged; copy stays in Blade (`__()`). Don't add bare
+delete handlers or new ad-hoc inline confirms.
+Account creation goes through ONE service — `AccountCreationService` (createTalent/createBrand/
+createAdmin) — used by BOTH public `/register` (talent|brand only, ADR-I) and admin `/admin/users`
+(all three; brand/talent surface in moderation, not the admins list). New self-serve talent = draft,
+brand = registered, both unpublished. `Brand` now has a guarded auto-slug `booted()` hook like `Talent`.
+Login + register are premium standalone SPLIT-SCREEN pages (their own `<html>` layouts, graphite
+showcase panel + form — NOT the guest card; forgot/reset/confirm/verify still use `<x-guest-layout>`).
+The PUBLIC login is role-aware for Talent | Brand ONLY
+(2-segment control of native radios, name=`role`, `@checked`; absent role defaults to TALENT;
+`?role=brand` per ADR-P; absent role → TALENT; `LoginRequest` REJECTS role=admin). Register's
+`account_type` is talent|brand (rich cards); admin `/admin/users` create form adds an account-type
+control (admin shows roles; brand/talent don't). STAFF sign in at **/admin/login**
+(`admin.login[.store]`, `guest:admin`, `Admin\Auth\AdminLoginController` + `AdminLoginRequest` —
+subclasses LoginRequest, guard pinned to admin, no role field, lands on admin.dashboard) with its own
+enterprise split-screen view `admin/auth/login` (noindex). `redirectGuestsTo` routes admin-area guests
+(first path segment, or second after a 2-letter locale) to the staff login. Password fields use
+`<x-password-input>` (show/hide toggle, aria-pressed, no-JS-safe static type). /ar URLs are NOT
+testable in-process (mcamara registers the locale prefix per request) — verify RTL live. The app owns `errors/{403,404,419,429,500,503}` on
+`errors/layout` — dependency-light (no Alpine/data; `rescue()` for the dashboard link); keep them
+rendering when degraded.
+
+Next: Phase 4 — the mobile API (Sanctum tokens + Scribe docs) over the existing services/resources.

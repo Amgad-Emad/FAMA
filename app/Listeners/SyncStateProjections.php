@@ -4,6 +4,7 @@ namespace App\Listeners;
 
 use App\Models\Brand;
 use App\Models\BrandReview;
+use App\Models\ContractFlow;
 use App\Models\ProfileBlock;
 use App\Models\Review;
 use App\Models\Talent;
@@ -25,6 +26,7 @@ class SyncStateProjections
         match (true) {
             $model instanceof Talent && $event->field === 'status' => $this->syncTalent($model, $final),
             $model instanceof Brand && $event->field === 'status' => $this->syncBrand($model, $final),
+            $model instanceof ContractFlow => $model->forceFill(['is_active' => $final === 'active'])->saveQuietly(),
             $model instanceof BrandReview => $model->forceFill(['is_approved' => $final === 'approved'])->saveQuietly(),
             $model instanceof ProfileBlock => $model->forceFill(['is_visible' => $final === 'visible'])->saveQuietly(),
             $model instanceof Review => $model->forceFill(['is_approved' => $final === 'approved'])->saveQuietly(),

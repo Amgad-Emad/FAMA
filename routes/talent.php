@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\Route;
 |
 | The sidebar is: Home · Profile · Content · Reviews · Contracts. The Profile editor
 | is the single profile surface — identity, Skills, username, publish, pricing
-| rate, and the reorderable blocks (the old Professions + Account tabs folded in).
+| rate, and the reorderable blocks (the old Skills + Account tabs folded in).
 |
 */
 

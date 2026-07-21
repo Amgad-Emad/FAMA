@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Str;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
@@ -30,6 +31,21 @@ class Brand extends Authenticatable implements HasMedia
     use HasApiTokens, HasFactory, HasStates, HasTranslations, InteractsWithMedia, Notifiable, SoftDeletes;
 
     protected $table = 'brands';
+
+    /**
+     * Ensure every brand has a unique public slug (generated if not supplied),
+     * mirroring the Talent convention — self-serve/admin-provisioned brands
+     * don't set one, the factory does.
+     */
+    protected static function booted(): void
+    {
+        static::creating(function (Brand $brand): void {
+            if (blank($brand->slug)) {
+                $base = Str::slug($brand->name ?: 'brand');
+                $brand->slug = $base.'-'.Str::lower(Str::random(6));
+            }
+        });
+    }
 
     /**
      * @var list<string>

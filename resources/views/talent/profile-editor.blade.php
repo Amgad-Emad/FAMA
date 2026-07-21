@@ -68,7 +68,7 @@
                                 <span x-show="!uploadingAvatar" x-text="avatarUrl ? '{{ __('Change photo') }}' : '{{ __('Upload photo') }}'"></span>
                                 <span x-show="uploadingAvatar" x-cloak>{{ __('Uploading…') }}</span>
                             </x-ui.button>
-                            <button type="button" x-show="avatarUrl" x-cloak @click="removeAvatar()" x-bind:disabled="uploadingAvatar"
+                            <button type="button" x-show="avatarUrl" x-cloak @click="$confirm({ title: '{{ __('Remove profile photo?') }}', message: '{{ __('Your photo will be removed and replaced with your initials.') }}', confirmLabel: '{{ __('Remove') }}' }).then(ok => ok && removeAvatar())" x-bind:disabled="uploadingAvatar"
                                     class="text-sm text-muted underline underline-offset-2 transition hover:text-danger focus:outline-none focus-visible:ring-2 focus-visible:ring-accent">{{ __('Remove') }}</button>
                         </div>
                         <p class="text-xs text-subtle">{{ __('JPG, PNG or WebP · up to 5 MB · square works best.') }}</p>
@@ -159,16 +159,8 @@
                                     :title="type.is_primary ? '{{ __('Primary') }}' : '{{ __('Make primary') }}'"
                                     x-text="type.is_primary ? '★' : '☆'"></button>
                             {{-- Removing a skill deletes its tab's blocks (content is kept) — confirm first. --}}
-                            <template x-if="confirmRemoveSkillId !== type.id">
-                                <button @click="requestRemoveSkill(type)" class="text-subtle hover:text-danger" title="{{ __('Remove skill') }}">✕</button>
-                            </template>
-                            <template x-if="confirmRemoveSkillId === type.id">
-                                <span class="flex items-center gap-2">
-                                    <span class="text-[11px] text-danger">{{ __('Delete this tab’s blocks? (content kept)') }}</span>
-                                    <button @click="removeSkill(type)" class="rounded-pill bg-danger px-2 py-0.5 text-[11px] font-medium text-white">{{ __('Remove') }}</button>
-                                    <button @click="cancelRemoveSkill()" class="text-[11px] text-muted underline">{{ __('Cancel') }}</button>
-                                </span>
-                            </template>
+                            <button @click="$confirm({ title: '{{ __('Remove this skill?') }}', message: '{{ __('Delete this tab’s blocks? (your content is kept)') }}', confirmLabel: '{{ __('Remove') }}' }).then(ok => ok && removeSkill(type))"
+                                    class="text-subtle hover:text-danger" title="{{ __('Remove skill') }}">✕</button>
                         </div>
                     </template>
                     <p x-show="skills.length === 0" x-cloak class="rounded-lg border border-line bg-surface p-6 text-center text-sm text-subtle">{{ __('Add your first skill below.') }}</p>
@@ -267,7 +259,7 @@
                                             :class="block.is_visible ? 'bg-success-weak text-success' : 'bg-surface text-muted border border-line'">
                                         <span x-text="block.is_visible ? '{{ __('Visible') }}' : '{{ __('Hidden') }}'"></span>
                                     </button>
-                                    <button @click="removeBlock(block)" class="text-subtle hover:text-danger" title="{{ __('Remove') }}">✕</button>
+                                    <button @click="$confirm({ title: '{{ __('Remove this block?') }}', message: '{{ __('The block and its content will be removed from your profile.') }}', confirmLabel: '{{ __('Remove') }}' }).then(ok => ok && removeBlock(block))" class="text-subtle hover:text-danger" title="{{ __('Remove') }}">✕</button>
                                 </div>
                             </template>
                             <p x-show="blocksInScope(group.typeId).length === 0" x-cloak class="rounded-lg border border-dashed border-line p-4 text-center text-xs text-subtle">{{ __('No blocks here yet.') }}</p>

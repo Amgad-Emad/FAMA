@@ -9,15 +9,15 @@
 ### Public / talent-facing pages
 
 **Brand profile page — `fama.com/brands/{slug}`**
-Header from `brands` (name, logo, cover, description, industry, stage, location), credibility block (`brand_credibility`), talent ratings (`brand_reviews`), Campaigns on FAMA (public campaigns), social handles (`brand_social_handles`).
+Header from `brands` (name, logo, cover, description, industry, stage, location), credibility block (`brand_credibility`), talent ratings (`brand_reviews`), Projects on FAMA (public projects), social handles (`brand_social_handles`).
 
-**Campaign detail page — `fama.com/brands/{slug}/campaigns/{campaign-slug}`**
-One campaign expanded: title, description, cover, budget, location, dates, roles sought (`campaign_talent_types`), gallery (`campaign_media`).
+**Project detail page — `fama.com/brands/{slug}/projects/{project-slug}`**
+One project expanded: title, description, cover, budget, location, dates, roles sought (`brand_project_talent_types`), gallery (`brand_project_media`).
 
 ### Authenticated — brand dashboard
 
 **Brand dashboard home**
-Overview: profile completion status (`is_complete`), active deals + whose turn, recent campaigns, and the discovery feed entry point.
+Overview: profile completion status (`is_complete`), active contracts + whose turn, recent projects, and the discovery feed entry point.
 
 **Brand profile editor**
 Edits `brands` core fields, `brand_aesthetics`, `brand_images`, `brand_social_handles`.
@@ -25,20 +25,20 @@ Edits `brands` core fields, `brand_aesthetics`, `brand_images`, `brand_social_ha
 **Creative needs / preferences editor**
 Edits `brand_creative_needs` — talent types, project types, frequency, budget tier.
 
-**Campaigns manager**
-List/create/edit campaigns; set status, budget, location, dates, `is_public`, attach `campaign_talent_types` and `campaign_media`.
+**Projects manager**
+List/create/edit projects; set status, budget, location, dates, `is_public`, attach `brand_project_talent_types` and `brand_project_media`.
 
-**Single campaign workspace**
-One campaign's details plus the deals running under it (`deals.campaign_id`).
+**Single project workspace**
+One project's details plus the contracts running under it (`contracts.brand_project_id`).
 
 **Discovery feed** *(the onboarding payoff — needs the matching layer)*
 Personalised talent feed filtered by `brand_creative_needs`, `geographic_reach`, `brand_aesthetics`; writes browse/save events to `brand_signals`.
 
-**Deals inbox (brand view)**
-The brand's deals with status and current step.
+**Contracts inbox (brand view)**
+The brand's contracts with status and current step.
 
-**Deal room (brand view)**
-Per-deal thread: submit brief, review/accept quotes, pay, sign.
+**Contract room (brand view)**
+Per-contract thread: submit brief, review/accept quotes, pay, sign.
 
 **Brand reviews received**
 View `brand_reviews` from talents — the three sub-ratings and feedback.
@@ -69,30 +69,30 @@ Settings-stage fields (`company_size`, `website`, `founded_year`), social handle
 ### Discovery & engagement
 
 4. **Browse the discovery feed** — feed filtered by `brand_creative_needs`, `geographic_reach`, and `brand_aesthetics`. Every view/save/brief writes a row to `brand_signals`, which continuously enriches the preference profile.
-5. **Initiate a deal** — from a talent profile → start a deal → becomes a `deals` row owned by the brand → enters the deal step loop. (Or a public visitor's `deal_enquiry` converts into the brand's first deal once they finish onboarding.)
+5. **Initiate a contract** — from a talent profile → start a contract → becomes a `contracts` row owned by the brand → enters the contract step loop. (Or a public visitor's `contract_enquiry` converts into the brand's first contract once they finish onboarding.)
 
-### Campaigns
+### Projects
 
-6. **Create a campaign / shoot** — create a campaign (draft) → set type, description, cover, budget range, location, dates → attach `campaign_talent_types` (roles sought) and `campaign_media` → set `is_public` → open it.
-7. **Run a campaign** — open campaign → talents booked under it via deals (`deals.campaign_id`) → campaign moves `draft → open → in_progress → completed`. A completed campaign becomes a showcase on the brand profile; can be cancelled from any active state.
+6. **Create a project / shoot** — create a project (draft) → set type, description, cover, budget range, location, dates → attach `brand_project_talent_types` (roles sought) and `brand_project_media` → set `is_public` → open it.
+7. **Run a project** — open project → talents booked under it via contracts (`contracts.brand_project_id`) → project moves `draft → open → in_progress → completed`. A completed project becomes a showcase on the brand profile; can be cancelled from any active state.
 
 ### Trust & reputation
 
-8. **Accrue credibility** — on deal completion → `brand_credibility.completed_projects_count` increments; response metrics (`response_rate_pct`, `avg_response_time_hours`) recalculate as the brand replies to enquiries; `brief_quality_score` updates internally. Automatic, event-driven — the brand doesn't act here.
-9. **Receive talent reviews** — when a deal completes → the talent rates the brand on three axes (communication, fairness, creative respect) → review enters `brand_reviews` as `is_approved = false` → the brand can view it once approved, but cannot edit it.
+8. **Accrue credibility** — on contract completion → `brand_credibility.completed_projects_count` increments; response metrics (`response_rate_pct`, `avg_response_time_hours`) recalculate as the brand replies to enquiries; `brief_quality_score` updates internally. Automatic, event-driven — the brand doesn't act here.
+9. **Receive talent reviews** — when a contract completes → the talent rates the brand on three axes (communication, fairness, creative respect) → review enters `brand_reviews` as `is_approved = false` → the brand can view it once approved, but cannot edit it.
 
 ### Admin workflows
 
 10. **Brand moderation** — review `brands` → verify (`is_verified`), suspend/unpublish (`is_published`), soft-delete (`deleted_at`).
 11. **Brand review moderation** — queue of `brand_reviews` where `is_approved = false` → approve/reject.
-12. **Campaigns oversight** — view all campaigns across brands, filter by status, intervene/cancel.
+12. **Projects oversight** — view all projects across brands, filter by status, intervene/cancel. Admins always see the budget, tagged **private** when `budget_is_public` is off.
 
 ---
 
 ## LIFECYCLES
 
 **Brand lifecycle**
-`registered` (email/password created via the Contact-to-deal flow or direct signup) `→ onboarding` (`is_complete = false`, walking the 6 steps) `→ complete` (`is_complete = true`, the deal-flow gate opens) `→ published` (`is_published = true`, profile visible to talents) → can go unpublished, `verified` (`is_verified` flipped by admin, a one-way trust upgrade), suspended/deactivated (`is_active = false`), soft-deleted (`deleted_at`), or purged. **The two gates that matter:** `is_complete` controls whether the brand can transact; `is_published` controls whether talents can see it.
+`registered` (email/password created via the Contact-to-contract flow or direct signup) `→ onboarding` (`is_complete = false`, walking the 6 steps) `→ complete` (`is_complete = true`, the contract-flow gate opens) `→ published` (`is_published = true`, profile visible to talents) → can go unpublished, `verified` (`is_verified` flipped by admin, a one-way trust upgrade), suspended/deactivated (`is_active = false`), soft-deleted (`deleted_at`), or purged. **The two gates that matter:** `is_complete` controls whether the brand can transact; `is_published` controls whether talents can see it.
 
 **Brand aesthetics lifecycle**
 `empty → set at onboarding (Step 4) → refined` (edited in the profile editor, or implicitly enriched from browsing) `→ edited freely thereafter`. One-to-one with the brand, so it's created once and updated in place — no terminal state of its own beyond the brand being deleted.
@@ -104,10 +104,10 @@ Settings-stage fields (`company_size`, `website`, `founded_year`), social handle
 `set at onboarding (Steps 3 + 5) → active (driving the discovery feed) → adjusted as the brand's hiring changes`. Like aesthetics, one-to-one and update-in-place; `budget_tier` shifts as the brand grows.
 
 **Brand credibility lifecycle**
-`initialized at zero → accrues over time`. Counters move only on real events: `completed_projects_count` increments when a deal completes; `response_rate_pct` / `avg_response_time_hours` recalculate as the brand replies to enquiries; `brief_quality_score` updates internally. It never resets — a monotonic trust record (response rate can dip, but the project count only climbs).
+`initialized at zero → accrues over time`. Counters move only on real events: `completed_projects_count` increments when a contract completes; `response_rate_pct` / `avg_response_time_hours` recalculate as the brand replies to enquiries; `brief_quality_score` updates internally. It never resets — a monotonic trust record (response rate can dip, but the project count only climbs).
 
 **Brand review lifecycle**
-`submitted by talent (is_approved = false) → pending/moderation → approved (public) or rejected/hidden`. Triggered when a deal hits `completed` — the moment a talent can rate the brand on the three axes. Mirrors the talent-side review lifecycle exactly.
+`submitted by talent (is_approved = false) → pending/moderation → approved (public) or rejected/hidden`. Triggered when a contract hits `completed` — the moment a talent can rate the brand on the three axes. Mirrors the talent-side review lifecycle exactly.
 
 **Brand social handle lifecycle**
 `added (settings-stage) → displayed → edited → removed`. A simple list item, reorderable by `position`; no states beyond present/absent.
@@ -115,11 +115,11 @@ Settings-stage fields (`company_size`, `website`, `founded_year`), social handle
 **Brand signal lifecycle**
 `emitted → stored (immutable)`. Each view/save/brief is a one-time append-only event — never edited or transitioned, it just accumulates and feeds the preference engine. Effectively write-once; the only "lifecycle" is eventual aging-out/archival if moved to an analytics store.
 
-**Campaign lifecycle**
-`draft → open (published, accepting/seeking talent) → in_progress (deals running under it) → completed` → can also be `cancelled` from any active state. Soft-delete (`deleted_at`) for removal. Independently, `is_public` toggles listed ⇄ private without changing the status. A completed campaign becomes a showcase on the brand profile.
+**Project lifecycle**
+`draft → open (published, accepting/seeking talent) → in_progress (contracts running under it) → completed` → can also be `cancelled` from any active state. Soft-delete (`deleted_at`) for removal. Independently, `is_public` toggles listed ⇄ private without changing the status. A completed project becomes a showcase on the brand profile.
 
-**Campaign media lifecycle**
-`uploaded → processed → ordered (position) → displayed → removed`. Same shape as brand images, scoped to the campaign.
+**Project media lifecycle**
+`uploaded → processed → ordered (position) → displayed → removed`. Same shape as brand images, scoped to the project.
 
 ### How they connect
-The **brand lifecycle is the spine** — `is_complete` gates transacting, `is_published` gates visibility. The **campaign lifecycle runs on top** (a brand spins up many campaigns over its life). Both the **credibility** and **review** lifecycles are consequences of deals completing — they don't advance on their own; they advance when the deal lifecycle reaches `completed`. Aesthetics, creative needs, images, and social handles are all **update-in-place satellites** of the brand with no terminal state of their own; **signals are append-only**. The one entity with no real lifecycle is `brand_signals` — it's logged, not transitioned.
+The **brand lifecycle is the spine** — `is_complete` gates transacting, `is_published` gates visibility. The **project lifecycle runs on top** (a brand spins up many projects over its life). Both the **credibility** and **review** lifecycles are consequences of contracts completing — they don't advance on their own; they advance when the contract lifecycle reaches `completed`. Aesthetics, creative needs, images, and social handles are all **update-in-place satellites** of the brand with no terminal state of their own; **signals are append-only**. The one entity with no real lifecycle is `brand_signals` — it's logged, not transitioned.

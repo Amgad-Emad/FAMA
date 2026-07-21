@@ -102,7 +102,8 @@ class ContractService extends Service
             }
 
             $step->status->transitionTo(Skipped::class);
-            $this->progression->postSystemEvent($contract, $step, ucfirst($role).' skipped '.$step->name.'.');
+            $this->progression->postSystemEvent($contract, $step, ucfirst($role).' skipped '.$step->name.'.',
+                ['key' => 'skipped', 'params' => ['actor' => $role, 'step_key' => $step->key, 'step_name' => $step->name]]);
             $this->progression->activateNext($contract);
 
             return $contract->refresh();

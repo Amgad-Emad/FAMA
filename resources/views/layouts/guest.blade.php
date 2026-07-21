@@ -12,22 +12,45 @@
 
         @include('partials.design-head')
 
-        <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
-    <body class="font-sans text-gray-900 antialiased">
-        <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gray-100 dark:bg-gray-900">
-            <div class="flex items-center gap-x-4">
-                <a href="/">
-                    <x-application-logo class="w-20 h-20 fill-current text-gray-500" />
-                </a>
-            </div>
+    <body class="min-h-screen bg-bg text-ink antialiased">
+        <div class="flex min-h-screen flex-col">
+            {{-- Slim header: wordmark + theme/locale, same treatment as the public layout --}}
+            <header class="border-b border-line">
+                <div class="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 sm:px-6">
+                    <a href="{{ url('/') }}" class="font-display text-2xl tracking-tight text-ink">
+                        Fama<span class="text-accent">.</span>
+                    </a>
+                    <div class="flex items-center gap-3">
+                        <x-public-locale-switcher />
+                        <x-theme-toggle />
+                    </div>
+                </div>
+            </header>
 
-            <div class="w-full sm:max-w-md mt-6 px-6 py-4 bg-white dark:bg-gray-800 shadow-md overflow-hidden sm:rounded-lg">
-                {{ $slot }}
-            </div>
+            {{-- Centered auth card over a soft ambient accent glow (token-only:
+                 accent-weak blobs blurred — reads premium in light and dark).
+                 Entrance is the shared reduce-motion-aware reveal layer. --}}
+            <main class="relative flex flex-1 items-center justify-center overflow-hidden px-4 py-10 sm:px-6">
+                <div aria-hidden="true" class="pointer-events-none absolute inset-0">
+                    <div class="absolute -top-24 start-1/4 h-72 w-72 rounded-pill bg-accent-weak opacity-60 blur-3xl"></div>
+                    <div class="absolute -bottom-24 end-1/4 h-80 w-80 rounded-pill bg-accent-weak opacity-40 blur-3xl"></div>
+                </div>
+                <div class="animate-fade-in-up relative w-full max-w-md">
+                    <div class="rounded-2xl border border-line bg-surface p-6 shadow-e2 sm:p-8">
+                        {{ $slot }}
+                    </div>
+                </div>
+            </main>
 
-            <x-language-switcher class="mt-6" />
+            <footer class="border-t border-line py-6">
+                <div class="mx-auto flex max-w-6xl items-center justify-center px-4 sm:px-6">
+                    <span class="font-mono text-[11px] uppercase tracking-[0.18em] text-subtle">
+                        {{ __('Creative talent · Egypt-first · MENA-wide') }}
+                    </span>
+                </div>
+            </footer>
         </div>
     </body>
 </html>

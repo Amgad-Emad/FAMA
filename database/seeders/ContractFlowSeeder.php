@@ -34,7 +34,7 @@ class ContractFlowSeeder extends Seeder
     {
         $flow = ContractFlow::query()->updateOrCreate(
             ['slug' => 'standard-booking'],
-            ['name' => 'Standard Booking', 'description' => 'The default brand ↔ talent booking flow.', 'applies_to' => null, 'is_active' => true, 'is_default' => true],
+            ['name' => 'Standard Booking', 'description' => 'The default brand ↔ talent booking flow.', 'applies_to' => null, 'is_active' => true, 'is_default' => true, 'status' => 'active'],
         );
 
         $flow->steps()->delete();

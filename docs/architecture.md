@@ -262,7 +262,7 @@ turn-aware action panel by `step_type` and the interleaved message/system_event 
 
 ## Domain model — brand side (Phase 2A)
 
-The brand core (`brands`, extended from the Phase 1E stub) plus its satellites and campaigns
+The brand core (`brands`, extended from the Phase 1E stub) plus its satellites and projects
 (`app/Models`, schema in `docs/schema.md`). Schema layer only — services + state machines + the brand
 dashboard are Phase 2B/2C (same split as talent 1A → 1B).
 
@@ -272,38 +272,41 @@ dashboard are Phase 2B/2C (same split as talent 1A → 1B).
 - **1:1 satellites.** `aesthetic` (`BrandAesthetic`), `creativeNeed` (`BrandCreativeNeed`), `credibility`
   (`BrandCredibility`) — created once, updated in place.
 - **Child collections.** `images` (medialibrary), `brandReviews` (three sub-ratings, `average_rating`
-  accessor), `socialHandles`, `signals` (append-only), `campaigns`.
+  accessor), `socialHandles`, `signals` (append-only), `brand_projects`.
 - **ADR-6 discovery pivots.** Mood tags → `brand_mood_tags` (via the aesthetic); creative-need talent
   types → `brand_creative_need_talent_type` (M:N with `talent_types`); project types →
   `brand_creative_need_project_type`. All indexed so the feed can filter "brands needing photographers /
   with an editorial mood / running campaign videos".
-- **Campaigns.** `Campaign` (translatable description, cover media, soft-delete, `status` lifecycle)
-  `belongsToMany` `TalentType` via `campaign_talent_types` (roles + `quantity`) and `hasMany`
-  `CampaignMedia` (`gallery()`, uploads via medialibrary). A campaign groups many contracts (the
-  `contracts.campaign_id` FK lands in Phase 2C, ADR-F).
+- **Projects.** `BrandProject` (translatable description + brief, cover media, soft-delete, `status`
+  lifecycle) `belongsTo` a **single** `TalentType` via `brand_projects.talent_type_id` and `hasMany`
+  `BrandProjectMedia` (`gallery()`, uploads via medialibrary). **One project = one role = one
+  position** — the old `brand_project_talent_types` pivot (many roles × `quantity`) is gone.
+  `budget_is_public` (default **false**) gates the budget: private budgets are visible to the owning
+  brand only and are stripped from every public/talent-facing payload, not just hidden in the view.
+  A project groups many contracts via `contracts.brand_project_id` (ADR-F — **landed**).
 - **Demo data.** `BrandDemoSeeder` builds a full brand (Nomad Coffee) — aesthetic + moods, creative
-  needs + pivots, credibility, images, social handles, a talent review, and a public campaign with roles
-  + gallery — enriching the same brand the contract seeder uses.
+  needs + pivots, credibility, images, social handles, a talent review, and a public project with its
+  role + gallery — enriching the same brand the contract seeder uses.
 
 ## Brand domain logic — services, state machines & events (Phase 2B)
 
 Business logic in **services**; lifecycles are **state machines**; accrual is **event-driven**. Every
 multi-write op runs in `runInTransaction` with fail-logging to the **`brands`** channel.
 
-**State machines** (`app/States/Brand|Campaign|BrandReview`, spatie/laravel-model-states — `status`
+**State machines** (`app/States/Brand|Project|BrandReview`, spatie/laravel-model-states — `status`
 authoritative, flags are synced projections via `SyncStateProjections`):
 - **Brand**: registered → onboarding → complete → published ⇄ unpublished; suspended from any complete
   state; soft-delete removes it. `is_complete`/`is_published`/`is_active` are projected from status;
   **`is_verified` is orthogonal** — a one-way admin flag, not a status.
-- **Campaign**: draft → open → in_progress → completed; cancellable from any active state. `is_public`
-  toggles independently of status; `Campaign::showcase()` = completed + public.
+- **Project**: draft → open → in_progress → completed; cancellable from any active state. `is_public`
+  toggles independently of status; `Project::showcase()` = completed + public.
 - **BrandReview**: pending → approved | rejected (mirrors talent reviews); `is_approved` synced.
 
 **Services** (`app/Services`):
 - `BrandOnboardingService` — the 6-step wizard (identity → location → creative needs → aesthetic+images
   → budget → complete). Step 1 moves registered → onboarding; step 6 flips `is_complete`. Idempotent
   per step.
-- `CampaignService` — create/edit, `syncRoles` (talent types + quantity), `addMedia`, and the status
+- `BrandProjectService` — create/edit, `syncRoles` (talent types + quantity), `addMedia`, and the status
   transitions (open/start/complete/cancel, `setPublic`).
 - `BrandReviewService` — talent `submit` (guards contract completed + one-per-contract → pending), admin
   `approve`/`reject`. No edit path (the brand can never edit a review).
@@ -323,7 +326,7 @@ hard filter needs a talent-side aesthetic signal, so `brand_aesthetics` informs 
 selection.
 
 > Update-in-place satellites (aesthetics, creative needs, images, social handles) have no terminal state
-> of their own; `brand_signals` is append-only. Contracts link to a campaign via `contracts.campaign_id` (ADR-F).
+> of their own; `brand_signals` is append-only. Contracts link to a project via `contracts.brand_project_id` (ADR-F).
 
 ### Brand dashboard (Phase 2C)
 
@@ -331,12 +334,83 @@ The brand-guard dashboard (`routes/brand.php`, `app/Http/Controllers/Brand/*`, `
 `resources/js/brand.js`) mirrors the talent dashboard: Blade shells + Alpine on `http.js`, JSON envelopes,
 no reloads, ownership 403 / domain 422. Controllers are thin and delegate to the Phase 2B services — the
 6-step **onboarding wizard** (persists per step, flips `is_complete`, then drops the brand into its first
-feed), **profile editor** (core + aesthetic + images + social), **creative-needs** editor, **campaigns**
-manager + workspace (roles, media, lifecycle buttons, the contracts running under the campaign), the
+feed), **profile editor** (core + aesthetic + images + social), **creative-needs** editor, **projects**
+manager + workspace (roles, media, lifecycle buttons, the contracts running under the project), the
 **discovery feed** (infinite/paginated via `BrandTalentFeed`, save/brief write signals), the **brand contract
 room** (the `brand` side of the shared engine — `awaiting_brand` highlighted, action panel keyed by
 `step_type`), read-only **reviews received**, and **account** (settings + publish toggle). An incomplete
 brand is redirected into onboarding by the dashboard.
+
+## Admin domain logic — governance (Phase 3A)
+
+The platform-governance layer sits on the Phase 3A foundation (admin guard + spatie RBAC + settings +
+activitylog). Every admin service extends **`App\Services\AdminService`** (base `Service`): it runs on the
+`admin` log channel, **authorizes** the acting admin against a policy/permission (`authorizeAdmin()` →
+`Gate::forUser($admin)->authorize()`, or `authorizePermission()` for bare permissions), and **records**
+each action to the activity log with the admin as causer. Everything is transactional + fail-logged.
+
+**Policies** (auto-discovered) map each capability to a spatie permission on the admin guard:
+`ContractFlowPolicy@manage` / `TalentTypePolicy@manage` → `manage-flows`; `TalentPolicy@moderate` /
+`ReviewPolicy@moderate` / `BrandPolicy@moderate` / `BrandReviewPolicy@moderate` / `BrandProjectPolicy@oversee`
+→ `moderate-content`; `ContractPolicy@intervene` → `intervene-contracts`; media/settings → `manage-settings`.
+
+**Services:**
+- **`ContractFlowBuilderService`** — author `contract_flows` + ordered `contract_flow_steps`, reorder, and drive the
+  **template state machine** (draft → active → archived; `is_active` synced, `is_default` an orthogonal
+  flag kept unique per `applies_to` scope). Edits touch **future contracts only** — contracts snapshot their steps
+  at creation (Phase 1E), proven by test. Flow/step changes are audited by their `LogsActivity` traits.
+- **`TalentModerationService`** (suspend / unpublish / soft-delete / restore) and
+  **`BrandModerationService`** (verify one-way + suspend / unpublish / soft-delete) drive the existing
+  state machines with `canTransitionTo` guards.
+- **`ReviewModerationService`** — approve/reject talent reviews (incl. **batch**) and brand reviews.
+- **`ProjectOversightService`** — filter by status, cancel, force-private.
+- **`SkillCatalogService`** — edit a talent type's ordered `default_blocks` PRESELECTION (affects only
+  NEW seeds) and add skills without code. Per **ADR-T** it may only ADD catalog-eligible keys
+  (`ProfileBlockService::isEligibleForScope` — the same predicate the talent picker uses); stale keys may
+  be reordered/removed.
+- **`BlockCatalogService`** — the eligibility side of the ADR-T split (`manage-blocks`): create/edit
+  `block_types` (availability gates synced to the active mode), toggle `is_active` (grandfathered —
+  existing `profile_blocks` keep rendering), validate `settings_schema` JSON, and lock `key`/
+  `content_source` once the type is in use (422).
+- **`MediaOversightService`** — surface media with ungenerated conversions and re-queue them
+  (`media-library:regenerate`).
+- **`ContractInterventionService`** — reuses the 1E engine: act as the **admin actor** on admin steps,
+  **override** a stuck step (`ContractProgression::finishStep` + `activateNext`), nudge (system event),
+  reassign, or cancel (`moveDealTo`). Every override posts a system event + activity log.
+
+> Audit: `ContractFlow`/`ContractFlowStep` self-log field changes (`attribute_changes`); moderation/intervention
+> services log explicit action entries (`moderation` / `catalog` / `media` / `contract_intervention` log
+> names) with `causedBy($admin)` + ad-hoc `properties` (reason, from/to, etc.).
+
+### Admin dashboard (Phase 3B)
+
+The admin-guard dashboard (`routes/admin.php`, `app/Http/Controllers/Admin/*`, `<x-admin-layout>`,
+`resources/js/admin.js`) wires the 3A services into a UI, following the same conventions as the talent/brand
+dashboards (Blade shells + Alpine on `http.js`, JSON envelopes, no reloads, eager-load + paginate).
+**Authorization is two-layered:** `can:` middleware gates each route group per permission (a powerless admin
+gets 403 before the controller runs), and the service re-authorizes + audits the action.
+
+**Reachability (2026-07-16):** every admin page has a grouped, permission-gated sidebar link AND a
+dashboard card/quick link. The sidebar groups Dashboard · Moderation (Talent profiles / Brands / Brand
+reviews / Global review queue — each deep-links its tab via server-validated `?queue=`, kept in sync with
+replaceState; `aria-current` marks the active item) · Marketplace (Projects oversight / Contracts) ·
+Configuration (Contract flows / Skills templates / Block catalog) · System (Activity / Settings / Admins).
+The dashboard home renders moderation queue counts (with "All clear." empty states), a contracts
+whose-turn card, a projects-by-status card, governance quick links, and recent activity — each section
+computed only when the admin holds its permission, via single aggregate queries. `resources/js/admin.js`
+is imported by `app.js` (it must stay in the Vite bundle — without it every admin page is a dead Alpine
+shell that HTTP-level tests cannot detect).
+
+Screens: the **flow builder** (drag-reorder steps, configure actor/type/flags/settings, set default,
+scope, activate/archive), tabbed **moderation queues** (talents / **all-reviews** (global, both kinds via
+UNION + per-kind hydration) / reviews / brands / brand-reviews / projects with batch approve/reject +
+suspend/verify/unpublish/cancel, a projects status filter, and admin-visible budgets tagged private), the
+**skills template manager** (ordered `default_blocks` preselection among catalog-eligible blocks, stale
+keys flagged), the **block catalog manager** (existence + eligibility + config, grandfathering — ADR-T),
+the **contract intervention console** (status + current-step filters; override / advance-as-admin / nudge /
+cancel with a live timeline), a searchable **activity-log viewer**, the **settings** screen, and
+**admin-user** management (create + role assignment). Controllers stay thin — every mutation delegates to
+a Phase 3A service.
 
 ## Cross-cutting
 

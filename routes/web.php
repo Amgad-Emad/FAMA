@@ -50,10 +50,16 @@ Route::group([
         return redirect()->route($guard !== null ? "{$guard}.dashboard" : 'login');
     })->name('dashboard');
 
-    // --- Guarded dashboards (one group per guard) ---------------------------
-    Route::middleware('auth:admin')->prefix('admin')->name('admin.')->group(function () {
-        Route::view('/dashboard', 'dashboard')->name('dashboard');
+    // --- Staff login (its own routes + view, separate from the public
+    //     role-aware /login; the AdminLoginRequest pins the admin guard) -----
+    Route::middleware('guest:admin')->prefix('admin')->group(function () {
+        Route::get('/login', [\App\Http\Controllers\Admin\Auth\AdminLoginController::class, 'create'])->name('admin.login');
+        Route::post('/login', [\App\Http\Controllers\Admin\Auth\AdminLoginController::class, 'store'])->name('admin.login.store');
     });
+
+    // --- Guarded dashboards (one group per guard) ---------------------------
+    Route::middleware('auth:admin')->prefix('admin')->name('admin.')
+        ->group(base_path('routes/admin.php'));
 
     Route::middleware('auth:brand')->prefix('brand')->name('brand.')
         ->group(base_path('routes/brand.php'));

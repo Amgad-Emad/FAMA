@@ -27,12 +27,23 @@ class ContractFlowFactory extends Factory
             'applies_to' => null,
             'is_active' => true,
             'is_default' => false,
+            'status' => 'active',
         ];
     }
 
     public function default(): static
     {
         return $this->state(fn () => ['is_default' => true]);
+    }
+
+    public function draft(): static
+    {
+        return $this->state(fn () => ['is_active' => false, 'status' => 'draft']);
+    }
+
+    public function archived(): static
+    {
+        return $this->state(fn () => ['is_active' => false, 'status' => 'archived']);
     }
 
     /**

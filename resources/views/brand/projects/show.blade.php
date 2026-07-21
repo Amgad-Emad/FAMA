@@ -245,7 +245,7 @@
                                         <template x-for="item in (campaign.gallery || [])" :key="item.id">
                                             <div class="group relative aspect-square overflow-hidden rounded-xl border border-line">
                                                 <img :src="item.thumbnail_url || item.media_url" class="h-full w-full object-cover transition duration-300 group-hover:scale-[1.04]" alt="">
-                                                <button @click="removeMedia(item.id)"
+                                                <button @click="$confirm({ title: '{{ __('Remove this image?') }}', message: '{{ __('The image will be removed from the project gallery.') }}', confirmLabel: '{{ __('Remove') }}' }).then(ok => ok && removeMedia(item.id))"
                                                         class="absolute end-1.5 top-1.5 grid h-7 w-7 place-items-center rounded-full bg-black/55 text-white opacity-0 backdrop-blur transition hover:bg-danger group-hover:opacity-100 focus:opacity-100"
                                                         aria-label="{{ __('Remove') }}">
                                                     <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
@@ -316,12 +316,9 @@
                                 <div class="rounded-2xl border border-danger/25 bg-surface p-5">
                                     <div class="font-mono text-[10px] uppercase tracking-[0.16em] text-danger/80">{{ __('Danger zone') }}</div>
                                     <p class="mt-2 text-xs text-muted">{{ __('Deleting a project removes it from your workspace. Contracts under it are kept.') }}</p>
-                                    <div class="mt-3" x-show="!confirmingDelete">
-                                        <button @click="confirmingDelete = true" class="rounded-pill border border-danger/40 px-3.5 py-2 text-xs font-medium text-danger transition hover:bg-danger-weak">{{ __('Delete project') }}</button>
-                                    </div>
-                                    <div class="mt-3 flex items-center gap-2" x-show="confirmingDelete" x-cloak>
-                                        <button @click="destroy()" :disabled="deleting" class="rounded-pill bg-danger px-3.5 py-2 text-xs font-semibold text-white transition hover:opacity-90 disabled:opacity-50">{{ __('Confirm delete') }}</button>
-                                        <button @click="confirmingDelete = false" class="rounded-pill border border-line px-3.5 py-2 text-xs text-muted">{{ __('Cancel') }}</button>
+                                    <div class="mt-3">
+                                        <button @click="$confirm({ title: '{{ __('Delete this project?') }}', message: '{{ __('The project is removed from your workspace. Contracts under it are kept.') }}', confirmLabel: '{{ __('Delete project') }}' }).then(ok => ok && destroy())"
+                                                :disabled="deleting" class="rounded-pill border border-danger/40 px-3.5 py-2 text-xs font-medium text-danger transition hover:bg-danger-weak disabled:opacity-50">{{ __('Delete project') }}</button>
                                     </div>
                                 </div>
                             </aside>
