@@ -28,7 +28,9 @@ it('renders the consolidated profile editor (skills, username, publishing, prici
         ->assertSee(__('Username'))
         ->assertSee(__('Publishing'))
         ->assertSee(__('Pricing rate'))
-        ->assertDontSee(__('Professions'));
+        // ADR-N retired the "Professions" label in favour of "Skills" — the old one
+        // must not survive anywhere in the consolidated editor.
+        ->assertDontSee('Professions');
 });
 
 it('updates core fields via the envelope', function () {

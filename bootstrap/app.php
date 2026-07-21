@@ -21,6 +21,19 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Guests in the admin area go to the staff login; everyone else to the
+        // public role-aware login. Matched on the first path segment (or the
+        // second, after a 2-letter locale prefix) so a public slug that happens
+        // to contain "admin" can never be misrouted.
+        $middleware->redirectGuestsTo(function (Request $request) {
+            $segments = $request->segments();
+            $first = $segments[0] ?? null;
+            $isAdminArea = $first === 'admin'
+                || (is_string($first) && strlen($first) === 2 && ($segments[1] ?? null) === 'admin');
+
+            return $isAdminArea ? route('admin.login') : route('login');
+        });
+
         // mcamara/laravel-localization route middleware aliases (the package
         // does not register them itself). Applied to the locale route group in
         // routes/web.php.

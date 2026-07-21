@@ -4,18 +4,23 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Resources\AdminUserResource;
 use App\Models\User;
+use App\Services\AccountCreationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Spatie\Permission\Models\Role;
 
 /**
- * Admin staff management (Phase 3B UI) — create/edit admins and assign
- * admin-guard roles. `can:manage-users` gates the routes; every change is
- * audited.
+ * Admin staff + account management (Phase 3B UI) — create/edit admins, assign
+ * admin-guard roles, and provision talent/brand accounts on a user's behalf.
+ * `can:manage-users` gates the routes; every change is audited. The LIST is
+ * admins only (brand/talent land in the moderation queues).
  */
 class AdminUserController extends AdminController
 {
+    public function __construct(private readonly AccountCreationService $accounts) {}
+
     public function index(): View
     {
         return view('admin.users.index', [
@@ -30,29 +35,51 @@ class AdminUserController extends AdminController
         return response()->paginated($paginator, AdminUserResource::collection($paginator->getCollection()));
     }
 
+    /**
+     * Create an account of the chosen type. Admins get roles + appear in this
+     * list; talent/brand are provisioned via the shared service and surface in
+     * the moderation queues. Email uniqueness is scoped to the target table,
+     * and roles are only accepted for the admin type.
+     */
     public function store(Request $request): JsonResponse
     {
+        $type = $request->input('account_type', 'admin');
+        $emailTable = match ($type) {
+            'brand' => 'brands',
+            'talent' => 'talents',
+            default => 'users',
+        };
+
         $data = $request->validate([
+            'account_type' => ['required', Rule::in(['admin', 'brand', 'talent'])],
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'email' => ['required', 'email', 'max:255', Rule::unique($emailTable, 'email')],
             'password' => ['required', 'string', 'min:8'],
             'locale' => ['nullable', 'in:en,ar'],
             'roles' => ['array'],
-            'roles.*' => ['string', 'exists:roles,name'],
+            'roles.*' => ['string', Rule::exists('roles', 'name')->where('guard_name', 'admin')],
         ]);
 
-        $user = User::create([
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'password' => $data['password'],
-            'locale' => $data['locale'] ?? 'en',
-            'is_active' => true,
-        ]);
-        $user->syncRoles($data['roles'] ?? []);
+        $account = match ($data['account_type']) {
+            'brand' => $this->accounts->createBrand($data),
+            'talent' => $this->accounts->createTalent($data),
+            default => $this->accounts->createAdmin($data),
+        };
 
-        activity('admin_users')->causedBy($this->admin())->performedOn($user)->log('admin_user.created');
+        activity('admin_users')->causedBy($this->admin())->performedOn($account)
+            ->withProperties(['account_type' => $data['account_type']])
+            ->log('account.created');
 
-        return response()->success(['id' => $user->id], __('Admin created.'), status: 201);
+        $message = match ($data['account_type']) {
+            'brand' => __('Brand account created.'),
+            'talent' => __('Talent account created.'),
+            default => __('Admin created.'),
+        };
+
+        return response()->success([
+            'id' => $account->id,
+            'account_type' => $data['account_type'],
+        ], $message, status: 201);
     }
 
     public function update(Request $request, User $user): JsonResponse

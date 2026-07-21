@@ -18,9 +18,10 @@ class RolesAndPermissionsSeeder extends Seeder
     private const GUARD = 'admin';
 
     private const PERMISSIONS = [
-        'manage-flows',       // author deal_flows / deal_flow_steps
+        'manage-flows',       // author contract_flows / contract_flow_steps
+        'manage-blocks',      // govern the block_types catalog
         'moderate-content',   // approve/reject reviews, profiles, media
-        'intervene-deals',    // override / advance deal steps
+        'intervene-contracts',    // override / advance contract steps
         'manage-settings',    // tune platform globals
         'manage-users',       // manage admin staff
     ];
@@ -35,9 +36,9 @@ class RolesAndPermissionsSeeder extends Seeder
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         Role::findOrCreate('super-admin', self::GUARD)->syncPermissions(self::PERMISSIONS);
-        Role::findOrCreate('moderator', self::GUARD)->syncPermissions(['moderate-content', 'intervene-deals']);
+        Role::findOrCreate('moderator', self::GUARD)->syncPermissions(['moderate-content', 'intervene-contracts']);
         Role::findOrCreate('support', self::GUARD)->syncPermissions(['moderate-content']);
 
-        User::where('email', 'test@example.com')->first()?->assignRole('super-admin');
+        User::where('email', 'admin-demo@fama.test')->first()?->assignRole('super-admin');
     }
 }

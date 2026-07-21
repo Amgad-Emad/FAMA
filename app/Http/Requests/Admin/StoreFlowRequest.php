@@ -6,7 +6,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 /**
- * Validates a new / edited deal-flow template. Authorization is enforced by the
+ * Validates a new / edited contract-flow template. Authorization is enforced by the
  * `can:manage-flows` route middleware + the builder service.
  */
 class StoreFlowRequest extends FormRequest

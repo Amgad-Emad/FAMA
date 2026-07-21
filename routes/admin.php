@@ -2,11 +2,12 @@
 
 use App\Http\Controllers\Admin\ActivityLogController;
 use App\Http\Controllers\Admin\AdminUserController;
+use App\Http\Controllers\Admin\BlockCatalogController;
 use App\Http\Controllers\Admin\DashboardController;
-use App\Http\Controllers\Admin\DealInterventionController;
+use App\Http\Controllers\Admin\ContractInterventionController;
 use App\Http\Controllers\Admin\FlowBuilderController;
 use App\Http\Controllers\Admin\ModerationController;
-use App\Http\Controllers\Admin\ProfessionController;
+use App\Http\Controllers\Admin\SkillController;
 use App\Http\Controllers\Admin\SettingsController;
 use Illuminate\Support\Facades\Route;
 
@@ -24,7 +25,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-// --- Deal-flow builder (manage-flows) ---------------------------------------
+// --- Contract-flow builder (manage-flows) ---------------------------------------
 Route::middleware('can:manage-flows')->group(function () {
     Route::get('/flows', [FlowBuilderController::class, 'index'])->name('flows');
     Route::get('/flows/data', [FlowBuilderController::class, 'data'])->name('flows.data');
@@ -40,11 +41,22 @@ Route::middleware('can:manage-flows')->group(function () {
     Route::patch('/flows/{flow}/steps/{step}', [FlowBuilderController::class, 'updateStep'])->name('flows.steps.update');
     Route::delete('/flows/{flow}/steps/{step}', [FlowBuilderController::class, 'removeStep'])->name('flows.steps.destroy');
 
-    // Profession/template catalog rides on the same authoring permission.
-    Route::get('/professions', [ProfessionController::class, 'index'])->name('professions');
-    Route::get('/professions/data', [ProfessionController::class, 'data'])->name('professions.data');
-    Route::post('/professions', [ProfessionController::class, 'store'])->name('professions.store');
-    Route::patch('/professions/{type}/blocks', [ProfessionController::class, 'updateBlocks'])->name('professions.blocks');
+    // Skill/template catalog rides on the same authoring permission.
+    Route::get('/skills', [SkillController::class, 'index'])->name('skills');
+    Route::get('/skills/data', [SkillController::class, 'data'])->name('skills.data');
+    Route::post('/skills', [SkillController::class, 'store'])->name('skills.store');
+    Route::patch('/skills/{type}/blocks', [SkillController::class, 'updateBlocks'])->name('skills.blocks');
+});
+
+// --- Block catalog (manage-blocks) -------------------------------------------
+// Owns block-type existence + eligibility (availability/gates) + config; the
+// Skills page only picks preselection/order among what this catalog allows.
+Route::middleware('can:manage-blocks')->group(function () {
+    Route::get('/blocks', [BlockCatalogController::class, 'index'])->name('blocks');
+    Route::get('/blocks/data', [BlockCatalogController::class, 'data'])->name('blocks.data');
+    Route::post('/blocks', [BlockCatalogController::class, 'store'])->name('blocks.store');
+    Route::patch('/blocks/{blockType}', [BlockCatalogController::class, 'update'])->name('blocks.update');
+    Route::patch('/blocks/{blockType}/toggle', [BlockCatalogController::class, 'toggle'])->name('blocks.toggle');
 });
 
 // --- Moderation queues (moderate-content) -----------------------------------
@@ -52,30 +64,38 @@ Route::middleware('can:moderate-content')->prefix('moderation')->name('moderatio
     Route::get('/', [ModerationController::class, 'index'])->name('index');
 
     Route::get('/talents', [ModerationController::class, 'talents'])->name('talents');
+    Route::get('/talents/{talent}', [ModerationController::class, 'showTalent'])->withTrashed()->name('talents.show');
     Route::patch('/talents/{talent}/{action}', [ModerationController::class, 'moderateTalent'])
         ->withTrashed()->name('talents.action');
 
+    // The global queue must register before the {review} action routes.
+    Route::get('/all-reviews', [ModerationController::class, 'allReviews'])->name('all-reviews');
+
     Route::get('/reviews', [ModerationController::class, 'reviews'])->name('reviews');
+    Route::get('/reviews/{review}', [ModerationController::class, 'showReview'])->name('reviews.show');
     Route::patch('/reviews/{review}/{action}', [ModerationController::class, 'moderateReview'])->name('reviews.action');
     Route::post('/reviews/batch', [ModerationController::class, 'batchReviews'])->name('reviews.batch');
 
     Route::get('/brands', [ModerationController::class, 'brands'])->name('brands');
+    Route::get('/brands/{brand}', [ModerationController::class, 'showBrand'])->withTrashed()->name('brands.show');
     Route::patch('/brands/{brand}/{action}', [ModerationController::class, 'moderateBrand'])->name('brands.action');
 
     Route::get('/brand-reviews', [ModerationController::class, 'brandReviews'])->name('brand-reviews');
+    Route::get('/brand-reviews/{review}', [ModerationController::class, 'showBrandReview'])->name('brand-reviews.show');
     Route::patch('/brand-reviews/{review}/{action}', [ModerationController::class, 'moderateBrandReview'])->name('brand-reviews.action');
 
-    Route::get('/campaigns', [ModerationController::class, 'campaigns'])->name('campaigns');
-    Route::patch('/campaigns/{campaign}/{action}', [ModerationController::class, 'moderateCampaign'])->name('campaigns.action');
+    Route::get('/projects', [ModerationController::class, 'projects'])->name('projects');
+    Route::get('/projects/{project}', [ModerationController::class, 'showProject'])->withTrashed()->name('projects.show');
+    Route::patch('/projects/{project}/{action}', [ModerationController::class, 'moderateProject'])->name('projects.action');
 });
 
-// --- Deal intervention console (intervene-deals) ----------------------------
-Route::middleware('can:intervene-deals')->group(function () {
-    Route::get('/deals', [DealInterventionController::class, 'index'])->name('deals');
-    Route::get('/deals/data', [DealInterventionController::class, 'data'])->name('deals.data');
-    Route::get('/deals/{deal}', [DealInterventionController::class, 'show'])->name('deals.show');
-    Route::get('/deals/{deal}/thread', [DealInterventionController::class, 'thread'])->name('deals.thread');
-    Route::post('/deals/{deal}/{action}', [DealInterventionController::class, 'act'])->name('deals.act');
+// --- Contract intervention console (intervene-contracts) ----------------------------
+Route::middleware('can:intervene-contracts')->group(function () {
+    Route::get('/contracts', [ContractInterventionController::class, 'index'])->name('contracts');
+    Route::get('/contracts/data', [ContractInterventionController::class, 'data'])->name('contracts.data');
+    Route::get('/contracts/{contract}', [ContractInterventionController::class, 'show'])->name('contracts.show');
+    Route::get('/contracts/{contract}/thread', [ContractInterventionController::class, 'thread'])->name('contracts.thread');
+    Route::post('/contracts/{contract}/{action}', [ContractInterventionController::class, 'act'])->name('contracts.act');
 });
 
 // --- Activity log + settings (manage-settings) ------------------------------

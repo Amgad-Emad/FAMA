@@ -31,7 +31,7 @@ class BrandTalentFeed
 
         $base = Talent::query()->where('is_published', true);
 
-        // Creative needs → the professions the brand hires.
+        // Creative needs → the skills the brand hires.
         if ($neededTypeIds !== []) {
             $base->whereHas('talentTypes', fn ($q) => $q->whereIn('talent_types.id', $neededTypeIds));
         }

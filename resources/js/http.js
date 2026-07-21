@@ -35,6 +35,24 @@ function csrfToken() {
     return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
 }
 
+/** The active locale URL prefix ('' on the default locale, e.g. '/ar' otherwise). */
+function localePrefix() {
+    return document.querySelector('meta[name="locale-prefix"]')?.getAttribute('content') ?? '';
+}
+
+/**
+ * Prefix same-origin, root-relative request URLs with the active locale so a
+ * page opened under /ar hits the /ar route and gets Arabic content back. Absolute
+ * URLs, protocol-relative URLs, and already-prefixed paths are left untouched.
+ */
+export function localizeUrl(url) {
+    const prefix = localePrefix();
+    if (!prefix || typeof url !== 'string') return url;
+    if (!url.startsWith('/') || url.startsWith('//')) return url;
+    if (url === prefix || url.startsWith(`${prefix}/`)) return url;
+    return prefix + url;
+}
+
 /**
  * Core request function.
  *
@@ -57,7 +75,7 @@ export async function http(url, { method = 'GET', body = null, headers = {}, sig
         finalHeaders['Content-Type'] = 'application/json';
     }
 
-    const response = await fetch(url, {
+    const response = await fetch(localizeUrl(url), {
         method,
         headers: finalHeaders,
         credentials: 'same-origin',
@@ -97,4 +115,4 @@ export const patch = (url, body, options = {}) => http(url, { ...options, method
 export const del = (url, options = {}) => http(url, { ...options, method: 'DELETE' });
 
 // Expose on window for inline Alpine handlers that don't import modules.
-window.fama = { http, get, post, put, patch, del, ApiError };
+window.fama = { http, get, post, put, patch, del, ApiError, localizeUrl };

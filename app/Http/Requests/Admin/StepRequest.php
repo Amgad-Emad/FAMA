@@ -6,7 +6,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 /**
- * Validates a deal-flow step (add / edit). All fields optional on edit; `sometimes`
+ * Validates a contract-flow step (add / edit). All fields optional on edit; `sometimes`
  * lets a partial update through.
  */
 class StepRequest extends FormRequest

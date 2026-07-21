@@ -189,7 +189,7 @@ document.addEventListener('alpine:init', () => {
 
     // --- Profile editor (the single profile surface) ------------------------
     // Holds identity + username, Skills, the Pricing rate, the publish toggle,
-    // and the reorderable blocks — the old Professions + Account tabs folded in.
+    // and the reorderable blocks — the old Skills + Account tabs folded in.
     Alpine.data('profileEditor', (initial) => ({
         core: initial.core,
         blocks: initial.blocks,
@@ -449,7 +449,7 @@ document.addEventListener('alpine:init', () => {
             this.saveRate();
         },
 
-        // ----- Skills (the old Professions tab) -----------------------------
+        // ----- Skills (the old Skills tab) -----------------------------
         applySkills(payload) {
             this.skills = payload.linked;
             this.availableSkills = payload.available;

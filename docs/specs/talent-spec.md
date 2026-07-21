@@ -1,10 +1,10 @@
 # Fama — Talent Spec (Pages · Workflows · Lifecycles)
 
-> Canonical description of the talent side of Fama. Transcribed and lightly cleaned (typos fixed, formatting normalized) from the original design docs. Also documents the shared **deal engine**, which the talent deal room consumes. Pair with `schema-master.md` and `brand-spec.md`.
+> Canonical description of the talent side of Fama. Transcribed and lightly cleaned (typos fixed, formatting normalized) from the original design docs. Also documents the shared **contract engine**, which the talent contract room consumes. Pair with `schema-master.md` and `brand-spec.md`.
 >
-> **Removed features (`docs/decisions.md` ADR-K/L/M):** the **rate card / services**, **availability & travel**, and **affiliations & press** features were removed entirely. Deal amount now comes from the flow's form/quote step (not a service); enquiries are no longer gated by availability. A single indicative **Pricing rate** (`rate_unit`/`rate_amount`/`rate_currency`, ADR-N) replaces the rate card and `rate_tier`.
+> **Removed features (`docs/decisions.md` ADR-K/L/M):** the **rate card / services**, **availability & travel**, and **affiliations & press** features were removed entirely. Contract amount now comes from the flow's form/quote step (not a service); enquiries are no longer gated by availability. A single indicative **Pricing rate** (`rate_unit`/`rate_amount`/`rate_currency`, ADR-N) replaces the rate card and `rate_tier`.
 >
-> **Editor consolidation & Skills rename (`docs/decisions.md` ADR-N):** "Professions" is now called **Skills** everywhere (route segment `professions` → `skills`; the `talent_types` table is the Skills catalog). The standalone **Professions** and **Account** tabs were folded into the **Profile editor**, so the talent sidebar is: **Home · Profile · Content · Reviews · Deals**. The Profile editor now holds Identity, Skills, Username (the public `slug`, relabelled), Publish, Pricing rate, and Blocks. The sections below have been updated to match.
+> **Editor consolidation & Skills rename (`docs/decisions.md` ADR-N):** "Professions" is now called **Skills** everywhere (route segment `professions` → `skills`; the `talent_types` table is the Skills catalog). The standalone **Professions** and **Account** tabs were folded into the **Profile editor**, so the talent sidebar is: **Home · Profile · Content · Reviews · Contracts**. The Profile editor now holds Identity, Skills, Username (the public `slug`, relabelled), Publish, Pricing rate, and Blocks. The sections below have been updated to match.
 
 ---
 
@@ -20,7 +20,7 @@ The core product. An **Instagram-style, avatar-led header** (no cover/hero image
 - A three-item **stats row**: **Projects** (count of `projects`) · **Views** (`view_count`) · **Rating** (avg of approved reviews, hidden when there are none).
 - The **Pricing rate** (ADR-N) shown near the identity as a "From {currency} {amount} / {unit}" chip — hidden entirely when unset.
 - The **bio** and an optional external-link row (an external portfolio/booking URL if one exists). *(The header no longer shows skill chips — the prominent skill **tab bar** is the profile's navigation.)*
-- **CTAs**: primary **Message** (the brand↔talent chat entry — ADR-P) + secondary **Leave a review** (opens the review form). **Message** points at the reserved `brand.talents.message` route: a visitor who isn't a brand is sent to brand auth (with this profile stored as the return URL); an authenticated brand hits an interim "Messaging coming soon" stub. The real chat / deal initiation attaches there later. *(Message supersedes the earlier "Contact" CTA.)*
+- **CTAs**: primary **Message** (the brand↔talent chat entry — ADR-P) + secondary **Leave a review** (opens the review form). **Message** points at the reserved `brand.talents.message` route: a visitor who isn't a brand is sent to brand auth (with this profile stored as the return URL); an authenticated brand hits an interim "Messaging coming soon" stub. The real chat / contract initiation attaches there later. *(Message supersedes the earlier "Contact" CTA.)*
 
 The profile is **two stacked regions** (ADR-R):
 
@@ -35,8 +35,8 @@ The tab bar is presented as **primary navigation**: a **sticky** (under the site
 **Project detail page — `fama.com/{slug}/work/{project}`**
 One `projects` record expanded: title, client, role, cover image, full body, results metrics. The one block rich enough to warrant its own URL.
 
-**Deal initiation (booking CTA) — now starts a deal**
-The booking CTA no longer just sends an enquiry. Driven by `booking_type`/`booking_value`, it now creates a `deals` row: the brand picks the applicable `deal_flow`, which snapshots into `deal_steps` and opens the deal room. Enquiries are always allowed (no availability gate). The deal amount is captured by the flow's form/quote step. (This is the old "booking/enquiry page," upgraded.)
+**Contract initiation (booking CTA) — now starts a contract**
+The booking CTA no longer just sends an enquiry. Driven by `booking_type`/`booking_value`, it now creates a `contracts` row: the brand picks the applicable `contract_flow`, which snapshots into `contract_steps` and opens the contract room. Enquiries are always allowed (no availability gate). The contract amount is captured by the flow's form/quote step. (This is the old "booking/enquiry page," upgraded.)
 
 **Review submission page**
 Public form a past client uses → writes to `reviews` with `is_approved = false` (pending). Captures reviewer name/role/company, rating, body, project type.
@@ -60,7 +60,7 @@ All filters are whitelisted in `TalentSearch` (`type` — multi-select, comma-se
 ### Authenticated — talent dashboard
 
 **Dashboard home**
-Status overview: draft vs live (`is_published`), `view_count`, pending reviews count (`is_approved = false`), and active deals + whose turn it is (replacing the old "recent enquiries").
+Status overview: draft vs live (`is_published`), `view_count`, pending reviews count (`is_approved = false`), and active contracts + whose turn it is (replacing the old "recent enquiries").
 
 **Profile editor** *(the single profile surface)*
 Holds everything about the profile in one page:
@@ -79,19 +79,19 @@ Moderation queue: pending (`is_approved = false`) → approve/reject; view appro
 
 *(The old standalone **Professions** and **Account** tabs are gone — folded into the Profile editor as the Skills, Username, and Publish sections above.)*
 
-**Deal room (talent view)**
-The single deal page, laid out **timeline-first**: a header on top (reference, title, counterparty, status badge, amount, "← All deals" link), then the **`deal_messages` timeline as the central, focal conversation view** (free-text messages and system_events interleaved chronologically, newest at the bottom) with the message composer. A narrower **side panel** carries (a) the current-step **action panel** at the top — rendered by `step_type` (send quote, approve, upload, sign, pay, "waiting on X") and adapting to whose turn it is — then (b) the **phases stepper** below it (the `deal_steps` progress list with actor labels, completed ticks, active-step highlight, and skipped/rejected states). On narrow screens the side panel stacks under the timeline. Messaging and step actions are Ajax (no reload).
+**Contract room (talent view)**
+The single contract page, laid out **timeline-first**: a header on top (reference, title, counterparty, status badge, amount, "← All contracts" link), then the **`contract_messages` timeline as the central, focal conversation view** (free-text messages and system_events interleaved chronologically, newest at the bottom) with the message composer. A narrower **side panel** carries (a) the current-step **action panel** at the top — rendered by `step_type` (send quote, approve, upload, sign, pay, "waiting on X") and adapting to whose turn it is — then (b) the **phases stepper** below it (the `contract_steps` progress list with actor labels, completed ticks, active-step highlight, and skipped/rejected states). On narrow screens the side panel stacks under the timeline. Messaging and step actions are Ajax (no reload).
 
-**Deals inbox (talent view)**
-List of the talent's deals with status, current step, and whose turn (`awaiting_talent` highlighted). Filter by status.
+**Contracts inbox (talent view)**
+List of the talent's contracts with status, current step, and whose turn (`awaiting_talent` highlighted). Filter by status.
 
 *(Account settings — Username/`slug` and the publish toggle — now live in the Profile editor, not a separate page.)*
 
-### Authenticated — brand dashboard *(brand-side pages that touch the shared deal room)*
+### Authenticated — brand dashboard *(brand-side pages that touch the shared contract room)*
 
-**Brand dashboard home** — active deals overview, whose turn, recent talent viewed.
-**Deals inbox (brand view)** — the brand's deals with status and current step (`awaiting_brand` highlighted).
-**Deal room (brand view)** *(Phase 2C — not built yet)* — the same timeline-first deal page, brand-side: submit brief, review/accept quotes, pay, sign — driven by the current step's `actor`/`step_type`. When built it should reuse the talent deal-room layout (timeline central; action panel + phases in the side panel) so both sides stay in sync.
+**Brand dashboard home** — active contracts overview, whose turn, recent talent viewed.
+**Contracts inbox (brand view)** — the brand's contracts with status and current step (`awaiting_brand` highlighted).
+**Contract room (brand view)** *(Phase 2C — not built yet)* — the same timeline-first contract page, brand-side: submit brief, review/accept quotes, pay, sign — driven by the current step's `actor`/`step_type`. When built it should reuse the talent contract-room layout (timeline central; action panel + phases in the side panel) so both sides stay in sync.
 
 ---
 
@@ -99,18 +99,18 @@ List of the talent's deals with status, current step, and whose turn (`awaiting_
 
 ### Admin / system workflows
 
-1. **Build a deal flow** *(the configurable "chat steps")* — Admin creates a `deal_flow` → adds ordered `deal_flow_steps`, each with an `actor` (brand/talent/both/admin/system), a `step_type` (form, approval, upload, payment, contract, message, schedule, info), `is_required`/`is_skippable`, and per-step `settings` → marks one default or scopes it by `applies_to` category → activates. Ongoing and editable; edits apply to **new deals only** (steps snapshot at creation).
+1. **Build a contract flow** *(the configurable "chat steps")* — Admin creates a `contract_flow` → adds ordered `contract_flow_steps`, each with an `actor` (brand/talent/both/admin/system), a `step_type` (form, approval, upload, payment, contract, message, schedule, info), `is_required`/`is_skippable`, and per-step `settings` → marks one default or scopes it by `applies_to` category → activates. Ongoing and editable; edits apply to **new contracts only** (steps snapshot at creation).
 2. **Profile moderation** — review profiles → suspend/unpublish (`is_published`) → soft-delete (`deleted_at`).
-3. **Skill template management** — edit a `talent_types.default_blocks` → changes what new talents of that skill get seeded → add skills without code.
-4. **Review moderation queue** — collect all `is_approved = false` → approve/reject in batch.
+3. **Block + skill template management (ADR-T split)** — *(a)* **Block Catalog Manager** (`manage-blocks`): create/edit `block_types` (translatable name/description, icon), set `availability` (universal / by_category / by_type) with its gates, toggle `is_active` (grandfathered — existing `profile_blocks` keep rendering), `is_repeatable`, `default_layout`, `content_source`, `settings_schema` (valid JSON); `key`/`content_source` lock once in use. *(b)* **Skills Template Manager** (`manage-flows`): edit a `talent_types.default_blocks` **ordered preselection**, choosing ONLY among catalog-eligible blocks (stale keys flagged, removable) → changes what new talents of that skill get seeded → add skills without code.
+4. **Review moderation queue** — per-kind queues plus a **global queue** collecting every pending review platform-wide (talent `reviews` ∪ `brand_reviews`, kind-tagged) → approve/reject in place (batch on the talent queue).
 5. **Media processing (background)** — on upload → queue job → generate thumbnails, validate, write URLs back to `portfolio_items`/`digitals`.
-6. **Admin deal intervention** — open any deal → override a stuck step's status, act as the admin actor where a step requires it, nudge/reassign/cancel.
+6. **Admin contract intervention** — open any contract → override a stuck step's status, act as the admin actor where a step requires it, nudge/reassign/cancel.
 
 ### Brand-side workflows
 
 7. **Discover & view a talent** — land on `fama.com/{slug}` → read profile.
-8. **Initiate a deal** *(replaces the old fire-and-forget enquiry)* — click the booking CTA → pick the applicable `deal_flow` → `deals` row created → flow steps snapshot into `deal_steps` → first step activates, status set to that step's actor → deal room opens. The deal amount is captured by the flow's form/quote step.
-9. **Work the deal (brand turn)** — when a step's actor is brand/both → perform the action in the deal room (submit brief, review/accept a quote, sign, pay) → step marked completed, data saved to its `payload`, a `system_event` posted → deal advances to the next actor.
+8. **Initiate a contract** *(replaces the old fire-and-forget enquiry)* — click the booking CTA → pick the applicable `contract_flow` → `contracts` row created → flow steps snapshot into `contract_steps` → first step activates, status set to that step's actor → contract room opens. The contract amount is captured by the flow's form/quote step.
+9. **Work the contract (brand turn)** — when a step's actor is brand/both → perform the action in the contract room (submit brief, review/accept a quote, sign, pay) → step marked completed, data saved to its `payload`, a `system_event` posted → contract advances to the next actor.
 
 ### Talent-side workflows
 
@@ -120,15 +120,15 @@ List of the talent's deals with status, current step, and whose turn (`awaiting_
 13. **Add portfolio work** — open gallery → upload → thumbnail generated → attach credits/tags → order. Same shape for digitals (own section, `shot_type`).
 14. **Model setup** *(any model-category type)* — fill the single `comp_cards` record → add `look_types` → upload `digitals`.
 15. **Crew/creative setup** *(any crew/creative-category type)* — add `showreels` → list `equipment` by category → write `projects` → add `software_stack`. A model-photographer runs 14 **and** 15.
-16. **Work the deal (talent turn)** — when a step's actor is talent/both → perform the action in the deal room (send quote, accept brief, upload deliverables, sign) → step completed, payload saved, `system_event` posted → deal advances.
+16. **Work the contract (talent turn)** — when a step's actor is talent/both → perform the action in the contract room (send quote, accept brief, upload deliverables, sign) → step completed, payload saved, `system_event` posted → contract advances.
 17. **Reviews moderation** — pending (`is_approved = false`) → approve/reject.
 
-### The deal loop (how a single deal walks both parties through the admin-defined steps)
+### The contract loop (how a single contract walks both parties through the admin-defined steps)
 
-- **Initiate** (brand or talent) → `deals` row + `deal_steps` snapshot → first step active.
-- **Step turn** → the step's actor acts in the deal room → step completed, payload saved, `system_event` appended to `deal_messages` → next step activates → status flips between `awaiting_brand` ⇄ `awaiting_talent` (⇄ `awaiting_admin`).
+- **Initiate** (brand or talent) → `contracts` row + `contract_steps` snapshot → first step active.
+- **Step turn** → the step's actor acts in the contract room → step completed, payload saved, `system_event` appended to `contract_messages` → next step activates → status flips between `awaiting_brand` ⇄ `awaiting_talent` (⇄ `awaiting_admin`).
 - **Branches** → a step can be **rejected** (loops back to an earlier step — e.g. brand rejects quote, talent re-quotes) or **skipped** (if `is_skippable`).
-- **Free messaging** runs alongside — `deal_messages` of `type = message` interleave with the `system_event` records, so it reads like a chat.
+- **Free messaging** runs alongside — `contract_messages` of `type = message` interleave with the `system_event` records, so it reads like a chat.
 - **Complete** → last step done → `status = completed` → triggers the review workflow (#19), and any payment/contract steps have settled through their layers.
 - **Terminate** → `cancelled` / `declined` / `expired`, reachable from any active state.
 
@@ -136,17 +136,17 @@ List of the talent's deals with status, current step, and whose turn (`awaiting_
 
 ## LIFECYCLES
 
-**Deal flow (template) lifecycle**
-`draft → active → (optionally marked default) → archived`. Built and edited by admin in the flow builder. Because each deal snapshots its steps at creation, editing or archiving a flow only affects deals created **after** the change — in-flight deals are untouched. Archiving stops a flow being offered for new deals without disturbing existing ones.
+**Contract flow (template) lifecycle**
+`draft → active → (optionally marked default) → archived`. Built and edited by admin in the flow builder. Because each contract snapshots its steps at creation, editing or archiving a flow only affects contracts created **after** the change — in-flight contracts are untouched. Archiving stops a flow being offered for new contracts without disturbing existing ones.
 
-**Deal lifecycle** *(replaces the old booking lifecycle — enquiries are now stateful)*
+**Contract lifecycle** *(replaces the old booking lifecycle — enquiries are now stateful)*
 `draft/initiated → awaiting_brand ⇄ awaiting_talent (⇄ awaiting_admin)` as steps alternate by actor `→ completed`. The status always mirrors whose turn it is (the current step's actor). Terminal branches reachable from any active state: `cancelled` (either party or admin), `declined` (refused upfront), `expired` (no action in time). Soft-delete (`deleted_at`) removes without losing history. Completion is the trigger that opens the review lifecycle.
 
-**Deal step lifecycle**
-`pending → active → awaiting_action → completed`. Side exits: `skipped` (if `is_skippable`) and `rejected` (kicks the deal back to an earlier step for a redo — e.g. quote rejected → talent re-quotes). Only one step is active/awaiting_action at a time; `position` sets the order. Each completion stamps `completed_by`/`completed_at` and saves its `payload`.
+**Contract step lifecycle**
+`pending → active → awaiting_action → completed`. Side exits: `skipped` (if `is_skippable`) and `rejected` (kicks the contract back to an earlier step for a redo — e.g. quote rejected → talent re-quotes). Only one step is active/awaiting_action at a time; `position` sets the order. Each completion stamps `completed_by`/`completed_at` and saves its `payload`.
 
-**Deal message lifecycle**
-`sent → read` (`read_at` stamped). `message` types are user content; `system_event` types are immutable transition records that power the timeline. Nothing in the thread is editable after posting — it's the audit trail of the deal.
+**Contract message lifecycle**
+`sent → read` (`read_at` stamped). `message` types are user content; `system_event` types are immutable transition records that power the timeline. Nothing in the thread is editable after posting — it's the audit trail of the contract.
 
 **Talent profile lifecycle**
 `created → draft` (blocks seeded from the merged `default_blocks` of all linked types) `→ live` (`is_published = true`, `published_at` stamped) → can return to unpublished, be suspended/archived, soft-deleted (`deleted_at`), or purged.
@@ -155,7 +155,7 @@ List of the talent's deals with status, current step, and whose turn (`awaiting_
 `seeded into a skill's tab (from that skill's defaults) or added to a scope → edited → visible ⇄ hidden (is_visible) → reordered within its scope (position) → moved between scopes → removed`. Blocks are skill-scoped (ADR-Q): `talent_type_id` NULL = profile-level; a skill's removal deletes its tab's blocks but preserves the underlying content.
 
 **Review lifecycle**
-`submitted (is_approved = false) → pending/moderation → approved (public) or rejected/hidden`. Now naturally triggered when a deal hits `completed`.
+`submitted (is_approved = false) → pending/moderation → approved (public) or rejected/hidden`. Now naturally triggered when a contract hits `completed`.
 
 **Skill link lifecycle** (`talent_talent_type`)
 `attached (one marked is_primary) → reordered (position) → primary reassigned → detached`. Attaching merges new default blocks; UNIQUE prevents duplicates.

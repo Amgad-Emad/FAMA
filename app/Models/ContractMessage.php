@@ -31,7 +31,7 @@ class ContractMessage extends Model implements HasMedia
      */
     protected $fillable = [
         'contract_id', 'contract_step_id', 'sender_type', 'sender_id', 'sender_role',
-        'type', 'body', 'is_rich', 'attachments', 'status', 'read_at',
+        'type', 'body', 'is_rich', 'attachments', 'meta', 'status', 'read_at',
     ];
 
     /**
@@ -42,6 +42,7 @@ class ContractMessage extends Model implements HasMedia
         return [
             'status' => ContractMessageState::class,
             'attachments' => 'array',
+            'meta' => 'array',
             'is_rich' => 'boolean',
             'read_at' => 'datetime',
         ];

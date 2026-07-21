@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Brand;
 use App\Models\User;
+use App\States\Brand\Published;
 use App\States\Brand\Suspended;
 use App\States\Brand\Unpublished;
 
@@ -52,6 +53,42 @@ class BrandModerationService extends AdminService
                 $brand->status->transitionTo(Unpublished::class);
             }
             $this->record($admin, $brand, 'moderation', 'brand.unpublished', ['reason' => $reason]);
+
+            return $brand->refresh();
+        }, ['brand_id' => $brand->getKey()]);
+    }
+
+    /**
+     * Reverse of unpublish: put a hidden brand back Published. The toggle
+     * counterpart of unpublish().
+     */
+    public function publish(User $admin, Brand $brand, ?string $reason = null): Brand
+    {
+        $this->authorizeAdmin($admin, 'moderate', $brand);
+
+        return $this->runInTransaction(function () use ($admin, $brand, $reason): Brand {
+            if ($brand->status->canTransitionTo(Published::class)) {
+                $brand->status->transitionTo(Published::class);
+            }
+            $this->record($admin, $brand, 'moderation', 'brand.published', ['reason' => $reason]);
+
+            return $brand->refresh();
+        }, ['brand_id' => $brand->getKey()]);
+    }
+
+    /**
+     * Reverse of suspend: lift a suspension back to the hidden Unpublished state.
+     * The toggle counterpart of suspend().
+     */
+    public function unsuspend(User $admin, Brand $brand, ?string $reason = null): Brand
+    {
+        $this->authorizeAdmin($admin, 'moderate', $brand);
+
+        return $this->runInTransaction(function () use ($admin, $brand, $reason): Brand {
+            if ($brand->status->canTransitionTo(Unpublished::class)) {
+                $brand->status->transitionTo(Unpublished::class);
+            }
+            $this->record($admin, $brand, 'moderation', 'brand.unsuspended', ['reason' => $reason]);
 
             return $brand->refresh();
         }, ['brand_id' => $brand->getKey()]);

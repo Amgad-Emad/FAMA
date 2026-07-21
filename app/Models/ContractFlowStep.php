@@ -20,6 +20,8 @@ class ContractFlowStep extends Model
     /** @use HasFactory<ContractFlowStepFactory> */
     use HasFactory;
 
+    use LogsActivity;
+
     /**
      * @var list<string>
      */
@@ -27,6 +29,20 @@ class ContractFlowStep extends Model
         'contract_flow_id', 'key', 'name', 'instructions', 'actor', 'step_type',
         'position', 'is_required', 'is_skippable', 'settings',
     ];
+
+    /**
+     * Audit admin edits to a step template. Shares the `contract_flow` log name with
+     * the parent flow so the console reads one chronological trail per flow rather
+     * than two interleaved ones.
+     */
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->useLogName('contract_flow')
+            ->logOnly(['key', 'name', 'instructions', 'actor', 'step_type', 'position', 'is_required', 'is_skippable', 'settings'])
+            ->logOnlyDirty()
+            ->dontLogEmptyChanges();
+    }
 
     /**
      * @return array<string, string>

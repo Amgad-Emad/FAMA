@@ -80,9 +80,9 @@ The UI is skills-first with the non-skill filters in an "Advanced filters" modal
 Sorts: `sort=view_count|created_at` (default `-view_count`). 12 per page. Output: `TalentCardResource`.
 
 The `{slug}` profile route is the single-segment catch-all and stays **last**; `/discover`, the
-`/{slug}/...` sub-pages, and the two-segment `/brands/{slug}[/campaigns/{campaign-slug}]` routes are
-registered before it. Brand pages resolve a **published** brand only (404 otherwise), campaign detail a
-**public** campaign only, and the campaign binding is scoped so it must belong to the brand in the path.
+`/{slug}/...` sub-pages, and the two-segment `/brands/{slug}[/projects/{project-slug}]` routes are
+registered before it. Brand pages resolve a **published** brand only (404 otherwise), project detail a
+**public** project only, and the project binding is scoped so it must belong to the brand in the path.
 
 ## Talent dashboard — web endpoints (session, `auth:talent`)
 
@@ -135,15 +135,15 @@ illegal state-transition violations → **422**. An **incomplete brand** (`is_co
 | Onboarding | `GET /brand/onboarding` | 6-step wizard shell (redirects to dashboard once complete) |
 | Onboarding | `POST /brand/onboarding/{identity,location,creative-needs,aesthetic,budget}` | persist each step (registered → onboarding) |
 | Onboarding | `POST /brand/onboarding/complete` | flip `is_complete` (onboarding → complete), returns redirect |
-| Home | `GET /brand/dashboard` | completion status, active contracts + whose-turn, recent campaigns, feed entry |
+| Home | `GET /brand/dashboard` | completion status, active contracts + whose-turn, recent projects, feed entry |
 | Profile | `GET /brand/profile` · `PATCH /brand/profile` | editor shell · core fields |
 | Profile media | `POST /brand/profile/{logo,cover}` · `PATCH /brand/profile/aesthetic` | logo/cover (medialibrary) · references + mood tags |
 | Gallery | `GET /brand/profile/images` · `POST …` · `DELETE …/{image}` | brand images CRUD |
 | Social | `GET /brand/social/data` · `POST /brand/social` · `DELETE /brand/social/{handle}` | social handles |
 | Creative needs | `GET /brand/creative-needs` · `PATCH /brand/creative-needs` | talent types + project types + frequency + budget tier |
-| Campaigns | `GET /brand/campaigns` · `GET …/data` · `POST …` | manager · list (paginated, `contracts_count`) · create |
-| Campaign | `GET /brand/campaigns/{c}` · `GET …/data` · `PATCH …` · `DELETE …` | workspace · payload (roles, gallery, contracts) · edit · delete |
-| Campaign lifecycle | `PATCH …/{c}/status` (`{action: open\|start\|complete\|cancel}`) · `PATCH …/{c}/public` · `POST …/{c}/media` | transitions · list ⇄ private · add media |
+| Projects | `GET /brand/projects` · `GET …/data` · `POST …` | manager · list (paginated, `contracts_count`) · create |
+| Project | `GET /brand/projects/{c}` · `GET …/data` · `PATCH …` · `DELETE …` | workspace · payload (roles, gallery, contracts) · edit · delete |
+| Project lifecycle | `PATCH …/{c}/status` (`{action: open\|start\|complete\|cancel}`) · `PATCH …/{c}/public` · `POST …/{c}/media` | transitions · list ⇄ private · add media |
 | Discovery | `GET /brand/discover` · `GET /brand/discover/feed` | feed shell · personalised paginated feed (writes a `view` signal) |
 | Discovery actions | `POST /brand/discover/save` · `POST /brand/discover/brief` (`{talent_id}`) | write `save` / `brief_sent` signals |
 | Contracts inbox | `GET /brand/contracts` · `GET /brand/contracts/data?status=` | list, `is_brand_turn`, filter, paginated |
@@ -154,9 +154,9 @@ illegal state-transition violations → **422**. An **incomplete brand** (`is_co
 
 The brand acts as the `brand` role on the **shared** contract engine (same `advance` body shapes as the talent
 side; `awaiting_brand` is highlighted). Controllers delegate to the Phase 2B services (BrandOnboardingService,
-CampaignService, BrandReviewService, BrandSignalService) and the `BrandTalentFeed` query; validation via
+BrandProjectService, BrandReviewService, BrandSignalService) and the `BrandTalentFeed` query; validation via
 Form Requests (`app/Http/Requests/Brand`) + inline rules, output via Resources (`BrandResource`,
-`CampaignResource`, `BrandReviewResource`, `TalentCardResource`, shared `ContractResource`). Front-end
+`BrandProjectResource`, `BrandReviewResource`, `TalentCardResource`, shared `ContractResource`). Front-end
 components live in `resources/js/brand.js`.
 
 ## Admin dashboard — web endpoints (session, `auth:admin`)
@@ -168,23 +168,23 @@ every action also re-authorizes + audits inside the Phase 3A service.
 
 | Area | Method + path | Perm | Purpose |
 |---|---|---|---|
-| Home | `GET /admin/dashboard` | — | governance overview (pending queues, deals awaiting admin) |
+| Home | `GET /admin/dashboard` | — | governance overview (pending queues, contracts awaiting admin) |
 | Flows | `GET /admin/flows` · `GET …/data` · `POST …` | manage-flows | list · paginated · create (draft) |
 | Flow | `GET /admin/flows/{f}` · `GET …/data` · `PATCH …` | manage-flows | workspace · payload (steps) · edit meta/scope |
 | Flow lifecycle | `PATCH …/{f}/{default,activate,archive}` | manage-flows | set default · activate · archive |
 | Flow steps | `POST …/{f}/steps` · `PATCH …/steps/reorder` · `PATCH …/steps/{s}` · `DELETE …/steps/{s}` | manage-flows | add · drag-reorder · edit · remove |
-| Professions | `GET /admin/professions` · `GET …/data` · `POST …` · `PATCH …/{type}/blocks` | manage-flows | catalog · list · add profession · edit default_blocks |
-| Moderation | `GET /admin/moderation` + `/{talents,reviews,brands,brand-reviews,campaigns}` | moderate-content | queues (paginated JSON) |
+| Skills | `GET /admin/skills` · `GET …/data` · `POST …` · `PATCH …/{type}/blocks` | manage-flows | catalog · list · add skill · edit default_blocks |
+| Moderation | `GET /admin/moderation` + `/{talents,reviews,brands,brand-reviews,projects}` | moderate-content | queues (paginated JSON) |
 | Moderation actions | `PATCH …/{queue}/{id}/{action}` · `POST …/reviews/batch` | moderate-content | suspend/verify/approve/cancel… · batch approve/reject |
-| Deal console | `GET /admin/deals` · `GET …/data?status=` · `GET …/{deal}` · `GET …/thread` | intervene-deals | list · filter · console · payload |
-| Deal intervene | `POST /admin/deals/{deal}/{override,advance,nudge,reassign,cancel}` | intervene-deals | override stuck step / act as admin / nudge / reassign / cancel |
+| Contract console | `GET /admin/contracts` · `GET …/data?status=` · `GET …/{contract}` · `GET …/thread` | intervene-contracts | list · filter · console · payload |
+| Contract intervene | `POST /admin/contracts/{contract}/{override,advance,nudge,reassign,cancel}` | intervene-contracts | override stuck step / act as admin / nudge / reassign / cancel |
 | Activity | `GET /admin/activity` · `GET …/data?q=&log=` | manage-settings | searchable audit trail |
 | Settings | `GET /admin/settings` · `PATCH /admin/settings` | manage-settings | platform globals + feature flags |
 | Admin users | `GET /admin/users` · `GET …/data` · `POST …` · `PATCH …/{u}` · `PATCH …/{u}/roles` · `DELETE …/{u}` | manage-users | staff CRUD + role assignment |
 
 Controllers are thin (`app/Http/Controllers/Admin/*`) and delegate every mutation to the Phase 3A admin
 services; validation via Form Requests (`app/Http/Requests/Admin`) + inline rules; output via Resources
-(`DealFlowResource`, `ActivityResource`, `AdminUserResource`, shared `DealResource`, etc.). Front-end
+(`ContractFlowResource`, `ActivityResource`, `AdminUserResource`, shared `ContractResource`, etc.). Front-end
 components live in `resources/js/admin.js`.
 
 ## Mobile API endpoints

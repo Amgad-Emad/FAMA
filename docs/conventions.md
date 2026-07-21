@@ -78,7 +78,7 @@ still eager-load `media` on lists.
 ## Translatable attributes (spatie/laravel-translatable)
 Fama is bilingual (en/ar). Policy:
 - **Translate** free-text, human-facing copy that a user would reasonably localise: e.g. `headline`,
-  `bio`, block `title`, project `title`/`summary`/`body`, campaign
+  `bio`, block `title`, project `title`/`summary`/`body`, project
   `title`/`description`, contract-flow step `name`/`instructions`.
 - **Do NOT translate:** identifiers, slugs, enums, emails, numbers, dates, URLs, foreign keys, or
   machine keys (`block_types.key`, `contract_flow_steps.key`).
@@ -103,8 +103,8 @@ Fama is bilingual (en/ar). Policy:
 | `PortfolioItem` | `caption` |
 | `Equipment` | `notes` |
 | `Brand` (Phase 2A) | `description` |
-| `Campaign` (Phase 2A) | `description` |
-| `CampaignMedia` (Phase 2A) | `caption` |
+| `Project` (Phase 2A) | `description` |
+| `BrandProjectMedia` (Phase 2A) | `caption` |
 
 **Deliberately NOT translatable:** identifiers/slugs/enums/keys; proper nouns (`brand_name`,
 `client_name`, `software_name`, equipment `brand`/`model`/`name`); `Review.body` (external text kept
@@ -257,9 +257,9 @@ logout. Toggle theme + locale on each page and confirm both render (all colours 
 **Public pages** (no login)
 - [ ] `/brands/{slug}` — header (logo/cover, verified badge, location, description), **credibility**
       (completed projects / response rate / avg response), **only approved** talent reviews, **only
-      public** non-cancelled campaigns, social handles + aesthetic moods. An unpublished brand 404s.
-- [ ] `/brands/{slug}/campaigns/{campaign-slug}` — cover, description, budget/location/dates, **roles
-      sought** (with quantities), gallery. A private campaign, a foreign-brand campaign, or one under an
+      public** non-cancelled projects, social handles + aesthetic moods. An unpublished brand 404s.
+- [ ] `/brands/{slug}/projects/{project-slug}` — cover, description, budget/location/dates, **roles
+      sought** (with quantities), gallery. A private project, a foreign-brand project, or one under an
       unpublished brand all 404.
 
 **Onboarding** (`auth:brand`, incomplete brand)
@@ -268,13 +268,13 @@ logout. Toggle theme + locale on each page and confirm both render (all colours 
       finish); finishing flips `is_complete` and lands on the dashboard with the first feed.
 
 **Brand dashboard** (`auth:brand`, complete brand)
-- [ ] Home — publish status, completed-projects / active-contracts / campaigns counts, **active contracts with
-      whose-turn** (awaiting_brand highlighted), recent campaigns, discovery entry.
+- [ ] Home — publish status, completed-projects / active-contracts / projects counts, **active contracts with
+      whose-turn** (awaiting_brand highlighted), recent projects, discovery entry.
 - [ ] Profile editor — core fields (inline save), logo/cover upload, aesthetic + mood tags, image gallery
       add/remove, social handles add/remove.
 - [ ] Creative needs — talent types / project types / frequency / budget; saved inline (reshapes the feed).
-- [ ] Campaigns — create (with roles + quantities); workspace: lifecycle buttons (open → start → complete
-      / cancel — illegal transition 422), public toggle, add media, contracts under the campaign.
+- [ ] Projects — create (with roles + quantities); workspace: lifecycle buttons (open → start → complete
+      / cancel — illegal transition 422), public toggle, add media, contracts under the project.
 - [ ] Discovery — personalised feed, load-more pagination, **Save** and **Send brief** write signals.
 - [ ] Reviews received — approved-only, read-only, three sub-ratings.
 - [ ] Account — settings/slug, **publish toggle** (blocked with 422 until onboarding is complete).
@@ -284,55 +284,115 @@ logout. Toggle theme + locale on each page and confirm both render (all colours 
       paginated.
 - [ ] Contract room — stepper + action panel keyed by `step_type` (submit brief, accept/return quote, sign,
       pay); timeline + free messaging; read-only when it's not the brand's turn.
-- [ ] The seeded demo has a contract under a campaign (`contracts.campaign_id`) and two campaigns at different
+- [ ] The seeded demo has a contract under a project (`contracts.brand_project_id`) and two projects at different
       statuses (open + completed showcase).
 
 **Cross-cutting**
 - [ ] Dark ⇄ light toggle persists across pages; RTL (`/ar`) mirrors layout + shows Arabic strings.
-- [ ] Acting on another brand's resource (contract/campaign) → 403; illegal campaign transition or premature
+- [ ] Acting on another brand's resource (contract/project) → 403; illegal project transition or premature
       publish → 422.
 - [ ] No `LazyLoadingViolationException`; every list is paginated + eager-loaded (query counts stay flat
-      as campaigns/images/talents grow — see `BrandHardeningTest`).
+      as projects/images/talents grow — see `BrandHardeningTest`).
+
+## QA checklist — auth & error pages (manual)
+
+Auth (login, register, forgot/reset password, confirm password, verify email) and the owned error pages
+(403/404/419/429/500/503) are on the **Fama design system** — token-only, dark/light + RTL, i18n.
+
+- [ ] Public login: premium split-screen; the role control (native radios, Talent | Brand only) posts
+      `role`; `?role=brand` pre-checks Brand (ADR-P); absent role defaults to talent; `role=admin` is
+      rejected; remember-me + forgot-password intact; validation errors render inline (danger +
+      `role="alert"`, inputs get `aria-invalid`).
+- [ ] Register: premium split-screen whose showcase + name label adapt to the chosen type; account-type
+      cards (Talent | Brand only) post `account_type`; a talent/brand self-register lands on the right
+      dashboard in a draft/registered, unpublished state; email uniqueness is per-entity.
+- [ ] Admin Accounts (`/admin/users`): the create form's account-type control provisions admin (with
+      roles, listed) or brand/talent (via the shared service, appearing in moderation); every create is
+      audited as `account.created`.
+- [ ] Staff login: `/admin/login` renders its own enterprise split view (no role field, noindex);
+      admin-area guests are redirected there (not to `/login`); a successful sign-in lands on the admin
+      dashboard; an authed admin visiting it is bounced away.
+- [ ] Every password field has the show/hide toggle (`<x-password-input>`) — announces via aria-pressed,
+      sits at the inline-end in RTL, still submits as a normal password field with JS off.
+- [ ] Theme toggle + locale switcher work on auth pages; `/ar` mirrors the card and shows Arabic copy.
+- [ ] Force a 404 (bad URL) and a 503 (`artisan down`/`up`): the branded page renders with code, title,
+      guidance, and "Back to home" (+ "Go to dashboard" when logged in). Error pages carry no Alpine —
+      they must render degraded.
 
 ## QA checklist — admin slice (manual)
 
-Run against the seeded demo (`php artisan migrate:fresh --seed`; admin `test@example.com` / `password`,
-super-admin). Every interaction is Ajax — **no full page reload** except logout. Toggle theme + locale on
+Run against the seeded demo (`php artisan migrate:fresh --seed`; admin `admin-demo@fama.test` /
+`password`, super-admin). Every interaction is Ajax — **no full page reload** except logout. Toggle theme + locale on
 each page (all colours are tokens; the layout is `dir`-aware — verified: no hardcoded colours in
 `resources/views/admin`, logical props used). **Every mutation is activity-logged with the admin as
 causer** (see `AdminHardeningTest`); **page access is gated per capability** (`can:` middleware → 403).
 
-**Access control**
-- [ ] The nav only shows sections the admin has permission for; a moderator can't reach `/admin/flows`,
-      `/admin/settings`, or `/admin/users` (403). A super-admin reaches everything.
+**Reachability & access control**
+- [ ] EVERY admin page is reachable from the dashboard: a grouped sidebar link AND a home card/quick link
+      for Dashboard, the four moderation queues (Talent profiles / Brands / Brand reviews / Global review
+      queue via `?queue=`), Projects oversight, Contracts, Contract flows, Skills templates, Block
+      catalog, Activity log, Settings, Admins. The active item is marked (`aria-current`), including the
+      matching moderation queue.
+- [ ] Links are permission-gated: the nav + cards only show what the admin's role can open; a moderator
+      sees moderation/projects/contracts only and can't reach `/admin/flows`, `/admin/blocks`,
+      `/admin/settings`, or `/admin/users` (403). A super-admin reaches everything. (See
+      `AdminNavigationTest` — hrefs are built via `route()`, so a dead link fails the suite.)
 
-**Deal-flow builder** (`manage-flows`)
+**Contract-flow builder** (`manage-flows`)
 - [ ] Create a flow (draft), add steps, **drag to reorder** (persists), edit/remove a step, set
       actor/step_type/required/skippable. Activate → status `active`; Set default (unique per scope);
-      Archive → `archived` + default cleared. Editing a flow does **not** change in-flight deals.
+      Archive → `archived` + default cleared. Editing a flow does **not** change in-flight contracts.
 
-**Professions** (`manage-flows`)
-- [ ] Toggle a talent type's default blocks and save; add a profession — it appears and seeds new talents
-      of that type (existing profiles untouched).
+**Skills templates** (`manage-flows`) — preselection + order ONLY (ADR-T)
+- [ ] Each skill offers exactly its catalog-eligible blocks; add/remove and **drag to reorder** the
+      preselection; a preselected block that lost eligibility is flagged "no longer eligible" and can be
+      removed but not re-added. Add a skill — it appears and seeds new talents of that type (existing
+      profiles untouched).
+
+**Block catalog** (`manage-blocks`) — existence + eligibility (ADR-T)
+- [ ] Create a block type (translatable name, availability universal / by category / by skill with its
+      gates, content source, default layout, repeatable, settings schema — malformed JSON rejected).
+- [ ] Edit: on an in-use type, `key` + `content source` are locked (inputs disabled; server 422s);
+      switching availability re-syncs the gates.
+- [ ] Deactivate an in-use type → grandfathered: existing profiles keep rendering it, the talent picker
+      stops offering it, the row shows the grandfathering note.
 
 **Moderation queues** (`moderate-content`)
 - [ ] Talents — suspend / unpublish / soft-delete / restore. Reviews — approve/reject, **batch** select +
       approve/reject. Brands — verify (one-way) / suspend / delete. Brand reviews — approve/reject.
-      Campaigns — make private / cancel. Each action clears from the queue + writes an audit entry.
+      Projects — filter by status; the admin always sees the budget (tagged **private** when
+      `budget_is_public` is off); make private / cancel. **Global review queue** ("All reviews") — both
+      kinds tagged, approve/reject in place routes per kind. Each action clears from the queue + writes
+      an audit entry.
+- [ ] **Detail drawers** — every queue row's **View** opens an end-side drawer with the full record
+      (talent bio/skills/counts, brand credibility, complete review bodies + sub-ratings, project budget
+      tagged private) and the same kind-aware actions; ESC/backdrop closes; acting closes the drawer and
+      reloads the list; RTL mirrors the drawer to the start side.
 
-**Deal console** (`intervene-deals`)
-- [ ] Filter by status; open a deal; **override** a stuck step (advances), **advance as admin** on an
+**Contract console** (`intervene-contracts`)
+- [ ] Filter by status AND by current step key; open a contract; **override** a stuck step (advances), **advance as admin** on an
       admin step, **nudge** (system event), **cancel**. Timeline updates live; each is audited.
 
 **Activity log** (`manage-settings`)
 - [ ] Searchable by text + log name; rows show subject + causer + action.
 
 **Settings / Admins**
-- [ ] Save default currency / default deal flow / feature flags (`manage-settings`).
+- [ ] Save default currency / default contract flow / feature flags (`manage-settings`).
 - [ ] Create an admin, assign a role, remove one (`manage-users`); cannot remove your own account (422).
+
+**Dashboard home**
+- [ ] Moderation counts (pending talent profiles / talent reviews / brand reviews / unverified brands)
+      link their queues with "All clear." empty states; contracts card shows active + whose-turn;
+      projects card shows open/in-progress/completed; recent activity lists causer + links the log.
 
 **Cross-cutting**
 - [ ] Dark ⇄ light toggle persists; RTL (`/ar`) mirrors layout + shows Arabic strings.
+- [ ] Lists show pulsing skeletons while loading and envelope-driven pagination when multi-page; statuses
+      use the shared semantic pill tones (`$pill` — success/warn/danger); no `text-ok`/`bg-ok` classes
+      (those tokens don't exist — use `success`/`success-weak`).
+- [ ] EVERY delete / remove / cancel opens the confirmation modal first (`$confirm`), names the specific
+      item, and only runs on confirm; dismiss (Cancel / ESC / backdrop) changes nothing. Works in RTL and
+      dark/light.
 - [ ] A powerless admin gets **403** on every gated page/action; a service failure rolls back + fail-logs
       to the `admin` channel. No `LazyLoadingViolationException`; lists paginated + eager-loaded (flat
       query counts — see `AdminHardeningTest`).

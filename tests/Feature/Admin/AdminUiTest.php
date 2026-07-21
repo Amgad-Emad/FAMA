@@ -1,14 +1,14 @@
 <?php
 
 use App\Models\Brand;
-use App\Models\Campaign;
-use App\Models\Deal;
-use App\Models\DealFlow;
+use App\Models\BrandProject;
+use App\Models\Contract;
+use App\Models\ContractFlow;
 use App\Models\Review;
 use App\Models\Talent;
 use App\Models\TalentType;
 use App\Models\User;
-use App\Services\DealService;
+use App\Services\ContractService;
 use App\Services\SettingsService;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\TalentTypeSeeder;
@@ -20,15 +20,15 @@ beforeEach(function () {
     $this->powerless = User::factory()->create(); // authenticated admin, no permissions
 });
 
-function adminConsoleDeal(): Deal
+function adminConsoleContract(): Contract
 {
-    $flow = DealFlow::factory()->create();
+    $flow = ContractFlow::factory()->create();
     $flow->steps()->createMany([
         ['key' => 'brief', 'name' => 'Brief', 'actor' => 'brand', 'step_type' => 'form', 'position' => 0, 'is_required' => true, 'is_skippable' => false, 'settings' => ['fields' => ['scope']]],
         ['key' => 'shoot', 'name' => 'Shoot', 'actor' => 'talent', 'step_type' => 'upload', 'position' => 1, 'is_required' => true, 'is_skippable' => false, 'settings' => []],
     ]);
 
-    return app(DealService::class)->initiate([
+    return app(ContractService::class)->initiate([
         'brand_id' => Brand::factory()->create()->id,
         'talent_id' => Talent::factory()->create()->id,
         'title' => 'X', 'initiated_by' => 'brand',
@@ -38,34 +38,34 @@ function adminConsoleDeal(): Deal
 it('renders every admin page for a super-admin', function () {
     $this->seed(TalentTypeSeeder::class);
 
-    foreach (['/admin/dashboard', '/admin/flows', '/admin/professions', '/admin/moderation', '/admin/deals', '/admin/activity', '/admin/settings', '/admin/users'] as $url) {
+    foreach (['/admin/dashboard', '/admin/flows', '/admin/skills', '/admin/moderation', '/admin/contracts', '/admin/activity', '/admin/settings', '/admin/users'] as $url) {
         $this->actingAs($this->admin, 'admin')->get($url)->assertOk();
     }
 });
 
 it('serves every admin data endpoint (JSON)', function () {
     $this->seed(TalentTypeSeeder::class);
-    $flow = DealFlow::factory()->create();
+    $flow = ContractFlow::factory()->create();
     $flow->steps()->create(['key' => 'brief', 'name' => 'Brief', 'actor' => 'brand', 'step_type' => 'form', 'position' => 0, 'is_required' => true, 'is_skippable' => false, 'settings' => []]);
     Talent::factory()->create(['status' => 'live']);
     Review::factory()->pending()->create();
 
     foreach ([
-        '/admin/flows/data', '/admin/professions/data', '/admin/moderation/talents',
+        '/admin/flows/data', '/admin/skills/data', '/admin/moderation/talents',
         '/admin/moderation/reviews', '/admin/moderation/brands', '/admin/moderation/brand-reviews',
-        '/admin/moderation/campaigns', '/admin/deals/data', '/admin/activity/data', '/admin/users/data',
+        '/admin/moderation/projects', '/admin/contracts/data', '/admin/activity/data', '/admin/users/data',
     ] as $url) {
         $this->actingAs($this->admin, 'admin')->getJson($url)->assertOk();
     }
 
-    // The flow list surfaces its step + deal counts.
+    // The flow list surfaces its step + contract counts.
     $this->actingAs($this->admin, 'admin')->getJson('/admin/flows/data')
         ->assertJsonPath('data.0.steps_count', 1)
-        ->assertJsonPath('data.0.deals_count', 0);
+        ->assertJsonPath('data.0.contracts_count', 0);
 });
 
 it('gates admin pages by permission — a powerless admin is forbidden', function () {
-    foreach (['/admin/flows', '/admin/moderation', '/admin/deals', '/admin/settings', '/admin/users', '/admin/professions', '/admin/activity'] as $url) {
+    foreach (['/admin/flows', '/admin/moderation', '/admin/contracts', '/admin/settings', '/admin/users', '/admin/skills', '/admin/activity'] as $url) {
         $this->actingAs($this->powerless, 'admin')->get($url)->assertForbidden();
     }
     // The dashboard is open to any authenticated admin.
@@ -86,7 +86,7 @@ it('builds a flow, adds a step and activates it', function () {
         ->patchJson("/admin/flows/{$id}/activate")
         ->assertOk()->assertJsonPath('data.status', 'active');
 
-    expect(DealFlow::find($id)->steps()->count())->toBe(1);
+    expect(ContractFlow::find($id)->steps()->count())->toBe(1);
 });
 
 it('denies flow building to a non-authorized admin (403)', function () {
@@ -95,7 +95,7 @@ it('denies flow building to a non-authorized admin (403)', function () {
         ->assertForbidden();
 });
 
-it('moderates talents, reviews (batch), brands and campaigns', function () {
+it('moderates talents, reviews (batch), brands and projects', function () {
     $talent = Talent::factory()->create(['status' => 'live']);
     $this->actingAs($this->admin, 'admin')->patchJson("/admin/moderation/talents/{$talent->id}/suspend")->assertOk();
     expect($talent->fresh()->status->getValue())->toBe('suspended');
@@ -109,9 +109,9 @@ it('moderates talents, reviews (batch), brands and campaigns', function () {
     $this->actingAs($this->admin, 'admin')->patchJson("/admin/moderation/brands/{$brand->id}/verify")->assertOk();
     expect((bool) $brand->fresh()->is_verified)->toBeTrue();
 
-    $campaign = Campaign::factory()->create(['status' => 'open']);
-    $this->actingAs($this->admin, 'admin')->patchJson("/admin/moderation/campaigns/{$campaign->id}/cancel")->assertOk();
-    expect($campaign->fresh()->status->getValue())->toBe('cancelled');
+    $project = BrandProject::factory()->create(['status' => 'open']);
+    $this->actingAs($this->admin, 'admin')->patchJson("/admin/moderation/projects/{$project->id}/cancel")->assertOk();
+    expect($project->fresh()->status->getValue())->toBe('cancelled');
 });
 
 it('denies moderation to a non-authorized admin (403)', function () {
@@ -121,39 +121,39 @@ it('denies moderation to a non-authorized admin (403)', function () {
         ->assertForbidden();
 });
 
-it('edits talent-type default_blocks and adds a profession', function () {
+it('edits talent-type default_blocks and adds a skill', function () {
     $this->seed(TalentTypeSeeder::class);
-    $type = TalentType::where('slug', 'model')->firstOrFail();
+    $type = TalentType::where('slug', 'modeling')->firstOrFail();
 
     $this->actingAs($this->admin, 'admin')
-        ->patchJson("/admin/professions/{$type->id}/blocks", ['default_blocks' => ['hero', 'gallery']])
+        ->patchJson("/admin/skills/{$type->id}/blocks", ['default_blocks' => ['hero', 'gallery']])
         ->assertOk();
     expect($type->fresh()->default_blocks)->toBe(['hero', 'gallery']);
 
     $this->actingAs($this->admin, 'admin')
-        ->postJson('/admin/professions', ['name' => ['en' => 'DJ'], 'category' => 'creative', 'default_blocks' => ['hero']])
+        ->postJson('/admin/skills', ['name' => ['en' => 'DJ'], 'category' => 'creative', 'default_blocks' => ['hero']])
         ->assertCreated();
     expect(TalentType::where('slug', 'dj')->exists())->toBeTrue();
 });
 
-it('overrides a stuck deal step and cancels a deal', function () {
-    $deal = adminConsoleDeal();
+it('overrides a stuck contract step and cancels a contract', function () {
+    $contract = adminConsoleContract();
     $this->actingAs($this->admin, 'admin')
-        ->postJson("/admin/deals/{$deal->id}/override", ['note' => 'stuck'])
+        ->postJson("/admin/contracts/{$contract->id}/override", ['note' => 'stuck'])
         ->assertOk();
-    expect($deal->fresh()->currentStep->key)->toBe('shoot');
+    expect($contract->fresh()->currentStep->key)->toBe('shoot');
 
-    $other = adminConsoleDeal();
+    $other = adminConsoleContract();
     $this->actingAs($this->admin, 'admin')
-        ->postJson("/admin/deals/{$other->id}/cancel", ['reason' => 'fraud'])
+        ->postJson("/admin/contracts/{$other->id}/cancel", ['reason' => 'fraud'])
         ->assertOk();
     expect($other->fresh()->status->getValue())->toBe('cancelled');
 });
 
-it('denies deal intervention to a non-authorized admin (403)', function () {
-    $deal = adminConsoleDeal();
+it('denies contract intervention to a non-authorized admin (403)', function () {
+    $contract = adminConsoleContract();
     $this->actingAs($this->powerless, 'admin')
-        ->postJson("/admin/deals/{$deal->id}/cancel")
+        ->postJson("/admin/contracts/{$contract->id}/cancel")
         ->assertForbidden();
 });
 
@@ -162,7 +162,7 @@ it('saves settings and creates an admin with a role', function () {
     expect(app(SettingsService::class)->defaultCurrency())->toBe('USD');
 
     $this->actingAs($this->admin, 'admin')
-        ->postJson('/admin/users', ['name' => 'Mod', 'email' => 'mod@fama.test', 'password' => 'password123', 'roles' => ['moderator']])
+        ->postJson('/admin/users', ['account_type' => 'admin', 'name' => 'Mod', 'email' => 'mod@fama.test', 'password' => 'password123', 'roles' => ['moderator']])
         ->assertCreated();
     expect(User::where('email', 'mod@fama.test')->first()->hasRole('moderator'))->toBeTrue();
 });

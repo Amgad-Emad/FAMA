@@ -5,9 +5,9 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * `talent_types` (the six professions lookup) + `talent_talent_type` pivot
+ * `talent_types` (the six skills lookup) + `talent_talent_type` pivot
  * (schema-master §1). `default_blocks` drives which blocks a new talent of that
- * type gets seeded; the pivot makes talent ↔ profession many-to-many with a
+ * type gets seeded; the pivot makes talent ↔ skill many-to-many with a
  * primary flag and ordering. name/description are translatable.
  */
 return new class extends Migration

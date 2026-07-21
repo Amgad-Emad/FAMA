@@ -3,18 +3,25 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
-use Illuminate\Auth\Events\Registered;
+use App\Services\AccountCreationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
+/**
+ * Public self-registration. The applicant chooses an account type — talent or
+ * brand ONLY (admin self-signup is forbidden, ADR-I). The chosen type decides
+ * which entity is created (via AccountCreationService), which table the email
+ * must be unique in, and which guard the new account is logged into.
+ */
 class RegisteredUserController extends Controller
 {
+    public function __construct(private readonly AccountCreationService $accounts) {}
+
     /**
      * Display the registration view.
      */
@@ -24,28 +31,36 @@ class RegisteredUserController extends Controller
     }
 
     /**
-     * Handle an incoming registration request.
+     * Handle an incoming registration request for the chosen account type.
      *
      * @throws ValidationException
      */
     public function store(Request $request): RedirectResponse
     {
-        $request->validate([
+        $type = $request->input('account_type');
+        // Email uniqueness is scoped to the chosen entity's own table.
+        $emailTable = $type === 'brand' ? 'brands' : 'talents';
+
+        $data = $request->validate([
+            'account_type' => ['required', Rule::in(['talent', 'brand'])],
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
+            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', Rule::unique($emailTable, 'email')],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-        ]);
+        if ($data['account_type'] === 'brand') {
+            $account = $this->accounts->createBrand($data);
+            $guard = 'brand';
+        } else {
+            $account = $this->accounts->createTalent($data);
+            $guard = 'talent';
+        }
 
-        event(new Registered($user));
+        Auth::guard($guard)->login($account);
+        $request->session()->regenerate();
+        // Never honour a cross-guard intended URL (same rule as login).
+        $request->session()->forget('url.intended');
 
-        Auth::login($user);
-
-        return redirect(route('dashboard', absolute: false));
+        return redirect()->route('dashboard');
     }
 }

@@ -20,9 +20,9 @@ it('returns the provided default for a missing key', function () {
 });
 
 it('stores and reads array values (feature flags)', function () {
-    $this->settings->set('feature_flags', ['brand_initiated_deals' => true, 'x' => false]);
+    $this->settings->set('feature_flags', ['brand_initiated_contracts' => true, 'x' => false]);
 
-    expect($this->settings->featureEnabled('brand_initiated_deals'))->toBeTrue();
+    expect($this->settings->featureEnabled('brand_initiated_contracts'))->toBeTrue();
     expect($this->settings->featureEnabled('x'))->toBeFalse();
     expect($this->settings->featureEnabled('unknown', true))->toBeTrue(); // falls back to default
 });
@@ -30,12 +30,12 @@ it('stores and reads array values (feature flags)', function () {
 it('exposes the typed globals with sensible defaults', function () {
     // Defaults before anything is stored.
     expect($this->settings->defaultCurrency())->toBe('EGP');
-    expect($this->settings->defaultDealFlowId())->toBeNull();
+    expect($this->settings->defaultContractFlowId())->toBeNull();
 
-    $this->settings->setMany(['default_currency' => 'AED', 'default_deal_flow_id' => 7]);
+    $this->settings->setMany(['default_currency' => 'AED', 'default_contract_flow_id' => 7]);
 
     expect($this->settings->defaultCurrency())->toBe('AED');
-    expect($this->settings->defaultDealFlowId())->toBe(7);
+    expect($this->settings->defaultContractFlowId())->toBe(7);
 });
 
 it('busts the cache on every write', function () {

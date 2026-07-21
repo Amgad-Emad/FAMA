@@ -43,8 +43,10 @@ class RejectStep implements Action
             throw new InvalidArgumentException('There is no earlier step to send this back to.');
         }
 
-        $label = $current->actor === 'both' ? ucfirst($role) : ucfirst($current->actor);
-        $this->progression->postSystemEvent($contract, $current, $label.' rejected '.$current->name.($reason ? ': '.$reason : '').'.');
+        $actor = $current->actor === 'both' ? $role : $current->actor;
+        $label = ucfirst($actor);
+        $this->progression->postSystemEvent($contract, $current, $label.' rejected '.$current->name.($reason ? ': '.$reason : '').'.',
+            ['key' => 'rejected', 'params' => ['actor' => $actor, 'step_key' => $current->key, 'step_name' => $current->name, 'reason' => $reason]]);
 
         // Reset the tail after the target back to pending so it re-runs.
         foreach ($contract->steps()->where('position', '>', $target->position)->get() as $step) {

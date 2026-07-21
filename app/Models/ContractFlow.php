@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\States\ContractFlow\ContractFlowState;
 use Database\Factories\ContractFlowFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -21,12 +22,29 @@ class ContractFlow extends Model
     /** @use HasFactory<ContractFlowFactory> */
     use HasFactory;
 
+    use HasStates, LogsActivity;
+
     /**
      * @var list<string>
      */
     protected $fillable = [
         'name', 'slug', 'description', 'applies_to', 'is_active', 'is_default', 'status',
     ];
+
+    /**
+     * Audit every admin edit to a flow template (schema-master §3): a flow is
+     * snapshotted into `contract_steps`, so a change here silently reshapes every
+     * future contract — the `contract_flow` log is how that is traced back.
+     * Dirty-only so an untouched save is not logged as a change.
+     */
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->useLogName('contract_flow')
+            ->logOnly(['name', 'slug', 'description', 'applies_to', 'is_active', 'is_default', 'status'])
+            ->logOnlyDirty()
+            ->dontLogEmptyChanges();
+    }
 
     /**
      * @return array<string, string>
@@ -36,7 +54,7 @@ class ContractFlow extends Model
         return [
             'is_active' => 'boolean',
             'is_default' => 'boolean',
-            'status' => DealFlowState::class,
+            'status' => ContractFlowState::class,
         ];
     }
 
@@ -48,6 +66,17 @@ class ContractFlow extends Model
     public function steps(): HasMany
     {
         return $this->hasMany(ContractFlowStep::class)->orderBy('position');
+    }
+
+    /**
+     * Contracts running on this flow (the inverse of Contract::flow()) — the admin
+     * flow console counts these to show each flow's usage.
+     *
+     * @return HasMany<Contract, $this>
+     */
+    public function contracts(): HasMany
+    {
+        return $this->hasMany(Contract::class, 'contract_flow_id');
     }
 
     /**

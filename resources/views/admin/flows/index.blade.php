@@ -1,7 +1,7 @@
-<x-admin-layout :title="__('Deal flows')">
+<x-admin-layout :title="__('Contract flows')">
     <div x-data="adminFlows()" class="space-y-6">
         <div class="flex items-center justify-between">
-            <p class="text-sm text-muted">{{ __('Author reusable deal-flow templates. Edits affect future deals only.') }}</p>
+            <p class="text-sm text-muted">{{ __('Author reusable contract-flow templates. Edits affect future contracts only.') }}</p>
         </div>
 
         {{-- Create --}}
@@ -22,22 +22,23 @@
         </x-ui.card>
 
         {{-- List --}}
-        <div x-show="loading" class="py-10 text-center text-sm text-muted">{{ __('Loading…') }}</div>
+        <template x-if="loading"><div class="grid gap-3 sm:grid-cols-2"><x-admin.skeleton :rows="2" /><x-admin.skeleton :rows="2" /></div></template>
         <div x-show="!loading" class="grid gap-3 sm:grid-cols-2">
             <template x-for="flow in flows" :key="flow.id">
-                <a :href="`/admin/flows/${flow.id}`" class="block rounded-xl border border-line bg-surface p-5 transition hover:border-line-strong">
+                <a :href="window.fama.localizeUrl(`/admin/flows/${flow.id}`)" class="block rounded-xl border border-line bg-surface p-5 transition hover:border-line-strong">
                     <div class="flex items-center justify-between">
-                        <h3 class="font-display text-lg" x-text="flow.name"></h3>
-                        <span class="rounded-pill bg-elevated px-2 py-0.5 text-xs" :class="flow.is_active ? 'text-ok' : 'text-muted'" x-text="flow.status"></span>
+                        <h3 class="font-display text-lg" x-text="$flowLabel(flow)"></h3>
+                        <span :class="$pill(flow.status)" x-text="$statusLabel(flow.status)"></span>
                     </div>
                     <p class="mt-1 text-xs text-muted">
                         <span x-text="flow.steps_count"></span> {{ __('steps') }} ·
-                        <span x-text="flow.applies_to || '{{ __('all') }}'"></span>
+                        <span x-text="flow.applies_to ? $categoryLabel(flow.applies_to) : '{{ __('all') }}'"></span>
                         <template x-if="flow.is_default"><span class="ms-1 rounded-pill bg-accent-weak px-2 py-0.5 text-accent-ink">{{ __('default') }}</span></template>
                     </p>
                 </a>
             </template>
             <template x-if="!flows.length"><p class="col-span-full rounded-lg border border-dashed border-line py-10 text-center text-sm text-muted">{{ __('No flows yet.') }}</p></template>
         </div>
+        <x-admin.pagination />
     </div>
 </x-admin-layout>

@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Schema;
 
 /**
  * Platform-wide key→JSON settings (schema-master §6). Admin-tunable globals
- * (default currency, default deal flow, feature flags) that aren't worth a
+ * (default currency, default contract flow, feature flags) that aren't worth a
  * dedicated table. Read/written through App\Services\SettingsService.
  */
 return new class extends Migration

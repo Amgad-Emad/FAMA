@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Talent;
 use App\Models\User;
+use App\States\TalentProfile\Live;
 use App\States\TalentProfile\Suspended;
 use App\States\TalentProfile\Unpublished;
 
@@ -37,6 +38,42 @@ class TalentModerationService extends AdminService
                 $talent->status->transitionTo(Unpublished::class);
             }
             $this->record($admin, $talent, 'moderation', 'talent.unpublished', ['reason' => $reason]);
+
+            return $talent->refresh();
+        }, ['talent_id' => $talent->getKey()]);
+    }
+
+    /**
+     * Reverse of unpublish: put a hidden profile back Live (the `ToLive` guard
+     * still requires a display name). The toggle counterpart of unpublish().
+     */
+    public function publish(User $admin, Talent $talent, ?string $reason = null): Talent
+    {
+        $this->authorizeAdmin($admin, 'moderate', $talent);
+
+        return $this->runInTransaction(function () use ($admin, $talent, $reason): Talent {
+            if ($talent->status->canTransitionTo(Live::class)) {
+                $talent->status->transitionTo(Live::class);
+            }
+            $this->record($admin, $talent, 'moderation', 'talent.published', ['reason' => $reason]);
+
+            return $talent->refresh();
+        }, ['talent_id' => $talent->getKey()]);
+    }
+
+    /**
+     * Reverse of suspend: lift a suspension back to the hidden Unpublished state
+     * (the admin can then publish). The toggle counterpart of suspend().
+     */
+    public function unsuspend(User $admin, Talent $talent, ?string $reason = null): Talent
+    {
+        $this->authorizeAdmin($admin, 'moderate', $talent);
+
+        return $this->runInTransaction(function () use ($admin, $talent, $reason): Talent {
+            if ($talent->status->canTransitionTo(Unpublished::class)) {
+                $talent->status->transitionTo(Unpublished::class);
+            }
+            $this->record($admin, $talent, 'moderation', 'talent.unsuspended', ['reason' => $reason]);
 
             return $talent->refresh();
         }, ['talent_id' => $talent->getKey()]);

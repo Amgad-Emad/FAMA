@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Cache;
  * Admin-tunable global settings (schema-master §6). Reads resolve from a cached
  * key→value map; writes upsert and bust the cache, wrapped in a transaction with
  * fail-logging to the `admin` channel. Typed accessors expose the well-known
- * globals (default currency, default deal flow, feature flags).
+ * globals (default currency, default contract flow, feature flags).
  */
 class SettingsService extends Service
 {
@@ -80,9 +80,9 @@ class SettingsService extends Service
         return (string) $this->get('default_currency', 'EGP');
     }
 
-    public function defaultDealFlowId(): ?int
+    public function defaultContractFlowId(): ?int
     {
-        $value = $this->get('default_deal_flow_id');
+        $value = $this->get('default_contract_flow_id');
 
         return $value !== null ? (int) $value : null;
     }

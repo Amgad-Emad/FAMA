@@ -4,7 +4,7 @@
 >
 > **Implementation note:** per `docs/decisions.md`, all **uploaded** files go through `spatie/laravel-medialibrary` (collections + conversions). The `*_url` / `thumbnail_url` columns below for *uploaded* assets are replaced at implementation time by media-library accessors; plain URL columns are kept only for **external** links/embeds (YouTube/Vimeo, social, brand-collab, press). The schema is documented here as originally designed.
 >
-> **Removed features (`docs/decisions.md` ADR-K/L/M):** the `services` table, `agency_affiliations`/`press_features` tables, and the `talents` columns `availability_status`, `rate_tier`, `willing_to_travel`, `travel_regions` were removed entirely, along with `deals.service_id` and `deal_enquiries.service_id`. Those tables/columns are struck below and no longer exist in the schema.
+> **Removed features (`docs/decisions.md` ADR-K/L/M):** the `services` table, `agency_affiliations`/`press_features` tables, and the `talents` columns `availability_status`, `rate_tier`, `willing_to_travel`, `travel_regions` were removed entirely, along with `contracts.service_id` and `contract_enquiries.service_id`. Those tables/columns are struck below and no longer exist in the schema.
 
 ---
 
@@ -47,7 +47,7 @@ The profile itself — the "living creative passport." Holds one-per-profile ide
 | created_at / updated_at / deleted_at | timestamps + soft delete |
 
 ### `talent_types` — the **Skills catalog** (ADR-N)
-`talent_types` is the **Skills catalog**: the six seeded skills, named as **disciplines/activities** — Modeling, Photography, Cinematography, Creative Direction, Styling, Graphic Design (slugs `modeling` / `photography` / `cinematography` / `creative-direction` / `styling` / `graphic-design`) — not person-nouns (ADR-S; IDs unchanged, so every FK is intact). "Skills" is the product term everywhere in the UI/routes; the physical table keeps the `talent_types` name (renaming it would cascade into brand creative-needs, campaigns, and API lookups — a deliberate future migration, ADR-N). Its real job is `default_blocks`: when a new talent picks "Photography," this is where the system reads which blocks to preload and in what order. Keeping it as a table (not hardcoded) means you can add a skill or change a default layout without touching code or migrations.
+`talent_types` is the **Skills catalog**: the six seeded skills, named as **disciplines/activities** — Modeling, Photography, Cinematography, Creative Direction, Styling, Graphic Design (slugs `modeling` / `photography` / `cinematography` / `creative-direction` / `styling` / `graphic-design`) — not person-nouns (ADR-S; IDs unchanged, so every FK is intact). "Skills" is the product term everywhere in the UI/routes; the physical table keeps the `talent_types` name (renaming it would cascade into brand creative-needs, projects, and API lookups — a deliberate future migration, ADR-N). Its real job is `default_blocks`: when a new talent picks "Photography," this is where the system reads which blocks to preload and in what order. Keeping it as a table (not hardcoded) means you can add a skill or change a default layout without touching code or migrations.
 
 | Column | Type / constraints |
 |---|---|
@@ -74,7 +74,7 @@ Makes talent ↔ skill many-to-many, so one talent can have more than one skill 
 | — | UNIQUE(talent_id, talent_type_id) |
 
 ### `block_types`
-Each row is a block the platform offers. `availability` is the key field — whether every talent can have it, or only certain categories/types.
+Each row is a block the platform offers. `availability` is the key field — whether every talent can have it, or only certain categories/types. **Governance is split (ADR-T):** the admin **Block Catalog Manager** (`/admin/blocks`, permission `manage-blocks`) owns this table — existence, eligibility (`availability` + the two gate tables), and config (`is_active`, `is_repeatable`, `default_layout`, `content_source`, `settings_schema` — validated JSON). The **Skills Template Manager** (`/admin/skills`) owns only `talent_types.default_blocks` (ordered preselection) and may only pick catalog-eligible blocks. `key` and `content_source` are immutable once any `profile_blocks` reference the type; deactivating/narrowing eligibility grandfathers existing placements (they keep rendering; the type stops being offered).
 
 | Column | Type / constraints |
 |---|---|
@@ -173,7 +173,7 @@ Client/peer testimonials, one per review. Needs its own table for the one-to-man
 | created_at / updated_at | timestamps |
 
 ### ~~`services`~~ — removed (ADR-K)
-The per-talent rate card was removed entirely. Pricing is now the single indicative **Pricing rate** on `talents` (`rate_unit`/`rate_amount`/`rate_currency`, ADR-N), and a deal's amount comes from the flow's form/quote step — not a service.
+The per-talent rate card was removed entirely. Pricing is now the single indicative **Pricing rate** on `talents` (`rate_unit`/`rate_amount`/`rate_currency`, ADR-N), and a contract's amount comes from the flow's form/quote step — not a service.
 
 ### `comp_cards`
 Model-specific stats (height, measurements, hair/eye color). A 1:1 table (note the UNIQUE on `talent_id`) rather than columns on `talents`, because these fields only apply to models — putting them on `talents` would leave them NULL for every photographer and designer.
@@ -290,9 +290,9 @@ The press-mentions satellite was removed entirely.
 
 ---
 
-## 3. Deal engine
+## 3. Contract engine
 
-### `deal_flows`
+### `contract_flows`
 The named, reusable step sequence the admin builds. Kept as a table (not hardcoded), same pattern as `talent_types.default_blocks` — admin can create or change a flow without code or migrations. `applies_to` scopes a flow to a category (e.g. a different flow for models vs crew) or is left null for all.
 
 | Column | Type / constraints |
@@ -306,13 +306,13 @@ The named, reusable step sequence the admin builds. Kept as a table (not hardcod
 | is_default | BOOLEAN |
 | created_at / updated_at | timestamps |
 
-### `deal_flow_steps`
+### `contract_flow_steps`
 One row per step in a flow. `actor` says who must act, `step_type` says what kind of interaction it is, and `settings` holds per-step config (required fields, payment %, contract template id). This is the table the admin flow-builder writes to.
 
 | Column | Type / constraints |
 |---|---|
 | id | BIGINT UNSIGNED, PK |
-| deal_flow_id | FK → deal_flows |
+| contract_flow_id | FK → contract_flows |
 | key | VARCHAR (machine name: brief, quote, agreement, payment, delivery, review) |
 | name | VARCHAR (display) |
 | instructions | TEXT NULL |
@@ -324,8 +324,8 @@ One row per step in a flow. `actor` says who must act, `step_type` says what kin
 | settings | JSON |
 | created_at / updated_at | timestamps |
 
-### `deals` (the engagement instance)
-One row per brand ↔ talent deal. `current_step_id` points at the active step; `status` mirrors whose turn it is so the inbox can filter. The brief, agreed amount, and shoot dates live here as the deal's headline data.
+### `contracts` (the engagement instance)
+One row per brand ↔ talent contract. `current_step_id` points at the active step; `status` mirrors whose turn it is so the inbox can filter. The brief, agreed amount, and shoot dates live here as the contract's headline data.
 
 | Column | Type / constraints |
 |---|---|
@@ -334,8 +334,8 @@ One row per brand ↔ talent deal. `current_step_id` points at the active step; 
 | brand_id | FK → brands |
 | talent_id | FK → talents |
 | ~~service_id~~ | ~~FK → services NULL~~ — removed (ADR-K); amount comes from the flow's form/quote step |
-| deal_flow_id | FK → deal_flows (the flow it was seeded from) |
-| current_step_id | FK → deal_steps NULL |
+| contract_flow_id | FK → contract_flows (the flow it was seeded from) |
+| current_step_id | FK → contract_steps NULL |
 | status | ENUM(draft, awaiting_brand, awaiting_talent, awaiting_admin, completed, cancelled, declined, expired) |
 | title | VARCHAR |
 | brief | TEXT NULL |
@@ -346,16 +346,16 @@ One row per brand ↔ talent deal. `current_step_id` points at the active step; 
 | initiated_by | ENUM(brand, talent) |
 | created_at / updated_at / deleted_at | timestamps + soft delete |
 
-> **Open item:** the brand workflows reference `deals.campaign_id` (a deal running under a campaign). This FK is **not yet present** in the table above — tracked as an open decision. Add `campaign_id — FK → campaigns NULL` when the campaign↔deal link is finalized.
+> **Open item:** the brand workflows reference `contracts.brand_project_id` (a contract running under a project). This FK is **not yet present** in the table above — tracked as an open decision. Add `brand_project_id — FK → projects NULL` when the project↔contract link is finalized.
 
-### `deal_steps` (per-deal snapshot of the flow steps — the progress tracker)
-When a deal starts, the flow's steps are snapshotted here so editing the template later doesn't break in-flight deals. Each row tracks its own status and stores what was captured (`payload` = the quote amount, brief answers, uploaded-file references).
+### `contract_steps` (per-contract snapshot of the flow steps — the progress tracker)
+When a contract starts, the flow's steps are snapshotted here so editing the template later doesn't break in-flight contracts. Each row tracks its own status and stores what was captured (`payload` = the quote amount, brief answers, uploaded-file references).
 
 | Column | Type / constraints |
 |---|---|
 | id | BIGINT UNSIGNED, PK |
-| deal_id | FK → deals |
-| flow_step_id | FK → deal_flow_steps NULL (origin reference) |
+| contract_id | FK → contracts |
+| flow_step_id | FK → contract_flow_steps NULL (origin reference) |
 | key | VARCHAR (snapshotted) |
 | name | VARCHAR (snapshotted) |
 | actor | ENUM(brand, talent, both, admin, system) |
@@ -368,14 +368,14 @@ When a deal starts, the flow's steps are snapshotted here so editing the templat
 | completed_at | TIMESTAMP NULL |
 | created_at / updated_at | timestamps |
 
-### `deal_messages` (the chat-like thread)
-What makes the deal room look like a chat. Free-text messages and system events interleaved chronologically, optionally tied to a step. `type` lets "Talent accepted the quote" render as a system event alongside real messages, so the timeline reads naturally.
+### `contract_messages` (the chat-like thread)
+What makes the contract room look like a chat. Free-text messages and system events interleaved chronologically, optionally tied to a step. `type` lets "Talent accepted the quote" render as a system event alongside real messages, so the timeline reads naturally.
 
 | Column | Type / constraints |
 |---|---|
 | id | BIGINT UNSIGNED, PK |
-| deal_id | FK → deals |
-| deal_step_id | FK → deal_steps NULL |
+| contract_id | FK → contracts |
+| contract_step_id | FK → contract_steps NULL |
 | sender_type | VARCHAR NULL (morph: talents / brands / users) — null for system |
 | sender_id | BIGINT UNSIGNED NULL (morph) — null for system |
 | sender_role | ENUM(brand, talent, admin, system) |
@@ -385,8 +385,8 @@ What makes the deal room look like a chat. Free-text messages and system events 
 | read_at | TIMESTAMP NULL |
 | created_at / updated_at | timestamps |
 
-### `deal_enquiries` (no-login capture from the Contact button)
-The pre-auth holding table. When a visitor presses Contact on a public talent profile, the enquiry lands here before any brand account exists. Once the visitor authenticates and completes their brand profile, the enquiry converts into a `deals` row and `converted_deal_id` is set.
+### `contract_enquiries` (no-login capture from the Contact button)
+The pre-auth holding table. When a visitor presses Contact on a public talent profile, the enquiry lands here before any brand account exists. Once the visitor authenticates and completes their brand profile, the enquiry converts into a `contracts` row and `converted_contract_id` is set.
 
 | Column | Type / constraints |
 |---|---|
@@ -398,7 +398,7 @@ The pre-auth holding table. When a visitor presses Contact on a public talent pr
 | contact_company | VARCHAR NULL |
 | brief | TEXT |
 | status | ENUM(new, converted, declined, expired) |
-| converted_deal_id | FK → deals NULL |
+| converted_contract_id | FK → contracts NULL |
 | created_at / updated_at | timestamps |
 
 ---
@@ -406,7 +406,7 @@ The pre-auth holding table. When a visitor presses Contact on a public talent pr
 ## 4. Brand core & satellites
 
 ### `brands`
-The brand-side identity — the foundation everything sits on. Holds the one-per-brand public-facing identity plus onboarding-collected basics. Admin-only fields (company size, website, founded year) are deferred to settings per the onboarding philosophy, so they're nullable. `is_complete` gates the Contact-to-deal flow.
+The brand-side identity — the foundation everything sits on. Holds the one-per-brand public-facing identity plus onboarding-collected basics. Admin-only fields (company size, website, founded year) are deferred to settings per the onboarding philosophy, so they're nullable. `is_complete` gates the Contact-to-contract flow.
 
 | Column | Type / constraints |
 |---|---|
@@ -431,7 +431,7 @@ The brand-side identity — the foundation everything sits on. Holds the one-per
 | founded_year | SMALLINT NULL (settings-stage) |
 | company_size | ENUM(solo, small, medium, large, enterprise) NULL (settings-stage) |
 | website | VARCHAR NULL (settings-stage) |
-| is_complete | BOOLEAN (deal-flow gate) |
+| is_complete | BOOLEAN (contract-flow gate) |
 | is_verified | BOOLEAN |
 | is_published | BOOLEAN |
 | view_count | UNSIGNED INT |
@@ -495,7 +495,7 @@ Talent reviewing the brand — the mirror of `reviews`, and a key differentiator
 | id | BIGINT UNSIGNED, PK |
 | brand_id | FK → brands |
 | talent_id | FK → talents |
-| deal_id | FK → deals NULL (the completed project it's tied to) |
+| contract_id | FK → contracts NULL (the completed project it's tied to) |
 | communication_rating | TINYINT (1–5) |
 | fairness_rating | TINYINT (1–5) |
 | creative_respect_rating | TINYINT (1–5) |
@@ -530,10 +530,10 @@ The implicit behaviour log: who they view/save/brief. Internal-only, feeds the p
 
 ---
 
-## 5. Campaigns
+## 5. Projects
 
-### `campaigns`
-Campaigns/shoots the brand runs on Fama — the "Create a Campaign / Create a shoot" feature. A brand's public-facing project, distinct from a deal: one campaign can group many deals with different talents. Shown on the brand profile as "Campaigns on FAMA."
+### `brand_projects`
+Projects/shoots the brand runs on Fama — the "Create a Project / Create a shoot" feature. A brand's public-facing project, distinct from a contract: one project can group many contracts with different talents. Shown on the brand profile as "Projects on FAMA."
 
 | Column | Type / constraints |
 |---|---|
@@ -541,7 +541,7 @@ Campaigns/shoots the brand runs on Fama — the "Create a Campaign / Create a sh
 | brand_id | FK → brands |
 | title | VARCHAR |
 | slug | VARCHAR, UNIQUE |
-| type | ENUM(campaign, shoot) |
+| type | ENUM(project, shoot) |
 | description | TEXT NULL |
 | cover_image_url | VARCHAR NULL |
 | status | ENUM(draft, open, in_progress, completed, cancelled) |
@@ -556,24 +556,24 @@ Campaigns/shoots the brand runs on Fama — the "Create a Campaign / Create a sh
 | positions_count | UNSIGNED INT (how many talents needed) |
 | created_at / updated_at / deleted_at | timestamps + soft delete |
 
-### `campaign_talent_types` (optional — roles a campaign seeks)
-Names the skills a campaign needs (e.g. "one Modeling + one Photography"), referencing the `talent_types` Skills catalog (disciplines — ADR-S). Skip if campaigns are free-form.
+### `brand_project_talent_types` (optional — roles a project seeks)
+Names the skills a project needs (e.g. "one Modeling + one Photography"), referencing the `talent_types` Skills catalog (disciplines — ADR-S). Skip if projects are free-form.
 
 | Column | Type / constraints |
 |---|---|
 | id | BIGINT UNSIGNED, PK |
-| campaign_id | FK → campaigns |
+| brand_project_id | FK → projects |
 | talent_type_id | FK → talent_types |
 | quantity | UNSIGNED SMALLINT |
-| — | UNIQUE(campaign_id, talent_type_id) |
+| — | UNIQUE(brand_project_id, talent_type_id) |
 
-### `campaign_media` (optional — the campaign's gallery)
-Lets a campaign show imagery, and lets completed campaigns become showcases on the brand profile.
+### `brand_project_media` (optional — the project's gallery)
+Lets a project show imagery, and lets completed projects become showcases on the brand profile.
 
 | Column | Type / constraints |
 |---|---|
 | id | BIGINT UNSIGNED, PK |
-| campaign_id | FK → campaigns |
+| brand_project_id | FK → projects |
 | media_type | ENUM(image, video, embed) |
 | media_url | VARCHAR |
 | thumbnail_url | VARCHAR |
@@ -605,7 +605,7 @@ The admin/staff login table. Talents and brands authenticate against their own t
 | created_at / updated_at / deleted_at | timestamps + soft delete |
 
 ### `activity_log` (`spatie/laravel-activitylog`)
-Audit trail of who changed what — admin edits to flows, block-catalog changes, profile moderation, deal-step overrides. Given how admin-controlled the platform is, this matters.
+Audit trail of who changed what — admin edits to flows, block-catalog changes, profile moderation, contract-step overrides. Given how admin-controlled the platform is, this matters.
 
 | Column | Type / constraints |
 |---|---|
@@ -618,7 +618,7 @@ Audit trail of who changed what — admin edits to flows, block-catalog changes,
 | created_at / updated_at | timestamps |
 
 ### `settings` (platform-wide config — optional but useful)
-Key-value store for admin-tunable global settings (default currency, default deal flow, feature flags) that aren't worth a dedicated table.
+Key-value store for admin-tunable global settings (default currency, default contract flow, feature flags) that aren't worth a dedicated table.
 
 | Column | Type / constraints |
 |---|---|
@@ -635,10 +635,10 @@ Key-value store for admin-tunable global settings (default currency, default dea
 - **talents** → many `profile_blocks`; each `profile_blocks` → one `block_types`.
 - **block_types** → many `block_type_category` (when `availability = by_category`).
 - **talents** → many of every content table (`portfolio_items`, `brand_collabs`, `reviews`, `look_types`, `digitals`, `showreels`, `equipment`, `projects`, `software_stack`); 1:1 `comp_cards`. *(`services`, `agency_affiliations`, `press_features` removed — ADR-K/M.)*
-- **deal_flows** → many `deal_flow_steps`.
-- **deals** belongs to `brands`, `talents`, `deal_flows` (+ future `campaign`); has many `deal_steps` and `deal_messages`; `current_step_id` → `deal_steps`. *(The optional `service` link was removed — ADR-K.)*
-- **deal_steps** snapshot from `deal_flow_steps` (`flow_step_id`).
-- **deal_enquiries** → optional `converted_deal_id` → `deals`.
-- **brands** → 1:1 `brand_aesthetics`, `brand_creative_needs`, `brand_credibility`; many `brand_images`, `brand_reviews`, `brand_social_handles`, `brand_signals`, `campaigns`.
-- **campaigns** → many `campaign_talent_types`, `campaign_media`; group many `deals`.
+- **contract_flows** → many `contract_flow_steps`.
+- **contracts** belongs to `brands`, `talents`, `contract_flows` (+ future `project`); has many `contract_steps` and `contract_messages`; `current_step_id` → `contract_steps`. *(The optional `service` link was removed — ADR-K.)*
+- **contract_steps** snapshot from `contract_flow_steps` (`flow_step_id`).
+- **contract_enquiries** → optional `converted_contract_id` → `contracts`.
+- **brands** → 1:1 `brand_aesthetics`, `brand_creative_needs`, `brand_credibility`; many `brand_images`, `brand_reviews`, `brand_social_handles`, `brand_signals`, `brand_projects`.
+- **projects** → many `brand_project_talent_types`, `brand_project_media`; group many `contracts`.
 - **users**, **activity_log**, **settings** — platform/admin plane.

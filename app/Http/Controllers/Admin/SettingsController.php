@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Models\DealFlow;
+use App\Models\ContractFlow;
 use App\Services\SettingsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -21,7 +21,7 @@ class SettingsController extends AdminController
     {
         return view('admin.settings', [
             'settings' => $this->settings->all(),
-            'flows' => DealFlow::query()->where('is_active', true)->get(['id', 'name']),
+            'flows' => ContractFlow::query()->where('is_active', true)->get(['id', 'name', 'slug']),
         ]);
     }
 
@@ -29,7 +29,7 @@ class SettingsController extends AdminController
     {
         $data = $request->validate([
             'default_currency' => ['nullable', 'string', 'size:3'],
-            'default_deal_flow_id' => ['nullable', 'integer', 'exists:deal_flows,id'],
+            'default_contract_flow_id' => ['nullable', 'integer', 'exists:contract_flows,id'],
             'feature_flags' => ['nullable', 'array'],
         ]);
 

@@ -90,13 +90,48 @@ class ContractProgression
         $step->save();
         $step->status->transitionTo(StepCompleted::class);
 
-        $this->postSystemEvent($contract, $step, $summary);
+        $this->postSystemEvent($contract, $step, $summary, $this->stepEventMeta($step, $payload));
     }
 
     /**
-     * Append an immutable system event to the contract thread.
+     * Structured translation descriptor for a step-completion event: a verb key
+     * (derived from the step type) + the params needed to render it in any
+     * locale. Rejections/skips carry their own meta from their call sites.
+     *
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
      */
-    public function postSystemEvent(Contract $contract, ?ContractStep $step, string $body): ContractMessage
+    public function stepEventMeta(ContractStep $step, array $payload = []): array
+    {
+        $params = ['actor' => $step->actor, 'step_key' => $step->key, 'step_name' => $step->name];
+
+        if ($step->step_type === 'payment') {
+            $params['pct'] = (int) data_get($step->settings, 'percentage', 0);
+        }
+
+        return [
+            'key' => match ($step->step_type) {
+                'form' => 'submitted',
+                'upload' => 'delivered',
+                'approval' => 'approved',
+                'payment' => 'paid',
+                'contract' => 'signed',
+                'schedule' => 'scheduled',
+                'message' => 'sent',
+                default => 'completed',
+            },
+            'params' => $params,
+        ];
+    }
+
+    /**
+     * Append an immutable system event to the contract thread. `$meta` (a
+     * {key, params} descriptor) lets the renderer localize the body; `body`
+     * remains the English fallback.
+     *
+     * @param  array<string, mixed>|null  $meta
+     */
+    public function postSystemEvent(Contract $contract, ?ContractStep $step, string $body, ?array $meta = null): ContractMessage
     {
         return $contract->messages()->create([
             'contract_step_id' => $step?->id,
@@ -105,6 +140,7 @@ class ContractProgression
             'sender_role' => 'system',
             'type' => 'system_event',
             'body' => $body,
+            'meta' => $meta,
             'status' => 'sent',
         ]);
     }
@@ -129,7 +165,7 @@ class ContractProgression
         $contract->current_step_id = null;
         $contract->save();
         $contract->status->transitionTo(ContractCompleted::class);
-        $this->postSystemEvent($contract, null, 'Contract completed.');
+        $this->postSystemEvent($contract, null, 'Contract completed.', ['key' => 'contract_completed', 'params' => []]);
 
         // Off-critical-path side effects (credibility accrual, review window).
         ContractCompletedEvent::dispatch($contract->refresh());

@@ -15,7 +15,8 @@ it('configures three guards mapped to providers and models', function () {
 });
 
 it('protects each dashboard behind its own guard', function () {
-    $this->get('/admin/dashboard')->assertRedirect(route('login'));
+    // Admin guests go to the dedicated staff login; the others to the public one.
+    $this->get('/admin/dashboard')->assertRedirect(route('admin.login'));
     $this->get('/brand/dashboard')->assertRedirect(route('login'));
     $this->get('/talent/dashboard')->assertRedirect(route('login'));
 });
@@ -33,13 +34,36 @@ it('shows the role selector on the single login screen', function () {
 });
 
 it('authenticates on the guard chosen by the submitted role', function () {
-    $user = User::factory()->create();
+    $brand = Brand::factory()->create();
 
     $this->post('/login', [
+        'email' => $brand->email,
+        'password' => 'password',
+        'role' => 'brand',
+    ]);
+
+    $this->assertAuthenticated('brand');
+});
+
+it('does not accept the admin role on the public login', function () {
+    $user = User::factory()->create();
+
+    $this->from('/login')->post('/login', [
         'email' => $user->email,
         'password' => 'password',
         'role' => 'admin',
-    ]);
+    ])->assertSessionHasErrors('role');
+
+    $this->assertGuest('admin');
+});
+
+it('authenticates staff on the dedicated /admin/login', function () {
+    $user = User::factory()->create();
+
+    $this->post('/admin/login', [
+        'email' => $user->email,
+        'password' => 'password',
+    ])->assertRedirect(route('admin.dashboard'));
 
     $this->assertAuthenticated('admin');
 });

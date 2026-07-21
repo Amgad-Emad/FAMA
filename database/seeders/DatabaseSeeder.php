@@ -11,20 +11,27 @@ class DatabaseSeeder extends Seeder
     use WithoutModelEvents;
 
     /**
-     * Seed the application's database: an admin user, the talent-side catalogs
-     * (professions + block catalog), then the rich multi-type demo talent.
+     * Seed the application's database: the admin user + its RBAC, the talent-side
+     * catalogs (skills + block catalog), the contract flow + platform settings, then
+     * the rich demo talent/brand/admin data.
+     *
+     * Order matters: RolesAndPermissionsSeeder grants the demo super-admin the
+     * permissions AdminDemoSeeder authorizes against; SettingsSeeder runs after
+     * ContractFlowSeeder so `default_contract_flow_id` can point at the default flow.
      */
     public function run(): void
     {
         User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+            'name' => 'Admin Demo',
+            'email' => 'admin-demo@fama.test',
         ]);
 
         $this->call([
+            RolesAndPermissionsSeeder::class,
             TalentTypeSeeder::class,
             BlockTypeSeeder::class,
             ContractFlowSeeder::class,
+            SettingsSeeder::class,
             TalentDemoSeeder::class,
             TalentShowcaseSeeder::class,
             BrandDemoSeeder::class,

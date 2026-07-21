@@ -20,7 +20,7 @@
 
 ### ADR-3 — State machines for every lifecycle
 - **Context:** Many entities have documented, guarded lifecycles.
-- **Decision:** `spatie/laravel-model-states` models every documented lifecycle: contract, contract_step, contract_message, campaign, brand, talent profile, review, media.
+- **Decision:** `spatie/laravel-model-states` models every documented lifecycle: contract, contract_step, contract_message, project, brand, talent profile, review, media.
 - **Status:** Accepted.
 - **Consequences:** Transitions are explicit, guarded, and auditable; each stateful model gets a state column + State classes (built with the model in Phase 1+). *(The availability, service, and affiliation lifecycles were removed with their features — see ADR-K/L/M.)*
 
@@ -88,7 +88,7 @@
 - **Context:** The talent dashboard had five profile-ish tabs (Profile editor, Professions, Account) plus the "Professions" label, which the product wants to simplify to a single Profile surface and rebrand as **Skills**. The removed rate card (ADR-K) also left the profile with no way to state a price.
 - **Decision:**
   1. **Terminology:** "Professions" is renamed **Skills** across all user-facing copy, Blade, translation keys, and routes (route segment `professions` → `skills`; names `talent.professions*` → `talent.profile.skills*`). Talent-side symbols follow: `ProfessionsService` → `SkillsService`, `ProfessionController` → `SkillController`, `StoreProfessionRequest` → `StoreSkillRequest`.
-  2. **Persistence unchanged:** the `talent_types` table, `TalentType` model, and `talent_type_id` FKs stay as the physical layer — **`talent_types` is the Skills catalog**. A physical table rename would cascade into brand creative-needs, campaigns, and API lookups, so it is a deliberate **future** migration, not done here.
+  2. **Persistence unchanged:** the `talent_types` table, `TalentType` model, and `talent_type_id` FKs stay as the physical layer — **`talent_types` is the Skills catalog**. A physical table rename would cascade into brand creative-needs, projects, and API lookups, so it is a deliberate **future** migration, not done here.
   3. **Editor consolidation:** the standalone **Professions** and **Account** tabs are folded into the **Profile editor**. The sidebar becomes **Home · Profile · Content · Reviews · Contracts**. The Profile editor holds Identity, Skills, **Username** (the public `slug`, relabelled "Username" in UI + validation — column unchanged, still unique/auto-generated), Publish (`is_published`, moved from Account), Pricing rate, and Blocks. Publish moves to `PATCH /talent/profile/publish`.
   4. **Pricing rate:** new nullable `talents` columns `rate_unit` ENUM(project, day, hour) / `rate_amount` DECIMAL(10,2) / `rate_currency` CHAR(3), edited in the Profile editor. All-or-nothing (a complete rate or none), NOT translatable. Replaces the removed rate card (ADR-K); public display is a later prompt.
 - **Status:** Accepted.
@@ -133,7 +133,7 @@
 ### ADR-S — Skills are named as disciplines, not people
 - **Context:** The six `talent_types` (the Skills catalog — ADR-N) were seeded as person-nouns (Model, Photographer, Cinematographer (DOP), Creative Director, Stylist, Graphic Designer). A skill is an *activity a booking is for*, so it should read as the discipline — "Modeling", not "Model".
 - **Decision:**
-  1. **Rename the six rows to disciplines:** Modeling, Photography, Cinematography, Creative Direction, Styling, Graphic Design, with matching slugs (`modeling` / `photography` / `cinematography` / `creative-direction` / `styling` / `graphic-design`), icons (`lucide-<slug>`), and en+ar `name`/`description`. A data migration (`2026_07_11_000300`) renames existing rows and the `TalentTypeSeeder` produces the new values, so `migrate:fresh --seed` and an in-place migration converge. **`talent_types` IDs are unchanged**, so every FK (`talent_talent_type`, `block_type_talent_type`, `campaign_talent_types`, `brand_creative_need_talent_type`, `profile_blocks.talent_type_id`, `projects.talent_type_id`) is untouched.
+  1. **Rename the six rows to disciplines:** Modeling, Photography, Cinematography, Creative Direction, Styling, Graphic Design, with matching slugs (`modeling` / `photography` / `cinematography` / `creative-direction` / `styling` / `graphic-design`), icons (`lucide-<slug>`), and en+ar `name`/`description`. A data migration (`2026_07_11_000300`) renames existing rows and the `TalentTypeSeeder` produces the new values, so `migrate:fresh --seed` and an in-place migration converge. **`talent_types` IDs are unchanged**, so every FK (`talent_talent_type`, `block_type_talent_type`, `brand_project_talent_types`, `brand_creative_need_talent_type`, `profile_blocks.talent_type_id`, `projects.talent_type_id`) is untouched.
   2. **`category` stays the enum** `model | crew | creative` (it gates blocks and scopes discovery filters); only its **display labels** become Modeling / Crew / Creative. When a category group holds a single chip whose label would duplicate the group header (Modeling), the **redundant header is suppressed**.
   3. **No redirects:** old `?skill=<old-slug>` deep links break — accepted pre-launch.
 - **Status:** Accepted. *(The Arabic names are a first pass — stakeholders should confirm the AR copy; `عرض الأزياء` / `التصوير الفوتوغرافي` / `التصوير السينمائي` / `الإدارة الإبداعية` / `تنسيق الأزياء` / `التصميم الجرافيكي`.)*
@@ -161,9 +161,17 @@
 
 ### ADR-D — Web login UX
 - **Context:** One unified login vs. separate per-role login routes.
-- **Decision:** Default assumed — a **unified role-aware login** that dispatches to the correct guard. Alternative: separate prefixed login routes (`/talent/login`, …).
-- **Status:** OPEN — confirm.
-- **Consequences:** Current implementation is unified (`LoginRequest::role()`); switching later is contained to the auth routes/controller.
+- **Decision (updated 2026-07-18):** **Hybrid.** The public login stays unified and role-aware for the
+  two marketplace entities (`/login`, segmented Talent | Brand control, `LoginRequest` accepts only
+  those roles, absent role defaults to talent; `?role=brand` deep link per ADR-P). **Staff sign in on a
+  fully separate screen** — `GET|POST /admin/login` (`admin.login[.store]`), its own enterprise-styled
+  view (`admin/auth/login`), and `AdminLoginRequest` (subclasses `LoginRequest` to inherit rate limiting
+  + single-active-identity, guard pinned to `admin`, no role field). Guests are redirected per area
+  (`redirectGuestsTo`: first path segment — or second after a 2-letter locale — `admin` → staff login).
+- **Status:** Accepted for admin-vs-public. Talent-vs-brand remains unified (revisit only if the
+  marketplace flows diverge).
+- **Consequences:** The public form can never authenticate the admin guard (`role=admin` fails
+  validation). Breeze's User-based auth tests target `/admin/login`. The staff view is `noindex`.
 
 ### ADR-E — Brand-spec completeness
 - **Context:** Some brand-side spec sections originally referenced unfetchable Claude artifact URLs and may have gaps.
@@ -172,12 +180,12 @@
   transcription (all pages, workflows, lifecycles) and covers every schema-master §4/§5 table; no gaps.
 - **Consequences:** Phase 2 (brand) build unblocked; Phase 2A schema shipped against the confirmed spec.
 
-### ADR-F — `contracts.campaign_id` FK *(retained from Phase 0)*
-- **Context:** Brand/campaign workflows reference a contract running under a campaign, but the FK isn't in the `contracts` definition.
-- **Decision:** Add `campaign_id → campaigns (nullable, nullOnDelete)` on `contracts`.
+### ADR-F — `contracts.brand_project_id` FK *(retained from Phase 0)*
+- **Context:** Brand/project workflows reference a contract running under a project, but the FK isn't in the `contracts` definition.
+- **Decision:** Add `brand_project_id → projects (nullable, nullOnDelete)` on `contracts`.
 - **Status:** **Resolved (Accepted)** — added in Phase 2B (`add_brand_state_and_campaign_link`) once
-  `campaigns` existed. `Contract::campaign()` / `Campaign::contracts()` relations wired.
-- **Consequences:** A campaign groups many contracts; a completed public campaign is a profile showcase.
+  `brand_projects` existed. `Contract::project()` / `Project::contracts()` relations wired.
+- **Consequences:** A project groups many contracts; a completed public project is a profile showcase.
 
 ### ADR-G — Brand/talent password-reset tables *(retained from Phase 0)*
 - **Context:** Phase 0 points the `brands`/`talents` password brokers at the shared `password_reset_tokens` table (inert — unused yet).
@@ -187,14 +195,42 @@
 
 ### ADR-H — Admin RBAC: role enum vs. spatie/laravel-permission
 - **Context:** schema-master §6 lists `users.role` as "ENUM(talent, brand, admin) — or use a roles
-  table". Admin governance (flow authoring, moderation, deal-step intervention, settings, staff
+  table". Admin governance (flow authoring, moderation, contract-step intervention, settings, staff
   management) needs *granular, per-capability* authorization, not a single coarse label.
 - **Decision:** **Accepted — spatie/laravel-permission**, bound to the **`admin`** guard. No `role`
   enum column on `users`. Roles (super-admin / moderator / support) compose granular permissions
-  (manage-flows, moderate-content, intervene-deals, manage-settings, manage-users); `User` uses
+  (manage-flows, moderate-content, intervene-contracts, manage-settings, manage-users); `User` uses
   `HasRoles` with `$guard_name = 'admin'`.
 - **Status:** **Resolved (Accepted)** — Phase 3A. Package installed, tables migrated,
   `RolesAndPermissionsSeeder` seeds the roles/permissions and grants the demo admin super-admin.
 - **Consequences:** Admin screens gate on permissions (e.g. `@can('manage-flows')`), so new capabilities
   are added as permissions without schema changes. Talent/brand entities keep their own guards and are
   unaffected (their "role" is their guard/table, not a spatie role).
+
+### ADR-T — Block governance split: catalog owns eligibility, skills own preselection
+- **Context:** The admin Skills page edited each skill's `default_blocks` against the FULL `block_types`
+  list, which quietly made it an eligibility surface: preselecting a block a skill wasn't gated for
+  implied the gate didn't matter. Eligibility (`availability` + `block_type_category` /
+  `block_type_talent_type`) and preselection (`talent_types.default_blocks`) are different decisions with
+  different owners.
+- **Decision:** Two admin pages with a hard boundary.
+  1. **Block Catalog Manager** (`/admin/blocks`, new permission **`manage-blocks`**, super-admin only by
+     default) owns which block types EXIST and WHO can use them: create/edit (translatable name +
+     description, icon), `availability` universal / by_category / by_type with the pivot gates synced to
+     the active mode (stale gates removed), `is_active` (platform on/off), `is_repeatable` (once per
+     scope, ADR-Q), `default_layout`, `content_source`, and `settings_schema` (validated well-formed
+     JSON). **Guard rails:** `key` and `content_source` are immutable once any `profile_blocks` reference
+     the type (422); deactivating or narrowing eligibility **grandfathers** existing placements — they
+     keep rendering, the type just stops being offered (the talent picker already filters `is_active` +
+     eligibility). Deletion is not offered.
+  2. **Skills Template Manager** (`/admin/skills`, unchanged permission `manage-flows`) owns ONLY the
+     ordered preselection per skill: it offers exactly the blocks the catalog makes eligible for that
+     skill (`ProfileBlockService::isEligibleForScope` — the same predicate the talent picker uses), drag
+     to order, and flags a preselected key that has since become ineligible ("no longer eligible",
+     removable). Server-side, `SkillCatalogService::updateDefaultBlocks` rejects ADDING an ineligible
+     key but allows reordering/removing around a stale one (forcing cleanup would block unrelated edits).
+- **Status:** Accepted (2026-07-16). Both managers are two-layer gated (`can:` middleware + service
+  re-check) and every mutation is activity-logged (`catalog` log).
+- **Consequences:** `default_blocks` can hold grandfathered keys; consumers (SeedBlocksForSkill) already
+  treat it as a plain key list. The `manage-blocks` permission is seeded and granted to super-admin only —
+  grant it to other roles per need.

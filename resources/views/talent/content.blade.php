@@ -103,7 +103,7 @@
                                 <template x-if="media">
                                     <label class="cursor-pointer text-subtle hover:text-ink" title="{{ __('Replace media') }}">↻<input type="file" class="hidden" accept="image/*,video/*" @change="uploadMedia(item.id, $event.target.files[0]); $event.target.value = ''"></label>
                                 </template>
-                                <button @click="remove(item.id)" class="text-subtle hover:text-danger" title="{{ __('Remove') }}">✕</button>
+                                <button @click="$confirm({ title: '{{ __('Remove this item?') }}', message: '{{ __('This item will be permanently removed.') }}', confirmLabel: '{{ __('Remove') }}' }).then(ok => ok && remove(item.id))" class="text-subtle hover:text-danger" title="{{ __('Remove') }}">✕</button>
                             </div>
                         </div>
                     </div>

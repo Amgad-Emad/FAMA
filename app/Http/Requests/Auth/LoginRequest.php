@@ -14,11 +14,11 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Role-aware login request. A single login form serves all three entities; the
- * submitted `role` selects the guard to authenticate against. When `role` is
- * absent it defaults to admin (the only migrated auth table in Phase 0), which
- * also keeps the Breeze User-based tests green. See docs/decisions.md (OPEN:
- * single role-aware login vs. per-role login screens).
+ * Role-aware PUBLIC login request. The public form serves talent and brand;
+ * the submitted `role` selects the guard to authenticate against (absent role
+ * defaults to talent). Staff sign in on their own separate screen —
+ * /admin/login with AdminLoginRequest, which subclasses this to inherit the
+ * rate-limit + single-active-identity pipeline while pinning the admin guard.
  */
 class LoginRequest extends FormRequest
 {
@@ -40,16 +40,17 @@ class LoginRequest extends FormRequest
         return [
             'email' => ['required', 'string', 'email'],
             'password' => ['required', 'string'],
-            'role' => ['nullable', 'string', Rule::in(UserRole::values())],
+            'role' => ['nullable', 'string', Rule::in([UserRole::Talent->value, UserRole::Brand->value])],
         ];
     }
 
     /**
-     * The role (and therefore guard) this login targets.
+     * The role (and therefore guard) this login targets. Talent is the default
+     * — admin is not reachable from the public form.
      */
     public function role(): UserRole
     {
-        return UserRole::resolve($this->input('role'));
+        return UserRole::resolve($this->input('role'), UserRole::Talent);
     }
 
     /**

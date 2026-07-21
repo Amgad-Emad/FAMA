@@ -2,16 +2,16 @@
     <div x-data="adminFlow({{ $flow->id }})" x-cloak class="space-y-6">
         <a href="{{ route('admin.flows') }}" class="text-xs text-muted hover:text-ink">← {{ __('All flows') }}</a>
 
-        <div x-show="loading" class="py-10 text-center text-sm text-muted">{{ __('Loading…') }}</div>
+        <template x-if="loading"><div><x-admin.skeleton :rows="4" /></div></template>
 
         <template x-if="!loading && flow">
             <div class="space-y-6">
                 {{-- Header + lifecycle --}}
                 <x-ui.card class="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                        <h2 class="font-display text-2xl" x-text="flow.name"></h2>
+                        <h2 class="font-display text-2xl" x-text="$flowLabel(flow)"></h2>
                         <p class="mt-1 text-xs text-muted">
-                            <span x-text="flow.status"></span> · <span x-text="flow.applies_to || '{{ __('all categories') }}'"></span>
+                            <span :class="$pill(flow.status)" x-text="$statusLabel(flow.status)"></span> <span class="text-subtle">·</span> <span x-text="flow.applies_to ? $categoryLabel(flow.applies_to) : '{{ __('all categories') }}'"></span>
                             <template x-if="flow.is_default"><span class="ms-1 rounded-pill bg-accent-weak px-2 py-0.5 text-accent-ink">{{ __('default') }}</span></template>
                         </p>
                     </div>
@@ -35,7 +35,7 @@
                                 <span class="rounded-pill bg-elevated px-2 py-0.5 font-mono text-[10px] text-muted" x-text="step.step_type"></span>
                                 <template x-if="step.is_required"><span class="text-[10px] text-muted">{{ __('required') }}</span></template>
                                 <template x-if="step.is_skippable"><span class="text-[10px] text-muted">{{ __('skippable') }}</span></template>
-                                <button @click="removeStep(step)" class="ms-auto text-xs text-danger">{{ __('Remove') }}</button>
+                                <button @click="$confirm({ title: '{{ __('Remove this step?') }}', message: step.name, confirmLabel: '{{ __('Remove') }}' }).then(ok => ok && removeStep(step))" class="ms-auto text-xs text-danger">{{ __('Remove') }}</button>
                             </div>
                         </template>
                         <template x-if="!flow.steps.length"><p class="rounded-lg border border-dashed border-line py-6 text-center text-sm text-muted">{{ __('No steps yet.') }}</p></template>

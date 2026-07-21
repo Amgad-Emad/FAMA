@@ -31,7 +31,7 @@ class BrandCreativeNeed extends Model
     }
 
     /**
-     * Professions this brand hires ("all brands needing photographers").
+     * Skills this brand hires ("all brands needing photographers").
      *
      * @return BelongsToMany<TalentType, $this>
      */
