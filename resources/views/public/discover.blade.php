@@ -10,7 +10,8 @@
 
         <header class="mb-6">
             <x-ui.eyebrow>{{ __('Discovery') }}</x-ui.eyebrow>
-            <h1 class="mt-1 font-display text-4xl text-ink">{{ __('Find creative talent') }}</h1>
+            <h1 class="mt-1 font-display text-4xl leading-[1.05] text-ink sm:text-5xl">{{ __('Find creative talent') }}</h1>
+            <p class="mt-2 max-w-xl text-sm text-muted sm:text-base">{{ __('Egypt\'s creative roster — models, photographers, directors and more. Browse the book, filter by craft, and open a profile.') }}</p>
         </header>
 
         {{-- PRIMARY control: Skills — sticky under the site header while results scroll. --}}
@@ -82,36 +83,72 @@
                 </p>
             </div>
 
-            {{-- Skeleton loaders (mirror the card shape) --}}
-            <div x-show="loading" class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {{-- Skeleton loaders (mirror the mosaic: varied-height full-bleed tiles). --}}
+            <div x-show="loading" class="gap-4 [column-fill:_balance] columns-1 sm:columns-2 xl:columns-3">
                 <template x-for="n in skeletons" :key="n">
-                    <div class="overflow-hidden rounded-lg border border-line bg-surface">
-                        <div class="aspect-[4/3] animate-pulse bg-elevated"></div>
-                        <div class="space-y-2 p-4">
-                            <div class="h-2.5 w-16 animate-pulse rounded bg-elevated"></div>
-                            <div class="h-4 w-32 animate-pulse rounded bg-elevated"></div>
-                            <div class="h-3 w-40 animate-pulse rounded bg-elevated"></div>
-                        </div>
+                    <div class="mb-4 break-inside-avoid overflow-hidden rounded-lg border border-line bg-surface">
+                        <div class="animate-pulse bg-elevated"
+                             :class="{ 'aspect-[3/4]': n % 3 === 0, 'aspect-[4/5]': n % 3 === 1, 'aspect-[5/7]': n % 3 === 2 }"></div>
                     </div>
                 </template>
             </div>
 
-            <div x-show="!loading" x-cloak class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {{-- Editorial talent mosaic — image-forward, varied-height masonry. Each
+                 card is a full-bleed portrait with a gradient scrim; the name, craft
+                 and location live in an overlay, a frosted skill pill + views stat sit
+                 up top, and hover reveals a cinematic zoom + "View profile" affordance.
+                 Card heights vary deterministically by id (stable, no layout shift) to
+                 give the grid its lookbook rhythm. Data is exactly what the card
+                 resource already exposes — no extra queries. --}}
+            <div x-show="!loading" x-cloak class="gap-4 [column-fill:_balance] columns-1 sm:columns-2 xl:columns-3">
                 <template x-for="talent in results" :key="talent.slug">
-                    <a :href="'/' + talent.slug" class="group flex flex-col overflow-hidden rounded-lg border border-line bg-surface transition hover:shadow-e2">
-                        <div class="relative aspect-[4/3]">
-                            <template x-if="talent.avatar_url"><img :src="talent.avatar_url" class="h-full w-full object-cover" alt=""></template>
-                            <template x-if="!talent.avatar_url">
-                                <div class="flex h-full w-full items-center justify-center font-display text-4xl text-accent-ink"
-                                     style="background:linear-gradient(135deg, var(--accent-weak), var(--gold-weak));"
-                                     x-text="(talent.display_name || '?').slice(0,1)"></div>
+                    <a :href="'/' + talent.slug"
+                       class="group relative mb-4 block break-inside-avoid overflow-hidden rounded-lg border border-line bg-surface shadow-e1 transition duration-300 ease-out hover:-translate-y-1 hover:shadow-e3 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg">
+                        <div class="relative overflow-hidden"
+                             :class="{ 'aspect-[3/4]': talent.id % 3 === 0, 'aspect-[4/5]': talent.id % 3 === 1, 'aspect-[5/7]': talent.id % 3 === 2 }">
+                            {{-- Portrait --}}
+                            <template x-if="talent.avatar_url">
+                                <img :src="talent.avatar_url" alt="" loading="lazy"
+                                     class="h-full w-full object-cover transition duration-500 ease-out group-hover:scale-[1.06]">
                             </template>
-                        </div>
-                        <div class="flex flex-1 flex-col p-4">
-                            <div class="font-mono text-[10px] uppercase tracking-wider text-accent-ink" x-text="talent.primary_type?.name || ''"></div>
-                            <div class="mt-0.5 font-display text-xl text-ink group-hover:text-accent-ink" x-text="talent.display_name"></div>
-                            <div class="mt-1 text-sm text-muted" x-text="talent.headline"></div>
-                            <div class="mt-auto pt-3 text-xs text-subtle" x-text="[talent.city, talent.country].filter(Boolean).join(', ')"></div>
+                            {{-- Rich graphite placeholder with a watermark initial (kept dark
+                                 so the scrim + white overlay read identically to photo cards). --}}
+                            <template x-if="!talent.avatar_url">
+                                <div class="flex h-full w-full items-center justify-center"
+                                     style="background:linear-gradient(150deg, var(--accent-ink), #14161A);">
+                                    <span class="font-display text-7xl text-white/15" x-text="(talent.display_name || '?').slice(0,1)"></span>
+                                </div>
+                            </template>
+
+                            {{-- Scrim: dark at the foot, clear at the top; deepens on hover. --}}
+                            <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent transition-opacity duration-300 group-hover:from-black/90"></div>
+
+                            {{-- Top row: craft pill (start) + views (end). --}}
+                            <div class="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between gap-2 p-3">
+                                <span x-show="talent.primary_type?.name" x-cloak
+                                      class="rounded-pill bg-white/15 px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider text-white ring-1 ring-inset ring-white/25 backdrop-blur-md"
+                                      x-text="talent.primary_type?.name"></span>
+                                <span x-show="talent.view_count > 0" x-cloak
+                                      class="inline-flex items-center gap-1 rounded-pill bg-black/30 px-2 py-1 text-[10px] font-medium text-white/90 backdrop-blur-md">
+                                    <svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                                    <span x-text="talent.view_count"></span>
+                                </span>
+                            </div>
+
+                            {{-- Bottom overlay: name · craft/headline · location + hover CTA. --}}
+                            <div class="absolute inset-x-0 bottom-0 p-4">
+                                <h3 class="font-display text-2xl leading-tight text-white [text-shadow:0_1px_10px_rgba(0,0,0,.35)]" x-text="talent.display_name"></h3>
+                                <p x-show="talent.headline" x-cloak class="mt-0.5 line-clamp-1 text-sm text-white/80" x-text="talent.headline"></p>
+                                <div class="mt-2.5 flex items-center justify-between gap-2">
+                                    <span x-show="talent.city || talent.country" x-cloak class="inline-flex items-center gap-1 text-xs text-white/70">
+                                        <svg class="h-3 w-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                                        <span x-text="[talent.city, talent.country].filter(Boolean).join(', ')"></span>
+                                    </span>
+                                    <span class="ms-auto inline-flex translate-x-1 items-center gap-1 text-xs font-semibold text-white opacity-0 transition duration-300 ease-out group-hover:translate-x-0 group-hover:opacity-100">
+                                        {{ __('View profile') }} <span aria-hidden="true" class="rtl:rotate-180">→</span>
+                                    </span>
+                                </div>
+                            </div>
                         </div>
                     </a>
                 </template>

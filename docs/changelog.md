@@ -6,6 +6,16 @@ Notable changes to the Fama project. Newest first.
 
 A batch of moderation + i18n improvements from live review.
 
+- **Discovery redesigned as an editorial talent mosaic.** The public `/discover` grid went from uniform
+  4:3 text-under-image cards to an image-forward, varied-height **masonry** (`columns-1/2/3`,
+  `break-inside-avoid`): each talent is a full-bleed portrait with a gradient scrim, the name/craft/
+  location overlaid at the foot, a frosted primary-skill pill + a views stat up top, and a cinematic
+  hover (portrait zoom, deepening scrim, card lift, "View profile →" reveal). Card heights vary
+  deterministically by `id` (stable — no layout shift) for a lookbook rhythm; the no-avatar case is a
+  rich graphite placeholder with a watermark initial so it reads identically to photo cards. Skeleton
+  loaders mirror the new mosaic. **Blade + tokens only** — no controller/query/resource changes (the card
+  resource already exposed every field), so no new queries or N+1. Filter machinery untouched. AR added;
+  dark/light + RTL supported via tokens + logical properties. Verify RTL live.
 - **State-aware moderation toggles.** Suspend and Unpublish are now toggles that reflect the account's
   actual state: a suspended talent/brand shows **Reinstate** (→ unpublished), a hidden one shows
   **Publish**, a live one shows **Unpublish** (Publish hides while suspended — reinstate first). New
