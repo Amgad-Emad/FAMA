@@ -48,12 +48,6 @@ class AccountController extends BrandController
             throw new InvalidArgumentException(__('Finish onboarding before publishing.'));
         }
 
-        if ($publish && ! $brand->is_verified) {
-            throw new InvalidArgumentException(
-                __('Your brand is awaiting verification by our team. You can publish once it is approved.')
-            );
-        }
-
         $current = $brand->status->getValue();
         if ($publish && $current !== 'published') {
             $brand->status->transitionTo(Published::class);

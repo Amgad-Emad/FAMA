@@ -23,10 +23,8 @@ test('a talent can self-register and lands on the talent dashboard', function ()
     $talent = Talent::where('email', 'new-talent@example.com')->firstOrFail();
     expect($talent->display_name)->toBe('New Talent');
     expect($talent->slug)->not->toBeEmpty();
-    // Self-serve accounts start unpublished / draft AND unverified — an admin
-    // must verify before the profile can go public.
+    // Self-serve accounts start unpublished / draft (moderation funnel).
     expect((bool) $talent->is_published)->toBeFalse();
-    expect((bool) $talent->is_verified)->toBeFalse();
     expect($talent->status->getValue())->toBe('draft');
 });
 
@@ -44,7 +42,6 @@ test('a brand can self-register and lands on the brand dashboard', function () {
     $brand = Brand::where('email', 'new-brand@example.com')->firstOrFail();
     expect($brand->name)->toBe('New Brand Co');
     expect((bool) $brand->is_published)->toBeFalse();
-    expect((bool) $brand->is_verified)->toBeFalse();
     expect($brand->status->getValue())->toBe('registered');
 });
 

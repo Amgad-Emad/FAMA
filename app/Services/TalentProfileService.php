@@ -96,18 +96,9 @@ class TalentProfileService extends Service
 
     /**
      * Publish the profile (Draft/Unpublished → Live; guarded by ToLive).
-     *
-     * A profile cannot go public until an admin has verified it. The pre-check
-     * gives the talent a clear message; the ToLive guard is the hard backstop.
      */
     public function publish(Talent $talent): Talent
     {
-        if (! $talent->is_verified) {
-            throw new \InvalidArgumentException(
-                __('Your profile is awaiting verification by our team. You can publish once it is approved.')
-            );
-        }
-
         return $this->runInTransaction(function () use ($talent): Talent {
             $talent->status->transitionTo(Live::class);
 

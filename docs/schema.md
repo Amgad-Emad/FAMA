@@ -52,12 +52,6 @@ Deviations from the canonical schema (deliberate, per the standing decisions):
   translatable. Replaces the removed rate card (ADR-K).
 - `profile_blocks.block_type_id` is **restrict-on-delete** (deactivated block types are grandfathered,
   not deleted); all `talent_id` FKs cascade.
-- **Soft deletes on `reviews` (2026-07-31):** `deleted_at` (migration `2026_07_31_000100`) so an admin
-  can remove a review with an emailed reason notice while preserving the row for audit.
-- **`talents.is_verified` (2026-08-02, ADR-U):** boolean, default false (migration `2026_08_02_000100`,
-  mirrors `brands.is_verified`). An admin sign-off that is now a **hard prerequisite for going public** —
-  the `ToLive` (talent) / `ToPublished` (brand) transitions refuse to publish an unverified account. The
-  migration backfills `true` for already-live talents / published brands.
 - **State machine columns (Phase 1B):** `status` added to `talents`, `profile_blocks`, `reviews`,
   `portfolio_items` (spatie/laravel-model-states). The existing booleans are kept as synced projections
   (see `docs/architecture.md` → state machines table).
@@ -177,47 +171,9 @@ uploads via medialibrary, `embed_url` external, `caption` translatable).
   old/new under **`attribute_changes`** (collection); `properties` holds ad-hoc custom data. The
   `LogOptions` method is `dontLogEmptyChanges()` — there is no `dontSubmitEmptyLogs()`.
 
-## Feed (Phase 5B — migrated)
-
-- **Ten feed tables** (`2026_07_22_000100`, schema-master §7, ADR-F1…F8): `posts` (morph author;
-  `post_type` enum note/media/project_share; `body` longText; `project_id` → projects nullOnDelete +
-  `shared_snapshot` JSON — ADR-F2; `state` for PostState; counters; `published_at`/`edited_at`/
-  `is_pinned`; soft deletes; indexes `(author_type, author_id, published_at)`, `(state, published_at)`,
-  `(project_id)`), `post_skill` (composite-PK pivot to `talent_types`), `comments` (self `parent_id`,
-  depth ≤ 2 — ADR-F7; morph author; counters; CommentState; soft deletes; index
-  `(post_id, parent_id, created_at)`), `likes` (double morph, `likes_unique` — the ToggleLike
-  idempotency backstop), `follows` (double morph, append-only `created_at`, `follows_unique`),
-  `mentions` (double morph + `start_offset`/`length` — ADR-F3), `link_previews` (`url_hash` CHAR(64)
-  unique; parse fields + enrichment fields; status pending/ok/failed — ADR-F4), `linked_urls` (morph
-  linkable → preview, positioned), `post_reports` (morph reportable post|comment + morph reporter;
-  reason string(40) keyed to config `feed.report_reasons` (widened from enum, 2026_07_22_000600) + status enum; `resolved_by` → users; one-per-reporter unique), `feed_seen` (morph viewer ×
-  post, `seen_at`, unique + `(viewer_type, viewer_id, seen_at)` index).
-- **Counter columns** (ADR-F6): `talents.followers_count/following_count/posts_count`,
-  `brands.following_count` — mutated only via `CounterService` from observers (Like/Comment/Follow/
-  PostObserver) inside the writing transaction; clamped at zero; reconciled by
-  **`feed:reconcile-counters`** (scheduled daily 03:10; `comments.replies_count` reconciles through a
-  derived-table join — MySQL 1093). `posts_count` counts **currently-published, non-deleted** posts.
-- **Enforced aliased morph map** (`2026_07_22_000200`, ADR-F1): `Relation::enforceMorphMap` over
-  `App\Support\MorphMap` — every model, aliased snake_case (`talent`, `brand`, `user`, `post`,
-  `comment`, `project`, …, plus `media`/`role`/`permission`). The data migration rewrote legacy FQCN
-  morph values in `media`, `activity_log`, `model_has_roles`, `model_has_permissions`,
-  `personal_access_tokens`, `contract_steps`, `contract_messages`. **Aliases are frozen — changing one
-  is a data migration.** After deploying, flush the spatie permission cache.
-
-## Feed revisions (5X/5Z — migrated)
-
-- **`bookmarks`** (5X): double-morph saves (`bookmarker` × `bookmarkable`), unique ×4, posts-only by
-  policy; `posts.bookmarks_count` denormalized + reconciled. Collections are private (ADR-F9).
-- **`suggestion_dismissals`** (5Z): `actor` × `suggestible` double morph, unique ×4, append-only —
-  a dismissed follow suggestion never returns. **`brands.followers_count`** landed with
-  `feed.allow_following_brands = true` (the schema-master §7 deliberate omission is closed);
-  maintained by FollowObserver, reconciled nightly.
-
 ## Not yet built
 
 - **Mobile API** (Phase 4) — Sanctum tokens + Scribe docs over the existing services/resources.
-- **Feed HTTP layer + notifications tables** — land with Prompts 5C–5K (Laravel `notifications`
-  table migration ships with 5J).
 
 ## Open schema items (from the specs / decisions)
 - Discovery/search (ADR-6): **applied for both talent (Phase 1C) and brand (Phase 2A)** sides.

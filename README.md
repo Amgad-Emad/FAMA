@@ -25,9 +25,7 @@ that walks a brand and a talent through booking, quoting, contracting, payment, 
 - **Admin** (`admin` guard + spatie/laravel-permission RBAC) — flow builder, moderation queues (incl. a
   **global review queue** across talent + brand reviews), projects oversight, the **contract intervention
   console**, activity log, settings, and admin users, all reachable from a permission-gated sidebar +
-  dashboard cards. **Verification is a hard go-live gate (ADR-U):** no talent or brand reaches the public
-  until an admin **Verifies** it (`is_verified` guards the publish transitions); moderators can also
-  remove a review with an emailed reason notice (live-preview composer). **Block governance is split (ADR-T):** the **Block catalog** (`/admin/blocks`,
+  dashboard cards. **Block governance is split (ADR-T):** the **Block catalog** (`/admin/blocks`,
   `manage-blocks`) owns which blocks exist and who may use them (eligibility + grandfathering); the
   **Skills templates** page (`/admin/skills`) only picks each skill's preselected blocks and their order
   from the catalog-eligible set.
@@ -77,44 +75,9 @@ that walks a brand and a talent through booking, quoting, contracting, payment, 
 > the payload, not merely hidden in the view. A contract links to its project via
 > `contracts.brand_project_id` (ADR-F, landed).
 
-**Phase 5 complete — the public Feed** (spec: `docs/specs/feed-spec.md`; rulings ADR-F1…F8;
-performance contract: `docs/performance.md`; design: `docs/design-system.md`): talents publish
-notes, media sets and Project shares; talents + brands follow, like, comment and reply (two-level
-threads with tombstones); guests read everything and any write is captured, replayed after login,
-and returned to the exact post anchor. Two-tier seeded ranking with provably-stable cached-ID
-pagination, casting strips, filtered modes (`?skill=`, `?following=1`), mention/link parsing with
-bidi-safe rendering and SSRF-guarded enrichment, aggregated database notifications, the feed-scoped
-**Daylight** design system (notched frames, blue shadows, editorial credits), a moderation console
-with an auto-hide threshold, and an `/api/v1` Sanctum mirror documented by Scribe
-(**190 endpoints**, 45 domain tables + the notifications table). A revision batch (5S–5Y) re-grounded
-the palette in the topbar colour with a test-enforced WCAG contrast gate, unified the mention
-autocomplete, made chips fully replace raw URLs (inline SVG glyph sprite), rebuilt Project spreads
-as full previews, added private **Saved/Liked** collections (bookmarks, ADR-F9) and the feed's
-motion layer (entrances, the light response, condensing chrome) — 4 more endpoints + the
-`bookmarks` table. The **feed rails** (5Z–5AA) followed: a tiered, reason-carrying follow-suggestion
-engine (dismissals, truthful bilingual reason lines, per-actor caching) feeding two sidebars —
-portrait TALENT TO FOLLOW inline-start, square BRANDS TO FOLLOW inline-end — with talent→brand
-following enabled (`brands.followers_count`), optimistic follow/dismiss with undo, guest gating
-with intent replay, and responsive fallbacks to inline strips (**200 endpoints** total).
-**Round 3** (5AB–5AI) finished the interaction surface: a single z-index scale with a fixed
-opaque topbar (Feed-first nav, scroll hide/reveal), floating New-post/back-to-top actions, a
-rebuilt action bar with a share popover and overflow menu, generic media-grid geometry with a
-teleported lightbox and per-image ALT text, a seven-reason config-driven report flow with honest
-confirmations and a toast rack, a reworked comment thread (collapsed composer, optimistic
-pending rows with retry), the mention autocomplete portalled above every clipping container
-(browser-verified), and a rebuilt New-post modal (pinned chrome, real-grid media preview,
-publish hints, dirty-close confirm) — plus a `window.famaLang` bridge so every runtime string
-localizes, and a full Arabic pass over the feed's UI copy. A **dashboard follow-management** surface
-(FOLLOWING / FOLLOWERS sub-tabs on both the talent and brand dashboards) then turned the follow graph
-into a pruning tool: mixed-type cards shaped by type (portrait talents, square brands), a denormalized
-`talents.last_posted_at` powering a "quiet since" signal and a least-active sort, a mutual "follows
-you back" badge, server-side search / type / Skill filters, optimistic unfollow with in-place undo,
-and a strict privacy boundary keeping the dashboard-only signals out of the public listing.
-
-**Deferred — Phase 4:** the full mobile API (Sanctum tokens + Scribe docs) over the existing
-services/resources (the feed's `/api/v1` mirror lands with Phase 5, Prompt 5K); and wiring the public
-profile's interim **Message** CTA (ADR-P) into the real brand→talent messaging / contract-initiation
-flow it reserves.
+**Next — Phase 4:** the mobile API (Sanctum tokens + Scribe docs) over the existing services/resources;
+and wiring the public profile's interim **Message** CTA (ADR-P) into the real brand→talent messaging /
+contract-initiation flow it reserves.
 
 ## Stack
 

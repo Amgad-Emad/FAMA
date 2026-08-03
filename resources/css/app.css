@@ -11,9 +11,6 @@
 */
 @custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
 
-/* Daylight — the feed's second, scoped design system (Prompt 5L). */
-@import './daylight.css';
-
 /* Content sources scanned for utility classes. */
 @source '../**/*.blade.php';
 @source '../**/*.js';
@@ -44,26 +41,6 @@
     --e2: 0 6px 16px -8px rgba(26, 26, 28, .14), 0 2px 6px -3px rgba(26, 26, 28, .08);
     --e3: 0 18px 40px -14px rgba(26, 26, 28, .20), 0 6px 14px -10px rgba(26, 26, 28, .12);
     --e4: 0 36px 80px -24px rgba(26, 26, 28, .34);
-    /* The single z-index scale (Feed round 3, 5AB). Every layer references a
-       token — no raw z-index values anywhere in the feed. The autocomplete
-       sits ABOVE the modal because it renders inside it. */
-    --z-base: 0;
-    --z-frame-raised: 1;
-    --z-rail: 10;
-    --z-sticky: 20;
-    --z-topbar: 100;
-    --z-fab: 200;
-    --z-popover: 300;
-    --z-modal-backdrop: 400;
-    --z-modal: 410;
-    --z-autocomplete: 420;
-    /* The global confirm dialog sits ABOVE any modal (e.g. it confirms closing
-       the composer modal, so it must layer over it). */
-    --z-confirm: 460;
-    --z-toast: 500;
-    /* Fixed topbar height — page wrappers pad by it, sticky things offset
-       against it, and html gets scroll-padding so anchors never land under it. */
-    --topbar-h: 4rem;
     --dur-1: 90ms; --dur-2: 160ms; --dur-3: 260ms; --dur-4: 420ms; --dur-5: 680ms;
     --ease-out: cubic-bezier(.16, 1, .3, 1); --ease-in-out: cubic-bezier(.65, 0, .35, 1);
     --ease-spring: cubic-bezier(.34, 1.4, .64, 1); --ease-in: cubic-bezier(.4, 0, 1, 1);
@@ -137,98 +114,6 @@
     --shadow-e2: var(--e2);
     --shadow-e3: var(--e3);
     --shadow-e4: var(--e4);
-
-    /* Daylight (feed) named tokens — usable as bg-ground, bg-surface-sunk,
-       text-daylight, text-ink-faint, border-seam, … anywhere, but they only
-       carry values inside a [data-surface='daylight'] scope
-       (resources/css/daylight.css). 5S re-grounded the ramp in the topbar
-       colour; sand/sand-deep/chalk are retired. */
-    --color-ground: var(--dl-ground);
-    --color-ground-sunk: var(--dl-ground-sunk);
-    --color-surface-sunk: var(--dl-surface-sunk);
-    --color-ink-faint: var(--dl-ink-faint);
-    --color-daylight: var(--dl-daylight);
-    --color-veil: var(--dl-veil);
-    --color-seam: var(--dl-seam);
-}
-
-/* The fixed topbar contract (5AB): anchor links and comment deep links must
-   never land underneath the bar. */
-html {
-    scroll-padding-block-start: calc(var(--topbar-h) + 16px);
-}
-
-/* The topbar itself: fixed, opaque ground, a seam hairline that fades in
-   only once the page has scrolled (the bar and the ground are the same
-   colour by design — the hairline is the only separator, and only when
-   content actually passes underneath). Under 1100px it hides on scroll-down
-   and reveals on scroll-up (resources/js/topbar.js). */
-.site-topbar {
-    position: fixed;
-    inset-block-start: 0;
-    inset-inline: 0;
-    z-index: var(--z-topbar);
-    background: var(--bg);
-    block-size: var(--topbar-h);
-}
-
-.site-topbar::after {
-    content: '';
-    position: absolute;
-    inset-inline: 0;
-    inset-block-end: 0;
-    block-size: 1px;
-    background: var(--line);
-    opacity: 0;
-    transition: opacity var(--dur-2) var(--ease-out);
-}
-
-.site-topbar.is-scrolled::after {
-    opacity: 1;
-}
-
-@media (max-width: 1099px) {
-    .site-topbar {
-        transition: transform var(--dur-3) var(--ease-out);
-    }
-
-    .site-topbar.is-hidden {
-        transform: translateY(-100%);
-    }
-}
-
-/* The gestural active-nav underline (5AB): a hand-drawn stroke that draws in
-   via stroke-dashoffset. aria-current carries the semantic signal. */
-.nav-underline {
-    position: relative;
-}
-
-.nav-underline svg {
-    position: absolute;
-    inset-inline: 0;
-    inset-block-end: -6px;
-    inline-size: 100%;
-    block-size: 6px;
-    overflow: visible;
-}
-
-.nav-underline svg path {
-    stroke: var(--accent);
-    stroke-width: 2;
-    fill: none;
-    stroke-linecap: round;
-    stroke-dasharray: 60;
-    stroke-dashoffset: 60;
-    animation: nav-stroke var(--dur-4) var(--ease-out) forwards;
-}
-
-@keyframes nav-stroke {
-    to { stroke-dashoffset: 0; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .nav-underline svg path { animation-duration: .01ms; }
-    .site-topbar { transition: none; }
 }
 
 /* Base element styles (from the design system). */
@@ -292,15 +177,3 @@ body {
     background: color-mix(in srgb, currentColor 14%, transparent);
     white-space: nowrap;
 }
-
-/* Rendered rich text (project summary / body) — sanitized HTML from the
-   lightweight editor. Kept minimal and token-based. */
-.prose-rich > p { margin-block: 0.55em; }
-.prose-rich > p:first-child { margin-block-start: 0; }
-.prose-rich strong, .prose-rich b { font-weight: 700; }
-.prose-rich em, .prose-rich i { font-style: italic; }
-.prose-rich a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
-.prose-rich ul { list-style: disc; padding-inline-start: 1.3rem; margin-block: 0.5em; }
-.prose-rich ol { list-style: decimal; padding-inline-start: 1.3rem; margin-block: 0.5em; }
-.prose-rich li { margin-block: 0.2em; }
-.prose-rich br { content: ""; }

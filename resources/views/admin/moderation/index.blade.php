@@ -313,8 +313,6 @@
                         <span class="flex gap-1.5">
                             <button @click="$confirm({ title: '{{ __('Approve this review?') }}', message: '{{ __('The review becomes publicly visible.') }}', confirmLabel: '{{ __('Approve') }}', tone: 'accent' }).then(ok => ok && action(detail,'approve'))" class="rounded-pill border border-line px-2.5 py-1 text-xs text-success hover:border-success">{{ __('Approve') }}</button>
                             <button @click="$confirm({ title: '{{ __('Reject this review?') }}', message: '{{ __('The review is hidden and will not be published.') }}', confirmLabel: '{{ __('Reject') }}' }).then(ok => ok && action(detail,'reject'))" class="rounded-pill border border-line px-2.5 py-1 text-xs text-danger hover:border-danger">{{ __('Reject') }}</button>
-                            {{-- Delete a talent review with a notice email (compose + live preview). --}}
-                            <button x-show="detailKind === 'reviews'" @click="openDeleteReview(detail)" class="rounded-pill bg-danger px-2.5 py-1 text-xs text-white hover:opacity-90">{{ __('Delete…') }}</button>
                         </span>
                     </template>
                     <template x-if="detailKind === 'brands'">
@@ -338,78 +336,5 @@
                 </footer>
             </aside>
         </div>
-
-        {{-- ── Delete-review composer (email + reason + LIVE PREVIEW) ──────── --}}
-        <template x-teleport="body">
-            <div x-show="del.open" x-cloak class="fixed inset-0 z-[70] flex items-center justify-center p-4 sm:p-6"
-                 role="dialog" aria-modal="true" aria-labelledby="del-title" @keydown.escape.window="del.open && closeDeleteReview()">
-                <div class="absolute inset-0" style="background: var(--scrim);" @click="closeDeleteReview()"></div>
-
-                <div class="relative flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-e4">
-                    <div class="flex items-start justify-between gap-4 border-b border-line px-6 py-4">
-                        <div>
-                            <h2 id="del-title" class="font-display text-xl text-ink">{{ __('Delete review & notify') }}</h2>
-                            <p class="mt-0.5 text-sm text-muted">{{ __('The review is removed and this email is sent explaining why.') }}</p>
-                        </div>
-                        <button type="button" @click="closeDeleteReview()" aria-label="{{ __('Close') }}" class="grid h-9 w-9 shrink-0 place-items-center rounded-pill text-lg text-subtle transition hover:bg-elevated hover:text-ink">✕</button>
-                    </div>
-
-                    <div class="grid min-h-0 flex-1 gap-0 overflow-hidden md:grid-cols-2">
-                        {{-- Compose --}}
-                        <div class="space-y-4 overflow-y-auto border-b border-line p-6 md:border-b-0 md:border-e">
-                            <div>
-                                <label class="mb-1 block text-sm font-medium text-ink">{{ __('To (email)') }}</label>
-                                <input type="email" x-model="del.email" class="w-full rounded-md border-line bg-elevated text-ink shadow-sm focus:border-accent focus:ring-accent" placeholder="name@example.com">
-                                <p x-show="del.errors.email" x-cloak class="mt-1 text-xs text-danger" x-text="del.errors.email?.[0]"></p>
-                            </div>
-                            <div>
-                                <label class="mb-1 block text-sm font-medium text-ink">{{ __('Subject') }}</label>
-                                <input type="text" x-model="del.subject" class="w-full rounded-md border-line bg-elevated text-ink shadow-sm focus:border-accent focus:ring-accent">
-                                <p x-show="del.errors.subject" x-cloak class="mt-1 text-xs text-danger" x-text="del.errors.subject?.[0]"></p>
-                            </div>
-                            <div>
-                                <label class="mb-1 block text-sm font-medium text-ink">{{ __('Reason for removal') }}</label>
-                                <textarea x-model="del.reason" rows="6" class="w-full rounded-md border-line bg-elevated text-ink shadow-sm focus:border-accent focus:ring-accent" placeholder="{{ __('Explain why this review is being removed…') }}"></textarea>
-                                <p x-show="del.errors.reason" x-cloak class="mt-1 text-xs text-danger" x-text="del.errors.reason?.[0]"></p>
-                            </div>
-                        </div>
-
-                        {{-- Live preview — mirrors emails/review-removed.blade.php --}}
-                        <div class="min-h-0 overflow-y-auto bg-bg p-6">
-                            <p class="mb-3 font-mono text-[10px] uppercase tracking-wider text-subtle">{{ __('Live preview') }}</p>
-                            <div class="rounded-xl border border-line bg-surface p-5 text-sm">
-                                <div class="font-display text-lg text-ink">Fama<span class="text-accent">.</span></div>
-                                <div class="mt-3 rounded-xl border border-line bg-bg p-4">
-                                    <p class="text-[13px] text-subtle">{{ __('Subject') }}: <span class="text-ink" x-text="del.subject || '—'"></span></p>
-                                    <h3 class="mt-3 font-display text-lg text-ink">{{ __('A review was removed') }}</h3>
-                                    <p class="mt-2 text-[13px] leading-relaxed text-muted">{{ __('Our team removed a review on Fama. Here is why:') }}</p>
-                                    <div class="mt-3 whitespace-pre-wrap rounded-lg border-s-[3px] border-accent bg-accent-weak p-3 text-[13px] leading-relaxed text-accent-ink" x-text="del.reason || '{{ __('Your reason will appear here…') }}'"></div>
-                                    <template x-if="del.review?.body">
-                                        <div>
-                                            <p class="mt-4 font-mono text-[10px] uppercase tracking-wider text-subtle">{{ __('The removed review') }}</p>
-                                            <div class="mt-1 rounded-lg border border-line p-3 text-[13px]">
-                                                <div class="tracking-widest text-gold" x-text="'★'.repeat(del.review?.rating || 0) + '☆'.repeat(5 - (del.review?.rating || 0))"></div>
-                                                <p class="mt-1 text-ink" x-text="'&quot;' + (del.review?.body || '') + '&quot;'"></p>
-                                                <p class="mt-1 text-xs text-subtle" x-text="'— ' + (del.review?.reviewer_name || '') + (del.review?.talent ? ' · {{ __('on') }} ' + del.review.talent : '')"></p>
-                                            </div>
-                                        </div>
-                                    </template>
-                                    <p class="mt-4 text-[13px] leading-relaxed text-muted">{{ __('If you believe this was a mistake, reply to this email and our team will take another look.') }}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="flex items-center justify-end gap-3 border-t border-line px-6 py-4">
-                        <button type="button" @click="closeDeleteReview()" class="rounded-pill border border-line-strong px-4 py-2 text-sm font-medium text-ink hover:bg-elevated">{{ __('Cancel') }}</button>
-                        <button type="button" @click="submitDeleteReview()" :disabled="del.sending"
-                                class="inline-flex items-center gap-2 rounded-pill bg-danger px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60">
-                            <span x-show="del.sending" class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white"></span>
-                            {{ __('Delete & send email') }}
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </template>
     </div>
 </x-admin-layout>

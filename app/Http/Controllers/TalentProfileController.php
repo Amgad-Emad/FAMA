@@ -22,25 +22,13 @@ class TalentProfileController extends Controller
      * Show a published talent's public profile by slug (404 otherwise). The active
      * tab comes from `?skill=` (when that skill has visible blocks) or the primary.
      */
-    public function show(string $slug, \App\Feed\CurrentActor $currentActor, \App\Services\FollowService $follows): View
+    public function show(string $slug): View
     {
         $talent = $this->publishedProfile($slug);
 
         TalentProfileViewed::dispatch($talent);
 
-        // The viewer's follow state (one bulk query) so the CTA reflects it.
-        // The button is hidden on your own profile (self-follow is forbidden).
-        $actor = $currentActor->resolve();
-        $isSelf = $actor instanceof Talent && (int) $actor->getKey() === (int) $talent->id;
-        $following = $actor !== null
-            ? ($follows->isFollowing($actor, collect([$talent]))['talent:'.$talent->id] ?? false)
-            : false;
-
-        return view('talent.profile', [
-            'talent' => $talent,
-            'canFollow' => ! $isSelf,
-            'following' => $following,
-        ]);
+        return view('talent.profile', ['talent' => $talent]);
     }
 
     /**

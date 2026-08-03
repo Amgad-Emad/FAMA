@@ -88,11 +88,3 @@ Route::get('/reviews/data', [ReviewController::class, 'data'])->name('reviews.da
 Route::get('/account', [AccountController::class, 'index'])->name('account');
 Route::patch('/account', [AccountController::class, 'update'])->name('account.update');
 Route::patch('/account/publish', [AccountController::class, 'publish'])->name('account.publish');
-
-// Feed collection (5X, ADR-F9 — private to the owner).
-Route::get('/feed/saved', [\App\Http\Controllers\Brand\FeedCollectionController::class, 'saved'])->name('feed.saved');
-Route::get('/feed/saved/data', [\App\Http\Controllers\Brand\FeedCollectionController::class, 'data'])->name('feed.saved.data');
-
-// Follow-graph management (FOLLOWING / FOLLOWERS sub-tabs).
-Route::get('/feed/follows', [\App\Http\Controllers\Brand\FollowsController::class, 'index'])->name('feed.follows');
-Route::get('/feed/follows/data', [\App\Http\Controllers\Brand\FollowsController::class, 'data'])->name('feed.follows.data');

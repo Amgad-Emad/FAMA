@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Models\Concerns\HasFeedIdentity;
 use App\States\TalentProfile\TalentProfileState;
 use Database\Factories\TalentFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -29,10 +28,10 @@ use Spatie\Translatable\HasTranslations;
  * uploaded asset served from the media library (accessor below). headline/bio
  * are translatable.
  */
-class Talent extends Authenticatable implements \App\Feed\Actor, HasMedia
+class Talent extends Authenticatable implements HasMedia
 {
     /** @use HasFactory<TalentFactory> */
-    use HasApiTokens, HasFactory, HasFeedIdentity, HasStates, HasTranslations, InteractsWithMedia, Notifiable, SoftDeletes;
+    use HasApiTokens, HasFactory, HasStates, HasTranslations, InteractsWithMedia, Notifiable, SoftDeletes;
 
     /**
      * Explicit table — the inflector leaves "talent" unpluralized.
@@ -51,7 +50,7 @@ class Talent extends Authenticatable implements \App\Feed\Actor, HasMedia
         'slug', 'display_name', 'headline', 'bio',
         'status', 'base_city', 'base_country', 'booking_type', 'booking_value',
         'rate_unit', 'rate_amount', 'rate_currency',
-        'is_verified', 'is_published', 'published_at', 'view_count', 'meta',
+        'is_published', 'published_at', 'view_count', 'meta',
     ];
 
     /**
@@ -81,10 +80,8 @@ class Talent extends Authenticatable implements \App\Feed\Actor, HasMedia
             'email_verified_at' => 'datetime',
             'last_login_at' => 'datetime',
             'published_at' => 'datetime',
-            'last_posted_at' => 'datetime',
             'password' => 'hashed',
             'is_active' => 'boolean',
-            'is_verified' => 'boolean',
             'is_published' => 'boolean',
             'meta' => 'array',
             'view_count' => 'integer',

@@ -61,8 +61,8 @@ class BlockContentController extends TalentController
             'projects' => ['model' => Project::class, 'relation' => 'projects', 'label' => 'Projects', 'labelField' => 'title', 'media' => 'cover', 'thumb' => 'cover_image_url', 'skill_scoped' => true, 'fields' => [
                 ['title', 'translatable', ['required']],
                 ['client_name', 'text', []],
-                ['summary', 'translatable', [], true],
-                ['body', 'translatable', [], true],
+                ['summary', 'translatable', []],
+                ['body', 'translatable', []],
                 ['year', 'number', []],
                 ['url', 'url', []],
             ]],
@@ -96,7 +96,7 @@ class BlockContentController extends TalentController
             'config' => [
                 'label' => $config['label'],
                 'media' => $config['media'],
-                'fields' => array_map(fn ($f) => ['name' => $f[0], 'kind' => $f[1], 'options' => $f[2], 'rich' => $f[3] ?? false], $config['fields']),
+                'fields' => array_map(fn ($f) => ['name' => $f[0], 'kind' => $f[1], 'options' => $f[2]], $config['fields']),
                 // Skill-scoped content (projects) exposes a skill selector (ADR-Q).
                 'skill_scoped' => $config['skill_scoped'] ?? false,
                 'skills' => ($config['skill_scoped'] ?? false)
@@ -121,7 +121,7 @@ class BlockContentController extends TalentController
     public function store(Request $request, string $type): JsonResponse
     {
         $config = $this->config($type);
-        $data = $this->sanitizeRich($request->validate($this->rules($config)), $config);
+        $data = $request->validate($this->rules($config));
         // Append at the end when no position is given (the front-end blank sends
         // null); `position` is a NOT NULL column, so never insert null.
         $data['position'] = $data['position'] ?? $this->talent()->{$config['relation']}()->count();
@@ -138,35 +138,9 @@ class BlockContentController extends TalentController
     {
         $config = $this->config($type);
         $item = $this->find($config, $id);
-        $item->update($this->sanitizeRich($request->validate($this->rules($config)), $config));
+        $item->update($request->validate($this->rules($config)));
 
         return response()->success($this->present($item, $config), __('Saved.'));
-    }
-
-    /**
-     * Clean the HTML of rich translatable fields (summary/body) with the shared
-     * allowlist sanitizer — the rich-text editor submits markup, so it is
-     * sanitized on the way in (and re-sanitized on render, defence in depth).
-     *
-     * @param  array<string, mixed>  $data
-     * @param  array<string, mixed>  $config
-     * @return array<string, mixed>
-     */
-    private function sanitizeRich(array $data, array $config): array
-    {
-        foreach ($config['fields'] as $f) {
-            if (($f[3] ?? false) !== true || ! is_array($data[$f[0]] ?? null)) {
-                continue;
-            }
-
-            foreach (['en', 'ar'] as $loc) {
-                if (isset($data[$f[0]][$loc]) && $data[$f[0]][$loc] !== '') {
-                    $data[$f[0]][$loc] = \App\Support\Html\BriefSanitizer::clean((string) $data[$f[0]][$loc]);
-                }
-            }
-        }
-
-        return $data;
     }
 
     public function destroy(string $type, int $id): JsonResponse

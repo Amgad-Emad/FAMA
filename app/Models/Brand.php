@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Models\Concerns\HasFeedIdentity;
 use App\States\Brand\BrandState;
 use Database\Factories\BrandFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -26,10 +25,10 @@ use Spatie\Translatable\HasTranslations;
  * one-way admin trust upgrade. Logo + cover are medialibrary collections (ADR-5),
  * not columns; `description` is translatable.
  */
-class Brand extends Authenticatable implements \App\Feed\Actor, HasMedia
+class Brand extends Authenticatable implements HasMedia
 {
     /** @use HasFactory<BrandFactory> */
-    use HasApiTokens, HasFactory, HasFeedIdentity, HasStates, HasTranslations, InteractsWithMedia, Notifiable, SoftDeletes;
+    use HasApiTokens, HasFactory, HasStates, HasTranslations, InteractsWithMedia, Notifiable, SoftDeletes;
 
     protected $table = 'brands';
 

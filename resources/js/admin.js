@@ -222,55 +222,6 @@ document.addEventListener('alpine:init', () => {
             this.selected = [];
             await this.load();
         },
-
-        // --- Delete-review composer (email notice + reason + live preview) ---
-        // Removing a review sends the reviewed talent a notice explaining why.
-        // The modal composes that email (recipient, subject, reason) with a live
-        // preview that mirrors the emails/review-removed.blade.php template.
-        del: { open: false, review: null, email: '', subject: '', reason: '', sending: false, errors: {} },
-        openDeleteReview(review) {
-            this.del = {
-                open: true,
-                // Reviews are anonymous, so the notice defaults to the reviewed
-                // talent's email (editable).
-                review: {
-                    id: review.id,
-                    reviewer_name: review.reviewer_name,
-                    talent: review.talent_name || review.talent || '',
-                    rating: review.rating,
-                    body: review.body,
-                },
-                email: review.talent_email || '',
-                subject: 'A review was removed from your Fama profile',
-                reason: '',
-                sending: false,
-                errors: {},
-            };
-        },
-        closeDeleteReview() { this.del.open = false; },
-        async submitDeleteReview() {
-            if (this.del.sending) return;
-            this.del.sending = true;
-            this.del.errors = {};
-            try {
-                await post(`/admin/moderation/reviews/${this.del.review.id}/delete`, {
-                    email: this.del.email,
-                    subject: this.del.subject,
-                    reason: this.del.reason,
-                });
-                this.del.open = false;
-                this.closeDetail();
-                await this.load();
-            } catch (e) {
-                if (e instanceof ApiError && e.status === 422) {
-                    this.del.errors = e.errors || {};
-                } else if (e instanceof ApiError) {
-                    window.alert(e.message);
-                }
-            } finally {
-                this.del.sending = false;
-            }
-        },
     }));
 
     // --- Skills template manager ----------------------------------------

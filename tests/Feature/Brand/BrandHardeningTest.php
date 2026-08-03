@@ -120,16 +120,6 @@ it('publishes then unpublishes a complete brand', function () {
         ->assertOk()->assertJsonPath('data.is_published', false);
 });
 
-it('refuses to publish an unverified brand (awaiting admin approval) (422)', function () {
-    $brand = Brand::factory()->unverified()->create(['status' => 'complete', 'is_published' => false]);
-
-    $this->actingAs($brand, 'brand')->patchJson('/brand/account/publish', ['publish' => true])
-        ->assertStatus(422);
-
-    expect((bool) $brand->fresh()->is_published)->toBeFalse();
-    expect($brand->fresh()->status->getValue())->toBe('complete');
-});
-
 it('rejects an illegal campaign transition over HTTP (422)', function () {
     $this->seed(TalentTypeSeeder::class);
     $brand = Brand::factory()->create();

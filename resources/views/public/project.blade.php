@@ -19,8 +19,7 @@
         @endif
 
         @if ($project->summary)
-            {{-- Rich text (sanitized on save; re-cleaned here, defence in depth). --}}
-            <div class="prose-rich mt-8 font-display text-xl leading-relaxed text-ink">{!! \App\Support\Html\BriefSanitizer::clean((string) $project->summary) !!}</div>
+            <p class="mt-8 font-display text-xl leading-relaxed text-ink">{{ $project->summary }}</p>
         @endif
 
         @if (! empty($project->results))
@@ -32,7 +31,11 @@
         @endif
 
         @if ($project->body)
-            <div class="prose-rich mt-8 leading-relaxed text-ink">{!! \App\Support\Html\BriefSanitizer::clean((string) $project->body) !!}</div>
+            <div class="mt-8 space-y-4">
+                @foreach (preg_split('/\n{2,}/', (string) $project->body) as $paragraph)
+                    <p class="leading-relaxed text-ink">{{ $paragraph }}</p>
+                @endforeach
+            </div>
         @endif
 
         @if ($project->url)

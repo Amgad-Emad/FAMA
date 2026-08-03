@@ -31,7 +31,6 @@
             'budget_tier' => $brand->creativeNeed?->budget_tier,
         ],
         'published' => (bool) $brand->is_published,
-        'verified' => (bool) $brand->is_verified,
         'moods' => $moods,
         'platforms' => $platforms,
     ];
@@ -39,31 +38,16 @@
 
 <x-brand-layout :title="__('Profile editor')">
     <div x-data="brandProfile(@js($initial))" class="space-y-8">
-        {{-- Awaiting verification: an admin must approve before going public. --}}
-        <div x-show="!isVerified && !published" x-cloak
-             class="flex items-start gap-3 rounded-xl border border-warn/40 bg-warn/10 p-4">
-            <span class="mt-0.5 text-warn">⏳</span>
-            <div>
-                <p class="font-medium text-ink">{{ __('Awaiting verification') }}</p>
-                <p class="mt-0.5 text-sm text-muted">{{ __('Our team is reviewing your brand. You can keep editing now — the Publish button unlocks once your account is verified.') }}</p>
-            </div>
-        </div>
-
         {{-- Publishing (folded in from the old Account tab) --}}
         <section class="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-line bg-surface p-6 shadow-e1">
             <div>
                 <div class="flex items-center gap-2">
-                    <span class="h-2.5 w-2.5 rounded-pill" :class="published ? 'bg-success' : (isVerified ? 'bg-warn' : 'bg-muted')"></span>
+                    <span class="h-2.5 w-2.5 rounded-pill" :class="published ? 'bg-success' : 'bg-warn'"></span>
                     <h3 class="font-display text-lg text-ink">{{ __('Visibility') }}</h3>
-                    <template x-if="isVerified">
-                        <span class="rounded-pill bg-accent-weak px-2 py-0.5 text-xs text-accent-ink">{{ __('verified') }}</span>
-                    </template>
                 </div>
                 <p class="mt-0.5 text-sm text-muted" x-text="published ? '{{ __('Your profile is visible to talent.') }}' : '{{ __('Your profile is hidden.') }}'"></p>
-                <p x-show="publishError" x-cloak class="mt-1 text-xs text-danger" x-text="publishError"></p>
             </div>
-            <x-ui.button variant="accent" x-on:click="togglePublish()" x-bind:disabled="publishing || (!isVerified && !published)"
-                         x-bind:title="(!isVerified && !published) ? '{{ __('Your account must be verified before you can publish.') }}' : ''">
+            <x-ui.button variant="accent" x-on:click="togglePublish()" x-bind:disabled="publishing">
                 <span x-text="published ? '{{ __('Unpublish') }}' : '{{ __('Publish') }}'"></span>
             </x-ui.button>
         </section>
@@ -88,10 +72,8 @@
             <h3 class="mb-4 font-display text-lg">{{ __('Brand details') }}</h3>
             <div class="space-y-4">
                 <div><x-input-label :value="__('Name')" /><x-text-input class="mt-1 block w-full" x-model="core.name" /></div>
-                <div><x-input-label :value="__('Description')" /><textarea rows="2" class="mt-1 block w-full rounded-md border-line bg-bg" x-model="core.description.en"></textarea></div>
-                {{-- Arabic input hidden while the app is English-only (restore for the AR pass).
+                <div><x-input-label :value="__('Description (EN)')" /><textarea rows="2" class="mt-1 block w-full rounded-md border-line bg-bg" x-model="core.description.en"></textarea></div>
                 <div><x-input-label :value="__('Description (AR)')" /><textarea rows="2" dir="rtl" class="mt-1 block w-full rounded-md border-line bg-bg" x-model="core.description.ar"></textarea></div>
-                --}}
                 <div class="grid gap-4 sm:grid-cols-2">
                     <div><x-input-label :value="__('City')" /><x-text-input class="mt-1 block w-full" x-model="core.base_city" /></div>
                     <div><x-input-label :value="__('Country')" /><x-text-input class="mt-1 block w-full" x-model="core.base_country" /></div>

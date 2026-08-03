@@ -72,7 +72,7 @@
 
         {{-- Results --}}
         <div>
-            <div class="mb-4 flex items-center justify-between gap-3">
+            <div class="mb-4">
                 <p class="text-sm text-muted" aria-live="polite">
                     <span x-show="loading">{{ __('Searching…') }}</span>
                     <span x-show="!loading" x-cloak>
@@ -81,13 +81,6 @@
                         <span x-show="resultTotal !== 1">{{ __('talents') }}</span>
                     </span>
                 </p>
-                {{-- Feed entry point (Phase 5P): carries the selected skill into
-                     the filtered feed — brands step from search into the work. --}}
-                <a :href="window.fama.localizeUrl('/feed' + (filters.type.length === 1 ? '?skill=' + filters.type[0] : ''))"
-                   href="{{ route('feed') }}"
-                   class="text-sm font-medium text-accent hover:underline">
-                    {{ __('See their work in the feed →') }}
-                </a>
             </div>
 
             {{-- Skeleton loaders (mirror the mosaic: varied-height full-bleed tiles). --}}

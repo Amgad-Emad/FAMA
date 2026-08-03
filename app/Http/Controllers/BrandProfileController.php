@@ -16,7 +16,7 @@ class BrandProfileController extends Controller
     /**
      * Show a published brand's public profile by slug (404 otherwise).
      */
-    public function show(Brand $brand, \App\Feed\CurrentActor $currentActor, \App\Services\FollowService $follows): View
+    public function show(Brand $brand): View
     {
         abort_unless((bool) $brand->is_published, 404);
 
@@ -30,20 +30,7 @@ class BrandProfileController extends Controller
             'projects' => fn ($query) => $query->where('is_public', true)->where('status', '!=', 'cancelled')->with('media')->latest(),
         ]);
 
-        // The notify-bell: a talent (or a guest, who gets gated) can subscribe to
-        // this brand's opportunities. Hidden for brand viewers (brands don't
-        // subscribe to brands).
-        $actor = $currentActor->resolve();
-        $canNotify = ! ($actor instanceof \App\Models\Brand);
-        $subscribed = $actor !== null
-            ? ($follows->isFollowing($actor, collect([$brand]))['brand:'.$brand->id] ?? false)
-            : false;
-
-        return view('brand.public-profile', [
-            'brand' => $brand,
-            'canNotify' => $canNotify,
-            'subscribed' => $subscribed,
-        ]);
+        return view('brand.public-profile', ['brand' => $brand]);
     }
 
     /**

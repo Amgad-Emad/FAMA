@@ -210,8 +210,6 @@ document.addEventListener('alpine:init', () => {
         // Publish toggle (moved from Account).
         isPublished: initial.publish.is_published,
         status: initial.publish.status,
-        // An admin must verify before the profile can go public.
-        isVerified: initial.publish.is_verified,
         publishing: false,
         publishError: '',
 
@@ -826,104 +824,6 @@ document.addEventListener('alpine:init', () => {
     // Mirrors talentSearch: a primary Industry chip bar (live) + an advanced-filters
     // modal (Stage / Reach / Verified, staged until Apply), active-filter summary,
     // live count, and skeleton loaders.
-    // A lightweight rich-text field (project summary / body). The contenteditable
-    // two-way binds to the model in the markup (@input + x-effect); this exposes
-    // the toolbar commands. execCommand is deprecated but universally supported
-    // for basic formatting, and the HTML is sanitized server-side on save.
-    Alpine.data('richField', () => ({
-        exec(command) {
-            this.$refs.ed.focus();
-            document.execCommand(command, false, null);
-            this.$refs.ed.dispatchEvent(new Event('input')); // push to the model
-        },
-        addLink() {
-            const url = window.prompt('https://…');
-            this.$refs.ed.focus();
-            if (url) document.execCommand('createLink', false, url);
-            this.$refs.ed.dispatchEvent(new Event('input'));
-        },
-    }));
-
-    // Public talent-profile Follow toggle. Optimistic; reuses the feed follow
-    // endpoints. A guest is sent to talent login (the intent is captured and
-    // replayed after sign-in), a domain error (e.g. self-follow) reverts.
-    Alpine.data('talentFollow', ({ id, following = false, confirm = null } = {}) => ({
-        following,
-        busy: false,
-        confirmCopy: confirm,
-
-        async toggle() {
-            if (this.busy) return;
-
-            // Confirm before unfollowing so it is never a one-tap mistake.
-            if (this.following && this.confirmCopy) {
-                const ok = await window.Alpine.store('confirm').ask({
-                    title: this.confirmCopy.title,
-                    message: this.confirmCopy.message,
-                    confirmLabel: this.confirmCopy.confirmLabel,
-                    tone: 'danger',
-                });
-                if (!ok) return;
-            }
-
-            this.busy = true;
-            const was = this.following;
-            this.following = !was; // optimistic
-
-            try {
-                if (was) {
-                    await del(`/follow/talent/${id}`);
-                } else {
-                    await post(`/follow/talent/${id}`);
-                }
-            } catch (error) {
-                this.following = was; // revert
-                if (error instanceof ApiError && error.status === 401) {
-                    // Guest → talent login; the pending follow replays on sign-in.
-                    window.location.href = window.fama.localizeUrl('/login?role=talent');
-                }
-            } finally {
-                this.busy = false;
-            }
-        },
-    }));
-
-    // The brand notify-bell (talent subscribes to a brand's opportunities).
-    // Reuses the follow endpoint; a guest is sent to talent login and the
-    // subscription replays after sign-in.
-    Alpine.data('brandNotify', ({ id, following = false, toastOn = '', toastOff = '' } = {}) => ({
-        following,
-        busy: false,
-
-        async toggle() {
-            if (this.busy) return;
-            this.busy = true;
-            const was = this.following;
-            this.following = !was; // optimistic
-
-            try {
-                if (was) {
-                    await del(`/follow/brand/${id}`);
-                    this.flash(toastOff);
-                } else {
-                    await post(`/follow/brand/${id}`);
-                    this.flash(toastOn);
-                }
-            } catch (error) {
-                this.following = was;
-                if (error instanceof ApiError && error.status === 401) {
-                    window.location.href = window.fama.localizeUrl('/login?role=talent');
-                }
-            } finally {
-                this.busy = false;
-            }
-        },
-
-        flash(message) {
-            if (message) window.Alpine.store('feedToasts')?.push({ message });
-        },
-    }));
-
     Alpine.data('brandsDiscover', (initial = {}) => ({
         ...filterModal(),
         brands: [],
@@ -941,32 +841,6 @@ document.addEventListener('alpine:init', () => {
         async init() { await this.load(1); },
 
         label(key) { return this.labels[key] || key; },
-
-        // A deterministic signature hue per brand (from the name) — no cover
-        // image, so colour comes from a soft halo behind the mark + a hover wash.
-        brandHue(name) {
-            let h = 0;
-            for (const c of (name || '?')) h = (h * 31 + c.charCodeAt(0)) >>> 0;
-            return h % 360;
-        },
-        haloStyle(name) {
-            const hue = this.brandHue(name);
-            return `background: radial-gradient(circle at 50% 45%, oklch(0.72 0.17 ${hue} / 0.55), transparent 70%);`;
-        },
-        washStyle(name) {
-            const hue = this.brandHue(name);
-            return `background: linear-gradient(155deg, oklch(0.72 0.17 ${hue} / 0.10), transparent 55%);`;
-        },
-        // Locale-safe links (a raw /brands/… drops the active locale on /ar).
-        profileUrl(brand) { return window.fama.localizeUrl(`/brands/${brand.slug}`); },
-        messageUrl(brand) { return window.fama.localizeUrl(`/brands/${brand.slug}/message`); },
-
-        // Editorial index across pages (01, 02, … 13) for the directory feel.
-        indexLabel(i) {
-            const per = this.meta?.pagination?.per_page ?? 0;
-            const page = this.meta?.pagination?.current_page ?? 1;
-            return String((page - 1) * per + i + 1).padStart(2, '0');
-        },
 
         get resultTotal() { return this.meta?.pagination?.total ?? 0; },
         get activeFilterCount() {

@@ -3,18 +3,15 @@
 namespace App\Providers;
 
 use App\Support\ApiResponse;
-use App\Support\MorphMap;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
     /**
-     * Register any application services. CurrentActor is stateless (the
-     * guards cache their users), so plain container auto-resolution serves it.
+     * Register any application services.
      */
     public function register(): void
     {
@@ -32,50 +29,7 @@ class AppServiceProvider extends ServiceProvider
         // (TalentProfileViewed), LogMediaUploaded (MediaHasBeenAddedEvent),
         // AdvancePortfolioMediaState (ConversionHasBeenCompletedEvent).
         $this->configureModels();
-        $this->enforceMorphMap();
         $this->registerResponseMacros();
-        $this->configureFeedRateLimiters();
-
-        // Suggestion caches follow the viewer's own profile (5Z): an update
-        // to it re-ranks their rails on the next request.
-        \App\Models\Talent::updated(fn ($talent) => app(\App\Services\SuggestionService::class)->forget($talent));
-        \App\Models\Brand::updated(fn ($brand) => app(\App\Services\SuggestionService::class)->forget($brand));
-    }
-
-    /**
-     * Per-actor feed rate limits (feed-spec §12): keyed by the acting feed
-     * identity when present, else the client IP. Numbers live here, names in
-     * the routes.
-     */
-    private function configureFeedRateLimiters(): void
-    {
-        $key = function (\Illuminate\Http\Request $request): string {
-            $actor = app(\App\Feed\CurrentActor::class)->resolve();
-
-            return $actor !== null
-                ? $actor->getMorphClass().':'.$actor->getKey()
-                : 'ip:'.$request->ip();
-        };
-
-        \Illuminate\Support\Facades\RateLimiter::for('feed-posts', fn ($request) => \Illuminate\Cache\RateLimiting\Limit::perHour(10)->by($key($request)));
-        \Illuminate\Support\Facades\RateLimiter::for('feed-comments', fn ($request) => \Illuminate\Cache\RateLimiting\Limit::perMinute(10)->by($key($request)));
-        \Illuminate\Support\Facades\RateLimiter::for('feed-likes', fn ($request) => \Illuminate\Cache\RateLimiting\Limit::perMinute(60)->by($key($request)));
-        \Illuminate\Support\Facades\RateLimiter::for('feed-follows', fn ($request) => \Illuminate\Cache\RateLimiting\Limit::perMinute(60)->by($key($request)));
-        \Illuminate\Support\Facades\RateLimiter::for('feed-bookmarks', fn ($request) => \Illuminate\Cache\RateLimiting\Limit::perMinute(60)->by($key($request)));
-        \Illuminate\Support\Facades\RateLimiter::for('feed-dismissals', fn ($request) => \Illuminate\Cache\RateLimiting\Limit::perMinute(60)->by($key($request)));
-        \Illuminate\Support\Facades\RateLimiter::for('feed-links', fn ($request) => \Illuminate\Cache\RateLimiting\Limit::perMinute(20)->by($key($request)));
-        \Illuminate\Support\Facades\RateLimiter::for('feed-mentions', fn ($request) => \Illuminate\Cache\RateLimiting\Limit::perMinute(30)->by($key($request)));
-    }
-
-    /**
-     * Enforce the aliased morph map (ADR-F1): every morph column stores a
-     * stable alias (talent, brand, post, …) instead of an FQCN, and any model
-     * missing from App\Support\MorphMap throws instead of silently writing
-     * its class name.
-     */
-    private function enforceMorphMap(): void
-    {
-        Relation::enforceMorphMap(MorphMap::map());
     }
 
     /**

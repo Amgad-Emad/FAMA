@@ -25,8 +25,8 @@ it('lists only published brands in the discovery feed', function () {
 });
 
 it('filters the brand feed by industry, stage, reach, and verified', function () {
-    Brand::factory()->unverified()->create(['name' => 'Fashion House', 'industry' => 'fashion', 'brand_stage' => 'growing', 'geographic_reach' => 'mena']);
-    Brand::factory()->unverified()->create(['name' => 'Tech Co', 'industry' => 'tech', 'brand_stage' => 'new', 'geographic_reach' => 'same_city']);
+    Brand::factory()->create(['name' => 'Fashion House', 'industry' => 'fashion', 'brand_stage' => 'growing', 'geographic_reach' => 'mena']);
+    Brand::factory()->create(['name' => 'Tech Co', 'industry' => 'tech', 'brand_stage' => 'new', 'geographic_reach' => 'same_city']);
     // Pin every facet so the single-result assertions below never collide with random data.
     Brand::factory()->verified()->create(['name' => 'Verified Beauty', 'industry' => 'beauty', 'brand_stage' => 'established', 'geographic_reach' => 'international']);
 

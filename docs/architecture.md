@@ -412,82 +412,10 @@ cancel with a live timeline), a searchable **activity-log viewer**, the **settin
 **admin-user** management (create + role assignment). Controllers stay thin — every mutation delegates to
 a Phase 3A service.
 
-## Feed domain (Phase 5 — in progress; canonical spec `docs/specs/feed-spec.md`)
-
-- **Models** (`app/Models`): `Post`, `Comment`, `Like`, `Follow`, `Mention`, `LinkPreview`,
-  `LinkedUrl`, `PostReport`, `FeedSeen` — every actor-side reference polymorphic (ADR-F1). `Post` is
-  `HasMedia` (`post_media` collection; queued WebP conversions `thumb` 320² / `feed` 1080w / `full`
-  1600w) with `scopePublished()` and `isEditable()` (the 15-minute window, `config/feed.php`).
-  `Talent` and `Brand` share **`HasFeedIdentity`** (`app/Models/Concerns`): `posts`, `feedComments`,
-  `followers`, `following`, `likesGiven` + identity readers (`feedUsername/feedDisplayName/
-  feedAvatarUrl`) — the raw material for the Actor contract (5C).
-- **State machines** (`app/States/Post`, `app/States/Comment`): `PostState` draft → published ⇄ hidden
-  → removed (terminal); `CommentState` born published, hidden ⇄ published, removed terminal. Author
-  deletes are soft deletes, orthogonal to moderation states (D12).
-- **Counters (ADR-F6):** `CounterService` is the only mutator, invoked from `LikeObserver` /
-  `CommentObserver` / `FollowObserver` / `PostObserver` (registered via `#[ObservedBy]`), so counters
-  move inside the writing transaction; decrements clamp at zero; `posts_count` tracks the published
-  boundary in both directions. `applyPostPublishDelta` ALSO maintains **`talents.last_posted_at`**
-  (the dashboard "quiet since" signal): a publish stamps the later of the stored value and the post's
-  `published_at`; leaving the published state (delete / moderation hide) recomputes from the remaining
-  published posts, so removing the LAST post clears the column. Nightly `feed:reconcile-counters`
-  (03:10) recomputes every counter from source — including `last_posted_at` via a NULL-safe `<=>`
-  repair — and reports drift to the `feed` log channel.
-- **Morph map (ADR-F1):** `Relation::enforceMorphMap(App\Support\MorphMap::map())` in
-  `AppServiceProvider` — aliased snake_case keys for every model (+ `media`, `role`, `permission`).
-  Migration `2026_07_22_000200` converted pre-existing FQCN morph rows. Aliases are frozen; a new
-  model that can appear in any morph column MUST be added to `MorphMap` or writes throw.
-- **Config:** every feed tunable lives in `config/feed.php` (edit window, limits, auto-hide
-  threshold, `allow_following_brands`) — no magic numbers in feed code.
-- **Actor plane (5C/5K):** `App\Feed\Actor` (Talent + Brand) + stateless `CurrentActor`
-  (talent → brand → sanctum priority; admins/guests null); middleware `resolve.actor` (shares
-  `$currentActor`, never rejects) / `require.actor:<action>` (guest → 401 envelope with
-  `data.intent` + session capture of the intent AND the `feed.return_to` anchor; admin → 403).
-  `PendingIntent` replays the captured like/follow/comment exactly once on the `Login` event, and
-  the role-aware login honours `feed.return_to` (a deliberately separate slot from `url.intended`).
-  Policies: Post / Comment / Like / Follow / PostReport (auto-discovered); `PostPolicy::create` is
-  the single point where brand posting would be enabled (ADR-F1). Feed controllers extend
-  `FeedBaseController` and never touch `Auth::guard()`. Routes: `routes/feed.php` (inside the
-  locale group **before** the `/{slug}` catch-all) + the `/api/v1` mirror (`routes/api.php`,
-  Sanctum) through the same controllers/requests/actions/Resources.
-- **Ranking (5I/5P):** `FeedService` — frozen candidate-ID list per viewer+seed+filters (cursor
-  `{s,o,k,f}` carries seed, offset, skill, following); seeded-shuffle tier 1, scored tier 2,
-  interleave, diversity cap; `DiscoverTalentsService` casting strips (ranked-ID cache only — never
-  cached models). Budgets + EXPLAIN evidence + cache inventory: `docs/performance.md`.
-- **Rich text (5D/5E):** `RichTextParser` (multibyte offsets) → `SyncMentions`/`SyncLinks`
-  (idempotent full re-parse) → `BodyRenderer` (escape-first, current-Username, `<bdi>`+isolates);
-  `App\Feed\Links` driver registry + `FetchLinkPreviewJob` behind the `UrlGuard` SSRF wall.
-- **Notifications (5J):** `App\Feed\FeedNotifier` is the only dispatch point (self-guard, 1 h like
-  aggregation in place, mention suppression, follow-window, Project-share fan-out); 9 queued
-  classes under `app/Notifications/Feed`; payloads are message keys localized at read.
-- **Moderation (5Q):** `FeedModerationService` (state machines + `feed_moderation` activity log +
-  author `ContentRemoved` notices + the auto-hide tripwire) behind `/admin/moderation/feed`;
-  nightly `feed:reconcile-counters` + `feed:prune`.
-- **UI (5L–5P):** the scoped Daylight system (`docs/design-system.md`), the canonical frame partial
-  (`feed/partials/post`), the spine + composer + inline threads (`resources/js/feed.js`), filtered
-  modes `?skill=`/`?following=1`, and the `/design/feed-tokens` review page.
-- **Dashboard follow management (Prompt 5-follow):** the FOLLOWING / FOLLOWERS sub-tabs on both the
-  talent and brand dashboards (`Talent\FollowsController` + `Brand\FollowsController`,
-  `/{guard}/feed/follows[/data]`, shared partial `partials/feed-follows` on a `data-surface="daylight"`
-  region so the rail card language — portrait talents, square brands, Fraunces display, mono handles,
-  `--ink-faint` — applies inside the dashboard shell). `FollowManagementService` pages the follow
-  graph (24/page) with the polymorphic other party eager-loaded via **`MorphTo::morphWith`** (talents
-  with Skills + media, brands with logo — a plain `with()` N+1s across the mixed types; a
-  fixed-query-count test guards it), resolves mutuality in ONE bulk `FollowService` query
-  (`isFollowing` on the followers side, the new `followsBack` on the following side), and shapes two
-  management-only signals — **FOLLOWS YOU BACK** (mutual) and **QUIET SINCE <month>** (talents silent
-  > 90 days, from `last_posted_at`). Search (name + Username), a type filter (talents/brands; hidden
-  for brands, who follow only talents), a Skill filter populated from Skills PRESENT in the set
-  (`presentSkills`, not the catalog), and sorts (recently followed / alphabetical / least-active by
-  `last_posted_at` ASC) all resolve in SQL for correct pagination. Unfollow is optimistic (dim +
-  280 ms slide-out, 5 s undo that restores the row in place); the FOLLOWERS tab offers FOLLOW BACK
-  where not mutual, never unfollow. These dashboard signals never enter the public
-  `FollowListController` payload (asserted).
-
 ## Cross-cutting
 
-- **Logging:** dedicated channels `app`, `auth`, `contracts`, `media`, `feed` (`config/logging.php`).
-  Failure convention: catch → log to channel with context → rethrow / return error envelope
+- **Logging:** dedicated channels `app`, `auth`, `contracts`, `media` (`config/logging.php`). Failure
+  convention: catch → log to channel with context → rethrow / return error envelope
   (`Service::runInTransaction`).
 - **Transactions:** multi-write operations run through `Service::runInTransaction()` /
   `DB::transaction()`.

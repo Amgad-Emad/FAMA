@@ -54,18 +54,6 @@ it('verifies (one-way) and suspends a brand', function () {
     expect($brand->fresh()->status->getValue())->toBe('suspended');
 });
 
-it('verifies a talent (one-way, audited) — the go-live gate', function () {
-    $talent = Talent::factory()->draft()->unverified()->create();
-
-    $this->actingAs($this->admin, 'admin')
-        ->patchJson("/admin/moderation/talents/{$talent->id}/verify")
-        ->assertOk();
-
-    expect((bool) $talent->fresh()->is_verified)->toBeTrue();
-    expect(Spatie\Activitylog\Models\Activity::where('description', 'talent.verified')
-        ->where('subject_id', $talent->id)->exists())->toBeTrue();
-});
-
 it('approves talent reviews in batch', function () {
     $reviews = Review::factory()->count(3)->pending()->create();
 
@@ -175,61 +163,6 @@ it('shows full review and brand-review detail', function () {
         ->assertJsonPath('data.kind', 'brand')
         ->assertJsonPath('data.average_rating', 4)
         ->assertJsonStructure(['data' => ['communication_rating', 'fairness_rating', 'creative_respect_rating', 'brand', 'talent']]);
-});
-
-it('soft-deletes a review and emails the reviewed talent a notice (audited)', function () {
-    Illuminate\Support\Facades\Mail::fake();
-
-    $talent = Talent::factory()->create(['email' => 'star@example.com']);
-    $review = Review::factory()->pending()->create([
-        'talent_id' => $talent->id,
-        'reviewer_name' => 'Jo',
-        'rating' => 4,
-        'body' => 'This will be removed.',
-    ]);
-
-    $this->actingAs($this->admin, 'admin')
-        ->postJson("/admin/moderation/reviews/{$review->id}/delete", [
-            'email' => 'star@example.com',
-            'subject' => 'A review was removed',
-            'reason' => 'It violated our guidelines.',
-        ])
-        ->assertOk();
-
-    expect(Review::find($review->id))->toBeNull();
-    expect(Review::withTrashed()->find($review->id)->trashed())->toBeTrue();
-
-    Illuminate\Support\Facades\Mail::assertSent(App\Mail\ReviewRemovedNotice::class, function ($mail) {
-        return $mail->hasTo('star@example.com')
-            && $mail->reason === 'It violated our guidelines.'
-            && $mail->review['reviewer_name'] === 'Jo';
-    });
-
-    expect(Activity::where('description', 'review.deleted')
-        ->where('subject_id', $review->id)->exists())->toBeTrue();
-});
-
-it('validates the delete-review notice fields', function () {
-    $review = Review::factory()->pending()->create();
-
-    $this->actingAs($this->admin, 'admin')
-        ->postJson("/admin/moderation/reviews/{$review->id}/delete", [
-            'email' => 'not-an-email',
-            'subject' => '',
-            'reason' => '',
-        ])
-        ->assertStatus(422)
-        ->assertJsonValidationErrors(['email', 'subject', 'reason']);
-});
-
-it('denies deleting a review to an admin without moderate-content', function () {
-    $review = Review::factory()->pending()->create();
-
-    $this->actingAs($this->powerless, 'admin')
-        ->postJson("/admin/moderation/reviews/{$review->id}/delete", [
-            'email' => 'x@example.com', 'subject' => 'S', 'reason' => 'R',
-        ])
-        ->assertForbidden();
 });
 
 it('shows full project detail with the budget always visible to the admin', function () {

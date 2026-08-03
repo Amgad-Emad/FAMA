@@ -38,14 +38,6 @@ class AuthenticatedSessionController extends Controller
         // a talent login), which would bounce the user straight back to login.
         $request->session()->forget('url.intended');
 
-        // The feed's guest-intent loop (ADR-F8) is the exception: its return
-        // slot always points at a PUBLIC feed URL (valid under every guard),
-        // and the captured action has just been replayed by the Login event —
-        // land the user back on the exact post anchor.
-        if ($feedReturn = $request->session()->pull('feed.return_to')) {
-            return redirect()->to($feedReturn);
-        }
-
         // route('dashboard') dispatches to the active guard's dashboard.
         return redirect()->route('dashboard');
     }

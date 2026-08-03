@@ -15,23 +15,6 @@ use App\States\TalentProfile\Unpublished;
  */
 class TalentModerationService extends AdminService
 {
-    /**
-     * Verify a talent — the admin sign-off that unlocks going public. Until this
-     * is set, the ToLive guard refuses to publish the profile. One-way, like the
-     * brand trust flag; take a live profile down with suspend/unpublish instead.
-     */
-    public function verify(User $admin, Talent $talent): Talent
-    {
-        $this->authorizeAdmin($admin, 'moderate', $talent);
-
-        return $this->runInTransaction(function () use ($admin, $talent): Talent {
-            $talent->update(['is_verified' => true]);
-            $this->record($admin, $talent, 'moderation', 'talent.verified');
-
-            return $talent->refresh();
-        }, ['talent_id' => $talent->getKey()]);
-    }
-
     public function suspend(User $admin, Talent $talent, ?string $reason = null): Talent
     {
         $this->authorizeAdmin($admin, 'moderate', $talent);

@@ -46,60 +46,12 @@ and authentication exceptions are auto-rendered into this envelope for JSON/Ajax
 inline.
 
 ## Generated docs (Scribe)
-`knuckleswtf/scribe` (`config/scribe.php`) documents the `api/*` routes — live since Phase 5K
-(the feed's `/api/v1` mirror is the first real API surface; the rest of the platform API is Phase 4):
+`knuckleswtf/scribe` is installed (`config/scribe.php`) and will produce OpenAPI + a Postman collection
+for the mobile developer once API routes exist:
 
 ```bash
-php artisan scribe:generate   # regenerates /docs, the OpenAPI spec and the Postman collection
-# outputs: resources/views/scribe + storage/app/private/scribe/{openapi.yaml, collection.json}
+php artisan scribe:generate   # outputs the /docs UI, OpenAPI spec, and Postman collection
 ```
-
-## Feed — web endpoints (Phase 5; locale-prefixed, Ajax envelope)
-
-All feed routes run `resolve.actor` (guests welcome — ADR-F8); write routes add
-`require.actor:<action>` — a guest write returns **401 with `data.intent`** and the intent replays
-once after login. Rate limits (per actor, else IP): posts 10/h, comments 10/min, likes + follows
-60/min, link previews 20/min, mention search 30/min; throttle answers are friendly 429 envelopes.
-
-| Method | Path | Notes |
-|---|---|---|
-| GET | `/feed` | page shell |
-| GET | `/feed/items?cursor=` | ranked stream — `{items, casting_positions, next_cursor, total}` (ADR-F5) |
-| GET | `/feed/casting` | 12 discovery talents + `followed_by_viewer` |
-| GET | `/posts/{post}` | detail page (unpublished → 404) |
-| GET | `/posts/{post}/fragment` | `{html}` envelope fragment |
-| GET | `/talents/{username}/posts` | published posts, pinned first, paginated 12 |
-| POST | `/posts` | note/media (StorePostRequest; talents only; `media_alt[]` order-matched per-image alt ≤160 → media custom property) |
-| PATCH / DELETE | `/posts/{post}` | 15-min edit window / soft delete |
-| POST | `/posts/{post}/pin` | max one pinned |
-| POST | `/projects/{project}/share` | project_share + snapshot (ADR-F2) |
-| GET / POST | `/posts/{post}/comments` | thread (10/page, 3 preview replies, tombstones) / create |
-| GET | `/comments/{comment}/replies` | replies, paginated 10 oldest-first |
-| PATCH / DELETE | `/comments/{comment}` | edit window / tombstoning delete |
-| POST / DELETE | `/posts/{post}/like`, `/comments/{comment}/like` | idempotent |
-| POST / DELETE | `/follow/{type}/{id}` | talent→talent, brand→talent |
-| GET | `/talents/{username}/followers`, `/following` | paginated 24 + `followed_by_viewer` |
-| GET | `/mentions/search?q=` | composer autocomplete, 8 grouped |
-| POST | `/links/preview` | instant chip parse + queued enrichment (ADR-F4) |
-| POST | `/posts/{post}/report`, `/comments/{comment}/report` | once per target per actor; `reason` ∈ config `feed.report_reasons` (7 keys), `note` required for `other` |
-| GET | `/notifications` · POST `/notifications/read` · GET `/notifications/unread-count` | actor inbox, localized at read |
-| POST / DELETE | `/posts/{post}/bookmark` | save/unsave (5X; private collections, ADR-F9) |
-| GET | `/feed/suggestions/talents`, `/feed/suggestions/brands` | rail suggestions, offset cursor (5Z) |
-| POST | `/feed/suggestions/dismiss` | permanent dismissal, 60/min (5Z) |
-
-Resources: `PostResource`, `CommentResource`, `ActorResource`, `LinkChipResource`,
-`NotificationResource` (`app/Http/Resources/Feed`) — every list row carries the viewer's
-interaction state, so the frontend never makes a second call.
-
-## Feed — mobile API v1 (`/api/v1`, Sanctum)
-
-Every feed read/write above is mirrored under `/api/v1` (`routes/api.php`) through the **same
-controllers, form requests, actions and Resources**. Reads are public; writes require
-`auth:sanctum` (talent/brand tokens; `CurrentActor` resolves the sanctum tokenable). No sessions —
-no intent replay; guests simply get the 401 envelope. 34 routes.
-
-**Endpoint count: 200** — 130 pre-feed web endpoints + 36 feed web endpoints (31 + saves + the
-suggestion rails) + 34 API v1 mirrors.
 
 ## Public pages — web endpoints (unguarded)
 
@@ -158,8 +110,6 @@ Contracts). The old standalone Professions + Account tabs are folded into it (AD
 | Contracts inbox | `GET /talent/contracts` · `GET /talent/contracts/data?status=` | list, whose-turn, filter, paginated |
 | Contract room | `GET /talent/contracts/{contract}` · `GET /talent/contracts/{contract}/thread` | room shell · header+stepper+timeline payload (marks read) |
 | Contract actions | `POST /talent/contracts/{contract}/advance` · `/reject` · `/skip` · `/message` | act on the current step / loop back / skip / chat — envelope |
-| Feed collections (5X) | `GET /talent/feed/saved` · `GET /talent/feed/liked` · `GET /talent/feed/collection/data?mode=&skill=&q=&page=` | private SAVED / LIKED shells + Ajax rows (ADR-F9; owner-scoped) |
-| Follow management (5-follow) | `GET /talent/feed/follows?tab=following\|followers` · `GET /talent/feed/follows/data?tab=&q=&type=&skill=&sort=&page=` | FOLLOWING / FOLLOWERS shells + Ajax rows; mixed-type cards + mutual/quiet-since signals; unfollow/follow-back reuse `/follow/{type}/{id}` |
 
 The talent acts as the `talent` role; the current step's `step_type` selects the action shape
 (`advance` body: `{fields}` for form, `{note}` for approval, `{attachments}` for upload, `{confirmed}`
@@ -201,8 +151,6 @@ illegal state-transition violations → **422**. An **incomplete brand** (`is_co
 | Contract actions | `POST /brand/contracts/{contract}/{advance,reject,skip,message}` | act as the `brand` role (submit brief, accept quote, sign, pay) |
 | Reviews | `GET /brand/reviews` · `GET /brand/reviews/data` | reviews received (approved only, read-only, 3 sub-ratings) |
 | Account | `GET /brand/account` · `PATCH /brand/account` · `PATCH /brand/account/publish` | settings/slug · publish toggle (published ⇄ unpublished) |
-| Feed collection (5X) | `GET /brand/feed/saved` · `GET /brand/feed/saved/data?skill=&q=&page=` | private SAVED shell + Ajax rows (ADR-F9; owner-scoped) |
-| Follow management (5-follow) | `GET /brand/feed/follows?tab=following\|followers` · `GET /brand/feed/follows/data?tab=&q=&skill=&sort=&page=` | FOLLOWING / FOLLOWERS shells + Ajax rows (type filter hidden — brands follow only talents) |
 
 The brand acts as the `brand` role on the **shared** contract engine (same `advance` body shapes as the talent
 side; `awaiting_brand` is highlighted). Controllers delegate to the Phase 2B services (BrandOnboardingService,
@@ -227,8 +175,7 @@ every action also re-authorizes + audits inside the Phase 3A service.
 | Flow steps | `POST …/{f}/steps` · `PATCH …/steps/reorder` · `PATCH …/steps/{s}` · `DELETE …/steps/{s}` | manage-flows | add · drag-reorder · edit · remove |
 | Skills | `GET /admin/skills` · `GET …/data` · `POST …` · `PATCH …/{type}/blocks` | manage-flows | catalog · list · add skill · edit default_blocks |
 | Moderation | `GET /admin/moderation` + `/{talents,reviews,brands,brand-reviews,projects}` | moderate-content | queues (paginated JSON) |
-| Moderation actions | `PATCH …/{queue}/{id}/{action}` · `POST …/reviews/batch` | moderate-content | talents+brands `verify` (go-live gate, one-way) / suspend / publish / unpublish / delete… · batch approve/reject |
-| Delete review + notice | `POST /admin/moderation/reviews/{review}/delete` | moderate-content | soft-delete a review; emails the recipient a reason notice (`email`, `subject`, `reason`) |
+| Moderation actions | `PATCH …/{queue}/{id}/{action}` · `POST …/reviews/batch` | moderate-content | suspend/verify/approve/cancel… · batch approve/reject |
 | Contract console | `GET /admin/contracts` · `GET …/data?status=` · `GET …/{contract}` · `GET …/thread` | intervene-contracts | list · filter · console · payload |
 | Contract intervene | `POST /admin/contracts/{contract}/{override,advance,nudge,reassign,cancel}` | intervene-contracts | override stuck step / act as admin / nudge / reassign / cancel |
 | Activity | `GET /admin/activity` · `GET …/data?q=&log=` | manage-settings | searchable audit trail |

@@ -7,34 +7,16 @@
 @endphp
 
 <x-public-layout :title="__('Discover brands')">
-    <div class="mx-auto max-w-6xl px-4 py-10 sm:px-6"
+    <div class="mx-auto max-w-6xl px-4 py-8 sm:px-6"
          x-data="brandsDiscover({ industries: @js($industries), stages: @js($stages), reaches: @js($reaches), labels: @js($labels) })">
 
-        {{-- ── Editorial hero ──────────────────────────────────────────────── --}}
-        <header class="relative mb-10 overflow-hidden">
-            <div aria-hidden="true"
-                 class="pointer-events-none absolute -top-28 -z-10 h-72 w-72 rounded-full opacity-40 blur-3xl end-[-3rem]"
-                 style="background-image: linear-gradient(135deg, var(--accent), oklch(0.7 0.16 300));"></div>
-
+        <header class="mb-6">
             <x-ui.eyebrow>{{ __('Discovery') }}</x-ui.eyebrow>
-            <h1 class="mt-2 font-display text-5xl leading-[0.95] text-ink sm:text-6xl">
-                {{ __('Discover') }} <span class="text-accent">{{ __('brands') }}</span>
-            </h1>
-            <p class="mt-4 max-w-xl text-lg text-muted">
-                {{ __('The houses hiring on Fama — coffee roasters to couture. Find your next collaboration and open a conversation.') }}
-            </p>
-
-            <div class="mt-7 flex items-baseline gap-3">
-                <span class="font-display text-5xl leading-none text-ink" x-text="resultTotal">0</span>
-                <span class="font-mono text-[11px] uppercase tracking-[0.18em] text-subtle">
-                    <span x-show="loading">{{ __('Searching…') }}</span>
-                    <span x-show="!loading" x-cloak>{{ __('brands hiring now') }}</span>
-                </span>
-            </div>
+            <h1 class="mt-1 font-display text-4xl text-ink">{{ __('Discover brands') }}</h1>
         </header>
 
-        {{-- ── PRIMARY control: Industries (sticky) ────────────────────────── --}}
-        <section class="sticky top-16 z-20 mb-8 rounded-3xl border border-line bg-surface/80 shadow-e2 backdrop-blur-xl supports-[backdrop-filter]:bg-surface/70">
+        {{-- PRIMARY control: Industries — sticky under the site header while results scroll. --}}
+        <section class="sticky top-16 z-20 mb-6 rounded-lg border border-line bg-surface shadow-e1">
             <div class="p-4 sm:p-5">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div class="flex items-center gap-2.5">
@@ -94,84 +76,56 @@
             </div>
         </section>
 
-        {{-- ── Skeletons ───────────────────────────────────────────────────── --}}
-        <div x-show="loading" class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            <template x-for="n in skeletons" :key="n">
-                <div class="rounded-2xl border border-line bg-surface p-6">
-                    <div class="h-16 w-16 animate-pulse rounded-2xl bg-elevated"></div>
-                    <div class="mt-5 h-5 w-2/3 animate-pulse rounded bg-elevated"></div>
-                    <div class="mt-3 h-3 w-1/3 animate-pulse rounded bg-elevated"></div>
-                    <div class="mt-3 h-3 w-full animate-pulse rounded bg-elevated"></div>
-                    <div class="mt-6 h-9 w-full animate-pulse rounded bg-elevated"></div>
+        {{-- Results --}}
+        <div class="mb-4">
+            <p class="text-sm text-muted" aria-live="polite">
+                <span x-show="loading">{{ __('Searching…') }}</span>
+                <span x-show="!loading" x-cloak><span class="font-semibold text-ink" x-text="resultTotal"></span> {{ __('brands hiring on Fama') }}</span>
+            </p>
+        </div>
+
+        {{-- Skeletons --}}
+        <div x-show="loading" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <template x-for="n in skeletons" :key="n"><div class="h-44 animate-pulse rounded-xl bg-surface"></div></template>
+        </div>
+
+        <div x-show="!loading" x-cloak class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <template x-for="brand in brands" :key="brand.id">
+                <div class="group flex flex-col rounded-xl border border-line bg-surface p-5 shadow-e1 transition hover:-translate-y-0.5 hover:shadow-e3">
+                    <a :href="`/brands/${brand.slug}`" class="flex items-center gap-4">
+                        <span class="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-lg bg-primary font-display text-lg text-on-primary"
+                              :style="brand.logo_url ? `background-image:url(${brand.logo_url});background-size:cover;background-position:center` : ''">
+                            <span x-show="!brand.logo_url" x-text="brand.name.slice(0, 1)"></span>
+                        </span>
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-1.5">
+                                <span class="truncate font-display text-lg text-ink transition group-hover:text-accent-ink" x-text="brand.name"></span>
+                                <svg x-show="brand.is_verified" x-cloak class="h-4 w-4 shrink-0 text-accent" viewBox="0 0 24 24" fill="currentColor" :aria-label="'{{ __('Verified business') }}'"><path d="M12 2l2.4 1.8 3 .1 1 2.8 2.4 1.7-1 2.8 1 2.8-2.4 1.7-1 2.8-3 .1L12 22l-2.4-1.8-3-.1-1-2.8L3.2 15l1-2.8-1-2.8 2.4-1.7 1-2.8 3-.1L12 2z"/></svg>
+                            </div>
+                            <div class="text-xs text-muted" x-text="brand.industry || ''"></div>
+                        </div>
+                    </a>
+                    <p class="mt-3 line-clamp-2 text-sm text-muted" x-show="brand.tagline" x-cloak x-text="brand.tagline"></p>
+                    <div class="mt-auto flex items-center justify-between gap-2 pt-4">
+                        <span class="min-w-0 truncate text-xs text-subtle" x-show="brand.location" x-cloak x-text="brand.location"></span>
+                        <div class="flex shrink-0 items-center gap-2">
+                            <a :href="`/brands/${brand.slug}`" class="rounded-pill border border-line-strong px-3 py-1.5 text-xs font-medium text-muted transition hover:border-accent hover:text-ink">{{ __('View') }}</a>
+                            <a :href="`/brands/${brand.slug}/message`" class="rounded-pill bg-accent px-3 py-1.5 text-xs font-medium text-on-accent transition hover:opacity-90">{{ __('Message') }}</a>
+                        </div>
+                    </div>
                 </div>
             </template>
         </div>
 
-        {{-- ── Brand wall ──────────────────────────────────────────────────── --}}
-        <div x-show="!loading" x-cloak class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            <template x-for="(brand, i) in brands" :key="brand.id">
-                {{-- Premium card, no cover: each brand's signature hue appears as
-                     a soft halo behind its mark and a subtle wash on hover. --}}
-                <a :href="profileUrl(brand)" :aria-label="brand.name"
-                   class="group relative flex flex-col overflow-hidden rounded-3xl border border-line bg-surface p-6 shadow-e1 transition-all duration-300 ease-out hover:-translate-y-1.5 hover:border-accent/40 hover:shadow-e4 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg">
-
-                    {{-- Hover colour-wash (the brand's hue, whisper-quiet) --}}
-                    <div aria-hidden="true" class="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100" :style="washStyle(brand.name)"></div>
-
-                    <div class="relative flex flex-1 flex-col">
-                        {{-- Head: mark (with a signature halo) + ghost index --}}
-                        <div class="flex items-start justify-between gap-3">
-                            <span class="relative shrink-0">
-                                <span aria-hidden="true" class="absolute -inset-2.5 rounded-full opacity-70 blur-xl transition-all duration-500 group-hover:-inset-3 group-hover:opacity-100" :style="haloStyle(brand.name)"></span>
-                                <span class="relative grid h-16 w-16 place-items-center overflow-hidden rounded-[1.15rem] bg-primary font-display text-2xl text-on-primary shadow-e2 ring-1 ring-black/5 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-[1.03]"
-                                      :style="brand.logo_url ? `background-image:url(${brand.logo_url});background-size:cover;background-position:center` : ''">
-                                    <span x-show="!brand.logo_url" x-text="brand.name.slice(0, 1)"></span>
-                                </span>
-                            </span>
-                            <span aria-hidden="true" class="select-none font-display text-4xl leading-none tabular-nums"
-                                  style="color: color-mix(in srgb, var(--ink) 8%, transparent);" x-text="indexLabel(i)"></span>
-                        </div>
-
-                        {{-- Name + verified --}}
-                        <div class="mt-6 flex items-start gap-1.5">
-                            <h3 class="line-clamp-2 font-display text-xl leading-tight text-ink transition group-hover:text-accent-ink" x-text="brand.name"></h3>
-                            <svg x-show="brand.is_verified" x-cloak class="mt-1 h-4 w-4 shrink-0 text-accent" viewBox="0 0 24 24" fill="currentColor" :aria-label="'{{ __('Verified business') }}'"><path d="M12 2l2.4 1.8 3 .1 1 2.8 2.4 1.7-1 2.8 1 2.8-2.4 1.7-1 2.8-3 .1L12 22l-2.4-1.8-3-.1-1-2.8L3.2 15l1-2.8-1-2.8 2.4-1.7 1-2.8 3-.1L12 2z"/></svg>
-                        </div>
-
-                        {{-- Meta: industry + location --}}
-                        <div class="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1.5">
-                            <span x-show="brand.industry" x-cloak
-                                  class="inline-flex rounded-pill border border-line px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-muted" x-text="brand.industry"></span>
-                            <span x-show="brand.location" x-cloak class="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wider text-subtle">
-                                <svg class="h-3 w-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
-                                <span class="truncate" x-text="brand.location"></span>
-                            </span>
-                        </div>
-
-                        <p class="mt-3 line-clamp-2 text-sm leading-relaxed text-muted" x-show="brand.tagline" x-cloak x-text="brand.tagline"></p>
-
-                        {{-- View affordance — a pill that fills on hover. --}}
-                        <div class="mt-auto flex items-center justify-between gap-2 border-t border-line/70 pt-4"
-                             style="margin-block-start: 1.5rem;">
-                            <span class="font-mono text-[11px] uppercase tracking-[0.16em] text-subtle transition group-hover:text-accent-ink">{{ __('View profile') }}</span>
-                            <span class="grid h-9 w-9 place-items-center rounded-full border border-line-strong text-ink transition-all duration-300 group-hover:border-accent group-hover:bg-accent group-hover:text-on-accent group-hover:shadow-[0_6px_16px_-6px_var(--accent)]">
-                                <svg class="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5 rtl:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-                            </span>
-                        </div>
-                    </div>
-                </a>
-            </template>
-        </div>
-
         {{-- Empty state --}}
-        <div x-show="!loading && brands.length === 0" x-cloak class="rounded-2xl border border-dashed border-line py-16 text-center">
+        <div x-show="!loading && brands.length === 0" x-cloak class="rounded-xl border border-dashed border-line py-16 text-center">
             <p class="text-sm text-subtle">{{ __('No brands found.') }}</p>
             <button type="button" x-show="activeSummary.length" @click="clearAll()" class="mt-4 inline-flex rounded-pill bg-accent px-4 py-2 text-sm font-medium text-on-accent transition hover:opacity-90">{{ __('Clear filters') }}</button>
         </div>
 
         {{-- Pager --}}
         <template x-if="!loading && meta?.pagination && meta.pagination.last_page > 1">
-            <div class="mt-10 flex items-center justify-center gap-2 text-sm">
+            <div class="mt-8 flex items-center justify-center gap-2 text-sm">
                 <button @click="load(meta.pagination.current_page - 1)" :disabled="meta.pagination.current_page <= 1" class="rounded-md border border-line px-3 py-1 disabled:opacity-40 rtl:rotate-180">‹</button>
                 <span class="text-muted" x-text="meta.pagination.current_page + ' / ' + meta.pagination.last_page"></span>
                 <button @click="load(meta.pagination.current_page + 1)" :disabled="meta.pagination.current_page >= meta.pagination.last_page" class="rounded-md border border-line px-3 py-1 disabled:opacity-40 rtl:rotate-180">›</button>

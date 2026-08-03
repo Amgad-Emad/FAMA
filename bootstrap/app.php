@@ -17,7 +17,6 @@ use Spatie\ModelStates\Exceptions\CouldNotPerformTransition;
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
-        api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
@@ -44,11 +43,6 @@ return Application::configure(basePath: dirname(__DIR__))
             'localeSessionRedirect' => LocaleSessionRedirect::class,
             'localeCookieRedirect' => LocaleCookieRedirect::class,
             'localeViewPath' => LaravelLocalizationViewPath::class,
-            // Feed actor resolution (ADR-F8): resolve never rejects (guests
-            // read everything); require guards write routes with the
-            // 401-with-intent envelope.
-            'resolve.actor' => \App\Http\Middleware\ResolveActor::class,
-            'require.actor' => \App\Http\Middleware\RequireActor::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
@@ -73,17 +67,6 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->render(function (AuthenticationException $e, Request $request) use ($wantsJson) {
             if ($wantsJson($request)) {
                 return ApiResponse::error(message: $e->getMessage(), status: 401);
-            }
-        });
-
-        // Rate limits (feed-spec §12) answer with a friendly envelope, not a
-        // bare "Too Many Attempts.".
-        $exceptions->render(function (\Illuminate\Http\Exceptions\ThrottleRequestsException $e, Request $request) use ($wantsJson) {
-            if ($wantsJson($request)) {
-                return ApiResponse::error(
-                    message: __('Slow down a little — please try again in a moment.'),
-                    status: 429,
-                );
             }
         });
 

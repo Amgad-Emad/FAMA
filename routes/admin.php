@@ -73,8 +73,6 @@ Route::middleware('can:moderate-content')->prefix('moderation')->name('moderatio
 
     Route::get('/reviews', [ModerationController::class, 'reviews'])->name('reviews');
     Route::get('/reviews/{review}', [ModerationController::class, 'showReview'])->name('reviews.show');
-    // Delete-with-notice (compose an email + reason) — before the {action} catch.
-    Route::post('/reviews/{review}/delete', [ModerationController::class, 'deleteReview'])->name('reviews.delete');
     Route::patch('/reviews/{review}/{action}', [ModerationController::class, 'moderateReview'])->name('reviews.action');
     Route::post('/reviews/batch', [ModerationController::class, 'batchReviews'])->name('reviews.batch');
 
@@ -89,20 +87,6 @@ Route::middleware('can:moderate-content')->prefix('moderation')->name('moderatio
     Route::get('/projects', [ModerationController::class, 'projects'])->name('projects');
     Route::get('/projects/{project}', [ModerationController::class, 'showProject'])->withTrashed()->name('projects.show');
     Route::patch('/projects/{project}/{action}', [ModerationController::class, 'moderateProject'])->name('projects.action');
-
-    // --- Feed moderation console (Phase 5Q) ---------------------------------
-    Route::get('/feed', [\App\Http\Controllers\Admin\FeedModerationController::class, 'index'])->name('feed');
-    Route::get('/feed/reports', [\App\Http\Controllers\Admin\FeedModerationController::class, 'reports'])->name('feed.reports');
-    Route::get('/feed/posts', [\App\Http\Controllers\Admin\FeedModerationController::class, 'posts'])->name('feed.posts');
-    Route::get('/feed/comments', [\App\Http\Controllers\Admin\FeedModerationController::class, 'comments'])->name('feed.comments');
-    Route::get('/feed/talents/{talent}', [\App\Http\Controllers\Admin\FeedModerationController::class, 'talentActivity'])
-        ->withTrashed()->name('feed.talent');
-    Route::patch('/feed/posts/{post}/{action}', [\App\Http\Controllers\Admin\FeedModerationController::class, 'moderatePost'])
-        ->withTrashed()->whereIn('action', ['hide', 'remove', 'restore'])->name('feed.posts.action');
-    Route::patch('/feed/comments/{comment}/{action}', [\App\Http\Controllers\Admin\FeedModerationController::class, 'moderateComment'])
-        ->withTrashed()->whereIn('action', ['hide', 'remove', 'restore'])->name('feed.comments.action');
-    Route::patch('/feed/reports/{report}/{resolution}', [\App\Http\Controllers\Admin\FeedModerationController::class, 'resolveReport'])
-        ->whereIn('resolution', ['actioned', 'dismissed'])->name('feed.reports.action');
 });
 
 // --- Contract intervention console (intervene-contracts) ----------------------------

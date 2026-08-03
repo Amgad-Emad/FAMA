@@ -9,7 +9,7 @@
         'booking_type' => $talent->booking_type,
         'booking_value' => $talent->booking_value,
     ];
-    $publish = ['is_published' => (bool) $talent->is_published, 'status' => $talent->status->getValue(), 'is_verified' => (bool) $talent->is_verified];
+    $publish = ['is_published' => (bool) $talent->is_published, 'status' => $talent->status->getValue()];
     $rate = ['rate_unit' => $talent->rate_unit, 'rate_amount' => $talent->rate_amount, 'rate_currency' => $talent->rate_currency];
 @endphp
 
@@ -29,28 +29,15 @@
 
         {{-- Publishing (moved from the old Account tab) --}}
         <x-ui.section :title="__('Publishing')" :eyebrow="__('Profile visibility')">
-            {{-- Awaiting verification: an admin must approve before going public. --}}
-            <div x-show="!isVerified && !isPublished" x-cloak
-                 class="mb-3 flex items-start gap-3 rounded-xl border border-warn/40 bg-warn/10 p-4">
-                <span class="mt-0.5 text-warn">⏳</span>
-                <div>
-                    <p class="font-medium text-ink">{{ __('Awaiting verification') }}</p>
-                    <p class="mt-0.5 text-sm text-muted">{{ __('Our team is reviewing your profile. You can keep editing now — the Publish button unlocks once your account is verified.') }}</p>
-                </div>
-            </div>
             <x-ui.card class="flex flex-wrap items-center justify-between gap-4">
                 <div>
                     <div class="flex items-center gap-2">
-                        <span class="h-2.5 w-2.5 rounded-pill" :class="isPublished ? 'bg-success' : (isVerified ? 'bg-warn' : 'bg-muted')"></span>
+                        <span class="h-2.5 w-2.5 rounded-pill" :class="isPublished ? 'bg-success' : 'bg-warn'"></span>
                         <span class="font-display text-xl text-ink" x-text="isPublished ? '{{ __('Live') }}' : ('{{ __('Not live') }}' + ' · ' + status)"></span>
-                        <template x-if="isVerified">
-                            <span class="rounded-pill bg-accent-weak px-2 py-0.5 text-xs text-accent-ink">{{ __('verified') }}</span>
-                        </template>
                     </div>
                     <p x-show="publishError" x-cloak class="mt-1 text-xs text-danger" x-text="publishError"></p>
                 </div>
-                <x-ui.button variant="accent" x-on:click="togglePublish()" x-bind:disabled="publishing || (!isVerified && !isPublished)"
-                             x-bind:title="(!isVerified && !isPublished) ? '{{ __('Your account must be verified before you can publish.') }}' : ''">
+                <x-ui.button variant="accent" x-on:click="togglePublish()" x-bind:disabled="publishing">
                     <span x-text="isPublished ? '{{ __('Unpublish') }}' : '{{ __('Publish') }}'"></span>
                 </x-ui.button>
             </x-ui.card>
@@ -103,26 +90,22 @@
                         </div>
                         <p x-show="errors.slug" x-cloak class="mt-1 text-xs text-danger" x-text="errors.slug?.[0]"></p>
                     </div>
-                    <div class="sm:col-span-2">
-                        <label class="mb-1 block text-sm font-medium text-ink">{{ __('Headline') }}</label>
+                    <div>
+                        <label class="mb-1 block text-sm font-medium text-ink">{{ __('Headline (EN)') }}</label>
                         <input x-model="core.headline.en" type="text" class="w-full rounded-md border-line bg-elevated text-ink shadow-sm focus:border-accent focus:ring-accent">
                     </div>
-                    {{-- Arabic input hidden while the app is English-only (restore for the AR pass).
                     <div dir="rtl">
                         <label class="mb-1 block text-sm font-medium text-ink">{{ __('Headline (AR)') }}</label>
                         <input x-model="core.headline.ar" type="text" class="w-full rounded-md border-line bg-elevated text-ink shadow-sm focus:border-accent focus:ring-accent">
                     </div>
-                    --}}
                     <div class="sm:col-span-2">
-                        <label class="mb-1 block text-sm font-medium text-ink">{{ __('Bio') }}</label>
+                        <label class="mb-1 block text-sm font-medium text-ink">{{ __('Bio (EN)') }}</label>
                         <textarea x-model="core.bio.en" rows="3" class="w-full rounded-md border-line bg-elevated text-ink shadow-sm focus:border-accent focus:ring-accent"></textarea>
                     </div>
-                    {{-- Arabic input hidden while the app is English-only (restore for the AR pass).
                     <div class="sm:col-span-2" dir="rtl">
                         <label class="mb-1 block text-sm font-medium text-ink">{{ __('Bio (AR)') }}</label>
                         <textarea x-model="core.bio.ar" rows="3" class="w-full rounded-md border-line bg-elevated text-ink shadow-sm focus:border-accent focus:ring-accent"></textarea>
                     </div>
-                    --}}
                     <div>
                         <label class="mb-1 block text-sm font-medium text-ink">{{ __('Base city') }}</label>
                         <input x-model="core.base_city" type="text" class="w-full rounded-md border-line bg-elevated text-ink shadow-sm focus:border-accent focus:ring-accent">

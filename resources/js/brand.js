@@ -111,10 +111,7 @@ document.addEventListener('alpine:init', () => {
         savingAccount: false,
         accountSaved: false,
         published: initial.published,
-        // An admin must verify before the brand can go public.
-        isVerified: initial.verified,
         publishing: false,
-        publishError: '',
 
         // Creative needs (folded in from the old Creative needs tab).
         needs: initial.needs,
@@ -161,12 +158,11 @@ document.addEventListener('alpine:init', () => {
         // Publish / unpublish the brand profile.
         async togglePublish() {
             this.publishing = true;
-            this.publishError = '';
             try {
                 const { data } = await patch('/brand/account/publish', { publish: !this.published });
                 this.published = data.is_published;
             } catch (e) {
-                if (e instanceof ApiError) this.publishError = e.message;
+                if (e instanceof ApiError) window.alert(e.message);
             } finally {
                 this.publishing = false;
             }

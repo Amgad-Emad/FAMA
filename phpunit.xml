@@ -27,11 +27,7 @@
         <env name="DB_DATABASE" value="fama_test"/>
         <env name="DB_URL" value=""/>
         <env name="MAIL_MAILER" value="array"/>
-        <!-- database (not sync): queued work — link enrichment, conversions,
-             notifications — must NEVER execute inline in tests (a sync queue
-             would make real network calls). Jobs land in the jobs table and
-             are assertable; job logic is unit-tested by calling handle(). -->
-        <env name="QUEUE_CONNECTION" value="database"/>
+        <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
