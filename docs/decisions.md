@@ -139,6 +139,60 @@
 - **Status:** Accepted. *(The Arabic names are a first pass — stakeholders should confirm the AR copy; `عرض الأزياء` / `التصوير الفوتوغرافي` / `التصوير السينمائي` / `الإدارة الإبداعية` / `تنسيق الأزياء` / `التصميم الجرافيكي`.)*
 - **Consequences:** Data-driven surfaces (talent-card kicker, public-profile secondary line + skill chips, admin Skills catalog, brand creative-needs, API lookup) show the new names automatically. Display-label code changed in `discover.blade.php` + `dashboard.js` (`scopeLabels`) and the editor's per-skill category label. Every seeder/factory/test that referenced an old slug or name literal was updated; nothing references `photographer` / `stylist` / etc. as a slug literal.
 
+### ADR-F1 — Polymorphic post author, posting gated to talents by policy
+- **Context:** The feed launches with talents as the only publishers, but the product may later let brands post. A `talent_id` FK would make that a migration + backfill.
+- **Decision:** `posts.author` is a **polymorphic morph** (aliased `talent`; `brand` reserved), and every actor-side feed reference (liker, follower, comment author, reporter, viewer) is likewise a morph. Posting is restricted to talents by **`PostPolicy::create` alone**.
+- **Status:** Accepted (2026-07-22).
+- **Consequences:** Enabling brand posting is a one-line policy change, zero schema work. The feed enforces an aliased morph map (`talent`, `brand`, `user`, `post`, `comment`, `project`); implementation must fold the existing contract-engine morph keys into the same map so enforcement doesn't break in-flight contract data.
+
+### ADR-F2 — Project shares: live reference + `shared_snapshot` fallback
+- **Context:** A `project_share` post references a talent's Project. Snapshot-everything (the contract-step rule, ADR-4) would show stale content; a bare FK breaks the post when the Project goes away.
+- **Decision:** The post **live-references** `projects.id` and renders the current Project; a `shared_snapshot` JSON frozen at share time lets an unpublished/deleted Project degrade to a **dead-but-intact frame** (no link-through) instead of a broken post. *(Widened in revision 5W:* the snapshot captures `{title translations, cover_media_path, client_name, year, media_count, skill_ids, shared_at}` so the dead frame renders complete — cover, meta line and skill chips — marked "This Project is no longer available".)
+- **Status:** Accepted (2026-07-22) — ⚠️ deliberately deviates from the contract-step snapshot rule; flagged for stakeholder confirmation (feed-spec Q1).
+- **Consequences:** Shares always show current work (the feed is a living surface, unlike a legal contract trail); withdrawal of a Project withdraws its content from the feed while preserving thread integrity. `posts.project_id` is `nullOnDelete`.
+
+### ADR-F3 — Mentions stored as entity ID + offset, never as username text
+- **Context:** Usernames (the `slug`) are user-editable; storing `@username` strings in rendered bodies breaks every historical mention on rename.
+- **Decision:** The raw body is stored **as typed**; each mention is a `mentions` row holding the mentioned entity's **morph + ID + `start_offset` + `length`** (multibyte-correct character offsets). The renderer resolves the **current** Username at read time. A body edit deletes and fully re-parses — no offset diffing.
+- **Status:** Accepted (2026-07-22).
+- **Consequences:** Username changes never break links; rendering escapes first then injects markup, with `<bdi>`/Unicode isolates for mixed-direction bodies. Limits: 10 mentions/post, 5/comment.
+
+### ADR-F4 — Link chips parse from the URL string; enrichment is best-effort and async
+- **Context:** Instagram and peers block scraping; a chip that waits on a network fetch renders late or never.
+- **Decision:** A `LinkProvider` driver registry parses **provider + handle/resource from the URL string alone — zero network** — so the chip is instantly useful. A queued `FetchLinkPreviewJob` enriches (oEmbed → Open Graph) best-effort into the deduplicated `link_previews` row (`url_hash`); failure keeps the parsed chip and never surfaces an error.
+- **Status:** Accepted (2026-07-22).
+- **Consequences:** Adding a provider is a driver + config line. The fetcher carries a mandatory SSRF guard (scheme allowlist, DNS-resolved private/reserved-range rejection, redirect/timeout/size caps) and never renders remote HTML; `embed_html` only for allowlisted providers, sanitized. This introduces the project's first queued jobs — the queue connection and a feed fail-log channel land with it.
+
+### ADR-F5 — Feed pagination = cached candidate-ID list keyed by actor + seed
+- **Context:** Offset pagination over a ranked, moving feed drifts: new posts shift pages, producing duplicates and gaps mid-scroll.
+- **Decision:** `FeedService` computes the **full candidate ID list once per feed session** (tier 1 seeded-shuffled follows + tier 2 discovery, interleaved, diversity-capped), caches it **10 minutes keyed by viewer + seed**, and slices it per page. The cursor is an opaque base64 `{seed, offset}` token. Guests/zero-follow viewers get discovery only, seeded per session (D14).
+- **Status:** Accepted (2026-07-22).
+- **Consequences:** Provably stable paging (tested with mid-scroll inserts); new posts appear on the next session/refresh, not mid-scroll. Hydration is one `whereIn` + `FIELD()` ordering. Ranking weights live in `config/feed.php`, never in code.
+
+### ADR-F6 — Denormalized counters in-transaction + nightly reconciliation
+- **Context:** Feed lists render counts on every row; live `COUNT(*)`s don't scale, and async counters drift visibly.
+- **Decision:** `likes_count`, `comments_count`, `shares_count`, `replies_count`, `followers_count`, `following_count`, `posts_count` are **denormalized columns mutated inside the same DB transaction as the source write** (CounterService + observers). A nightly `feed:reconcile-counters` recomputes from source and reports drift.
+- **Status:** Accepted (2026-07-22).
+- **Consequences:** Reads are free; any bug-induced drift self-heals within a day and is logged. The reconcile command is covered by a test that corrupts counters and asserts repair.
+
+### ADR-F7 — Two-level comment depth
+- **Context:** Unlimited nesting produces unreadable threads and unbounded recursive queries.
+- **Decision:** **Comment → reply, two levels, hard.** A reply to a reply attaches to the same `parent_id` and auto-prefixes an `@mention` of the reply author (the Instagram model).
+- **Status:** Accepted (2026-07-22).
+- **Consequences:** `comments.parent_id` is one self-FK deep; listing is two bounded queries (comments + preview replies); tombstones (D12) keep threads intact under deletion.
+
+### ADR-F8 — Guest read unrestricted; write intent captured and replayed after auth
+- **Context:** The feed is an acquisition surface — a login wall kills it; but a guest's tap on ✦ shouldn't evaporate either.
+- **Decision:** Every read route allows guests. A guest write returns **401 with the JSON envelope carrying `{action, target_type, target_id}`**; the UI expands the control inline into a sign-in prompt (no blocking modal, scroll preserved), and a `PendingIntent` session service **replays the action exactly once after successful auth** and clears it.
+- **Status:** Accepted (2026-07-22).
+- **Consequences:** `resolve.actor` middleware (never rejects) + `require.actor` (envelope-401) on write routes; extends the ADR-P `url.intended` pattern to actions. Covered by end-to-end replay tests for like, follow and comment.
+
+### ADR-F9 — Saved and liked collections are private
+- **Context:** Bookmarks (revision 5X) add SAVED/LIKED dashboard views. Some platforms surface likes publicly as a social signal; a casting marketplace's shortlists are competitively sensitive.
+- **Decision:** Saved and liked collections are **private, visible only to their owner**. No public likes tab on profiles; every collection endpoint is scoped to the current actor with no ability to request someone else's. The `bookmarks` table is polymorphic on both sides so saving **talents** (the brand shortlist) and **Projects** later is a policy flip, not a migration — only `bookmarkable_type = post` is enabled this phase (`ToggleBookmark` rejects the rest with a clear message).
+- **Status:** Accepted (2026-07-22). Revisit "public likes" only as an explicit product decision.
+- **Consequences:** `posts.bookmarks_count` is denormalized in-transaction and reconciled nightly (ADR-F6 pattern). Save is guest-gated with intent replay like every other write (ADR-F8).
+
 ## Open — needs owner (surface every session)
 
 ### ADR-A — Three brand-side user modes
@@ -234,3 +288,27 @@
 - **Consequences:** `default_blocks` can hold grandfathered keys; consumers (SeedBlocksForSkill) already
   treat it as a plain key list. The `manage-blocks` permission is seeded and granted to super-admin only —
   grant it to other roles per need.
+
+### ADR-U — Admin verification is a hard prerequisite for going public
+- **Context:** Self-serve talents and brands could reach the public surfaces with no admin review — a
+  talent went `Live` needing only a display name; a brand went `Published` needing only completed
+  onboarding. `brands.is_verified` existed but was cosmetic (a trust badge, not a publish gate); talents
+  had no verification concept at all. The requirement: nothing goes public until an admin approves it.
+- **Decision:** Verification (`is_verified`) is the go-live gate for **both** entities.
+  - Talents gain an `is_verified` column (migration `2026_08_02_000100`); the `ToLive` guard now requires
+    `display_name` **and** `is_verified`. Brands get a new guarded `ToPublished` transition
+    (`Complete→Published`, `Unpublished→Published`) requiring `is_verified`.
+  - The guard is the hard floor for **every** path (self-serve and admin). The self-serve publish
+    endpoints add a friendly 422 pre-check; the admin moderation UI shows **Verify** for both kinds and
+    hides **Publish** until verified.
+  - `verify` is **one-way** (both entities). To take a live account down, use Suspend/Unpublish — not
+    un-verify. New `TalentModerationService::verify` mirrors the brand method; both audit
+    (`talent.verified` / `brand.verified`).
+  - Already-public rows are **grandfathered** (backfill `is_verified=true` for live talents / published
+    brands) so the gate only bites future transitions.
+- **Status:** Accepted (2026-08-02).
+- **Consequences:** A newly-registered account is `unverified` and cannot publish until a moderator acts —
+  the `created/draft` (talents) and `is_verified=false` (brands) moderation queues are now a real approval
+  funnel, not a passive count. Factory defaults for the published/live states are `is_verified=true` (with
+  `unverified()` states for negative tests). Open item: whether verification should also **auto-publish**
+  (today it only unlocks the owner's Publish toggle) — deferred to stakeholders.

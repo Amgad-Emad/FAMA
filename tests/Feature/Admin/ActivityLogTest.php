@@ -17,11 +17,11 @@ it('records subject, causer and old/new properties when an admin edits a contrac
     expect($activity->description)->toBe('updated');
 
     // Subject — the thing changed.
-    expect($activity->subject_type)->toBe(ContractFlow::class);
+    expect($activity->subject_type)->toBe((new ContractFlow)->getMorphClass());
     expect((int) $activity->subject_id)->toBe($flow->id);
 
     // Causer — who changed it (resolved from the admin guard).
-    expect($activity->causer_type)->toBe(User::class);
+    expect($activity->causer_type)->toBe((new User)->getMorphClass());
     expect((int) $activity->causer_id)->toBe($admin->id);
 
     // Changed attributes — old + new values (this activitylog version stores model

@@ -24,4 +24,10 @@ import './admin';
 // Apply-to-project modal (public project detail).
 import './apply';
 
+// Public Daylight feed (stream, frames, casting strip).
+import './feed';
+
+// Fixed topbar scroll behaviour (5AB).
+import './topbar';
+
 Alpine.start();

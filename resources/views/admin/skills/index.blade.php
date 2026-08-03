@@ -49,8 +49,10 @@
         <x-ui.card>
             <h3 class="mb-3 font-display text-lg">{{ __('Add skill') }}</h3>
             <div class="grid gap-3 sm:grid-cols-3">
-                <div><x-input-label :value="__('Name (EN)')" /><x-text-input class="mt-1 block w-full" x-model="newType.name.en" /></div>
+                <div><x-input-label :value="__('Name')" /><x-text-input class="mt-1 block w-full" x-model="newType.name.en" /></div>
+                {{-- Arabic input hidden while the app is English-only (restore for the AR pass).
                 <div><x-input-label :value="__('Name (AR)')" /><x-text-input class="mt-1 block w-full" dir="rtl" x-model="newType.name.ar" /></div>
+                --}}
                 <div>
                     <x-input-label :value="__('Category')" />
                     <select class="mt-1 block w-full rounded-md border-line bg-bg" x-model="newType.category">

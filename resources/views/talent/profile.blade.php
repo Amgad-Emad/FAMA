@@ -93,9 +93,29 @@
                         @endif
                     </div>
 
-                    {{-- CTAs: Message (brand↔talent chat entry — ADR-P) + Leave a review --}}
+                    {{-- CTAs: Follow + Message (brand↔talent chat, ADR-P) + Leave a review --}}
                     <div class="mt-5 flex flex-col justify-center gap-2 sm:flex-row sm:justify-start">
-                        <x-ui.button :href="route('brand.talents.message', ['talent' => $talent->slug])" variant="accent" class="w-full sm:w-auto">{{ __('Message') }}</x-ui.button>
+                        @if ($canFollow ?? true)
+                            <div x-data="talentFollow({
+                                    id: {{ $talent->id }},
+                                    following: {{ ($following ?? false) ? 'true' : 'false' }},
+                                    confirm: {
+                                        title: @js(__('Unfollow :name?', ['name' => $talent->display_name])),
+                                        message: @js(__('You will stop seeing their new posts in your feed.')),
+                                        confirmLabel: @js(__('Unfollow')),
+                                    },
+                                 })" class="w-full sm:w-auto">
+                                <button type="button" @click="toggle()" :disabled="busy" :aria-pressed="following ? 'true' : 'false'"
+                                        class="inline-flex w-full select-none items-center justify-center gap-2 rounded-pill px-4 py-2.5 text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg disabled:opacity-60 sm:w-auto"
+                                        :class="following ? 'border border-line-strong text-ink hover:bg-surface' : 'bg-accent text-on-accent hover:opacity-90'">
+                                    {{-- following: checkmark · not following: plus --}}
+                                    <svg x-show="following" x-cloak class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                                    <svg x-show="!following" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                                    <span x-text="following ? '{{ __('Following') }}' : '{{ __('Follow') }}'">{{ __('Follow') }}</span>
+                                </button>
+                            </div>
+                        @endif
+                        <x-ui.button :href="route('brand.talents.message', ['talent' => $talent->slug])" variant="outline" class="w-full sm:w-auto">{{ __('Message') }}</x-ui.button>
                         <x-ui.button :href="route('talent.review.create', ['slug' => $talent->slug])" variant="outline" class="w-full sm:w-auto">{{ __('Leave a review') }}</x-ui.button>
                     </div>
                 </div>

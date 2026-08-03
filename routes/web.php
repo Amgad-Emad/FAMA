@@ -79,6 +79,10 @@ Route::group([
     // Role-aware auth routes (login/register/password/verification/logout).
     require __DIR__.'/auth.php';
 
+    // --- Public feed (Phase 5) — guests read everything (ADR-F8). MUST sit
+    //     before the /{slug} talent catch-all so /feed and /posts resolve. ---
+    require __DIR__.'/feed.php';
+
     // --- Public discovery + talent sub-pages (before the {slug} catch-all) ---
     Route::get('/discover', [DiscoveryController::class, 'index'])->name('discover');
     Route::get('/discover/search', [DiscoveryController::class, 'search'])->name('discover.search');

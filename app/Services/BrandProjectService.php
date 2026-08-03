@@ -74,7 +74,60 @@ class BrandProjectService extends Service
 
     public function open(BrandProject $campaign): BrandProject
     {
-        return $this->transition($campaign, Open::class);
+        $project = $this->transition($campaign, Open::class);
+
+        $this->notifySubscribers($project);
+
+        return $project;
+    }
+
+    /**
+     * When a public opportunity opens, notify every talent who subscribed to
+     * this brand via the notify-bell (the talent→brand follow edge). Private
+     * projects are never broadcast. One query for the subscriber set; the
+     * notification carries a localizable key + the deep link to apply.
+     */
+    private function notifySubscribers(BrandProject $project): void
+    {
+        if (! $project->is_public) {
+            return;
+        }
+
+        $brand = $project->brand()->first();
+
+        if ($brand === null) {
+            return;
+        }
+
+        $subscriberIds = \App\Models\Follow::query()
+            ->where('followable_type', 'brand')
+            ->where('followable_id', $brand->id)
+            ->where('follower_type', 'talent')
+            ->pluck('follower_id');
+
+        if ($subscriberIds->isEmpty()) {
+            return;
+        }
+
+        $payload = [
+            'type' => 'brand_opportunity',
+            'message' => ':brand posted a new opportunity: :title',
+            'params' => [
+                'brand' => $brand->name,
+                'title' => $project->title,
+            ],
+            'url' => route('brand.project.public', ['brand' => $brand->slug, 'project' => $project->slug]),
+            'actor' => [
+                'type' => 'brand',
+                'id' => $brand->id,
+                'name' => $brand->name,
+                'username' => $brand->slug,
+                'avatar_url' => $brand->logo_url,
+            ],
+        ];
+
+        \App\Models\Talent::query()->whereIn('id', $subscriberIds)->get()
+            ->each(fn (\App\Models\Talent $talent) => $talent->notify(new \App\Notifications\Feed\BrandOpportunityPosted($payload)));
     }
 
     public function start(BrandProject $campaign): BrandProject

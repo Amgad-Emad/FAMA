@@ -20,9 +20,9 @@ abstract class BrandState extends State
             ->default(Registered::class)
             ->allowTransition(Registered::class, Onboarding::class)
             ->allowTransition(Onboarding::class, Complete::class)
-            ->allowTransition(Complete::class, Published::class)
+            ->allowTransition(Complete::class, Published::class, ToPublished::class)
             ->allowTransition(Published::class, Unpublished::class)
-            ->allowTransition(Unpublished::class, Published::class);
+            ->allowTransition(Unpublished::class, Published::class, ToPublished::class);
 
         // Suspend from any live/complete state; reactivate back to hidden.
         foreach ([Complete::class, Published::class, Unpublished::class] as $from) {

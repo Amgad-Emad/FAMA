@@ -156,6 +156,14 @@ return [
             'replace_placeholders' => true,
         ],
 
+        'feed' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/feed.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => env('LOG_DAILY_DAYS', 30),
+            'replace_placeholders' => true,
+        ],
+
         'brands' => [
             'driver' => 'daily',
             'path' => storage_path('logs/brands.log'),

@@ -43,13 +43,15 @@
                         </div>
                         {{-- Brief (translatable) --}}
                         <div class="sm:col-span-2">
-                            <x-input-label :value="__('Brief (EN)')" />
+                            <x-input-label :value="__('Brief')" />
                             <textarea rows="2" class="mt-1 block w-full rounded-md border-line bg-bg text-sm" x-model="form.description.en" placeholder="{{ __('A short summary of the project…') }}"></textarea>
                         </div>
+                        {{-- Arabic input hidden while the app is English-only (restore for the AR pass).
                         <div class="sm:col-span-2">
                             <x-input-label :value="__('Brief (AR)')" />
                             <textarea rows="2" dir="rtl" class="mt-1 block w-full rounded-md border-line bg-bg text-sm" x-model="form.description.ar" placeholder="{{ __('A short summary of the project…') }}"></textarea>
                         </div>
+                        --}}
                     </div>
                 </div>
 

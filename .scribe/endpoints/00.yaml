@@ -1,0 +1,1741 @@
+name: Endpoints
+description: ''
+endpoints:
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/v1/feed/items
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: |-
+        One ranked feed page: items in frozen-list order, casting-slot
+        positions, and the opaque next cursor (D10).
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: '{"success":true,"data":{"items":[{"id":182,"post_type":"project_share","author":{"type":"talent","id":8,"username":"farida-nabil","display_name":"Farida Nabil","avatar_url":"https:\/\/fama.test\/storage\/35\/fama_a5ba6cf9e24223bc005ee9c156f6362f.jpg"},"body":null,"body_html":null,"media":[],"skills":[{"id":1,"name":"Modeling","slug":"modeling","icon":"lucide-modeling"}],"project":{"is_live":true,"id":26,"title":"Decentralized executive artificialintelligence","summary":"Dolores perspiciatis quod perspiciatis aut rerum.","cover_url":null,"year":2022,"url":"https:\/\/fama.test\/farida-nabil\/work\/26"},"chips":[],"likes_count":1,"comments_count":7,"shares_count":0,"liked_by_viewer":false,"bookmarks_count":0,"saved_by_viewer":false,"is_pinned":false,"is_editable":false,"edited_at":null,"published_at":"2026-07-21T08:31:43+00:00","permalink":"https:\/\/fama.test\/posts\/182"},{"id":43,"post_type":"note","author":{"type":"talent","id":4,"username":"yasmin-adel","display_name":"Yasmin Adel","avatar_url":"https:\/\/fama.test\/storage\/18\/fama_f6b78ebcdedbf4990a3b07b1384067ec.jpg"},"body":"Casting was intense, the energy on set even better. Alhamdulillah.","body_html":"Casting was intense, the energy on set even better. Alhamdulillah.","media":[],"skills":[{"id":5,"name":"Styling","slug":"styling","icon":"lucide-styling"}],"project":null,"chips":[],"likes_count":9,"comments_count":5,"shares_count":0,"liked_by_viewer":false,"bookmarks_count":0,"saved_by_viewer":false,"is_pinned":false,"is_editable":false,"edited_at":null,"published_at":"2026-07-20T02:23:41+00:00","permalink":"https:\/\/fama.test\/posts\/43"},{"id":107,"post_type":"project_share","author":{"type":"talent","id":16,"username":"karianne-oconnell-2171","display_name":"Karianne O''Connell","avatar_url":null},"body":"Casting was intense, the energy on set even better. Alhamdulillah. \u0645\u0639 @prof-kelvin-fritsch-md-3377","body_html":"Casting was intense, the energy on set even better. Alhamdulillah. \u0645\u0639 <bdi><a href=\"https:\/\/fama.test\/prof-kelvin-fritsch-md-3377\" class=\"feed-mention\">\u2066@prof-kelvin-fritsch-md-3377\u2069<\/a><\/bdi>","media":[],"skills":[{"id":5,"name":"Styling","slug":"styling","icon":"lucide-styling"}],"project":{"is_live":true,"id":7,"title":"Pre-emptive executive framework","summary":"Quia veritatis aut non aperiam officiis pariatur magni.","cover_url":null,"year":2021,"url":"https:\/\/fama.test\/karianne-oconnell-2171\/work\/7"},"chips":[],"likes_count":6,"comments_count":3,"shares_count":0,"liked_by_viewer":false,"bookmarks_count":0,"saved_by_viewer":false,"is_pinned":false,"is_editable":false,"edited_at":null,"published_at":"2026-07-21T08:31:42+00:00","permalink":"https:\/\/fama.test\/posts\/107"},{"id":94,"post_type":"note","author":{"type":"talent","id":20,"username":"letha-feeney-8951","display_name":"Letha Feeney","avatar_url":null},"body":"BTS from the night shoot in Downtown Cairo. Neon everywhere. https:\/\/instagram.com\/aniyah-russel-v-9998","body_html":"BTS from the night shoot in Downtown Cairo. Neon everywhere. <bdi><a href=\"https:\/\/instagram.com\/aniyah-russel-v-9998\" class=\"feed-chip\" target=\"_blank\" rel=\"noopener noreferrer nofollow ugc\" data-provider=\"instagram\"><svg class=\"chip-glyph\" aria-hidden=\"true\"><use href=\"#glyph-instagram\"><\/use><\/svg>\u2066@aniyah-russel-v-9998\u2069<\/a><\/bdi>","media":[],"skills":[{"id":2,"name":"Photography","slug":"photography","icon":"lucide-photography"},{"id":6,"name":"Graphic Design","slug":"graphic-design","icon":"lucide-graphic-design"}],"project":null,"chips":[{"provider":"instagram","handle":"aniyah-russel-v-9998","resource_id":null,"url":"https:\/\/instagram.com\/aniyah-russel-v-9998","canonical_url":null,"title":null,"description":null,"image_url":null,"status":"pending"}],"likes_count":2,"comments_count":5,"shares_count":0,"liked_by_viewer":false,"bookmarks_count":0,"saved_by_viewer":false,"is_pinned":false,"is_editable":false,"edited_at":null,"published_at":"2026-07-20T17:06:42+00:00","permalink":"https:\/\/fama.test\/posts\/94"},{"id":29,"post_type":"media","author":{"type":"talent","id":27,"username":"deondre-aufderhar-5616","display_name":"Deondre Aufderhar","avatar_url":null},"body":"Testing new looks for SS26. The tailoring on this collection is unreal. https:\/\/www.behance.net\/aniyah-russel-v-9998","body_html":"Testing new looks for SS26. The tailoring on this collection is unreal. <bdi><a href=\"https:\/\/www.behance.net\/aniyah-russel-v-9998\" class=\"feed-chip\" target=\"_blank\" rel=\"noopener noreferrer nofollow ugc\" data-provider=\"behance\"><svg class=\"chip-glyph\" aria-hidden=\"true\"><use href=\"#glyph-behance\"><\/use><\/svg>\u2066@aniyah-russel-v-9998\u2069<\/a><\/bdi>","media":[{"id":108,"type":"image","original_url":"https:\/\/fama.test\/storage\/108\/fama_ea730af08d4c4844159efb491a8ab2f9.jpg","thumb_url":"https:\/\/fama.test\/storage\/108\/fama_ea730af08d4c4844159efb491a8ab2f9.jpg","feed_url":"https:\/\/fama.test\/storage\/108\/fama_ea730af08d4c4844159efb491a8ab2f9.jpg","full_url":"https:\/\/fama.test\/storage\/108\/fama_ea730af08d4c4844159efb491a8ab2f9.jpg","poster_url":null},{"id":109,"type":"image","original_url":"https:\/\/fama.test\/storage\/109\/fama_55e45d2876331a61e2cf54cff6195434.jpg","thumb_url":"https:\/\/fama.test\/storage\/109\/fama_55e45d2876331a61e2cf54cff6195434.jpg","feed_url":"https:\/\/fama.test\/storage\/109\/fama_55e45d2876331a61e2cf54cff6195434.jpg","full_url":"https:\/\/fama.test\/storage\/109\/fama_55e45d2876331a61e2cf54cff6195434.jpg","poster_url":null}],"skills":[{"id":4,"name":"Creative Direction","slug":"creative-direction","icon":"lucide-creative-direction"}],"project":null,"chips":[{"provider":"behance","handle":"aniyah-russel-v-9998","resource_id":null,"url":"https:\/\/www.behance.net\/aniyah-russel-v-9998","canonical_url":null,"title":null,"description":null,"image_url":null,"status":"pending"}],"likes_count":7,"comments_count":6,"shares_count":0,"liked_by_viewer":false,"bookmarks_count":0,"saved_by_viewer":false,"is_pinned":false,"is_editable":false,"edited_at":null,"published_at":"2026-07-18T23:10:41+00:00","permalink":"https:\/\/fama.test\/posts\/29"},{"id":62,"post_type":"note","author":{"type":"talent","id":37,"username":"kathlyn-heathcote-4902","display_name":"Kathlyn Heathcote","avatar_url":null},"body":"BTS from the night shoot in Downtown Cairo. Neon everywhere.","body_html":"BTS from the night shoot in Downtown Cairo. Neon everywhere.","media":[],"skills":[{"id":1,"name":"Modeling","slug":"modeling","icon":"lucide-modeling"}],"project":null,"chips":[],"likes_count":5,"comments_count":2,"shares_count":0,"liked_by_viewer":false,"bookmarks_count":0,"saved_by_viewer":false,"is_pinned":false,"is_editable":false,"edited_at":null,"published_at":"2026-07-20T12:24:41+00:00","permalink":"https:\/\/fama.test\/posts\/62"},{"id":221,"post_type":"project_share","author":{"type":"talent","id":25,"username":"dayna-moore-1677","display_name":"Dayna Moore","avatar_url":null},"body":null,"body_html":null,"media":[],"skills":[{"id":2,"name":"Photography","slug":"photography","icon":"lucide-photography"},{"id":4,"name":"Creative Direction","slug":"creative-direction","icon":"lucide-creative-direction"}],"project":{"is_live":true,"id":16,"title":"Synergized systemic standardization","summary":"Quis consequatur autem est nihil nemo rem.","cover_url":null,"year":2019,"url":"https:\/\/fama.test\/dayna-moore-1677\/work\/16"},"chips":[],"likes_count":7,"comments_count":0,"shares_count":0,"liked_by_viewer":false,"bookmarks_count":0,"saved_by_viewer":false,"is_pinned":false,"is_editable":false,"edited_at":null,"published_at":"2026-07-22T08:31:44+00:00","permalink":"https:\/\/fama.test\/posts\/221"},{"id":211,"post_type":"media","author":{"type":"talent","id":4,"username":"yasmin-adel","display_name":"Yasmin Adel","avatar_url":"https:\/\/fama.test\/storage\/18\/fama_f6b78ebcdedbf4990a3b07b1384067ec.jpg"},"body":"\u0643\u0648\u0627\u0644\u064a\u0633 \u062c\u0644\u0633\u0629 \u062a\u0635\u0648\u064a\u0631 \u0627\u0644\u0646\u0647\u0627\u0631\u062f\u0629 \u0641\u064a \u0648\u0633\u0637 \u0627\u0644\u0628\u0644\u062f \u2014 \u0627\u0644\u0625\u0636\u0627\u0621\u0629 \u0643\u0627\u0646\u062a \u062e\u064a\u0627\u0644\u064a\u0629. \u0645\u0639 @dayna-moore-1677","body_html":"\u0643\u0648\u0627\u0644\u064a\u0633 \u062c\u0644\u0633\u0629 \u062a\u0635\u0648\u064a\u0631 \u0627\u0644\u0646\u0647\u0627\u0631\u062f\u0629 \u0641\u064a \u0648\u0633\u0637 \u0627\u0644\u0628\u0644\u062f \u2014 \u0627\u0644\u0625\u0636\u0627\u0621\u0629 \u0643\u0627\u0646\u062a \u062e\u064a\u0627\u0644\u064a\u0629. \u0645\u0639 <bdi><a href=\"https:\/\/fama.test\/dayna-moore-1677\" class=\"feed-mention\">\u2066@dayna-moore-1677\u2069<\/a><\/bdi>","media":[{"id":292,"type":"image","original_url":"https:\/\/fama.test\/storage\/292\/fama_bf286b5f03bf5f51e92ff577c4acaead.jpg","thumb_url":"https:\/\/fama.test\/storage\/292\/fama_bf286b5f03bf5f51e92ff577c4acaead.jpg","feed_url":"https:\/\/fama.test\/storage\/292\/fama_bf286b5f03bf5f51e92ff577c4acaead.jpg","full_url":"https:\/\/fama.test\/storage\/292\/fama_bf286b5f03bf5f51e92ff577c4acaead.jpg","poster_url":null},{"id":293,"type":"image","original_url":"https:\/\/fama.test\/storage\/293\/fama_8daec549b9179844a50a62a172259a33.jpg","thumb_url":"https:\/\/fama.test\/storage\/293\/fama_8daec549b9179844a50a62a172259a33.jpg","feed_url":"https:\/\/fama.test\/storage\/293\/fama_8daec549b9179844a50a62a172259a33.jpg","full_url":"https:\/\/fama.test\/storage\/293\/fama_8daec549b9179844a50a62a172259a33.jpg","poster_url":null}],"skills":[{"id":1,"name":"Modeling","slug":"modeling","icon":"lucide-modeling"},{"id":5,"name":"Styling","slug":"styling","icon":"lucide-styling"}],"project":null,"chips":[],"likes_count":12,"comments_count":2,"shares_count":0,"liked_by_viewer":false,"bookmarks_count":0,"saved_by_viewer":false,"is_pinned":false,"is_editable":false,"edited_at":null,"published_at":"2026-07-18T16:31:43+00:00","permalink":"https:\/\/fama.test\/posts\/211"},{"id":282,"post_type":"project_share","author":{"type":"talent","id":13,"username":"jocelyn-conn-8666","display_name":"Jocelyn Conn","avatar_url":null},"body":null,"body_html":null,"media":[],"skills":[{"id":4,"name":"Creative Direction","slug":"creative-direction","icon":"lucide-creative-direction"}],"project":{"is_live":true,"id":31,"title":"Business-focused static product","summary":"Facere assumenda molestiae assumenda enim.","cover_url":null,"year":2019,"url":"https:\/\/fama.test\/jocelyn-conn-8666\/work\/31"},"chips":[],"likes_count":0,"comments_count":6,"shares_count":0,"liked_by_viewer":false,"bookmarks_count":0,"saved_by_viewer":false,"is_pinned":false,"is_editable":false,"edited_at":null,"published_at":"2026-07-19T08:31:45+00:00","permalink":"https:\/\/fama.test\/posts\/282"},{"id":205,"post_type":"project_share","author":{"type":"talent","id":23,"username":"april-deckow-3527","display_name":"April Deckow","avatar_url":null},"body":null,"body_html":null,"media":[],"skills":[{"id":6,"name":"Graphic Design","slug":"graphic-design","icon":"lucide-graphic-design"}],"project":{"is_live":true,"id":18,"title":"Synchronised homogeneous utilisation","summary":"Ad omnis animi dignissimos.","cover_url":null,"year":2025,"url":"https:\/\/fama.test\/april-deckow-3527\/work\/18"},"chips":[],"likes_count":10,"comments_count":3,"shares_count":0,"liked_by_viewer":false,"bookmarks_count":0,"saved_by_viewer":false,"is_pinned":false,"is_editable":false,"edited_at":null,"published_at":"2026-07-18T08:31:43+00:00","permalink":"https:\/\/fama.test\/posts\/205"},{"id":86,"post_type":"note","author":{"type":"talent","id":14,"username":"pattie-collins-9958","display_name":"Pattie Collins","avatar_url":null},"body":"\u0627\u0644\u062d\u0645\u062f \u0644\u0644\u0647\u060c \u062e\u0644\u0635\u0646\u0627 \u062d\u0645\u0644\u0629 \u0643\u0627\u0645\u0644\u0629 \u0641\u064a \u064a\u0648\u0645\u064a\u0646. \u0641\u0631\u064a\u0642 \u0623\u0643\u062a\u0631 \u0645\u0646 \u0631\u0627\u0626\u0639. with @farida-nabil","body_html":"\u0627\u0644\u062d\u0645\u062f \u0644\u0644\u0647\u060c \u062e\u0644\u0635\u0646\u0627 \u062d\u0645\u0644\u0629 \u0643\u0627\u0645\u0644\u0629 \u0641\u064a \u064a\u0648\u0645\u064a\u0646. \u0641\u0631\u064a\u0642 \u0623\u0643\u062a\u0631 \u0645\u0646 \u0631\u0627\u0626\u0639. with <bdi><a href=\"https:\/\/fama.test\/farida-nabil\" class=\"feed-mention\">\u2066@farida-nabil\u2069<\/a><\/bdi>","media":[],"skills":[{"id":5,"name":"Styling","slug":"styling","icon":"lucide-styling"}],"project":null,"chips":[],"likes_count":5,"comments_count":6,"shares_count":0,"liked_by_viewer":false,"bookmarks_count":0,"saved_by_viewer":false,"is_pinned":false,"is_editable":false,"edited_at":null,"published_at":"2026-07-18T03:06:42+00:00","permalink":"https:\/\/fama.test\/posts\/86"},{"id":130,"post_type":"note","author":{"type":"talent","id":38,"username":"prof-kelvin-fritsch-md-3377","display_name":"Prof. Kelvin Fritsch MD","avatar_url":null},"body":"Wrapped a two-day lookbook shoot in Zamalek \u2014 the light was pure honey. \u0645\u0639 @ms-zelda-steuber-2004","body_html":"Wrapped a two-day lookbook shoot in Zamalek \u2014 the light was pure honey. \u0645\u0639 <bdi><a href=\"https:\/\/fama.test\/ms-zelda-steuber-2004\" class=\"feed-mention\">\u2066@ms-zelda-steuber-2004\u2069<\/a><\/bdi>","media":[],"skills":[{"id":6,"name":"Graphic Design","slug":"graphic-design","icon":"lucide-graphic-design"}],"project":null,"chips":[],"likes_count":12,"comments_count":4,"shares_count":0,"liked_by_viewer":false,"bookmarks_count":0,"saved_by_viewer":false,"is_pinned":false,"is_editable":false,"edited_at":null,"published_at":"2026-07-17T12:56:43+00:00","permalink":"https:\/\/fama.test\/posts\/130"},{"id":169,"post_type":"note","author":{"type":"talent","id":5,"username":"omar-khaled","display_name":"Omar Khaled","avatar_url":"https:\/\/fama.test\/storage\/22\/fama_c2262b1fb08ddc053d60f43edbdddb77.jpg"},"body":"Golden hour on the Corniche never disappoints. Full set soon. \u0645\u0639 @kyleigh-littel-iv-4434","body_html":"Golden hour on the Corniche never disappoints. Full set soon. \u0645\u0639 <bdi><a href=\"https:\/\/fama.test\/kyleigh-littel-iv-4434\" class=\"feed-mention\">\u2066@kyleigh-littel-iv-4434\u2069<\/a><\/bdi>","media":[],"skills":[{"id":3,"name":"Cinematography","slug":"cinematography","icon":"lucide-cinematography"}],"project":null,"chips":[],"likes_count":8,"comments_count":2,"shares_count":0,"liked_by_viewer":false,"bookmarks_count":0,"saved_by_viewer":false,"is_pinned":false,"is_editable":false,"edited_at":null,"published_at":"2026-07-19T00:18:43+00:00","permalink":"https:\/\/fama.test\/posts\/169"},{"id":204,"post_type":"project_share","author":{"type":"talent","id":33,"username":"cathryn-fay-dds-5582","display_name":"Cathryn Fay DDS","avatar_url":null},"body":"\u0634\u0643\u0631\u0627\u064b \u0644\u0643\u0644 \u0627\u0644\u0641\u0631\u064a\u0642 \u0639\u0644\u0649 \u0627\u0644\u0645\u062c\u0647\u0648\u062f \u0641\u064a \u0634\u0648\u062a \u0627\u0644\u0646\u0647\u0627\u0631\u062f\u0629. \u0635\u0648\u0631 \u062c\u0627\u064a\u0629 \u0641\u064a \u0627\u0644\u0633\u0643\u0629. with @prof-kelvin-fritsch-md-3377","body_html":"\u0634\u0643\u0631\u0627\u064b \u0644\u0643\u0644 \u0627\u0644\u0641\u0631\u064a\u0642 \u0639\u0644\u0649 \u0627\u0644\u0645\u062c\u0647\u0648\u062f \u0641\u064a \u0634\u0648\u062a \u0627\u0644\u0646\u0647\u0627\u0631\u062f\u0629. \u0635\u0648\u0631 \u062c\u0627\u064a\u0629 \u0641\u064a \u0627\u0644\u0633\u0643\u0629. with <bdi><a href=\"https:\/\/fama.test\/prof-kelvin-fritsch-md-3377\" class=\"feed-mention\">\u2066@prof-kelvin-fritsch-md-3377\u2069<\/a><\/bdi>","media":[],"skills":[{"id":4,"name":"Creative Direction","slug":"creative-direction","icon":"lucide-creative-direction"}],"project":{"is_live":true,"id":9,"title":"Seamless regional focusgroup","summary":"Odit distinctio ad veritatis voluptatem soluta.","cover_url":null,"year":2024,"url":"https:\/\/fama.test\/cathryn-fay-dds-5582\/work\/9"},"chips":[],"likes_count":11,"comments_count":7,"shares_count":0,"liked_by_viewer":false,"bookmarks_count":0,"saved_by_viewer":false,"is_pinned":false,"is_editable":false,"edited_at":null,"published_at":"2026-07-16T08:31:43+00:00","permalink":"https:\/\/fama.test\/posts\/204"},{"id":280,"post_type":"media","author":{"type":"talent","id":32,"username":"haskell-weber-7119","display_name":"Haskell Weber","avatar_url":null},"body":"Moodboard to final frame in 48 hours. Proud of this one. \u0645\u0639 @adham-yousef","body_html":"Moodboard to final frame in 48 hours. Proud of this one. \u0645\u0639 <bdi><a href=\"https:\/\/fama.test\/adham-yousef\" class=\"feed-mention\">\u2066@adham-yousef\u2069<\/a><\/bdi>","media":[{"id":357,"type":"image","original_url":"https:\/\/fama.test\/storage\/357\/fama_a30dc8263c733ea61950f87bdf4b1f71.jpg","thumb_url":"https:\/\/fama.test\/storage\/357\/fama_a30dc8263c733ea61950f87bdf4b1f71.jpg","feed_url":"https:\/\/fama.test\/storage\/357\/fama_a30dc8263c733ea61950f87bdf4b1f71.jpg","full_url":"https:\/\/fama.test\/storage\/357\/fama_a30dc8263c733ea61950f87bdf4b1f71.jpg","poster_url":null}],"skills":[{"id":2,"name":"Photography","slug":"photography","icon":"lucide-photography"}],"project":null,"chips":[],"likes_count":5,"comments_count":0,"shares_count":0,"liked_by_viewer":false,"bookmarks_count":0,"saved_by_viewer":false,"is_pinned":false,"is_editable":false,"edited_at":null,"published_at":"2026-07-21T02:33:45+00:00","permalink":"https:\/\/fama.test\/posts\/280"},{"id":222,"post_type":"note","author":{"type":"talent","id":5,"username":"omar-khaled","display_name":"Omar Khaled","avatar_url":"https:\/\/fama.test\/storage\/22\/fama_c2262b1fb08ddc053d60f43edbdddb77.jpg"},"body":"BTS from the night shoot in Downtown Cairo. Neon everywhere. \u0645\u0639 @omar-khaled https:\/\/www.tiktok.com\/@martin-ohara-6237","body_html":"BTS from the night shoot in Downtown Cairo. Neon everywhere. \u0645\u0639 <bdi><a href=\"https:\/\/fama.test\/omar-khaled\" class=\"feed-mention\">\u2066@omar-khaled\u2069<\/a><\/bdi> <bdi><a href=\"https:\/\/www.tiktok.com\/@martin-ohara-6237\" class=\"feed-chip\" target=\"_blank\" rel=\"noopener noreferrer nofollow ugc\" data-provider=\"tiktok\"><svg class=\"chip-glyph\" aria-hidden=\"true\"><use href=\"#glyph-tiktok\"><\/use><\/svg>\u2066@martin-ohara-6237\u2069<\/a><\/bdi>","media":[],"skills":[{"id":3,"name":"Cinematography","slug":"cinematography","icon":"lucide-cinematography"}],"project":null,"chips":[{"provider":"tiktok","handle":"martin-ohara-6237","resource_id":null,"url":"https:\/\/www.tiktok.com\/@martin-ohara-6237","canonical_url":null,"title":null,"description":null,"image_url":null,"status":"pending"}],"likes_count":8,"comments_count":6,"shares_count":0,"liked_by_viewer":false,"bookmarks_count":0,"saved_by_viewer":false,"is_pinned":false,"is_editable":false,"edited_at":null,"published_at":"2026-07-16T18:06:44+00:00","permalink":"https:\/\/fama.test\/posts\/222"},{"id":98,"post_type":"note","author":{"type":"talent","id":29,"username":"kelsi-simonis-6765","display_name":"Kelsi Simonis","avatar_url":null},"body":"\u0627\u0644\u062d\u0645\u062f \u0644\u0644\u0647\u060c \u062e\u0644\u0635\u0646\u0627 \u062d\u0645\u0644\u0629 \u0643\u0627\u0645\u0644\u0629 \u0641\u064a \u064a\u0648\u0645\u064a\u0646. \u0641\u0631\u064a\u0642 \u0623\u0643\u062a\u0631 \u0645\u0646 \u0631\u0627\u0626\u0639.","body_html":"\u0627\u0644\u062d\u0645\u062f \u0644\u0644\u0647\u060c \u062e\u0644\u0635\u0646\u0627 \u062d\u0645\u0644\u0629 \u0643\u0627\u0645\u0644\u0629 \u0641\u064a \u064a\u0648\u0645\u064a\u0646. \u0641\u0631\u064a\u0642 \u0623\u0643\u062a\u0631 \u0645\u0646 \u0631\u0627\u0626\u0639.","media":[],"skills":[{"id":1,"name":"Modeling","slug":"modeling","icon":"lucide-modeling"}],"project":null,"chips":[],"likes_count":6,"comments_count":6,"shares_count":0,"liked_by_viewer":false,"bookmarks_count":0,"saved_by_viewer":false,"is_pinned":false,"is_editable":false,"edited_at":null,"published_at":"2026-07-17T00:10:42+00:00","permalink":"https:\/\/fama.test\/posts\/98"},{"id":217,"post_type":"note","author":{"type":"talent","id":23,"username":"april-deckow-3527","display_name":"April Deckow","avatar_url":null},"body":"\u0643\u0648\u0627\u0644\u064a\u0633 \u062c\u0644\u0633\u0629 \u062a\u0635\u0648\u064a\u0631 \u0627\u0644\u0646\u0647\u0627\u0631\u062f\u0629 \u0641\u064a \u0648\u0633\u0637 \u0627\u0644\u0628\u0644\u062f \u2014 \u0627\u0644\u0625\u0636\u0627\u0621\u0629 \u0643\u0627\u0646\u062a \u062e\u064a\u0627\u0644\u064a\u0629. https:\/\/instagram.com\/cathryn-fay-dds-5582","body_html":"\u0643\u0648\u0627\u0644\u064a\u0633 \u062c\u0644\u0633\u0629 \u062a\u0635\u0648\u064a\u0631 \u0627\u0644\u0646\u0647\u0627\u0631\u062f\u0629 \u0641\u064a \u0648\u0633\u0637 \u0627\u0644\u0628\u0644\u062f \u2014 \u0627\u0644\u0625\u0636\u0627\u0621\u0629 \u0643\u0627\u0646\u062a \u062e\u064a\u0627\u0644\u064a\u0629. <bdi><a href=\"https:\/\/instagram.com\/cathryn-fay-dds-5582\" class=\"feed-chip\" target=\"_blank\" rel=\"noopener noreferrer nofollow ugc\" data-provider=\"instagram\"><svg class=\"chip-glyph\" aria-hidden=\"true\"><use href=\"#glyph-instagram\"><\/use><\/svg>\u2066@cathryn-fay-dds-5582\u2069<\/a><\/bdi>","media":[],"skills":[{"id":6,"name":"Graphic Design","slug":"graphic-design","icon":"lucide-graphic-design"}],"project":null,"chips":[{"provider":"instagram","handle":"cathryn-fay-dds-5582","resource_id":null,"url":"https:\/\/instagram.com\/cathryn-fay-dds-5582","canonical_url":null,"title":null,"description":null,"image_url":null,"status":"pending"}],"likes_count":6,"comments_count":7,"shares_count":0,"liked_by_viewer":false,"bookmarks_count":0,"saved_by_viewer":false,"is_pinned":false,"is_editable":false,"edited_at":null,"published_at":"2026-07-15T17:18:44+00:00","permalink":"https:\/\/fama.test\/posts\/217"},{"id":233,"post_type":"media","author":{"type":"talent","id":30,"username":"kyleigh-littel-iv-4434","display_name":"Kyleigh Littel IV","avatar_url":null},"body":"\u0627\u0644\u062a\u0641\u0627\u0635\u064a\u0644 \u0647\u064a \u0643\u0644 \u062d\u0627\u062c\u0629. \u0642\u0635\u0651\u0629 \u0627\u0644\u0642\u0645\u0627\u0634 \u062f\u064a \u0623\u062e\u062f\u062a \u0645\u0646\u0646\u0627 \u0623\u0633\u0628\u0648\u0639 \u0643\u0627\u0645\u0644. \u0645\u0639 @omar-khaled https:\/\/www.behance.net\/ms-zelda-steuber-2004","body_html":"\u0627\u0644\u062a\u0641\u0627\u0635\u064a\u0644 \u0647\u064a \u0643\u0644 \u062d\u0627\u062c\u0629. \u0642\u0635\u0651\u0629 \u0627\u0644\u0642\u0645\u0627\u0634 \u062f\u064a \u0623\u062e\u062f\u062a \u0645\u0646\u0646\u0627 \u0623\u0633\u0628\u0648\u0639 \u0643\u0627\u0645\u0644. \u0645\u0639 <bdi><a href=\"https:\/\/fama.test\/omar-khaled\" class=\"feed-mention\">\u2066@omar-khaled\u2069<\/a><\/bdi> <bdi><a href=\"https:\/\/www.behance.net\/ms-zelda-steuber-2004\" class=\"feed-chip\" target=\"_blank\" rel=\"noopener noreferrer nofollow ugc\" data-provider=\"behance\"><svg class=\"chip-glyph\" aria-hidden=\"true\"><use href=\"#glyph-behance\"><\/use><\/svg>\u2066@ms-zelda-steuber-2004\u2069<\/a><\/bdi>","media":[{"id":320,"type":"image","original_url":"https:\/\/fama.test\/storage\/320\/fama_85f6a34bd38bb40e0d2b9cabc45216f4.jpg","thumb_url":"https:\/\/fama.test\/storage\/320\/fama_85f6a34bd38bb40e0d2b9cabc45216f4.jpg","feed_url":"https:\/\/fama.test\/storage\/320\/fama_85f6a34bd38bb40e0d2b9cabc45216f4.jpg","full_url":"https:\/\/fama.test\/storage\/320\/fama_85f6a34bd38bb40e0d2b9cabc45216f4.jpg","poster_url":null}],"skills":[{"id":6,"name":"Graphic Design","slug":"graphic-design","icon":"lucide-graphic-design"}],"project":null,"chips":[{"provider":"behance","handle":"ms-zelda-steuber-2004","resource_id":null,"url":"https:\/\/www.behance.net\/ms-zelda-steuber-2004","canonical_url":null,"title":null,"description":null,"image_url":null,"status":"pending"}],"likes_count":8,"comments_count":4,"shares_count":0,"liked_by_viewer":false,"bookmarks_count":0,"saved_by_viewer":false,"is_pinned":false,"is_editable":false,"edited_at":null,"published_at":"2026-07-16T13:02:44+00:00","permalink":"https:\/\/fama.test\/posts\/233"},{"id":286,"post_type":"media","author":{"type":"talent","id":9,"username":"tarek-sobhy","display_name":"Tarek Sobhy","avatar_url":"https:\/\/fama.test\/storage\/39\/fama_2b74c7e3e7b9092d50871144e50c6364.jpg"},"body":null,"body_html":null,"media":[{"id":365,"type":"image","original_url":"https:\/\/fama.test\/storage\/365\/fama_eaf7548a947181157ec3a2fc0b3f1efe.jpg","thumb_url":"https:\/\/fama.test\/storage\/365\/fama_eaf7548a947181157ec3a2fc0b3f1efe.jpg","feed_url":"https:\/\/fama.test\/storage\/365\/fama_eaf7548a947181157ec3a2fc0b3f1efe.jpg","full_url":"https:\/\/fama.test\/storage\/365\/fama_eaf7548a947181157ec3a2fc0b3f1efe.jpg","poster_url":null},{"id":366,"type":"image","original_url":"https:\/\/fama.test\/storage\/366\/fama_a48b4178c6fe513ec0224d491dcb2076.jpg","thumb_url":"https:\/\/fama.test\/storage\/366\/fama_a48b4178c6fe513ec0224d491dcb2076.jpg","feed_url":"https:\/\/fama.test\/storage\/366\/fama_a48b4178c6fe513ec0224d491dcb2076.jpg","full_url":"https:\/\/fama.test\/storage\/366\/fama_a48b4178c6fe513ec0224d491dcb2076.jpg","poster_url":null},{"id":367,"type":"image","original_url":"https:\/\/fama.test\/storage\/367\/fama_22082b9a2d4a265333b157e7b76d25e7.jpg","thumb_url":"https:\/\/fama.test\/storage\/367\/fama_22082b9a2d4a265333b157e7b76d25e7.jpg","feed_url":"https:\/\/fama.test\/storage\/367\/fama_22082b9a2d4a265333b157e7b76d25e7.jpg","full_url":"https:\/\/fama.test\/storage\/367\/fama_22082b9a2d4a265333b157e7b76d25e7.jpg","poster_url":null}],"skills":[{"id":3,"name":"Cinematography","slug":"cinematography","icon":"lucide-cinematography"}],"project":null,"chips":[],"likes_count":6,"comments_count":2,"shares_count":0,"liked_by_viewer":false,"bookmarks_count":0,"saved_by_viewer":false,"is_pinned":false,"is_editable":false,"edited_at":null,"published_at":"2026-07-18T04:42:45+00:00","permalink":"https:\/\/fama.test\/posts\/286"}],"casting_positions":[5,11,17],"next_cursor":"eyJzIjoiMTdlNThjNjgxNjkyZWY1YiIsIm8iOjIwfQ==","total":185},"message":null,"errors":null,"meta":null}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/v1/feed/casting
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: |-
+        One casting strip: discovery talents with the viewer's follow-state,
+        never repeating within the feed session.
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: '{"success":true,"data":{"talents":[{"type":"talent","id":2,"username":"nour-elsherif","display_name":"Nour El-Sherif","avatar_url":"https:\/\/fama.test\/storage\/8\/fama_bb26d0eea69aa81f0d000dcd5ef700a4.jpg","headline":"Editorial & runway model \u2014 Cairo","skills":[{"name":"Modeling","slug":"modeling","icon":"lucide-modeling"}],"followers_count":7,"followed_by_viewer":false},{"type":"talent","id":6,"username":"hana-fahmy","display_name":"Hana Fahmy","avatar_url":"https:\/\/fama.test\/storage\/27\/fama_60c7821fdbb46d3d3745c262079b366c.jpg","headline":"Creative director \u2014 Dubai","skills":[{"name":"Creative Direction","slug":"creative-direction","icon":"lucide-creative-direction"}],"followers_count":6,"followed_by_viewer":false},{"type":"talent","id":9,"username":"tarek-sobhy","display_name":"Tarek Sobhy","avatar_url":"https:\/\/fama.test\/storage\/39\/fama_2b74c7e3e7b9092d50871144e50c6364.jpg","headline":"Photographer & DOP \u2014 Cairo","skills":[{"name":"Photography","slug":"photography","icon":"lucide-photography"},{"name":"Cinematography","slug":"cinematography","icon":"lucide-cinematography"}],"followers_count":3,"followed_by_viewer":false},{"type":"talent","id":5,"username":"omar-khaled","display_name":"Omar Khaled","avatar_url":"https:\/\/fama.test\/storage\/22\/fama_c2262b1fb08ddc053d60f43edbdddb77.jpg","headline":"Cinematographer \/ DOP \u2014 Giza","skills":[{"name":"Cinematography","slug":"cinematography","icon":"lucide-cinematography"}],"followers_count":5,"followed_by_viewer":false},{"type":"talent","id":4,"username":"yasmin-adel","display_name":"Yasmin Adel","avatar_url":"https:\/\/fama.test\/storage\/18\/fama_f6b78ebcdedbf4990a3b07b1384067ec.jpg","headline":"Model & stylist \u2014 Cairo","skills":[{"name":"Modeling","slug":"modeling","icon":"lucide-modeling"},{"name":"Styling","slug":"styling","icon":"lucide-styling"}],"followers_count":5,"followed_by_viewer":false},{"type":"talent","id":7,"username":"ziad-rahman","display_name":"Ziad Rahman","avatar_url":"https:\/\/fama.test\/storage\/31\/fama_8289292746bec7c9e10d7bff7b684e7a.jpg","headline":"Graphic designer \u2014 Cairo","skills":[{"name":"Graphic Design","slug":"graphic-design","icon":"lucide-graphic-design"}],"followers_count":7,"followed_by_viewer":false},{"type":"talent","id":3,"username":"karim-mansour","display_name":"Karim Mansour","avatar_url":"https:\/\/fama.test\/storage\/13\/fama_8dce61690bc37a9e8e27dc24c2a8b102.jpg","headline":"Fashion & commercial photographer \u2014 Alexandria","skills":[{"name":"Photography","slug":"photography","icon":"lucide-photography"}],"followers_count":4,"followed_by_viewer":false},{"type":"talent","id":10,"username":"salma-ibrahim","display_name":"Salma Ibrahim","avatar_url":"https:\/\/fama.test\/storage\/44\/fama_eab3b627b8acc1d1de623d08835247dc.jpg","headline":"Fashion stylist \u2014 Cairo","skills":[{"name":"Styling","slug":"styling","icon":"lucide-styling"}],"followers_count":3,"followed_by_viewer":false},{"type":"talent","id":8,"username":"farida-nabil","display_name":"Farida Nabil","avatar_url":"https:\/\/fama.test\/storage\/35\/fama_a5ba6cf9e24223bc005ee9c156f6362f.jpg","headline":"Commercial model \u2014 Alexandria","skills":[{"name":"Modeling","slug":"modeling","icon":"lucide-modeling"}],"followers_count":8,"followed_by_viewer":false},{"type":"talent","id":1,"username":"demo-talent","display_name":"Layla Hassan","avatar_url":"https:\/\/fama.test\/storage\/1\/fama_452592f6ef73ef3537814895ad921aea.jpg","headline":"Model & Photographer \u2014 Cairo","skills":[{"name":"Modeling","slug":"modeling","icon":"lucide-modeling"},{"name":"Photography","slug":"photography","icon":"lucide-photography"}],"followers_count":5,"followed_by_viewer":false},{"type":"talent","id":11,"username":"adham-yousef","display_name":"Adham Yousef","avatar_url":"https:\/\/fama.test\/storage\/48\/fama_23df95601ca70b95e05e2478c1a7e9ef.jpg","headline":"Model & creative director \u2014 Giza","skills":[{"name":"Modeling","slug":"modeling","icon":"lucide-modeling"},{"name":"Creative Direction","slug":"creative-direction","icon":"lucide-creative-direction"}],"followers_count":9,"followed_by_viewer":false},{"type":"talent","id":16,"username":"karianne-oconnell-2171","display_name":"Karianne O''Connell","avatar_url":null,"headline":"CTO","skills":[{"name":"Styling","slug":"styling","icon":"lucide-styling"}],"followers_count":3,"followed_by_viewer":false}]},"message":null,"errors":null,"meta":null}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: 'api/v1/posts/{post_id}'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: "The post as JSON (the API mirror's detail shape)."
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      post_id:
+        custom: []
+        name: post_id
+        description: 'The ID of the post.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      post_id: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: '{"success":true,"data":{"id":1,"post_type":"project_share","author":{"type":"talent","id":16,"username":"karianne-oconnell-2171","display_name":"Karianne O''Connell","avatar_url":null},"body":null,"body_html":null,"media":[],"skills":[{"id":5,"name":"Styling","slug":"styling","icon":"lucide-styling"}],"project":{"is_live":true,"id":7,"title":"Pre-emptive executive framework","summary":"Quia veritatis aut non aperiam officiis pariatur magni.","cover_url":null,"year":2021,"url":"https:\/\/fama.test\/karianne-oconnell-2171\/work\/7"},"chips":[],"likes_count":1,"comments_count":0,"shares_count":0,"bookmarks_count":0,"is_pinned":false,"is_editable":false,"edited_at":null,"published_at":"2026-07-11T08:31:40+00:00","permalink":"https:\/\/fama.test\/posts\/1"},"message":null,"errors":null,"meta":null}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: 'api/v1/talents/{username}/posts'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: "A talent's published posts, newest first (public)."
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      username:
+        custom: []
+        name: username
+        description: ''
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      username: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 404
+        content: |-
+          {
+              "message": ""
+          }
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/v1/posts
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Create a note or media post as the current actor.'
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: multipart/form-data
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      post_type:
+        custom: []
+        name: post_type
+        description: ''
+        required: true
+        example: note
+        type: string
+        enumValues:
+          - note
+          - media
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      body:
+        custom: []
+        name: body
+        description: 'Must not be greater than 2200 characters.'
+        required: false
+        example: b
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      media:
+        custom: []
+        name: media
+        description: 'Must be a file.'
+        required: false
+        example:
+          - null
+        type: 'file[]'
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      skill_ids:
+        custom: []
+        name: skill_ids
+        description: 'Must match an existing stored value.'
+        required: false
+        example:
+          - 16
+        type: 'integer[]'
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      post_type: note
+      body: b
+      skill_ids:
+        - 16
+    fileParameters:
+      media:
+        - null
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PATCH
+    uri: 'api/v1/posts/{post_id}'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Edit the post inside the 15-minute window (media immutable).'
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      post_id:
+        custom: []
+        name: post_id
+        description: 'The ID of the post.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      post_id: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      body:
+        custom: []
+        name: body
+        description: 'Must not be greater than 2200 characters.'
+        required: false
+        example: b
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      skill_ids:
+        custom: []
+        name: skill_ids
+        description: 'Must match an existing stored value.'
+        required: false
+        example:
+          - 16
+        type: 'integer[]'
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      body: b
+      skill_ids:
+        - 16
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - DELETE
+    uri: 'api/v1/posts/{post_id}'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Soft-delete the post (author or moderating admin).'
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      post_id:
+        custom: []
+        name: post_id
+        description: 'The ID of the post.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      post_id: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: 'api/v1/posts/{post_id}/pin'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: "Pin/unpin the post on the author's presence (max one pinned)."
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      post_id:
+        custom: []
+        name: post_id
+        description: 'The ID of the post.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      post_id: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: 'api/v1/projects/{project_id}/share'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Share the Project as a project_share post.'
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      project_id:
+        custom: []
+        name: project_id
+        description: 'The ID of the project.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      project_id: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      body:
+        custom: []
+        name: body
+        description: 'Must not be greater than 2200 characters.'
+        required: false
+        example: b
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      skill_ids:
+        custom: []
+        name: skill_ids
+        description: 'Must match an existing stored value.'
+        required: false
+        example:
+          - 16
+        type: 'integer[]'
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      body: b
+      skill_ids:
+        - 16
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: 'api/v1/posts/{post_id}/comments'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Paginated top-level thread with preview replies and viewer state.'
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      post_id:
+        custom: []
+        name: post_id
+        description: 'The ID of the post.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      post_id: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: '{"success":true,"data":[],"message":null,"errors":null,"meta":{"pagination":{"current_page":1,"last_page":1,"per_page":10,"total":0,"from":null,"to":null}}}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: 'api/v1/posts/{post_id}/comments'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Create a comment (or reply) on the post as the current actor.'
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      post_id:
+        custom: []
+        name: post_id
+        description: 'The ID of the post.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      post_id: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      body:
+        custom: []
+        name: body
+        description: 'Must not be greater than 2200 characters.'
+        required: true
+        example: b
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      parent_id:
+        custom: []
+        name: parent_id
+        description: 'Must match an existing stored value.'
+        required: false
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+    cleanBodyParameters:
+      body: b
+      parent_id: 16
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: 'api/v1/comments/{comment_id}/replies'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: "A comment's replies, paginated separately, oldest first."
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      comment_id:
+        custom: []
+        name: comment_id
+        description: 'The ID of the comment.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      comment_id: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: '{"success":true,"data":[{"id":2,"is_tombstone":false,"post_id":3,"parent_id":1,"body":"\u062a\u0633\u0644\u0645 \u064a\u0627 \u0641\u0646\u0627\u0646 \u2764\ufe0f","body_html":"\u062a\u0633\u0644\u0645 \u064a\u0627 \u0641\u0646\u0627\u0646 \u2764\ufe0f","author":{"type":"talent","id":2,"username":"nour-elsherif","display_name":"Nour El-Sherif","avatar_url":"https:\/\/fama.test\/storage\/8\/fama_bb26d0eea69aa81f0d000dcd5ef700a4.jpg"},"state":"published","chips":[],"likes_count":0,"replies_count":0,"liked_by_viewer":false,"is_editable":false,"is_mine":false,"editable_until":"2026-06-17T23:02:40+00:00","edited_at":null,"created_at":"2026-06-17T22:47:40+00:00"}],"message":null,"errors":null,"meta":{"pagination":{"current_page":1,"last_page":1,"per_page":10,"total":1,"from":1,"to":1}}}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PATCH
+    uri: 'api/v1/comments/{comment_id}'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Edit a comment inside the 15-minute window.'
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      comment_id:
+        custom: []
+        name: comment_id
+        description: 'The ID of the comment.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      comment_id: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      body:
+        custom: []
+        name: body
+        description: 'Must not be greater than 2200 characters.'
+        required: true
+        example: b
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      parent_id:
+        custom: []
+        name: parent_id
+        description: 'Must match an existing stored value.'
+        required: false
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+    cleanBodyParameters:
+      body: b
+      parent_id: 16
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - DELETE
+    uri: 'api/v1/comments/{comment_id}'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Delete a comment (tombstoned when it has replies).'
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      comment_id:
+        custom: []
+        name: comment_id
+        description: 'The ID of the comment.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      comment_id: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: 'api/v1/posts/{post_id}/like'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Like the post as the current actor.'
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      post_id:
+        custom: []
+        name: post_id
+        description: 'The ID of the post.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      post_id: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - DELETE
+    uri: 'api/v1/posts/{post_id}/like'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: "Withdraw the actor's like from the post."
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      post_id:
+        custom: []
+        name: post_id
+        description: 'The ID of the post.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      post_id: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: 'api/v1/comments/{comment_id}/like'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Like a comment as the current actor.'
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      comment_id:
+        custom: []
+        name: comment_id
+        description: 'The ID of the comment.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      comment_id: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - DELETE
+    uri: 'api/v1/comments/{comment_id}/like'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: "Withdraw the actor's like from the comment."
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      comment_id:
+        custom: []
+        name: comment_id
+        description: 'The ID of the comment.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      comment_id: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/v1/feed/suggestions/talents
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Talent suggestions: ?offset=0&limit=5 → {items, next_offset}.'
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: '{"success":true,"data":{"items":[{"type":"talent","id":31,"username":"ms-zelda-steuber-2004","display_name":"Ms. Zelda Steuber","avatar_url":null,"headline":"Human Resources Specialist","city":"Dubai","sector":null,"skills":[{"name":"Cinematography","slug":"cinematography"}],"followers_count":10,"reason":null},{"type":"talent","id":23,"username":"april-deckow-3527","display_name":"April Deckow","avatar_url":null,"headline":"Landscape Architect","city":"Alexandria","sector":null,"skills":[{"name":"Graphic Design","slug":"graphic-design"}],"followers_count":10,"reason":"Active this week"},{"type":"talent","id":11,"username":"adham-yousef","display_name":"Adham Yousef","avatar_url":"https:\/\/fama.test\/storage\/48\/fama_23df95601ca70b95e05e2478c1a7e9ef.jpg","headline":"Model & creative director \u2014 Giza","city":"Giza","sector":null,"skills":[{"name":"Modeling","slug":"modeling"},{"name":"Creative Direction","slug":"creative-direction"}],"followers_count":9,"reason":"Active this week"},{"type":"talent","id":18,"username":"dr-webster-doyle-0827","display_name":"Dr. Webster Doyle","avatar_url":null,"headline":"Earth Driller","city":"Giza","sector":null,"skills":[{"name":"Creative Direction","slug":"creative-direction"}],"followers_count":7,"reason":null},{"type":"talent","id":7,"username":"ziad-rahman","display_name":"Ziad Rahman","avatar_url":"https:\/\/fama.test\/storage\/31\/fama_8289292746bec7c9e10d7bff7b684e7a.jpg","headline":"Graphic designer \u2014 Cairo","city":"Cairo","sector":null,"skills":[{"name":"Graphic Design","slug":"graphic-design"}],"followers_count":7,"reason":"Active this week"}],"next_offset":5},"message":null,"errors":null,"meta":null}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/v1/feed/suggestions/brands
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Brand suggestions (empty for brand viewers — the rail hides).'
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: '{"success":true,"data":{"items":[{"type":"brand","id":1,"username":"nomad-coffee","display_name":"Nomad Coffee Co.","avatar_url":"https:\/\/fama.test\/storage\/53\/fama_d600005f59d82bdf62bab01894e7fd87.jpg","headline":null,"city":"Cairo","sector":"food_beverage","skills":[{"name":"Photography","slug":"photography"}],"followers_count":0,"reason":"Active this week"},{"type":"brand","id":11,"username":"okeefe-and-sons-4543","display_name":"O''Keefe and Sons","avatar_url":null,"headline":null,"city":"Giza","sector":"food_beverage","skills":[],"followers_count":0,"reason":null},{"type":"brand","id":16,"username":"brakus-carroll-and-thompson-61806","display_name":"Brakus, Carroll and Thompson","avatar_url":null,"headline":null,"city":"Giza","sector":"lifestyle","skills":[],"followers_count":0,"reason":null},{"type":"brand","id":15,"username":"sauer-swift-62082","display_name":"Sauer-Swift","avatar_url":null,"headline":null,"city":"Giza","sector":"beauty","skills":[],"followers_count":0,"reason":null},{"type":"brand","id":5,"username":"kertzmann-weimann-and-koss-94975","display_name":"Kertzmann, Weimann and Koss","avatar_url":null,"headline":null,"city":"Alexandria","sector":"beauty","skills":[],"followers_count":0,"reason":null}],"next_offset":5},"message":null,"errors":null,"meta":null}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/v1/feed/suggestions/dismiss
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Permanently dismiss one suggestion: {type: talent|brand, id}.'
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      type:
+        custom: []
+        name: type
+        description: ''
+        required: true
+        example: brand
+        type: string
+        enumValues:
+          - talent
+          - brand
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      id:
+        custom: []
+        name: id
+        description: 'Must be at least 1.'
+        required: true
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      type: brand
+      id: 16
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: 'api/v1/posts/{post_id}/bookmark'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Save the post as the current actor.'
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      post_id:
+        custom: []
+        name: post_id
+        description: 'The ID of the post.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      post_id: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - DELETE
+    uri: 'api/v1/posts/{post_id}/bookmark'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: "Withdraw the actor's save."
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      post_id:
+        custom: []
+        name: post_id
+        description: 'The ID of the post.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      post_id: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: 'api/v1/follow/{type}/{id}'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Follow the {type}/{id} party as the current actor.'
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      type:
+        custom: []
+        name: type
+        description: ''
+        required: true
+        example: talent|brand
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      id:
+        custom: []
+        name: id
+        description: 'The ID of the {type}.'
+        required: true
+        example: '564'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      type: talent|brand
+      id: '564'
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - DELETE
+    uri: 'api/v1/follow/{type}/{id}'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: "Withdraw the actor's follow of the {type}/{id} party."
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      type:
+        custom: []
+        name: type
+        description: ''
+        required: true
+        example: talent|brand
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      id:
+        custom: []
+        name: id
+        description: 'The ID of the {type}.'
+        required: true
+        example: '564'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      type: talent|brand
+      id: '564'
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: 'api/v1/talents/{username}/followers'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Who follows this talent (talents and brands).'
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      username:
+        custom: []
+        name: username
+        description: ''
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      username: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 404
+        content: |-
+          {
+              "message": ""
+          }
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: 'api/v1/talents/{username}/following'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Who this talent follows.'
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      username:
+        custom: []
+        name: username
+        description: ''
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      username: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 404
+        content: |-
+          {
+              "message": ""
+          }
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/v1/mentions/search
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Search actors by Username / display-name prefix or fragment.'
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: '{"success":true,"data":{"talents":[],"brands":[]},"message":null,"errors":null,"meta":null}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          x-ratelimit-limit: '30'
+          x-ratelimit-remaining: '29'
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/v1/links/preview
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Resolve (find-or-create) the preview for a pasted URL.'
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      url:
+        custom: []
+        name: url
+        description: 'Must be a valid URL. Must not be greater than 2048 characters.'
+        required: true
+        example: 'http://www.bailey.biz/quos-velit-et-fugiat-sunt-nihil-accusantium-harum.html'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      url: 'http://www.bailey.biz/quos-velit-et-fugiat-sunt-nihil-accusantium-harum.html'
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: 'api/v1/posts/{post_id}/report'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Report a post.'
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      post_id:
+        custom: []
+        name: post_id
+        description: 'The ID of the post.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      post_id: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      reason:
+        custom: []
+        name: reason
+        description: ''
+        required: true
+        example: copyright
+        type: string
+        enumValues:
+          - spam
+          - harassment
+          - inappropriate
+          - copyright
+          - misleading
+          - other
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      note:
+        custom: []
+        name: note
+        description: 'Must not be greater than 1000 characters.'
+        required: false
+        example: b
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+    cleanBodyParameters:
+      reason: copyright
+      note: b
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: 'api/v1/comments/{comment_id}/report'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Report a comment.'
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      comment_id:
+        custom: []
+        name: comment_id
+        description: 'The ID of the comment.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      comment_id: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      reason:
+        custom: []
+        name: reason
+        description: ''
+        required: true
+        example: other
+        type: string
+        enumValues:
+          - spam
+          - harassment
+          - inappropriate
+          - copyright
+          - misleading
+          - other
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      note:
+        custom: []
+        name: note
+        description: 'Must not be greater than 1000 characters.'
+        required: false
+        example: b
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+    cleanBodyParameters:
+      reason: other
+      note: b
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/v1/notifications
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'The inbox, newest first.'
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"success":false,"data":null,"message":"Unauthenticated.","errors":null,"meta":null}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/v1/notifications/read
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Mark all — or the given IDs — read.'
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/v1/notifications/unread-count
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'The unread badge count.'
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"success":false,"data":null,"message":"Unauthenticated.","errors":null,"meta":null}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null

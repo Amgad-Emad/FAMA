@@ -1,6 +1,7 @@
 # Fama — Database Schema (Canonical)
 
-> Single source of truth for the Fama data model. Transcribed and lightly cleaned (typos fixed, ordering and formatting normalized) from the original design docs — **no technical content changed**. Tables are grouped by domain for readability; grouping is presentational only.
+> Single source of truth for the Fama data model — **45 tables** (35 pre-feed + the 10 feed tables,
+> §7). Transcribed and lightly cleaned (typos fixed, ordering and formatting normalized) from the original design docs. Tables are grouped by domain for readability; grouping is presentational only.
 >
 > **Implementation note:** per `docs/decisions.md`, all **uploaded** files go through `spatie/laravel-medialibrary` (collections + conversions). The `*_url` / `thumbnail_url` columns below for *uploaded* assets are replaced at implementation time by media-library accessors; plain URL columns are kept only for **external** links/embeds (YouTube/Vimeo, social, brand-collab, press). The schema is documented here as originally designed.
 >
@@ -43,6 +44,10 @@ The profile itself — the "living creative passport." Holds one-per-profile ide
 | is_published | BOOLEAN |
 | published_at | TIMESTAMP NULL |
 | view_count | UNSIGNED INT |
+| followers_count | UNSIGNED INT, default 0 — feed counter (ADR-F6) |
+| following_count | UNSIGNED INT, default 0 — feed counter (ADR-F6) |
+| posts_count | UNSIGNED INT, default 0 — feed counter (ADR-F6) |
+| last_posted_at | TIMESTAMP NULL, indexed — denormalized last-publish time (Prompt 5-follow); maintained by CounterService on the publish boundary + reconciled nightly; powers the dashboard "quiet since" prune signal and the least-active sort |
 | meta | JSON NULL |
 | created_at / updated_at / deleted_at | timestamps + soft delete |
 
@@ -435,6 +440,7 @@ The brand-side identity — the foundation everything sits on. Holds the one-per
 | is_verified | BOOLEAN |
 | is_published | BOOLEAN |
 | view_count | UNSIGNED INT |
+| following_count | UNSIGNED INT, default 0 — feed counter (ADR-F6; a brand follows talents. `followers_count` is deliberately omitted until `feed.allow_following_brands` flips) |
 | meta | JSON NULL |
 | created_at / updated_at / deleted_at | timestamps + soft delete |
 
@@ -533,7 +539,7 @@ The implicit behaviour log: who they view/save/brief. Internal-only, feeds the p
 ## 5. Projects
 
 ### `brand_projects`
-Projects/shoots the brand runs on Fama — the "Create a Project / Create a shoot" feature. A brand's public-facing project, distinct from a contract: one project can group many contracts with different talents. Shown on the brand profile as "Projects on FAMA."
+Projects/shoots the brand runs on Fama — the "Create a Project / Create a shoot" feature. A brand's public-facing project, distinct from a contract: one project can group many contracts with different talents. Shown on the brand profile as "Projects on FAMA." **As implemented (Phase 2, ADR-F):** one project seeks **one role** (`talent_type_id` — the `brand_project_talent_types` pivot and `positions_count` were dropped), and `budget_is_public` (default **false**) withholds a private budget from every non-owning viewer in the payload.
 
 | Column | Type / constraints |
 |---|---|
@@ -541,9 +547,9 @@ Projects/shoots the brand runs on Fama — the "Create a Project / Create a shoo
 | brand_id | FK → brands |
 | title | VARCHAR |
 | slug | VARCHAR, UNIQUE |
-| type | ENUM(project, shoot) |
-| description | TEXT NULL |
-| cover_image_url | VARCHAR NULL |
+| type | ENUM(campaign, shoot) |
+| description | JSON NULL (translatable) |
+| cover_image_url | VARCHAR NULL — media accessor (medialibrary) |
 | status | ENUM(draft, open, in_progress, completed, cancelled) |
 | budget_min | DECIMAL(10,2) NULL |
 | budget_max | DECIMAL(10,2) NULL |
@@ -553,19 +559,12 @@ Projects/shoots the brand runs on Fama — the "Create a Project / Create a shoo
 | start_date | DATE NULL |
 | end_date | DATE NULL |
 | is_public | BOOLEAN (listed/discoverable vs. private) |
-| positions_count | UNSIGNED INT (how many talents needed) |
+| talent_type_id | FK → talent_types NULL, nullOnDelete — the ONE role sought (ADR-F) |
+| budget_is_public | BOOLEAN, default false |
 | created_at / updated_at / deleted_at | timestamps + soft delete |
 
-### `brand_project_talent_types` (optional — roles a project seeks)
-Names the skills a project needs (e.g. "one Modeling + one Photography"), referencing the `talent_types` Skills catalog (disciplines — ADR-S). Skip if projects are free-form.
-
-| Column | Type / constraints |
-|---|---|
-| id | BIGINT UNSIGNED, PK |
-| brand_project_id | FK → projects |
-| talent_type_id | FK → talent_types |
-| quantity | UNSIGNED SMALLINT |
-| — | UNIQUE(brand_project_id, talent_type_id) |
+### ~~`brand_project_talent_types`~~ — never built (ADR-F)
+One project = one role = one position via `brand_projects.talent_type_id`; the many-roles pivot (and `positions_count`) was dropped from the design before implementation.
 
 ### `brand_project_media` (optional — the project's gallery)
 Lets a project show imagery, and lets completed projects become showcases on the brand profile.
@@ -629,6 +628,171 @@ Key-value store for admin-tunable global settings (default currency, default con
 
 ---
 
+## 7. Feed
+
+> The public feed (Phase 5) — see `feed-spec.md` for behaviour and `docs/decisions.md` ADR-F1…F8
+> for the rulings. All actor-side references are **polymorphic morphs** (aliased via an enforced
+> morph map: `talent`, `brand`, `user`, `post`, `comment`, `project`) so brands can be enabled as
+> authors later by policy alone (ADR-F1). Denormalized counters are written inside the same
+> transaction as the source write, reconciled nightly by `feed:reconcile-counters` (ADR-F6).
+
+### `posts`
+A talent's published unit of content: a text `note`, a `media` set (1–10 items via the `post_media` medialibrary collection — no media columns here), or a `project_share` referencing the talent's own Project with a `shared_snapshot` fallback (ADR-F2). Author is a morph, gated to talents by `PostPolicy` (ADR-F1). `state` drives the `PostState` machine (draft/published/hidden/removed); author deletes are soft deletes (D12).
+
+| Column | Type / constraints |
+|---|---|
+| id | BIGINT UNSIGNED, PK |
+| author_type | VARCHAR (morph — `talent`; `brand` reserved) |
+| author_id | BIGINT UNSIGNED (morph) |
+| post_type | ENUM(note, media, project_share) |
+| body | LONGTEXT NULL (raw as typed, ≤ 2200 chars enforced in validation) |
+| project_id | FK → projects NULL, nullOnDelete — the shared Project (project_share only) |
+| shared_snapshot | JSON NULL — `{title, cover_media_path, shared_at}` frozen at share time (ADR-F2) |
+| state | VARCHAR — PostState (draft, published, hidden, removed) |
+| likes_count | UNSIGNED INT, default 0 |
+| comments_count | UNSIGNED INT, default 0 |
+| shares_count | UNSIGNED INT, default 0 |
+| published_at | TIMESTAMP NULL |
+| edited_at | TIMESTAMP NULL — set on any post-publish edit; renders the `edited` marker |
+| is_pinned | BOOLEAN, default false — max 1 pinned per talent |
+| created_at / updated_at / deleted_at | timestamps + soft delete |
+| — | INDEX(author_type, author_id, published_at) · INDEX(state, published_at) · INDEX(project_id) |
+
+### `post_skill` (pivot)
+Skill tags on a post, referencing the `talent_types` Skills catalog. Powers skill-affinity ranking, the credits line, and `/feed?skill={slug}`.
+
+| Column | Type / constraints |
+|---|---|
+| post_id | FK → posts, cascadeOnDelete |
+| talent_type_id | FK → talent_types, cascadeOnDelete |
+| — | PRIMARY KEY(post_id, talent_type_id) |
+
+### `comments`
+Two-level thread (ADR-F7): a top-level comment has `parent_id NULL`; a reply points at its parent. A reply **to a reply** attaches to the same parent with an auto-prefixed @mention, so depth never exceeds two. Deleted comments with replies render as tombstones (D12).
+
+| Column | Type / constraints |
+|---|---|
+| id | BIGINT UNSIGNED, PK |
+| post_id | FK → posts, cascadeOnDelete |
+| parent_id | FK → comments NULL (self), cascadeOnDelete |
+| author_type | VARCHAR (morph — `talent` \| `brand`) |
+| author_id | BIGINT UNSIGNED (morph) |
+| body | TEXT (raw as typed) |
+| likes_count | UNSIGNED INT, default 0 |
+| replies_count | UNSIGNED INT, default 0 |
+| state | VARCHAR — CommentState (published, hidden, removed) |
+| edited_at | TIMESTAMP NULL |
+| created_at / updated_at / deleted_at | timestamps + soft delete |
+| — | INDEX(post_id, parent_id, created_at) |
+
+### `likes`
+Polymorphic on both sides: what was liked (`likeable` = post \| comment) and who liked it (`liker` = talent \| brand). The unique index is the idempotency guarantee — `ToggleLike` relies on it under double submission rather than read-then-write.
+
+| Column | Type / constraints |
+|---|---|
+| id | BIGINT UNSIGNED, PK |
+| likeable_type | VARCHAR (morph — `post` \| `comment`) |
+| likeable_id | BIGINT UNSIGNED (morph) |
+| liker_type | VARCHAR (morph — `talent` \| `brand`) |
+| liker_id | BIGINT UNSIGNED (morph) |
+| created_at / updated_at | timestamps |
+| — | UNIQUE(likeable_type, likeable_id, liker_type, liker_id) · INDEX(likeable_type, likeable_id) · INDEX(liker_type, liker_id) |
+
+### `follows`
+Polymorphic on both sides. Allowed edges: talent → talent, brand → talent; talent → brand behind `feed.allow_following_brands` (default false). Self-follow forbidden by policy. Append-only (`created_at` only) — unfollow deletes the row.
+
+| Column | Type / constraints |
+|---|---|
+| id | BIGINT UNSIGNED, PK |
+| follower_type | VARCHAR (morph — `talent` \| `brand`) |
+| follower_id | BIGINT UNSIGNED (morph) |
+| followable_type | VARCHAR (morph — `talent`; `brand` behind config) |
+| followable_id | BIGINT UNSIGNED (morph) |
+| created_at | TIMESTAMP |
+| — | UNIQUE(follower_type, follower_id, followable_type, followable_id) · INDEX(follower_type, follower_id) · INDEX(followable_type, followable_id) |
+
+### `mentions`
+One row per @mention: which body it lives in (`mentionable` = post \| comment), who is mentioned (`mentioned` = talent \| brand), and **where** — `start_offset` + `length` into the raw body (ADR-F3). The renderer resolves the current Username at read time; a body edit deletes and re-parses (offsets shift).
+
+| Column | Type / constraints |
+|---|---|
+| id | BIGINT UNSIGNED, PK |
+| mentionable_type | VARCHAR (morph — `post` \| `comment`) |
+| mentionable_id | BIGINT UNSIGNED (morph) |
+| mentioned_type | VARCHAR (morph — `talent` \| `brand`) |
+| mentioned_id | BIGINT UNSIGNED (morph) |
+| start_offset | UNSIGNED INT — multibyte-correct character offset into the raw body |
+| length | UNSIGNED INT |
+| created_at / updated_at | timestamps |
+| — | INDEX(mentioned_type, mentioned_id) |
+
+### `link_previews`
+One row per unique URL, deduplicated by `url_hash` (SHA-256 of the normalized URL). Provider + handle/resource are parsed from the URL string with **zero network** at write time (ADR-F4); `FetchLinkPreviewJob` enriches best-effort afterwards. `embed_html` is stored only for allowlisted providers, sanitized.
+
+| Column | Type / constraints |
+|---|---|
+| id | BIGINT UNSIGNED, PK |
+| url_hash | CHAR(64), UNIQUE |
+| url | TEXT |
+| canonical_url | TEXT NULL |
+| provider | VARCHAR (driver key: instagram, tiktok, youtube, behance, …, generic) |
+| provider_handle | VARCHAR NULL (e.g. `@amgad`) |
+| provider_resource_id | VARCHAR NULL (e.g. a video/post/gallery id) |
+| title | VARCHAR NULL (enrichment) |
+| description | TEXT NULL (enrichment) |
+| image_url | VARCHAR NULL (enrichment — external URL, not medialibrary) |
+| embed_html | TEXT NULL (allowlisted providers only, sanitized) |
+| status | ENUM(pending, ok, failed) |
+| fetched_at | TIMESTAMP NULL |
+| expires_at | TIMESTAMP NULL (ok → +30 days) |
+| created_at / updated_at | timestamps |
+
+### `linked_urls`
+Joins a body (`linkable` = post \| comment) to its `link_previews` rows, positioned in appearance order. Like mentions, rebuilt wholesale on edit.
+
+| Column | Type / constraints |
+|---|---|
+| id | BIGINT UNSIGNED, PK |
+| linkable_type | VARCHAR (morph — `post` \| `comment`) |
+| linkable_id | BIGINT UNSIGNED (morph) |
+| link_preview_id | FK → link_previews, cascadeOnDelete |
+| position | UNSIGNED INT |
+| created_at / updated_at | timestamps |
+
+### `post_reports`
+Reports on posts **and** comments (`reportable` morph, despite the table name). One report per reportable per reporter (policy-enforced); `note` is **required** when reason = `other`. `feed.auto_hide_reports` open reports (default 5) auto-hides the target pending review. `resolved_by` is the acting admin.
+
+| Column | Type / constraints |
+|---|---|
+| id | BIGINT UNSIGNED, PK |
+| reportable_type | VARCHAR (morph — `post` \| `comment`) |
+| reportable_id | BIGINT UNSIGNED (morph) |
+| reporter_type | VARCHAR (morph — `talent` \| `brand`) |
+| reporter_id | BIGINT UNSIGNED (morph) |
+| reason | VARCHAR(40) — keys from config `feed.report_reasons` (round 3: spam, nudity, harassment, hate, impersonation, ip, other; widened from ENUM by 2026_07_22_000600, legacy values mapped: inappropriate→nudity, copyright→ip, misleading→spam) |
+| note | TEXT NULL |
+| status | ENUM(open, reviewing, actioned, dismissed) |
+| resolved_by | FK → users NULL, nullOnDelete |
+| resolved_at | TIMESTAMP NULL |
+| created_at / updated_at | timestamps |
+
+### `feed_seen`
+Viewer × post exposure marks — damps repeats across feed sessions and feeds discovery freshness. Written lazily (batched), pruned after 60 days by `feed:prune`.
+
+| Column | Type / constraints |
+|---|---|
+| id | BIGINT UNSIGNED, PK |
+| viewer_type | VARCHAR (morph — `talent` \| `brand`) |
+| viewer_id | BIGINT UNSIGNED (morph) |
+| post_id | FK → posts, cascadeOnDelete |
+| seen_at | TIMESTAMP |
+| — | UNIQUE(viewer_type, viewer_id, post_id) · INDEX(viewer_type, viewer_id, seen_at) |
+
+### Counter columns added elsewhere (ADR-F6)
+`talents.followers_count` / `talents.following_count` / `talents.posts_count`, `brands.followers_count` / `brands.following_count` — documented on their tables above. All UNSIGNED INT default 0, mutated only inside the owning write's transaction, reconciled nightly. `talents.last_posted_at` (nullable TIMESTAMP) rides the same machinery (Prompt 5-follow).
+
+---
+
 ## Relationship quick-map
 
 - **talents** ⇄ **talent_types** via `talent_talent_type` (M:N; `is_primary`, `position`).
@@ -642,3 +806,7 @@ Key-value store for admin-tunable global settings (default currency, default con
 - **brands** → 1:1 `brand_aesthetics`, `brand_creative_needs`, `brand_credibility`; many `brand_images`, `brand_reviews`, `brand_social_handles`, `brand_signals`, `brand_projects`.
 - **projects** → many `brand_project_talent_types`, `brand_project_media`; group many `contracts`.
 - **users**, **activity_log**, **settings** — platform/admin plane.
+- **posts** (morph author → talents) ⇄ **talent_types** via `post_skill`; optional `project_id` → **projects** (+ `shared_snapshot` fallback); many `comments`, morph-many `likes` / `mentions` / `linked_urls` / `post_reports`; tracked in `feed_seen`.
+- **comments** belong to `posts` (+ self `parent_id`, depth ≤ 2); morph author → talents/brands; morph-many `likes` / `mentions` / `linked_urls` / `post_reports`.
+- **follows** — morph follower (talents/brands) → morph followable (talents); denormalized counters on `talents`/`brands`.
+- **linked_urls** join posts/comments → **link_previews** (deduped by `url_hash`).

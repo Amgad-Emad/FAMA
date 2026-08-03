@@ -325,4 +325,299 @@ testable in-process (mcamara registers the locale prefix per request) — verify
 `errors/layout` — dependency-light (no Alpine/data; `rescue()` for the dashboard link); keep them
 rendering when degraded.
 
-Next: Phase 4 — the mobile API (Sanctum tokens + Scribe docs) over the existing services/resources.
+PHASE 5 (public Feed) IN PROGRESS — playbook at `fama-feed-playbook.md` (prompts 5A–5R, run in order).
+**5A done (2026-07-22, docs only):** canonical `docs/specs/feed-spec.md` (entities, permission matrix,
+two-tier seeded ranking + cached candidate-ID pagination, mentions as ID+offset, zero-network link
+chips + async enrichment, notification matrix, moderation, guest intent replay, open questions Q1–Q7);
+schema-master §7 adds the ten feed tables (35 → 45: posts, post_skill, comments, likes, follows,
+mentions, link_previews, linked_urls, post_reports, feed_seen + counter columns on talents/brands) and
+§5 was reconciled with implemented ADR-F reality; ADR-F1…F8 appended to docs/decisions.md (F2 carries a
+stakeholder flag — project shares live-reference + snapshot fallback, deviating from the contract-step
+snapshot rule). Feed vocabulary: the shared thing is the talent-owned **Project** (`projects`), authors
+are polymorphic (aliased morph map talent/brand/user/post/comment/project — MUST fold in the existing
+contract-engine morph keys before enforcing), posting is talent-only via PostPolicy (ADR-F1), the
+Daylight design system (playbook §3) is FEED-SCOPED — a second token set, not a restyle of cloud/
+graphite/teal.
+**5B done (2026-07-22, suite 396 green):** the ten feed tables migrated (2026_07_22_000100, all
+composite indexes) + counter columns; models Post (HasMedia post_media, queued WebP thumb/feed/full,
+scopePublished, isEditable), Comment, Like, Follow, Mention, LinkPreview, LinkedUrl, PostReport,
+FeedSeen; PostState (draft→published⇄hidden→removed) + CommentState; HasFeedIdentity concern on
+Talent+Brand (posts/followers/following/likesGiven + feedUsername/feedDisplayName/feedAvatarUrl);
+CounterService (sole counter mutator, zero-clamped) + #[ObservedBy] observers so counters move
+in-transaction; feed:reconcile-counters (daily 03:10, derived-table join for replies_count — MySQL
+1093) with corruption-repair test; NEW `feed` log channel; config/feed.php holds every tunable.
+**WATCH OUT — enforced aliased morph map (App\Support\MorphMap, ADR-F1):** every model now morphs as
+a snake_case alias ('talent','post',…); adding ANY new model that can appear in a morph column
+requires adding it to MorphMap or writes throw ClassMorphViolationException; aliases are FROZEN
+(changing one = data migration); migration 2026_07_22_000200 converted legacy FQCN rows (media,
+activity_log, permission pivots, sanctum tokens, contract morphs) — flush the spatie permission cache
+after deploying it.
+**5C done (2026-07-22, suite 410 green):** App\Feed\{Actor, CurrentActor, PendingIntent} — Actor
+implemented by Talent+Brand; CurrentActor resolves talent→brand (STATELESS on purpose — memoization
+leaks across requests in tests/Octane), admins are never actors; middleware resolve.actor (never
+rejects, shares $currentActor) + require.actor:<action> (guest → 401 envelope with data.intent
+{action,target_type,target_id,payload}, session-captured; admin → 403); ReplayPendingIntent listener
+replays like/follow/comment EXACTLY ONCE on Login (clears before executing, failures → feed log).
+Policies auto-discovered: PostPolicy (create=Talent only — the ADR-F1 flip point; update windowed
+15min; delete=author ANYTIME — deliberate deviation from 5C's windowed-delete wording, per D12/5F),
+CommentPolicy, LikePolicy, FollowPolicy (self-follow deny), PostReportPolicy (once per target).
+routes/feed.php (inside locale group, BEFORE the /{slug} catch-all): /feed + /posts/{post} interim
+shells (unpublished → 404 not 403), comments GET/POST, like POST/DELETE, follow POST/DELETE
+/follow/{type}/{id}. app/Actions/Feed/{ToggleLike,ToggleFollow,CreateComment} are minimal-but-final
+(race-safe unique-index idempotency, edge rules, depth-two re-attach + auto-@mention) — 5D/5G/5H
+ENRICH these in place, don't recreate. Feed controllers extend FeedBaseController (gate() bound to
+actor/admin/guest) and NEVER call Auth::guard().
+**5D done (2026-07-22, suite 419 green):** app/Data/Feed DTOs (ParsedBodyData/MentionData/UrlData);
+RichTextParser (char offsets via byte→mb conversion — Arabic-proven; e-mail lookbehind guard;
+talents-then-brands slug resolution in 2 whereIns; never throws); SyncMentions/SyncLinks (idempotent
+delete-and-reinsert on create AND edit, limits → ValidationException naming the limit) wired into
+CreateComment's transaction; ResolveLinkPreview (normalize → sha256 url_hash → firstOrCreate pending
+— 5E swaps the parse for the driver registry BEHIND THE SAME SIGNATURE); BodyRenderer (escape-first
++ inject, current-Username at render, <bdi> + LRI/PDI isolates on every token — callers MUST
+eager-load mentions.mentioned + linkedUrls.preview); GET /mentions/search (throttle 30/min,
+published-only, 8 grouped talents-first).
+**5E done (2026-07-22, suite 466 green):** App\Feed\Links — LinkProvider contract + AbstractProvider
++ 14 drivers (instagram/tiktok/youtube/behance/vimeo/x/linkedin/pinterest/dribbble/spotify/
+soundcloud/facebook/snapchat/generic) resolved by LinkProviderRegistry from config/feed.php
+'providers' (add a provider = class + config line; generic auto-appended last);
+ResolveLinkPreview now registry-parses + dispatches FetchLinkPreviewJob afterCommit on FIRST sight
+only; the job does oEmbed (config enrichment.oembed) else OG, 3 tries backoff, terminal failure →
+status failed (chip stays); UrlGuard = the SSRF wall (scheme allowlist, DNS private/reserved
+rejection per hop, manual redirects ≤3, 5s, 512KB, embed_html only youtube/vimeo reduced to a
+vetted iframe). POST /links/preview (require.actor:link + throttle:20,1).
+**WATCH OUT: phpunit QUEUE_CONNECTION is now `database`** (NOT sync — a sync queue ran enrichment
+inline in tests and made real network calls); assert dispatches with Bus::fake or rows in `jobs`,
+and unit-test job logic by calling handle() directly.
+**5F done (2026-07-22, suite 477 green):** app/Actions/Feed/{CreatePost,ShareProjectAsPost,
+UpdatePost,DeletePost,TogglePinPost} — all transactional; skills own-only (validated IN the actions);
+UpdatePost takes NO files (media immutable after publish); TogglePinPost unpins the previous (max 1);
+ShareProjectAsPost gates ownership + is_published profile and freezes shared_snapshot {title
+translations, cover_media_path, shared_at}. StorePostRequest (substance rule + PostMediaFile —
+ffprobe duration check ONLY when binary present, size caps always), UpdatePostRequest,
+ShareProjectRequest. Routes: POST /posts (throttle:10,60), PATCH/DELETE /posts/{post},
+POST /posts/{post}/pin, POST /projects/{project}/share. Post has a queued `poster` video conversion
+(needs ffmpeg on worker). FeedSeeder (config feed.seeder sizes; tests shrink) seeds the UI dataset —
+AR/EN bodies via the REAL parser pipeline, GD imagery, follow graph, likes, threaded comments —
+and MUST end with CounterService::reconcile() because DatabaseSeeder's WithoutModelEvents mutes the
+counter observers. Dev DB seeded (300 posts).
+**5G+5H done (2026-07-22, suite 489 green):** ReplyToComment (thin — CreateComment is THE single
+comment write path), UpdateComment/DeleteComment (window; tombstone = trashed parent with surviving
+replies stays in the listing); thread listing paginated 10 newest-first with 3 preview replies +
+remaining_replies + liked_by_viewer via constrained `viewerLike` eager-load (guest constraint 1=0;
+Post and Comment both have the relation) — fixed-query-count proven; replies paginate separately
+oldest-first; comment like endpoints; Resources app/Http/Resources/Feed/{ActorResource,
+CommentResource} (body_html via BodyRenderer — callers eager-load mentions.mentioned +
+linkedUrls.preview). NAMED per-actor rate limiters in AppServiceProvider (feed-posts 10/h,
+feed-comments 10/min, feed-likes + feed-follows 60/min, feed-links 20/min, feed-mentions 30/min;
+key = actor morph:id else ip) + friendly 429 envelope renderer in bootstrap/app.php.
+FollowService::isFollowing = THE bulk "type:id"=>bool map (one query, guests all-false);
+GET /talents/{username}/followers|/following paginated 24 with followed_by_viewer.
+**5I done (2026-07-22, suite 496 green):** FeedService — candidate IDs frozen per viewer+seed
+(cache 10min, key feed:candidates:{morph-id|guest}:{seed}); tier1 seeded shuffle md5(id.seed);
+tier2 scored (affinity: talent=own skills, brand=followed talents' skills via one join, guest=none;
+velocity log-damped; freshness; recency half-life) + seed jitter; interleave (inject 1 tier2 per 4
+tier1) THEN diversity cap ≤2 consecutive (deferred-queue algorithm — cap may move the injection
+earlier than position 4, tests must assert invariants not positions); casting slot = every 6th
+GLOBAL position (slice-relative indexes in the response); hydration one whereIn+FIELD with
+constrained viewerLike; cursor = base64 {s,o}. DiscoverTalentsService: strip of 12 (pool cache 5min,
+shown-set per viewer+seed → no repeats in-session). GET /feed/items + /feed/casting; guest seed =
+sha1(session id) (D14). PostResource: media derivative urls fall back to original until queued
+conversions run; project payload = live-or-snapshot (ADR-F2). All ranking knobs in config/feed.php
+'ranking'.
+**5J done (2026-07-22, suite 503 green):** App\Feed\FeedNotifier = the ONLY dispatch point (self-
+guard, 60-min like aggregation updated IN PLACE via data->target "type:id" string key, mention
+suppresses comment/reply for the same event, refollow-silent, deep links, guard() logs failures to
+feed channel — a silent notifier bug shows up THERE, not in the response). 8 thin queued classes
+under app/Notifications/Feed extending FeedNotification (afterCommit() in constructor — NEVER
+redeclare $afterCommit, Queueable owns it; that fatal is invisible under the pao output wrapper —
+debug silent test runs with `PAO_DISABLE=1 ./vendor/bin/pest`). Payloads store message KEY + params,
+localized at read (lang/ar.json has the feed strings). Endpoints: GET /notifications,
+POST /notifications/read, GET /notifications/unread-count (require.actor). notifications table
+migrated (uuid + morph indexes). Actions call the notifier POST-COMMIT.
+**5K done (2026-07-22, suite 510 green):** fragment endpoint (envelope {html} via
+feed/partials/post — 5M swaps THIS), /talents/{username}/posts (pinned first), report endpoints
+(once-per-target), LinkChipResource + NotificationResource. routes/api.php = /api/v1 mirror through
+the SAME controllers (registered via bootstrap withRouting api:); CurrentActor guards now
+['talent','brand','sanctum']; RequireActor captures intent only when $request->hasSession();
+FeedController::sessionSeed falls back to actor/fingerprint+hour when stateless. Scribe live:
+`php artisan scribe:generate` → /docs + storage/app/private/scribe/{openapi.yaml,collection.json}.
+docs/api.md: 190 endpoints (130 + 31 feed web + 29 api).
+**5L done (2026-07-22, suite 510, vite build green):** resources/css/daylight.css — Daylight is
+SCOPED under [data-surface='daylight'] and RE-READS the core tokens (--bg/--surface/--ink/--accent/
+fonts) from the Daylight palette, so existing utilities/components just work inside the feed;
+--dl-* holds Daylight-only values; new Tailwind names bg-sand/sand-deep/chalk/veil, text-daylight,
+border-seam. WATCH OUT: clip-path clips box-shadow — the notch lives on .frame, the BLUE shadow on
+the .frame-shadow wrapper via filter:drop-shadow (follows the notched silhouette); compose
+<div class="frame-shadow"><div class="frame">. Glint = .glint + .is-lit + .frame-shadow.is-sweeping.
+Fonts via feed/partials/daylight-head.blade.php (feed pages only; self-hosting = deploy-time swap,
+docs/design-system.md). Preview: GET /design/feed-tokens (both themes × both dirs).
+docs/design-system.md is now part of the fixed docs set.
+**5M done (2026-07-22, suite 510 + build green, verified live):** components/feed/{frame,media,
+spread,credits,actions,casting,skeleton}; feed/partials/post.blade.php = THE canonical frame
+(server page 1 + /feed/items html[] + fragment endpoint all render it); FeedController::index
+serves page 1 of the RANKED stream (same frozen list as the cursor); /feed/items adds html[] +
+casting_html for web only (API stays JSON). resources/js/feed.js: feedStream (sentinel observer,
+double-fetch guard, casting injection, light-bar), postFrame (optimistic glint + is-sweeping
+restart via offsetWidth reflow, 401 → inline gate with talent/brand chips), castingCard. Comments
+mount is a placeholder — 5O fills it.
+**5N done (2026-07-22, suite 510 + build green, live 200):** feed/partials/composer.blade.php
+(talent-only; FeedController::index passes $composer with own skills+projects) + feedComposer in
+feed.js. Body is a TEXTAREA (deliberate deviation from contenteditable — native caret/RTL wins;
+documented); @caret-token → debounced /mentions/search (arrows/Enter); URLs → /links/preview instant
+chips; media DnD/reorder/client caps; share-a-Project mode; LIVE credits preview; submit → fragment
+prepend, draft persists in memory. NO @alpinejs/focus in this repo — never use x-trap; manual focus
++ body overflow lock. WATCH OUT: never Cache::remember Eloquent MODELS (unserializes as
+__PHP_Incomplete_Class live) — DiscoverTalentsService now caches ranked IDs + rehydrates via
+FIELD().
+**5O done (2026-07-22, suite 512 green):** feed/partials/comments.blade.php + commentThread
+(NESTED in postFrame — reads commentsOpen/commentsCount from parent scope; lazy loadOnce via
+x-effect); tombstones, preview replies + separate reply pagination, optimistic comment likes,
+reply pre-fill @username, inline edit with mm:ss countdown (CommentResource has is_mine +
+editable_until), delete via $confirm. Double-tap like on media; report = reason-sheet radio chips +
+note + toast. Guest loop CLOSED: RequireActor stores session 'feed.return_to' (post/comment anchor)
+next to the intent; AuthenticatedSessionController honours feed.return_to (a DELIBERATELY separate
+slot from url.intended, which multi-guard login drops); e2e test proves gate → login → replay →
+anchor.
+**5P done (2026-07-22, suite 515 green):** /feed?skill={slug} + /feed?following=1 — filters live
+INSIDE the cursor ({s,o,k,f}) AND the candidate cache key (frozen-list stability holds per filter);
+first page reads query params, later pages read the cursor; header filter pills Ajax-swap the spine
+(pushState). /discover results row links "See their work in the feed →" with the selected skill.
+**WATCH OUT — feed FABs must be teleported (2026-07-23 fix):** the New-post + Back-to-top floating
+buttons live inside `<main class="animate-fade-in-up">`, whose keyframes animate a `transform`. A
+transformed ancestor is the containing block for `position:fixed`, so an in-place FAB stack pins to
+the bottom of the full-height `<main>` (below the fold), not the viewport — the buttons vanish. They
+are now `x-teleport`'d to `<body>` inside a `data-surface="daylight"` host (`.fab-host{display:contents}`
+carries the token scope without painting a ground). Bottom `inset-inline-start` = left in EN, right in
+AR. Anything fixed-positioned inside the daylight feed has this trap — teleport it.
+
+**DASHBOARD FOLLOW MANAGEMENT COMPLETE (Prompt 5-follow, 2026-07-23): suite 587 green (2113
+assertions), build green.** FOLLOWING + FOLLOWERS sub-tabs on the talent AND brand dashboards
+(Talent|Brand\FollowsController, /{guard}/feed/follows[/data]); shared partial partials/feed-follows
+rendered inside a data-surface="daylight" region so the RAIL card language applies (portrait talents,
+square brands — SHAPE is the type signal, no colour; Fraunces display, mono handle, --ink-faint).
+FollowManagementService pages the graph 24/page. WATCH OUTS: (1) the polymorphic other party MUST be
+eager-loaded via MorphTo::morphWith (Talent=>[talentTypes,media], Brand=>[media]) — a plain
+with('followable') N+1s across the mixed types; a fixed-query-count test (3 vs 15) guards it. (2)
+Mutuality is ONE bulk query — FollowService::isFollowing (followers side) + the NEW followsBack
+(following side, inverse map) — never per row. (3) Search + Skill filter + non-recency sorts run in
+SQL (left-join talents+brands on the morph column, COALESCE; whereExists on the Skill pivot) — NOT an
+in-memory filter of a fetched page, which breaks pagination. (4) talents.last_posted_at (migration
+2026_07_22_000700, indexed) is the "quiet since >90d" signal — maintained by
+CounterService::applyPostPublishDelta on the publish boundary (recompute-from-source on unpublish so
+deleting the last post clears it) + reconciled nightly with a NULL-safe <=>. (5) The mutual badge +
+quiet-since are dashboard-only — they must NOT leak into the public FollowListController payload
+(asserted). (6) The dashboard uses design-head, NOT daylight-head, so window.famaLang is undefined
+there — pass runtime strings (the undo label) from Blade into the Alpine component, don't read
+famaLang. Optimistic unfollow = 280ms slide-out + 5s undo restoring the row IN PLACE; FOLLOWERS tab =
+FOLLOW BACK where not mutual, no unfollow; both reuse /follow/{type}/{id}.
+
+**FEED RAILS 5Z+5AA COMPLETE (2026-07-22): suite 560 green (2033 assertions), build green, live
+/feed 200, 200 endpoints.** feed.allow_following_brands is now TRUE (brands.followers_count exists
+— tests exercising the off-path must set the flag explicitly). SuggestionService = tiered ranking
+(config feed.suggestions; tier bonuses dominate the signal base), truthful {key,params} reasons
+translated at SERVE time, exclusions incl. the cache-tracked shown-unacted-7-day rest; cache = 5min
+plain arrays per actor, forgotten on follow/dismiss/own-profile-update (Talent::updated +
+Brand::updated hooks in AppServiceProvider); guest seed STORED in session ('feed.suggest_seed' —
+session IDs regenerate, stored data survives). Endpoints /feed/suggestions/{talents,brands}
+(?format=html returns the server-rendered suggestion-cards fragment for the rails) + dismiss
+(60/min; client delays the POST 5s for undo — server dismissal is permanent). 5AA: per-post meta
+rail DELETED (frame has no $rail slot anymore); .feed-grid three columns (talent rail ≥1400,
+brand rail ≥1100, no-brand-rail rebalance for brand viewers); rails hydrate post-paint, empty →
+collapse; inline strip halves to every-12 when a rail shows (feedStream.allowStripInjection).
+Rail open questions for stakeholders: viewer's own anchor card, brand-to-brand suggestions,
+260px vs 280–300px rail width (eyeball live).
+
+**ROUND 3 (5AB–5AI) COMPLETE (2026-07-22): suite 574 green (2076 assertions), build green,
+migrate:fresh --seed exits 0 (40 talent avatars + 15 brand logos seeded), live /feed 200 with a
+CLEAN browser console (verified via Chrome, logged in as the demo talent).** Z-scale tokens in
+app.css :root (--z-base 0 … --z-toast 500, --topbar-h) — NO raw z-indexes in the feed. Fixed
+opaque public topbar (scroll hairline, <1100px hide/reveal, topbar.js), nav = Feed · Discover ·
+Brands · Opportunities (Feed-first per playbook default; Discover-first = reorder $navItems in
+public-layout), aria-current + gestural SVG underline. FAB stack (150vh IO marker), rebuilt action
+bar (40px hits, share popover, SAVE + overflow menu, aria-labels name the author), generic
+<x-feed.media-grid> + teleported lightbox, media_alt[] → medialibrary custom property 'alt'
+(order-matched; StorePostRequest max:160). Report reasons are CONFIG (feed.report_reasons, 7 keys;
+migration 2026_07_22_000600 enum→string + legacy mapping); 'other' requires note; shared report
+dialog + $store.feedToasts rack. Comment thread: normal-case authors + mono handle/time +
+comment-badge, collapsed→expand composer, optimistic pending rows with Retry. Composer modal:
+portalled, pinned header/footer, PUBLISH hover-hint (publishHint names what's missing), dirty-close
+$confirm, per-tile reorder/ALT/remove on the real .media-grid geometry.
+ROUND-3 WATCH OUTS (each cost a live bug): (1) **@js() on a COMPONENT-TAG attribute ships
+literally** — Blade compiles component-tag attributes as strings and only processes {{ }};
+use {{ \Illuminate\Support\Js::from(...) }} there (RoundThreePolishTest guards the rendered feed
+against literal directives). (2) **Never put a string :style binding on an element with x-show** —
+each re-eval rewrites the style attribute and wipes x-show's display:none. (3) **$dispatch from
+inside an x-teleport'd node bubbles from <body>** — dispatch from the component ROOT
+($root.dispatchEvent) or the parent's listener never fires (mention-field pick). (4) **Bare
+requestAnimationFrame never fires in hidden tabs** — rail hydration is rAF + 250ms setTimeout
+fallback; don't gate data loads on rAF alone. (5) The **$confirm dialog markup** now also mounts
+in public-layout (feed uses it) — dashboards were already covered. (6) **window.famaLang** (defined
+in feed/partials/daylight-head) is THE bridge for every runtime JS string in feed.js — add the key
+to BOTH the bridge and lang/ar.json when introducing one; it did not exist before round 3 and all
+runtime strings were silently English. Rails: follower counts as words (N FOLLOWERS / NEW),
+avatar-fallback tint from username hash, reason lines clamp to 2 lines (full @handle survives).
+
+**REVISION BATCH 5S–5Y COMPLETE (2026-07-22): suite 551 green (1998 assertions), build green,
+live /feed 200.** Key state: Daylight palette DERIVES from --dl-base = the topbar colour (core
+--bg #EDEFF3/#0D0F13 — NOT the screenshot's #F4F2EE, which was the 85%-alpha bar over old sand);
+sand/sand-deep/chalk RETIRED (ground/ground-sunk/surface/surface-sunk/seam/ink/ink-soft/ink-faint
+via color-mix in oklch; ink-faint tuned to 56% both themes); `php artisan feed:check-contrast` is a
+SUITE-ENFORCED WCAG gate — edit daylight.css and the command's formula table TOGETHER. Accent is
+banned on buttons/chips/fills: .dl-btn (ghost→ink-fill), .dl-chip (active = ink), .well (soft halo
+focus, padding-inline-end 48px, autogrow). ONE mention component: <x-feed.mention-field>
+(x-modelable; submit rides 'submit-intent' event; /mentions/search excludes actor + ranks
+followed>prefix>substring). Chips REPLACE raw URLs (BodyRenderer re-parses raw body for offsets —
+never string-search the NORMALIZED stored url; glyph sprite feed/partials/glyphs; ChipLabel rules;
+chips[] in API resources). Spread = strongest frame (widened shared_snapshot: title/cover/client/
+year/media_count/skill_ids — ADR-F2 updated); credits = author ONCE with middot-joined skills +
+WITH lines, handles NEVER uppercased (.credit-handle); rail = date+skills only. Bookmarks (5X):
+polymorphic both sides, posts-only via ToggleBookmark type-gate, viewerBookmark eager uses
+bookmarker_* columns (NOT the liker closure!), SAVED/LIKED dashboards private (ADR-F9), 'bookmark'
+in PendingIntent. Motion (5Y): JS-applied entrances (transform/opacity, stagger cap 6, first-paint
+exempt), light response = pre-rendered notched ::after shadow crossfade (never animate box-shadow),
+content-visibility on frames, condensing sticky chrome; feed.js's motion layer IS the scroll-motion
+layer (none pre-existed) — re-arm observeFrames() after ANY spine swap.
+
+**PHASE 5 COMPLETE (5R closed 2026-07-22): suite 527 green (1901 assertions), build green,
+migrate:fresh --seed exits 0, live /feed 200.** Final counts: 190 endpoints, 45 domain tables +
+notifications. docs/performance.md is part of the fixed docs set (budgets are TEST-ENFORCED — keep
+them green, update the doc when a budget changes). Open stakeholder items: ADR-F2 confirmation
+(project-share live-ref+snapshot), video scope (Q3), AR copy pass on new feed Blade labels, live
+RTL/dark browser verification. Extension points: brand posting = PostPolicy::create; trending =
+FeedService tier-2; "Spark" label = lang swap; self-hosted fonts = daylight-head partial swap.
+
+**5Q done (2026-07-22, suite 523 green):** FeedModerationService (state-machine actions in
+transactions, activity log `feed_moderation` with causer+reason, removals notify the author via
+ContentRemoved; registerReport = auto-hide tripwire at config feed.auto_hide_reports open reports,
+wasAutoHidden() derives the queue flag from the activity log). Console at /admin/moderation/feed
+(moderate-content; sidebar entry; reports/posts/comments queues via server-validated ?queue=;
+talent activity timeline /admin/moderation/feed/talents/{talent}). feed:prune scheduled 03:40
+(feed_seen >60d; failed+expired+UNREFERENCED link previews only). Admin actions PATCH
+/admin/moderation/feed/{posts|comments}/{id}/{hide|remove|restore} + /reports/{id}/{actioned|
+dismissed}. WATCH OUT in admin tests: a test session can hold SEVERAL guards at once — split
+authorization checks into separate tests or the earlier admin login leaks through auth:admin.
+Next: Prompt 5R — hardening close-out (query profiling + EXPLAIN → docs/performance.md, cache
+inventory, final docs sweep, endpoint/table counts).
+
+POST-PHASE MODERATION HARDENING (2026-07-31 → 2026-08-02, suite 604 green, build green,
+migrate:fresh --seed exits 0):
+- **Admin review deletion with an emailed notice (2026-07-31).** `reviews` soft-deletes now
+  (`deleted_at`, migration `2026_07_31_000100`); `ReviewModerationService::deleteWithNotice` snapshots +
+  soft-deletes + audits (`review.deleted`) then mails `App\Mail\ReviewRemovedNotice`
+  (`emails/review-removed`). `POST /admin/moderation/reviews/{review}/delete` (moderate-content;
+  email/subject/reason). The review drawer has a **Delete…** composer modal with a LIVE email preview.
+  Comment authors already self-delete (CommentPolicy + feed `is_mine`); reviews are anonymous so admin
+  removal is their only path. MAIL_MAILER=log in dev — the notice renders to the log.
+- **Mandatory admin verification before public (2026-08-02, ADR-U).** `is_verified` is the go-live gate
+  for BOTH entities. Talents gained `is_verified` (migration `2026_08_02_000100`); `ToLive` now needs
+  `display_name` AND `is_verified`; brands get a guarded `ToPublished` (needs `is_verified`). Self-serve
+  publish (`TalentProfileService::publish`, brand `AccountController::publish`) pre-checks with a friendly
+  422; the talent/brand editors show an *Awaiting verification* banner + disabled Publish. Admin: new
+  `TalentModerationService::verify` + `verify` moderation action (audited `talent.verified`); the shared
+  `account-actions` partial shows **Verify** for both kinds and hides **Publish** until verified. Verify
+  is ONE-WAY (use Suspend/Unpublish to take down). Migration grandfathers live/published rows to verified;
+  factory defaults for published/live states are `is_verified=true` (with `unverified()` states). Open
+  stakeholder item: whether verify should also auto-publish (today it only unlocks the owner's toggle).
+
+Phase 4 (mobile API: Sanctum + Scribe over existing services) is deferred; Prompt 5K mirrors the feed
+endpoints under /api/v1 with Sanctum and starts docs/api.md regeneration.

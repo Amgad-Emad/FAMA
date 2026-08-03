@@ -118,8 +118,10 @@
                                         <input type="checkbox" x-model="form.is_public" class="h-4 w-4 shrink-0 rounded border-line text-accent focus:ring-accent">
                                     </label>
                                     {{-- Brief (translatable) --}}
-                                    <div class="sm:col-span-2"><x-input-label :value="__('Brief (EN)')" /><textarea rows="2" class="mt-1 block w-full rounded-md border-line bg-bg text-sm" x-model="form.description.en"></textarea></div>
+                                    <div class="sm:col-span-2"><x-input-label :value="__('Brief')" /><textarea rows="2" class="mt-1 block w-full rounded-md border-line bg-bg text-sm" x-model="form.description.en"></textarea></div>
+                                    {{-- Arabic input hidden while the app is English-only (restore for the AR pass).
                                     <div class="sm:col-span-2"><x-input-label :value="__('Brief (AR)')" /><textarea rows="2" dir="rtl" class="mt-1 block w-full rounded-md border-line bg-bg text-sm" x-model="form.description.ar"></textarea></div>
+                                    --}}
                                 </div>
                             </div>
 

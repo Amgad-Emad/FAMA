@@ -6,11 +6,11 @@
     $btn = 'rounded-pill border border-line px-2.5 py-1 text-xs transition';
 @endphp
 
-@if ($kind === 'brands')
-    <button x-show="!{{ $o }}.is_verified && !{{ $o }}.trashed"
-            @click="$confirm({ title: '{{ __('Verify this brand?') }}', message: '{{ __('Verification is a one-way trust badge and cannot be removed.') }}', confirmLabel: '{{ __('Verify') }}', tone: 'accent' }).then(ok => ok && action({{ $o }},'verify'))"
-            class="{{ $btn }} text-accent-ink hover:border-accent">{{ __('Verify') }}</button>
-@endif
+{{-- Verify (one-way) — the admin sign-off that unlocks publishing. Until it is
+     set, neither the account owner nor an admin can take the profile live. --}}
+<button x-show="!{{ $o }}.is_verified && !{{ $o }}.trashed"
+        @click="$confirm({ title: '{{ __('Verify this account?') }}', message: '{{ __('Verification approves the account to go public. It is one-way and cannot be removed — hide the account with Suspend or Unpublish instead.') }}', confirmLabel: '{{ __('Verify') }}', tone: 'accent' }).then(ok => ok && action({{ $o }},'verify'))"
+        class="{{ $btn }} text-accent-ink hover:border-accent">{{ __('Verify') }}</button>
 
 {{-- Suspend ⇄ Reinstate --}}
 <button x-show="!{{ $o }}.trashed && {{ $o }}.status !== 'suspended'"
@@ -24,9 +24,12 @@
 <button x-show="!{{ $o }}.trashed && {{ $o }}.is_published"
         @click="$confirm({ title: '{{ __('Unpublish this account?') }}', message: '{{ __('The account is hidden from the public but stays editable.') }}', confirmLabel: '{{ __('Unpublish') }}', tone: 'accent' }).then(ok => ok && action({{ $o }},'unpublish'))"
         class="{{ $btn }} text-muted hover:text-ink">{{ __('Unpublish') }}</button>
-<button x-show="!{{ $o }}.trashed && !{{ $o }}.is_published && {{ $o }}.status !== 'suspended'"
+{{-- Publish only after verification — the go-live gate. --}}
+<button x-show="!{{ $o }}.trashed && !{{ $o }}.is_published && {{ $o }}.status !== 'suspended' && {{ $o }}.is_verified"
         @click="$confirm({ title: '{{ __('Publish this account?') }}', message: '{{ __('The account becomes visible to the public.') }}', confirmLabel: '{{ __('Publish') }}', tone: 'accent' }).then(ok => ok && action({{ $o }},'publish'))"
         class="{{ $btn }} text-success hover:border-success">{{ __('Publish') }}</button>
+<span x-show="!{{ $o }}.trashed && !{{ $o }}.is_published && {{ $o }}.status !== 'suspended' && !{{ $o }}.is_verified"
+      class="text-xs text-muted">{{ __('Verify to enable publishing') }}</span>
 
 {{-- Delete ⇄ Restore --}}
 <button x-show="!{{ $o }}.trashed"

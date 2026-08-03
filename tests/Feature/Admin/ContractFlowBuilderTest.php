@@ -79,7 +79,7 @@ it('audits flow authoring with the admin as causer', function () {
     $this->builder->createFlow($this->admin, ['name' => 'Audited']);
 
     $activity = Activity::inLog('contract_flow')->latest('id')->first();
-    expect($activity->subject_type)->toBe(ContractFlow::class);
+    expect($activity->subject_type)->toBe((new ContractFlow)->getMorphClass());
     expect((int) $activity->causer_id)->toBe($this->admin->id);
 });
 
