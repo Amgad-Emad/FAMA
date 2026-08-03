@@ -42,6 +42,7 @@ class TalentFactory extends Factory
             'base_country' => fake()->randomElement(['Egypt', 'UAE', 'Saudi Arabia']),
             'booking_type' => 'email',
             'booking_value' => fake()->safeEmail(),
+            'is_verified' => true,
             'is_published' => true,
             'published_at' => now(),
             'status' => 'live',
@@ -60,5 +61,13 @@ class TalentFactory extends Factory
             'published_at' => null,
             'status' => 'draft',
         ]);
+    }
+
+    /**
+     * Not yet approved by an admin — cannot go public (fails the ToLive guard).
+     */
+    public function unverified(): static
+    {
+        return $this->state(fn (): array => ['is_verified' => false]);
     }
 }

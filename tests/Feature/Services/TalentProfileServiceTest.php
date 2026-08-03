@@ -36,6 +36,30 @@ it('refuses to publish a profile without a display name (ToLive guard)', functio
         ->toThrow(CouldNotPerformTransition::class);
 });
 
+it('refuses to publish an unverified profile (awaiting admin approval)', function () {
+    $talent = Talent::factory()->draft()->unverified()->create(['display_name' => 'Pending']);
+
+    expect(fn () => app(TalentProfileService::class)->publish($talent))
+        ->toThrow(InvalidArgumentException::class);
+
+    expect($talent->fresh()->is_published)->toBeFalse();
+    expect($talent->fresh()->status->getValue())->toBe('draft');
+});
+
+it('lets a talent publish once an admin verifies it', function () {
+    $this->seed(Database\Seeders\RolesAndPermissionsSeeder::class);
+    $talent = Talent::factory()->draft()->unverified()->create(['display_name' => 'Ready']);
+    $admin = App\Models\User::factory()->create();
+    $admin->assignRole('super-admin');
+
+    app(App\Services\TalentModerationService::class)->verify($admin, $talent);
+    expect($talent->fresh()->is_verified)->toBeTrue();
+
+    app(TalentProfileService::class)->publish($talent->fresh());
+    expect($talent->fresh()->status->getValue())->toBe('live');
+    expect($talent->fresh()->is_published)->toBeTrue();
+});
+
 it('moderates reviews (approve + reject) syncing is_approved', function () {
     $talent = Talent::factory()->create();
     $service = app(TalentProfileService::class);

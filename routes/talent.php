@@ -50,6 +50,15 @@ Route::patch('/profile/skills/{type}/primary', [SkillController::class, 'primary
 Route::delete('/profile/skills/{type}', [SkillController::class, 'destroy'])->name('profile.skills.destroy');
 
 // --- Reviews moderation -----------------------------------------------------
+// Feed collections (5X, ADR-F9 — private to the owner).
+Route::get('/feed/saved', [\App\Http\Controllers\Talent\FeedCollectionController::class, 'saved'])->name('feed.saved');
+Route::get('/feed/liked', [\App\Http\Controllers\Talent\FeedCollectionController::class, 'liked'])->name('feed.liked');
+Route::get('/feed/collection/data', [\App\Http\Controllers\Talent\FeedCollectionController::class, 'data'])->name('feed.collection.data');
+
+// Follow-graph management (FOLLOWING / FOLLOWERS sub-tabs).
+Route::get('/feed/follows', [\App\Http\Controllers\Talent\FollowsController::class, 'index'])->name('feed.follows');
+Route::get('/feed/follows/data', [\App\Http\Controllers\Talent\FollowsController::class, 'data'])->name('feed.follows.data');
+
 Route::get('/reviews', [ReviewController::class, 'index'])->name('reviews');
 Route::get('/reviews/data', [ReviewController::class, 'data'])->name('reviews.data');
 Route::patch('/reviews/{review}/approve', [ReviewController::class, 'approve'])->name('reviews.approve');

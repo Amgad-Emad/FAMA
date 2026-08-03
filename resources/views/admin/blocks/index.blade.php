@@ -73,10 +73,12 @@
                     <x-text-input class="mt-1 block w-full font-mono {{ $lockedField }}" x-model="form.key" x-bind:disabled="form.id && form.in_use_count > 0" />
                     <template x-if="errors['key']"><p class="mt-1 text-xs text-danger" x-text="errors['key'][0]"></p></template>
                 </div>
-                <div><x-input-label :value="__('Name (EN)')" /><x-text-input class="mt-1 block w-full" x-model="form.name.en" />
+                <div><x-input-label :value="__('Name')" /><x-text-input class="mt-1 block w-full" x-model="form.name.en" />
                     <template x-if="errors['name.en']"><p class="mt-1 text-xs text-danger" x-text="errors['name.en'][0]"></p></template>
                 </div>
+                {{-- Arabic input hidden while the app is English-only (restore for the AR pass).
                 <div><x-input-label :value="__('Name (AR)')" /><x-text-input class="mt-1 block w-full" dir="rtl" x-model="form.name.ar" /></div>
+                --}}
 
                 <div>
                     <x-input-label :value="__('Availability')" />

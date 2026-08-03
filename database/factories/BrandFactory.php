@@ -36,7 +36,7 @@ class BrandFactory extends Factory
             'website' => fake()->optional()->url(),
             'is_complete' => true,
             'is_active' => true,
-            'is_verified' => false,
+            'is_verified' => true,
             'is_published' => true,
             'status' => 'published',
         ];
@@ -56,5 +56,11 @@ class BrandFactory extends Factory
     public function verified(): static
     {
         return $this->state(fn () => ['is_verified' => true]);
+    }
+
+    /** Not yet approved by an admin — cannot go public (fails the ToPublished guard). */
+    public function unverified(): static
+    {
+        return $this->state(fn () => ['is_verified' => false]);
     }
 }

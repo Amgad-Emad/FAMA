@@ -39,10 +39,34 @@
                 <template x-for="field in fields" :key="field.name">
                     <div>
                         <label class="mb-1 block text-sm font-medium capitalize text-ink" x-text="field.name.replaceAll('_', ' ')"></label>
-                        <template x-if="field.kind === 'translatable'">
-                            <div class="grid grid-cols-2 gap-2">
-                                <input x-model="form[field.name].en" placeholder="EN" class="rounded-md border-line bg-elevated text-ink shadow-sm focus:border-accent focus:ring-accent">
-                                <input x-model="form[field.name].ar" placeholder="AR" dir="rtl" class="rounded-md border-line bg-elevated text-ink shadow-sm focus:border-accent focus:ring-accent">
+                        {{-- Plain translatable (English-only for now) --}}
+                        <template x-if="field.kind === 'translatable' && !field.rich">
+                            <div>
+                                <input x-model="form[field.name].en" class="w-full rounded-md border-line bg-elevated text-ink shadow-sm focus:border-accent focus:ring-accent">
+                            </div>
+                        </template>
+
+                        {{-- Rich translatable (summary / body) — a lightweight WYSIWYG.
+                             Toolbar keeps focus (@mousedown.prevent); the editor
+                             two-way binds to form[field.name].en (input pushes to
+                             the model, x-effect restores it after a form reset). --}}
+                        <template x-if="field.kind === 'translatable' && field.rich">
+                            <div x-data="richField()" class="overflow-hidden rounded-md border border-line bg-elevated focus-within:border-accent focus-within:ring-1 focus-within:ring-accent">
+                                <div class="flex items-center gap-0.5 border-b border-line px-1.5 py-1">
+                                    <button type="button" @mousedown.prevent="exec('bold')" title="{{ __('Bold') }}" class="grid h-7 w-7 place-items-center rounded font-bold text-muted hover:bg-surface hover:text-ink">B</button>
+                                    <button type="button" @mousedown.prevent="exec('italic')" title="{{ __('Italic') }}" class="grid h-7 w-7 place-items-center rounded italic text-muted hover:bg-surface hover:text-ink">I</button>
+                                    <button type="button" @mousedown.prevent="exec('insertUnorderedList')" title="{{ __('Bullet list') }}" class="grid h-7 w-7 place-items-center rounded text-muted hover:bg-surface hover:text-ink">
+                                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+                                    </button>
+                                    <button type="button" @mousedown.prevent="addLink()" title="{{ __('Link') }}" class="grid h-7 w-7 place-items-center rounded text-muted hover:bg-surface hover:text-ink">
+                                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>
+                                    </button>
+                                </div>
+                                <div x-ref="ed" contenteditable="true" role="textbox" aria-multiline="true"
+                                     x-init="$refs.ed.innerHTML = (form[field.name] && form[field.name].en) || ''"
+                                     @input="form[field.name].en = $refs.ed.innerHTML"
+                                     x-effect="(function(v){ if (document.activeElement !== $refs.ed && v !== $refs.ed.innerHTML) $refs.ed.innerHTML = v; })((form[field.name] && form[field.name].en) || '')"
+                                     class="min-h-[92px] w-full px-3 py-2 text-sm leading-relaxed text-ink focus:outline-none [&_a]:text-accent [&_a]:underline [&_ul]:list-disc [&_ul]:ps-5"></div>
                             </div>
                         </template>
                         <template x-if="field.kind === 'select'">

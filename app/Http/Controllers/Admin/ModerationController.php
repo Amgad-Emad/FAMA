@@ -60,6 +60,7 @@ class ModerationController extends AdminController
             'display_name' => $t->display_name,
             'slug' => $t->slug,
             'status' => $t->status->getValue(),
+            'is_verified' => (bool) $t->is_verified,
             'is_published' => (bool) $t->is_published,
             'trashed' => $t->trashed(),
             'city' => $t->base_city,
@@ -89,6 +90,7 @@ class ModerationController extends AdminController
             'skills' => $talent->talentTypes->map(fn ($t) => $t->getTranslation('name', app()->getLocale()))->values(),
             'rate' => $talent->rate_amount !== null ? trim($talent->rate_amount.' '.$talent->rate_currency.' / '.$talent->rate_unit) : null,
             'status' => $talent->status->getValue(),
+            'is_verified' => (bool) $talent->is_verified,
             'is_published' => (bool) $talent->is_published,
             'trashed' => $talent->trashed(),
             'view_count' => (int) $talent->view_count,
@@ -106,6 +108,7 @@ class ModerationController extends AdminController
         $reason = $request->input('reason');
 
         match ($action) {
+            'verify' => $this->talentMod->verify($admin, $talent),
             'suspend' => $this->talentMod->suspend($admin, $talent, $reason),
             'unsuspend' => $this->talentMod->unsuspend($admin, $talent, $reason),
             'unpublish' => $this->talentMod->unpublish($admin, $talent, $reason),
@@ -156,6 +159,7 @@ class ModerationController extends AdminController
             'project_type' => $review->project_type,
             'talent' => $review->talent?->display_name,
             'talent_slug' => $review->talent?->slug,
+            'talent_email' => $review->talent?->email,
             'status' => $review->status->getValue(),
             'created_at' => $review->created_at?->toDayDateTimeString(),
         ]);
@@ -170,6 +174,24 @@ class ModerationController extends AdminController
         };
 
         return response()->success(null, __('Review moderated.'));
+    }
+
+    /**
+     * Delete a review and email the recipient a notice with the admin's reason.
+     * The admin composer supplies the recipient, subject and reason (with a
+     * live preview built from the same fields).
+     */
+    public function deleteReview(Request $request, Review $review): JsonResponse
+    {
+        $data = $request->validate([
+            'email' => ['required', 'email', 'max:255'],
+            'subject' => ['required', 'string', 'max:150'],
+            'reason' => ['required', 'string', 'max:2000'],
+        ]);
+
+        $this->reviewMod->deleteWithNotice($this->admin(), $review, $data['email'], $data['reason'], $data['subject']);
+
+        return response()->success(null, __('Review deleted and the notice was emailed.'));
     }
 
     public function batchReviews(Request $request): JsonResponse

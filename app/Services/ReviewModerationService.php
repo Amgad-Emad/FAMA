@@ -48,6 +48,36 @@ class ReviewModerationService extends AdminService
     }
 
     /**
+     * Remove a review (soft delete) and email the given recipient a notice with
+     * the admin's reason. The removed review's snapshot is captured BEFORE the
+     * delete so the email + audit log survive it. Transactional; mail sends
+     * after the transaction commits.
+     */
+    public function deleteWithNotice(User $admin, Review $review, string $email, string $reason, string $subject): Review
+    {
+        $this->authorizeAdmin($admin, 'moderate', $review);
+
+        $review->loadMissing('talent');
+        $snapshot = [
+            'reviewer_name' => $review->reviewer_name,
+            'talent' => $review->talent?->display_name,
+            'rating' => (int) $review->rating,
+            'body' => (string) $review->body,
+        ];
+
+        $this->runInTransaction(function () use ($admin, $review, $reason, $email): void {
+            $this->record($admin, $review, 'moderation', 'review.deleted', ['reason' => $reason, 'notified' => $email]);
+            $review->delete();
+        }, ['review_id' => $review->getKey()]);
+
+        \Illuminate\Support\Facades\Mail::to($email)->send(
+            new \App\Mail\ReviewRemovedNotice($snapshot, $reason, $subject)
+        );
+
+        return $review;
+    }
+
+    /**
      * @param  list<int>  $ids
      * @return int number moderated
      */

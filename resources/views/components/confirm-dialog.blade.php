@@ -36,7 +36,7 @@
      ">
     <template x-teleport="body">
         <div x-show="s.open" x-cloak
-             class="fixed inset-0 z-[60]" :class="s.visible ? '' : 'pointer-events-none'"
+             class="fixed inset-0" style="z-index: var(--z-confirm, 460);" :class="s.visible ? '' : 'pointer-events-none'"
              @keydown.escape.window="s.open && s.cancel()"
              @keydown="onKeydown($event)">
             {{-- Backdrop --}}

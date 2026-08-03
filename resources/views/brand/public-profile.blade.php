@@ -1,6 +1,5 @@
 @php
     $logo = $brand->logo_url;
-    $cover = $brand->cover_image_url;
     $credibility = $brand->credibility;
     $moods = $brand->aesthetic?->moodTags ?? collect();
     $reviews = $brand->brandReviews;
@@ -30,11 +29,9 @@
 <x-public-layout :title="$brand->name">
     {{-- COVER + IDENTITY --}}
     <section class="mx-auto max-w-6xl px-4 pt-6 sm:px-6">
+        {{-- No cover photo — a quiet patterned band keeps the identity card lifted. --}}
         <div class="relative overflow-hidden rounded-lg border border-line"
-             @style([
-                 "background-image:url('$cover');background-size:cover;background-position:center" => $cover,
-                 'background-color:var(--surface);background-image:repeating-linear-gradient(135deg, var(--line) 0 1px, transparent 1px 15px)' => ! $cover,
-             ])>
+             style="background-color:var(--surface);background-image:repeating-linear-gradient(135deg, var(--line) 0 1px, transparent 1px 15px)">
             <div class="h-[180px] sm:h-[240px]"></div>
         </div>
 
@@ -66,6 +63,26 @@
                 </div>
             </div>
             <div class="flex flex-wrap items-center gap-2">
+                {{-- Notify-bell: subscribe to this brand's opportunities (talents;
+                     guests get gated). Hidden for brand viewers. --}}
+                @if ($canNotify ?? true)
+                    <div x-data="brandNotify({
+                            id: {{ $brand->id }},
+                            following: {{ ($subscribed ?? false) ? 'true' : 'false' }},
+                            toastOn: @js(__('You’ll be notified when :name posts an opportunity.', ['name' => $brand->name])),
+                            toastOff: @js(__('Opportunity alerts off for :name.', ['name' => $brand->name])),
+                         })">
+                        <button type="button" @click="toggle()" :disabled="busy" :aria-pressed="following ? 'true' : 'false'"
+                                :aria-label="(following ? '{{ __('Turn off opportunity alerts') }}' : '{{ __('Notify me of opportunities') }}') + ' — {{ $brand->name }}'"
+                                :title="following ? '{{ __('Turn off opportunity alerts') }}' : '{{ __('Notify me of opportunities') }}'"
+                                class="grid h-9 w-9 place-items-center rounded-full border transition"
+                                :class="following ? 'border-transparent bg-primary text-on-primary' : 'border-line-strong text-muted hover:border-accent hover:text-ink'">
+                            <svg class="h-[18px] w-[18px]" viewBox="0 0 24 24" :fill="following ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>
+                            </svg>
+                        </button>
+                    </div>
+                @endif
                 @if ($brand->website)
                     <x-ui.button :href="$brand->website" variant="outline" size="sm" target="_blank" rel="noopener nofollow">{{ __('Website') }} ↗</x-ui.button>
                 @endif
