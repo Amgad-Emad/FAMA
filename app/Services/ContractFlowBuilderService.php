@@ -49,7 +49,7 @@ class ContractFlowBuilderService extends AdminService
         $this->authorizeAdmin($admin, 'manage', $flow);
 
         return $this->runInTransaction(function () use ($flow, $data): ContractFlow {
-            $flow->update(Arr::only($data, ['name', 'description', 'applies_to']));
+            $flow->update(Arr::only($data, ['name', 'description', 'applies_to', 'contract_template_id']));
 
             return $flow->refresh();
         }, ['flow_id' => $flow->getKey()]);

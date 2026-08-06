@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\Admin\BlockCatalogController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ContractInterventionController;
+use App\Http\Controllers\Admin\ContractTemplateController;
 use App\Http\Controllers\Admin\FlowBuilderController;
 use App\Http\Controllers\Admin\ModerationController;
 use App\Http\Controllers\Admin\SkillController;
@@ -40,6 +41,20 @@ Route::middleware('can:manage-flows')->group(function () {
     Route::patch('/flows/{flow}/steps/reorder', [FlowBuilderController::class, 'reorderSteps'])->name('flows.steps.reorder');
     Route::patch('/flows/{flow}/steps/{step}', [FlowBuilderController::class, 'updateStep'])->name('flows.steps.update');
     Route::delete('/flows/{flow}/steps/{step}', [FlowBuilderController::class, 'removeStep'])->name('flows.steps.destroy');
+
+    // Contract templates — the reusable "contract schema" (terms + clauses) that
+    // flows render their document from (ADR-V). Same authoring permission.
+    Route::get('/contract-templates', [ContractTemplateController::class, 'index'])->name('contract-templates');
+    Route::get('/contract-templates/data', [ContractTemplateController::class, 'data'])->name('contract-templates.data');
+    Route::post('/contract-templates', [ContractTemplateController::class, 'store'])->name('contract-templates.store');
+    // Live-preview render — before the {template} wildcard so it never binds.
+    Route::post('/contract-templates/preview', [ContractTemplateController::class, 'preview'])->name('contract-templates.preview');
+    Route::get('/contract-templates/{template}', [ContractTemplateController::class, 'show'])->name('contract-templates.show');
+    Route::get('/contract-templates/{template}/data', [ContractTemplateController::class, 'showData'])->name('contract-templates.show.data');
+    Route::patch('/contract-templates/{template}', [ContractTemplateController::class, 'update'])->name('contract-templates.update');
+    Route::patch('/contract-templates/{template}/default', [ContractTemplateController::class, 'setDefault'])->name('contract-templates.default');
+    Route::patch('/contract-templates/{template}/toggle', [ContractTemplateController::class, 'toggle'])->name('contract-templates.toggle');
+    Route::delete('/contract-templates/{template}', [ContractTemplateController::class, 'destroy'])->name('contract-templates.destroy');
 
     // Skill/template catalog rides on the same authoring permission.
     Route::get('/skills', [SkillController::class, 'index'])->name('skills');

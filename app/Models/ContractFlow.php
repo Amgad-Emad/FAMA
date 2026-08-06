@@ -7,6 +7,7 @@ use Database\Factories\ContractFlowFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
@@ -28,7 +29,7 @@ class ContractFlow extends Model
      * @var list<string>
      */
     protected $fillable = [
-        'name', 'slug', 'description', 'applies_to', 'is_active', 'is_default', 'status',
+        'name', 'slug', 'description', 'applies_to', 'contract_template_id', 'is_active', 'is_default', 'status',
     ];
 
     /**
@@ -41,7 +42,7 @@ class ContractFlow extends Model
     {
         return LogOptions::defaults()
             ->useLogName('contract_flow')
-            ->logOnly(['name', 'slug', 'description', 'applies_to', 'is_active', 'is_default', 'status'])
+            ->logOnly(['name', 'slug', 'description', 'applies_to', 'contract_template_id', 'is_active', 'is_default', 'status'])
             ->logOnlyDirty()
             ->dontLogEmptyChanges();
     }
@@ -66,6 +67,17 @@ class ContractFlow extends Model
     public function steps(): HasMany
     {
         return $this->hasMany(ContractFlowStep::class)->orderBy('position');
+    }
+
+    /**
+     * The contract template this flow renders its document from (ADR-V). Its terms
+     * are frozen onto each contract's `terms_snapshot` at creation.
+     *
+     * @return BelongsTo<ContractTemplate, $this>
+     */
+    public function contractTemplate(): BelongsTo
+    {
+        return $this->belongsTo(ContractTemplate::class);
     }
 
     /**

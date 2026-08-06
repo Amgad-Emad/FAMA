@@ -35,8 +35,28 @@
                     <div class="flex-1 space-y-3 overflow-y-auto p-4">
                         <template x-for="m in messages" :key="m.id">
                             <div>
+                                {{-- Phase event — a distinct card (not a chat bubble) so a step
+                                     completion is unmistakably a phase, with the submitted details. --}}
                                 <template x-if="m.is_system">
-                                    <div class="text-center text-xs text-subtle" x-text="m.body"></div>
+                                    <div class="my-1 flex justify-center">
+                                        <div class="w-full max-w-md rounded-xl border border-line bg-elevated/70 px-4 py-2.5">
+                                            <div class="flex items-center gap-2">
+                                                <span class="grid h-5 w-5 shrink-0 place-items-center rounded-pill bg-accent-weak text-[10px] text-accent-ink">✦</span>
+                                                <span class="font-mono text-[9px] uppercase tracking-wider text-subtle">{{ __('Phase') }}</span>
+                                                <span class="flex-1 text-xs font-medium text-ink" x-text="m.body"></span>
+                                            </div>
+                                            <template x-if="m.details && m.details.length">
+                                                <dl class="mt-2 space-y-1 border-t border-line/70 pt-2">
+                                                    <template x-for="d in m.details" :key="d.label">
+                                                        <div class="flex justify-between gap-4 text-xs">
+                                                            <dt class="shrink-0 text-muted" x-text="d.label"></dt>
+                                                            <dd class="text-end text-ink" x-text="d.value"></dd>
+                                                        </div>
+                                                    </template>
+                                                </dl>
+                                            </template>
+                                        </div>
+                                    </div>
                                 </template>
                                 <template x-if="!m.is_system">
                                     <div class="flex" :class="m.sender_role === 'talent' ? 'justify-end' : 'justify-start'">
@@ -102,13 +122,24 @@
                                         <p x-show="errors._" x-cloak class="mt-1 text-xs text-danger" x-text="errors._?.[0]"></p>
                                     </div>
 
-                                    {{-- form --}}
+                                    {{-- form — date fields render as date pickers, pricing_unit as a select --}}
                                     <template x-if="currentStep.step_type === 'form'">
                                         <div class="space-y-2">
                                             <template x-for="field in (currentStep.fields || [])" :key="field">
                                                 <div>
                                                     <label class="mb-1 block text-xs font-medium capitalize text-ink" x-text="field.replaceAll('_', ' ')"></label>
-                                                    <input x-model="form.fields[field]" class="w-full rounded-md border-line bg-elevated text-ink shadow-sm focus:border-accent focus:ring-accent">
+                                                    <template x-if="field === 'pricing_unit'">
+                                                        <select x-model="form.fields[field]" class="w-full rounded-md border-line bg-elevated text-ink shadow-sm focus:border-accent focus:ring-accent">
+                                                            <option value="">{{ __('Select…') }}</option>
+                                                            <option value="hour">{{ __('Per hour') }}</option>
+                                                            <option value="day">{{ __('Per day') }}</option>
+                                                            <option value="item">{{ __('Per item') }}</option>
+                                                            <option value="project">{{ __('Flat project fee') }}</option>
+                                                        </select>
+                                                    </template>
+                                                    <template x-if="field !== 'pricing_unit'">
+                                                        <input :type="field.endsWith('_date') ? 'date' : 'text'" x-model="form.fields[field]" class="w-full rounded-md border-line bg-elevated text-ink shadow-sm focus:border-accent focus:ring-accent">
+                                                    </template>
                                                     <p x-show="errors['fields.' + field]" x-cloak class="mt-1 text-xs text-danger" x-text="errors['fields.' + field]?.[0]"></p>
                                                 </div>
                                             </template>
@@ -141,11 +172,12 @@
                                         <x-ui.button variant="accent" x-on:click="pay()" x-bind:disabled="acting">{{ __('Confirm payment') }}</x-ui.button>
                                     </template>
 
-                                    {{-- contract --}}
+                                    {{-- contract — review the document (built from the earlier steps) then sign --}}
                                     <template x-if="currentStep.step_type === 'contract'">
-                                        <div class="space-y-2">
-                                            <input x-model="form.signatory" placeholder="{{ __('Full name') }}" class="w-full rounded-md border-line bg-elevated text-ink shadow-sm focus:border-accent focus:ring-accent">
-                                            <x-ui.button variant="accent" x-on:click="sign()" x-bind:disabled="acting">{{ __('Sign') }}</x-ui.button>
+                                        <div class="space-y-3">
+                                            <div x-html="documentHtml"></div>
+                                            <input x-model="form.signatory" placeholder="{{ __('Type your full name to sign') }}" class="w-full rounded-md border-line bg-elevated text-ink shadow-sm focus:border-accent focus:ring-accent">
+                                            <x-ui.button variant="accent" x-on:click="sign()" x-bind:disabled="acting">{{ __('Sign contract') }}</x-ui.button>
                                         </div>
                                     </template>
 
@@ -178,12 +210,17 @@
                             </template>
                         </div>
 
-                        {{-- (b) Phases stepper (below the action panel) --}}
+                        {{-- (b) Phases stepper (below the action panel). Clicking a phase opens
+                             the contract document (ADR-V). --}}
                         <div class="rounded-lg border border-line bg-surface p-3">
-                            <div class="mb-1 px-2 font-mono text-[10px] uppercase tracking-wider text-subtle">{{ __('Phases') }}</div>
+                            <div class="mb-1 flex items-center justify-between px-2">
+                                <span class="font-mono text-[10px] uppercase tracking-wider text-subtle">{{ __('Phases') }}</span>
+                                <span class="font-mono text-[10px] uppercase tracking-wider text-subtle">{{ __('tap to view contract') }}</span>
+                            </div>
                             <ol>
                                 <template x-for="step in steps" :key="step.id">
-                                    <li class="flex items-center gap-3 rounded-md px-2 py-2" :class="step.is_current ? 'bg-accent-weak' : ''">
+                                    <li @click="openDoc()" role="button" tabindex="0" @keydown.enter="openDoc()"
+                                        class="flex cursor-pointer items-center gap-3 rounded-md px-2 py-2 transition hover:bg-elevated" :class="step.is_current ? 'bg-accent-weak' : ''">
                                         <span class="grid h-6 w-6 shrink-0 place-items-center rounded-pill text-[11px] font-medium"
                                               :class="{
                                                 'bg-success text-white': step.status === 'completed',
@@ -197,10 +234,37 @@
                                     </li>
                                 </template>
                             </ol>
+                            {{-- Open the contract document from below the phases --}}
+                            <button @click="openDoc()" class="mt-2 flex w-full items-center justify-center gap-2 rounded-md border border-line px-3 py-2 text-sm font-medium text-ink transition hover:border-line-strong hover:bg-elevated">
+                                <svg class="h-4 w-4 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                {{ __('View contract') }}
+                            </button>
                         </div>
                     </div>
                 </template>
             </div>
         </div>
+
+        {{-- Contract document modal (opened from the phases stepper, ADR-V) --}}
+        <template x-teleport="body">
+            <div x-show="docModalOpen" x-cloak class="fixed inset-0 z-[60] flex items-start justify-center overflow-y-auto p-4 sm:p-8"
+                 role="dialog" aria-modal="true" @keydown.escape.window="docModalOpen && (docModalOpen = false)">
+                <div class="absolute inset-0" style="background: var(--scrim);" @click="docModalOpen = false"></div>
+                <div class="relative w-full max-w-2xl">
+                    <div class="mb-2 flex items-center justify-between gap-3">
+                        <span class="font-mono text-[10px] uppercase tracking-[0.15em] text-white/80">{{ __('Contract') }}</span>
+                        <div class="flex items-center gap-2">
+                            <a :href="'/talent/contracts/' + contractId + '/document.pdf'"
+                               class="inline-flex items-center gap-1.5 rounded-pill bg-white px-3 py-1.5 text-xs font-semibold text-ink shadow-sm transition hover:bg-white/90">
+                                <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3"/></svg>
+                                {{ __('Download PDF') }}
+                            </a>
+                            <button type="button" @click="docModalOpen = false" aria-label="{{ __('Close') }}" class="grid h-8 w-8 place-items-center rounded-pill bg-white/10 text-white hover:bg-white/20">✕</button>
+                        </div>
+                    </div>
+                    <div x-html="documentHtml"></div>
+                </div>
+            </div>
+        </template>
     </div>
 </x-talent-layout>

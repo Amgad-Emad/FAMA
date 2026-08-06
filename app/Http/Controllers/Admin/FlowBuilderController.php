@@ -46,14 +46,30 @@ class FlowBuilderController extends AdminController
 
     public function show(ContractFlow $flow): View
     {
-        return view('admin.flows.show', ['flow' => $flow]);
+        // Render the template <option>s server-side so the <select>'s x-model can
+        // preselect the linked template on load (an x-for-generated option list is
+        // created after x-model inits, so it never preselects — ADR-V picker fix).
+        $templates = \App\Models\ContractTemplate::query()->active()
+            ->orderByDesc('is_default')->orderBy('name')
+            ->get(['id', 'name', 'is_default']);
+
+        return view('admin.flows.show', ['flow' => $flow, 'templates' => $templates]);
     }
 
     public function showData(ContractFlow $flow): JsonResponse
     {
-        $flow->load('steps')->loadCount('contracts');
+        $flow->load('steps', 'contractTemplate')->loadCount('contracts');
 
-        return response()->success(['flow' => new ContractFlowResource($flow)]);
+        // Active templates the admin can attach as this flow's contract document.
+        $templates = \App\Models\ContractTemplate::query()->active()
+            ->orderByDesc('is_default')->orderBy('name')
+            ->get(['id', 'name', 'applies_to', 'is_default'])
+            ->map(fn ($t) => ['id' => $t->id, 'name' => $t->name, 'applies_to' => $t->applies_to, 'is_default' => (bool) $t->is_default]);
+
+        return response()->success([
+            'flow' => new ContractFlowResource($flow),
+            'templates' => $templates,
+        ]);
     }
 
     public function update(StoreFlowRequest $request, ContractFlow $flow): JsonResponse

@@ -15,6 +15,23 @@ document.addEventListener('alpine:init', () => {
         loading: true,
         status: '',
         page: 1,
+        // "See contract" document modal.
+        documentHtml: '',
+        docPdfUrl: '',
+        docModalOpen: false,
+
+        async openDoc(contract) {
+            this.documentHtml = '';
+            this.docPdfUrl = '';
+            this.docModalOpen = true;
+            try {
+                const { data } = await get(`/talent/contracts/${contract.id}/document`);
+                this.documentHtml = data.html;
+                this.docPdfUrl = data.pdf_url;
+            } catch (e) {
+                if (e instanceof ApiError) { this.docModalOpen = false; window.alert(e.message); }
+            }
+        },
 
         async init() {
             await this.load();
@@ -70,6 +87,11 @@ document.addEventListener('alpine:init', () => {
         messageBody: '',
         form: {},
         errors: {},
+        // Live contract document (server-rendered HTML from the thread payload) +
+        // the modal opened from the phases stepper.
+        documentHtml: '',
+        docModalOpen: false,
+        openDoc() { this.docModalOpen = true; },
 
         async init() {
             await this.refresh();
@@ -90,6 +112,7 @@ document.addEventListener('alpine:init', () => {
                 this.steps = data.steps;
                 this.messages = data.messages;
                 this.canAct = data.can_act;
+                this.documentHtml = data.document_html || '';
                 this.resetForm();
             } finally {
                 this.loading = false;
@@ -108,6 +131,7 @@ document.addEventListener('alpine:init', () => {
                 this.steps = data.steps;
                 this.messages = data.messages;
                 this.canAct = data.can_act;
+                this.documentHtml = data.document_html || '';
                 if ((this.currentStep?.id ?? null) !== prevStepId) this.resetForm();
             } catch (e) {
                 /* ignore transient poll errors */

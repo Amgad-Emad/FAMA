@@ -157,7 +157,7 @@ class TalentDemoSeeder extends Seeder
                     ['brand_id' => $b->id, 'talent_id' => $talent->id, 'title' => $title, 'initiated_by' => 'brand', 'brief' => $brief],
                     $flow,
                 );
-                $brief = ['fields' => ['scope' => 'Lifestyle shoot', 'dates' => 'Oct 12–13', 'budget' => 'EGP 40,000']];
+                $brief = ['fields' => ['scope' => 'Two-day lifestyle shoot', 'start_date' => '2026-10-12', 'end_date' => '2026-10-13', 'budget' => 'EGP 40,000']];
 
                 // 1) awaiting_talent — brand submitted the brief; talent must quote.
                 $nomad = $brand('nomad-coffee', 'Nomad Coffee Co.');
@@ -168,13 +168,13 @@ class TalentDemoSeeder extends Seeder
                 $nefertari = $brand('nefertari-cosmetics', 'Nefertari Cosmetics');
                 $d2 = $start($nefertari, 'Spring beauty campaign', 'Studio beauty campaign for the spring colour range.');
                 $contracts->advance($d2, $brief, 'brand', $nefertari);
-                $contracts->advance($d2, ['fields' => ['amount' => 32000, 'note' => 'Includes light retouching']], 'talent', $talent);
+                $contracts->advance($d2, ['fields' => ['amount' => 32000, 'pricing_unit' => 'day', 'note' => 'Includes light retouching']], 'talent', $talent);
 
                 // 3) completed — the full loop, front to back.
                 $gouna = $brand('el-gouna-resorts', 'El Gouna Resorts');
                 $d3 = $start($gouna, 'Resort lookbook', 'On-location lookbook across the marina and beach.');
                 $contracts->advance($d3, $brief, 'brand', $gouna);
-                $contracts->advance($d3, ['fields' => ['amount' => 25000]], 'talent', $talent);
+                $contracts->advance($d3, ['fields' => ['amount' => 25000, 'pricing_unit' => 'day']], 'talent', $talent);
                 $contracts->advance($d3, ['note' => 'Approved'], 'brand', $gouna);
                 // The deposit is mandatory (never skippable) — pay it.
                 $contracts->advance($d3, ['confirmed' => true], 'brand', $gouna);

@@ -2,6 +2,63 @@
 
 Notable changes to the Fama project. Newest first.
 
+## 2026-08-04 — Timeline phase cards with details + template "applies to" removed
+- **Phase events now show their details.** Step-completion system events carry a `details` list (built in
+  `ContractProgression::stepEventMeta` from the step payload — scope/dates/budget for the brief, amount +
+  pricing unit + note for the quote, signatory for a signature, deposit for a payment, dates for a
+  schedule, file count for a delivery). Exposed via `ContractMessageResource.details`.
+- **Distinct phase UI in the timeline.** System events render as a bordered **phase card** (✦ badge +
+  "PHASE" label + summary + a details list), clearly not a chat bubble — talent + brand rooms.
+- **Contract templates: "Applies to" removed** from the builder + create form + list (moving templates
+  toward version-based, un-scoped selection). Suite 616 green.
+
+## 2026-08-04 — Contract document: PDF download + inbox "See contract"
+- **Download as PDF.** The contract-document modal (talent + brand) now has a **Download PDF** button;
+  new `GET /contracts/{id}/document.pdf` renders a print-styled, self-contained (inline-CSS, table-based)
+  PDF via `barryvdh/laravel-dompdf` — a real contract document, not a screenshot. A `View contract` button
+  also sits below the Phases stepper.
+- **Inbox: completed = green + "See contract".** In the contracts inbox, a `completed` status now reads in
+  **green**, and completed rows get a **See contract** button that opens the document in a modal (fetched
+  via `GET /contracts/{id}/document` → `{html, pdf_url}`) with its own Download PDF.
+- New dependency: `barryvdh/laravel-dompdf`. Suite 615 green.
+
+## 2026-08-04 — Contract document in the room: live, phase-click modal, priced, prior-step data
+- **Flow template picker fix.** The flow workspace's "Contract document template" `<select>` now
+  preselects the linked template — options are server-rendered so `x-model` can sync (an `x-for` option
+  list is built after `x-model` inits and never preselected; the value was saving all along).
+- **The contract document is now rendered live in the contract room.** The `/contracts/{id}/thread`
+  payload carries a freshly-rendered `document_html` (talent + brand), so it always reflects the latest
+  completed steps. Clicking any phase in the **Phases** stepper opens the document in a **modal**; a
+  `contract`-type step shows the document inline above the sign field.
+- **The document builds itself from prior steps.** `FormStepHandler` gained a `writes` map (field →
+  contract column): the **brief** step writes `scope → brief` and `start_date`/`end_date`, the **quote**
+  step writes the amount and a new **pricing unit**. `validated()` strips unruled fields, so every
+  declared field now gets a passthrough rule.
+- **Priced by hour / day / item.** New `contracts.pricing_unit` (migration `2026_08_04_000100`); the quote
+  step captures it (a select in the room), and the document's fee reads e.g. **"4,500 EGP / day"**.
+- Demo seeders updated (brief dates + priced quotes). Suite 614 green.
+
+## 2026-08-03 — Admin contract-template builder with a live document preview (ADR-V)
+- **New "contract schema" authoring surface.** `/admin/contract-templates` (gated `manage-flows`) lets an
+  admin author a reusable **contract template** — the standard-terms parameters (deposit %, deposit
+  holder, cancellation forfeit %, revision rounds) plus a **fully custom, reorderable clause list** with
+  numeric tokens (`{deposit_pct}`, `{rest_pct}`, `{deposit_holder}`, `{forfeit_pct}`, `{revisions}`,
+  `{brand}`, `{talent}`, …). The builder is two-column: author on the left, a **live contract-document
+  preview** on the right that renders the *same* canonical partial the contract room uses (debounced
+  `POST /admin/contract-templates/preview` → `{html}`), so "how it will look" is WYSIWYG-accurate.
+- **Applied to contracts via flows.** Each contract flow can pick a template
+  (`contract_flows.contract_template_id`, nullable). At contract creation the resolved terms are **frozen
+  onto `contracts.terms_snapshot`** (new JSON column), so later template edits never rewrite a live
+  contract (same immutability rule as flow-step snapshots). The talent + brand contract rooms now render a
+  collapsible **Contract** document from that snapshot + the engagement's live values.
+- **Rendering is one source of truth.** `App\Contracting\ContractDocument` normalizes a template (preview)
+  or a contract (room) into the `$doc` structure consumed by `contracts/partials/document.blade.php`.
+- **Model/engine.** `ContractTemplate` (`contract_templates` table, migration `2026_08_03_000100`) with a
+  one-default-per-`applies_to` rule; default templates are protected from deactivation/deletion.
+  `ContractTemplateService` (transactional, audited on the `contract_flow` log). Registered in the
+  enforced morph map as `contract_template`. Default "Fama Standard" template seeded + linked to the
+  Standard Booking flow.
+
 ## 2026-08-02 — Mandatory admin verification before a talent/brand can go public
 - **Verification is now a hard gate on publishing (ADR-U).** No talent or brand reaches the public
   surfaces until an admin verifies it. Talents gained an `is_verified` column (migration

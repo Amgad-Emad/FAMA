@@ -58,14 +58,48 @@ class ContractController extends BrandController
         $this->ensureOwns($contract);
         $this->contracts->markThreadRead($contract, 'brand');
 
-        $contract->load(['talent', 'project', 'currentStep', 'steps', 'messages.media']);
+        $contract->load(['brand', 'talent', 'project', 'currentStep', 'steps', 'messages.media', 'flow.contractTemplate']);
 
         return response()->success([
             'contract' => new ContractResource($contract),
             'steps' => ContractStepResource::collection($contract->steps),
             'messages' => ContractMessageResource::collection($contract->messages),
             'can_act' => $contract->currentStep?->actionableBy('brand') ?? false,
+            // Live contract document — re-rendered each thread fetch (ADR-V).
+            'document_html' => view('contracts.partials.document', [
+                'doc' => \App\Contracting\ContractDocument::fromContract($contract),
+            ])->render(),
         ]);
+    }
+
+    /**
+     * The rendered contract document (HTML) for the inbox "See contract" modal.
+     */
+    public function document(Contract $contract): JsonResponse
+    {
+        $this->ensureOwns($contract);
+        $contract->load(['brand', 'talent', 'flow.contractTemplate']);
+
+        return response()->success([
+            'html' => view('contracts.partials.document', ['doc' => \App\Contracting\ContractDocument::fromContract($contract)])->render(),
+            'pdf_url' => route('brand.contracts.document.pdf', $contract),
+        ]);
+    }
+
+    /**
+     * Download the contract document as a print-styled PDF (dompdf).
+     */
+    public function documentPdf(Contract $contract): \Symfony\Component\HttpFoundation\Response
+    {
+        $this->ensureOwns($contract);
+        $contract->load(['brand', 'talent', 'flow.contractTemplate']);
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('contracts.pdf.document', [
+            'doc' => \App\Contracting\ContractDocument::fromContract($contract),
+            'generatedAt' => now()->toDayDateTimeString(),
+        ]);
+
+        return $pdf->download('contract-'.$contract->reference.'.pdf');
     }
 
     public function advance(Request $request, Contract $contract): JsonResponse

@@ -24,10 +24,15 @@ class InitiateContract implements Action
      */
     public function __invoke(array $attributes, ContractFlow $flow): Contract
     {
+        // Freeze the flow's contract-template terms onto the contract (ADR-V) so a
+        // later template edit never rewrites a live contract's document.
+        $flow->loadMissing('contractTemplate');
+
         $contract = Contract::create($attributes + [
             'contract_flow_id' => $flow->id,
             'reference' => $this->nextReference(),
             'currency' => $attributes['currency'] ?? 'EGP',
+            'terms_snapshot' => $flow->contractTemplate?->toTermsSnapshot(),
             'status' => 'draft',
         ]);
 

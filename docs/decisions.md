@@ -289,6 +289,31 @@
   treat it as a plain key list. The `manage-blocks` permission is seeded and granted to super-admin only —
   grant it to other roles per need.
 
+### ADR-V — Contract templates: an admin-authored contract "schema" with a live document
+- **Context:** The contract engine had flow-step templates but no concept of the contract's TERMS or a
+  rendered contract DOCUMENT. Standard terms (payment split, cancellation forfeit, revisions, usage) had
+  no home; the `contract` step type anticipated a `settings.template` reference that was never built. The
+  ask was an admin surface to author the contract's terms with a live preview and apply it to contracts.
+- **Decision:** A standalone **contract-template library** (`/admin/contract-templates`, gated
+  `manage-flows`), linked per flow.
+  1. `ContractTemplate` stores the standard-terms parameters + a **fully custom, reorderable `clauses`
+     list** (`{label, body}` with numeric tokens). One default per `applies_to` scope; a default is
+     protected from deactivation/deletion.
+  2. A `contract_flow` optionally references a template (`contract_template_id`). At contract creation the
+     resolved terms are **frozen onto `contracts.terms_snapshot`** (InitiateContract) — so editing a
+     template only affects FUTURE contracts, consistent with the flow-step snapshot rule (ADR-4).
+  3. **One renderer, two callers:** `App\Contracting\ContractDocument` normalizes a template (for the
+     builder's live preview, driven by sample inputs) or a contract (for the room, driven by live values)
+     into the `$doc` consumed by `contracts/partials/document.blade.php`. The builder's preview posts to a
+     debounced endpoint that renders the SAME partial, so it is WYSIWYG-accurate.
+- **Status:** Accepted (2026-08-03).
+- **Consequences:** Terms are versioned by snapshot, not by reference — a contract's document is stable
+  for its whole life. Templates are authored independently of flows and reused across them. Alternatives
+  rejected: embedding terms in the flow's `contract` step settings (authoring buried in the flow builder,
+  no standalone document surface) and a single global template (no per-category variation). Open item:
+  whether verifying/confirming terms should write a signature event into the contract timeline (today the
+  document is a read-only rendering; the existing `contract` step still records the signature).
+
 ### ADR-U — Admin verification is a hard prerequisite for going public
 - **Context:** Self-serve talents and brands could reach the public surfaces with no admin review — a
   talent went `Live` needing only a display name; a brand went `Published` needing only completed

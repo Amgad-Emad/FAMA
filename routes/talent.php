@@ -73,6 +73,8 @@ Route::get('/contracts', [ContractController::class, 'index'])->name('contracts'
 Route::get('/contracts/data', [ContractController::class, 'data'])->name('contracts.data');
 Route::get('/contracts/{contract}', [ContractController::class, 'show'])->name('contracts.show');
 Route::get('/contracts/{contract}/thread', [ContractController::class, 'thread'])->name('contracts.thread');
+Route::get('/contracts/{contract}/document', [ContractController::class, 'document'])->name('contracts.document');
+Route::get('/contracts/{contract}/document.pdf', [ContractController::class, 'documentPdf'])->name('contracts.document.pdf');
 Route::post('/contracts/{contract}/advance', [ContractController::class, 'advance'])->name('contracts.advance');
 Route::post('/contracts/{contract}/reject', [ContractController::class, 'reject'])->name('contracts.reject');
 Route::post('/contracts/{contract}/skip', [ContractController::class, 'skip'])->name('contracts.skip');

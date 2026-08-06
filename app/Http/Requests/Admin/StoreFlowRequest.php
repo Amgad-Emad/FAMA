@@ -25,6 +25,7 @@ class StoreFlowRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
             'applies_to' => ['nullable', Rule::in(['model', 'crew', 'creative', 'all'])],
+            'contract_template_id' => ['nullable', 'integer', Rule::exists('contract_templates', 'id')],
         ];
     }
 }

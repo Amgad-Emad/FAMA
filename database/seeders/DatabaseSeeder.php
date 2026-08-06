@@ -30,6 +30,7 @@ class DatabaseSeeder extends Seeder
             RolesAndPermissionsSeeder::class,
             TalentTypeSeeder::class,
             BlockTypeSeeder::class,
+            ContractTemplateSeeder::class,
             ContractFlowSeeder::class,
             SettingsSeeder::class,
             TalentDemoSeeder::class,

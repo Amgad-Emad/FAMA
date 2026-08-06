@@ -27,7 +27,9 @@ that walks a brand and a talent through booking, quoting, contracting, payment, 
   console**, activity log, settings, and admin users, all reachable from a permission-gated sidebar +
   dashboard cards. **Verification is a hard go-live gate (ADR-U):** no talent or brand reaches the public
   until an admin **Verifies** it (`is_verified` guards the publish transitions); moderators can also
-  remove a review with an emailed reason notice (live-preview composer). **Block governance is split (ADR-T):** the **Block catalog** (`/admin/blocks`,
+  remove a review with an emailed reason notice (live-preview composer). **Contract templates (ADR-V):**
+  a two-column builder authors the contract "schema" (standard terms + custom clauses) with a live
+  document preview; each contract flow links a template whose terms freeze onto every contract it creates. **Block governance is split (ADR-T):** the **Block catalog** (`/admin/blocks`,
   `manage-blocks`) owns which blocks exist and who may use them (eligibility + grandfathering); the
   **Skills templates** page (`/admin/skills`) only picks each skill's preselected blocks and their order
   from the catalog-eligible set.

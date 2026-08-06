@@ -55,6 +55,7 @@ document.addEventListener('alpine:init', () => {
     Alpine.data('adminFlow', (id) => ({
         id,
         flow: null,
+        templates: [],
         loading: true,
         acting: false,
         dragId: null,
@@ -67,6 +68,7 @@ document.addEventListener('alpine:init', () => {
             try {
                 const { data } = await get(`/admin/flows/${this.id}/data`);
                 this.flow = data.flow;
+                this.templates = data.templates || [];
             } finally { this.loading = false; }
         },
         async addStep() {
@@ -105,6 +107,160 @@ document.addEventListener('alpine:init', () => {
             } catch (e) {
                 if (e instanceof ApiError) window.alert(e.message);
             } finally { this.acting = false; }
+        },
+        // Attach / detach the contract-document template (PATCHes the flow meta).
+        async saveTemplate() {
+            try {
+                await patch(`/admin/flows/${this.id}`, {
+                    name: this.flow.name,
+                    description: this.flow.description,
+                    applies_to: this.flow.applies_to,
+                    contract_template_id: this.flow.contract_template_id || null,
+                });
+                await this.refresh();
+            } catch (e) { if (e instanceof ApiError) window.alert(e.message); }
+        },
+    }));
+
+    // --- Contract-template list -------------------------------------------------
+    Alpine.data('adminContractTemplates', () => ({
+        templates: [],
+        meta: null,
+        loading: true,
+        form: { name: '', applies_to: '' },
+        creating: false,
+        errors: {},
+
+        async init() { await this.load(); },
+        async load(page = 1) {
+            this.loading = true;
+            try {
+                const { data, meta } = await get(`/admin/contract-templates/data?page=${page}`);
+                this.templates = data;
+                this.meta = meta;
+            } finally { this.loading = false; }
+        },
+        async create() {
+            this.errors = {};
+            this.creating = true;
+            try {
+                const { data } = await post('/admin/contract-templates', this.form);
+                window.location.href = data.redirect;
+            } catch (e) {
+                if (e instanceof ApiError) this.errors = e.errors || { _: [e.message] };
+            } finally { this.creating = false; }
+        },
+    }));
+
+    // --- Contract-template builder (terms + clauses + LIVE document preview) -----
+    Alpine.data('adminContractTemplate', (id) => ({
+        id,
+        loading: true,
+        saving: false,
+        saved: false,
+        errors: {},
+        isDefault: false,
+        isActive: true,
+        flowsCount: 0,
+        dragIndex: null,
+        // Authored terms (the saved schema).
+        form: {
+            name: '', description: '', applies_to: '',
+            deposit_pct: 50, deposit_holder: 'Fama', cancellation_forfeit_pct: 50,
+            revision_rounds: 1, preview_currency: 'EGP', intro: '', clauses: [],
+        },
+        // Fictional negotiation inputs that drive the live preview (never saved).
+        sample: {
+            talent: 'Yasmine K., Photographer', brand: 'Studio Nour',
+            scope: '3 lookbook images, delivered edited',
+            timeline: 'Shoot Aug 4 · Delivery Aug 11', total: 4500, exception: '',
+        },
+        previewHtml: '',
+        previewing: false,
+        _previewTimer: null,
+
+        async init() {
+            await this.load();
+            this.renderPreview();
+        },
+        async load() {
+            this.loading = true;
+            try {
+                const { data } = await get(`/admin/contract-templates/${this.id}/data`);
+                const t = data.template;
+                this.form = {
+                    name: t.name, description: t.description || '', applies_to: t.applies_to || '',
+                    deposit_pct: t.deposit_pct, deposit_holder: t.deposit_holder,
+                    cancellation_forfeit_pct: t.cancellation_forfeit_pct, revision_rounds: t.revision_rounds,
+                    preview_currency: t.preview_currency, intro: t.intro || '', clauses: t.clauses || [],
+                };
+                this.isDefault = t.is_default;
+                this.isActive = t.is_active;
+                this.flowsCount = t.flows_count ?? 0;
+            } finally { this.loading = false; }
+        },
+
+        // Clause editing.
+        addClause() { this.form.clauses.push({ label: '', body: '' }); this.schedulePreview(); },
+        removeClause(i) { this.form.clauses.splice(i, 1); this.schedulePreview(); },
+        dropClause(i) {
+            if (this.dragIndex === null || this.dragIndex === i) return;
+            const moved = this.form.clauses.splice(this.dragIndex, 1)[0];
+            this.form.clauses.splice(i, 0, moved);
+            this.dragIndex = null;
+            this.schedulePreview();
+        },
+
+        // Debounced live preview — renders the SAME partial the contract room uses.
+        schedulePreview() {
+            clearTimeout(this._previewTimer);
+            this._previewTimer = setTimeout(() => this.renderPreview(), 250);
+        },
+        async renderPreview() {
+            this.previewing = true;
+            try {
+                const { data } = await post('/admin/contract-templates/preview', {
+                    deposit_pct: this.numeric(this.form.deposit_pct),
+                    deposit_holder: this.form.deposit_holder,
+                    cancellation_forfeit_pct: this.numeric(this.form.cancellation_forfeit_pct),
+                    revision_rounds: this.numeric(this.form.revision_rounds),
+                    preview_currency: this.form.preview_currency,
+                    intro: this.form.intro,
+                    clauses: this.form.clauses,
+                    sample: { ...this.sample, currency: this.form.preview_currency, total: this.numeric(this.sample.total) },
+                });
+                this.previewHtml = data.html;
+            } catch (e) { /* preview is best-effort; keep the last good render */ }
+            finally { this.previewing = false; }
+        },
+        numeric(v) { const n = Number(v); return Number.isFinite(n) ? n : 0; },
+
+        async save() {
+            this.errors = {};
+            this.saving = true;
+            this.saved = false;
+            try {
+                await patch(`/admin/contract-templates/${this.id}`, {
+                    ...this.form,
+                    applies_to: this.form.applies_to || null,
+                });
+                this.saved = true;
+                setTimeout(() => (this.saved = false), 2000);
+            } catch (e) {
+                if (e instanceof ApiError) this.errors = e.errors || { _: [e.message] };
+            } finally { this.saving = false; }
+        },
+        async makeDefault() {
+            try { await patch(`/admin/contract-templates/${this.id}/default`, {}); this.isDefault = true; this.isActive = true; }
+            catch (e) { if (e instanceof ApiError) window.alert(e.message); }
+        },
+        async toggleActive() {
+            try { await patch(`/admin/contract-templates/${this.id}/toggle`, {}); this.isActive = !this.isActive; }
+            catch (e) { if (e instanceof ApiError) window.alert(e.message); }
+        },
+        async remove() {
+            try { await del(`/admin/contract-templates/${this.id}`); window.location.href = window.fama.localizeUrl('/admin/contract-templates'); }
+            catch (e) { if (e instanceof ApiError) window.alert(e.message); }
         },
     }));
 

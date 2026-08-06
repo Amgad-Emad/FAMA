@@ -22,6 +22,26 @@
                     </div>
                 </x-ui.card>
 
+                {{-- Contract document template (ADR-V) --}}
+                <x-ui.card class="flex flex-wrap items-end justify-between gap-3">
+                    <div class="min-w-0 flex-1">
+                        <x-input-label :value="__('Contract document template')" />
+                        <p class="mb-1 mt-0.5 text-xs text-muted">{{ __('The standard terms this flow\'s contracts render. Frozen onto each contract at creation.') }}</p>
+                        {{-- Options are server-rendered (static) so x-model can preselect the
+                             linked template on load — a <template x-for> option list is built
+                             after x-model initialises and never preselects. --}}
+                        <select class="mt-1 block w-full rounded-md border-line bg-bg sm:max-w-sm" x-model.number="flow.contract_template_id" @change="saveTemplate()">
+                            <option value="">{{ __('— None (no document) —') }}</option>
+                            @foreach ($templates as $t)
+                                <option value="{{ $t->id }}">{{ $t->name }}@if ($t->is_default) ({{ __('default') }})@endif</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <template x-if="flow.contract_template">
+                        <a :href="window.fama.localizeUrl(`/admin/contract-templates/${flow.contract_template_id}`)" class="text-xs text-accent-ink hover:underline">{{ __('Edit template →') }}</a>
+                    </template>
+                </x-ui.card>
+
                 {{-- Steps (drag to reorder) --}}
                 <section>
                     <h3 class="mb-3 font-display text-lg">{{ __('Steps') }}</h3>

@@ -23,6 +23,8 @@ class ContractMessageResource extends BaseResource
             'body' => $this->localizedBody(),
             'is_rich' => (bool) $this->is_rich,
             'is_system' => $this->isSystem(),
+            // Phase-event detail rows ([{label, value}]) — what was submitted at the step.
+            'details' => is_array($this->meta) ? (data_get($this->meta, 'params.details') ?? []) : [],
             // Uploaded application/message files ([{name, url, size}]).
             'attachments' => $this->file_attachments,
             'read_at' => $this->read_at?->toIso8601String(),

@@ -71,6 +71,7 @@ class MorphMap
             'contract_enquiry' => Models\ContractEnquiry::class,
             'contract_flow' => Models\ContractFlow::class,
             'contract_flow_step' => Models\ContractFlowStep::class,
+            'contract_template' => Models\ContractTemplate::class,
             'contract_step' => Models\ContractStep::class,
             'contract_message' => Models\ContractMessage::class,
 

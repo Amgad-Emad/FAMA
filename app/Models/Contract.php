@@ -28,8 +28,8 @@ class Contract extends Model
      */
     protected $fillable = [
         'reference', 'brand_id', 'talent_id', 'contract_flow_id',
-        'current_step_id', 'status', 'title', 'brief', 'agreed_amount',
-        'currency', 'start_date', 'end_date', 'initiated_by',
+        'current_step_id', 'status', 'title', 'brief', 'terms_snapshot', 'agreed_amount',
+        'currency', 'pricing_unit', 'start_date', 'end_date', 'initiated_by',
     ];
 
     /**
@@ -39,6 +39,7 @@ class Contract extends Model
     {
         return [
             'status' => ContractState::class,
+            'terms_snapshot' => 'array',
             'agreed_amount' => 'decimal:2',
             'start_date' => 'date',
             'end_date' => 'date',

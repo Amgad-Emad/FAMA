@@ -225,6 +225,9 @@ every action also re-authorizes + audits inside the Phase 3A service.
 | Flow | `GET /admin/flows/{f}` · `GET …/data` · `PATCH …` | manage-flows | workspace · payload (steps) · edit meta/scope |
 | Flow lifecycle | `PATCH …/{f}/{default,activate,archive}` | manage-flows | set default · activate · archive |
 | Flow steps | `POST …/{f}/steps` · `PATCH …/steps/reorder` · `PATCH …/steps/{s}` · `DELETE …/steps/{s}` | manage-flows | add · drag-reorder · edit · remove |
+| Contract templates | `GET /admin/contract-templates` · `GET …/data` · `POST …` | manage-flows | builder list · paginated · create |
+| Contract template | `GET …/{t}` · `GET …/data` · `PATCH …` · `DELETE …` | manage-flows | builder · payload · save terms+clauses · delete |
+| Template lifecycle | `PATCH …/{t}/default` · `PATCH …/{t}/toggle` · `POST …/preview` | manage-flows | set default · activate/deactivate · live document preview `{html}` |
 | Skills | `GET /admin/skills` · `GET …/data` · `POST …` · `PATCH …/{type}/blocks` | manage-flows | catalog · list · add skill · edit default_blocks |
 | Moderation | `GET /admin/moderation` + `/{talents,reviews,brands,brand-reviews,projects}` | moderate-content | queues (paginated JSON) |
 | Moderation actions | `PATCH …/{queue}/{id}/{action}` · `POST …/reviews/batch` | moderate-content | talents+brands `verify` (go-live gate, one-way) / suspend / publish / unpublish / delete… · batch approve/reject |

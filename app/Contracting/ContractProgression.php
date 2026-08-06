@@ -90,7 +90,7 @@ class ContractProgression
         $step->save();
         $step->status->transitionTo(StepCompleted::class);
 
-        $this->postSystemEvent($contract, $step, $summary, $this->stepEventMeta($step, $payload));
+        $this->postSystemEvent($contract, $step, $summary, $this->stepEventMeta($step, $payload, $contract));
     }
 
     /**
@@ -101,13 +101,18 @@ class ContractProgression
      * @param  array<string, mixed>  $payload
      * @return array<string, mixed>
      */
-    public function stepEventMeta(ContractStep $step, array $payload = []): array
+    public function stepEventMeta(ContractStep $step, array $payload = [], ?Contract $contract = null): array
     {
         $params = ['actor' => $step->actor, 'step_key' => $step->key, 'step_name' => $step->name];
 
         if ($step->step_type === 'payment') {
             $params['pct'] = (int) data_get($step->settings, 'percentage', 0);
         }
+
+        // The human-readable details of what was submitted (shown under the phase
+        // event in the timeline). Label/value pairs; English is acceptable while the
+        // app is single-locale.
+        $params['details'] = $this->stepDetails($step, $payload, $contract);
 
         return [
             'key' => match ($step->step_type) {
@@ -122,6 +127,58 @@ class ContractProgression
             },
             'params' => $params,
         ];
+    }
+
+    /**
+     * Build the label/value detail rows for a completed step from its payload —
+     * scope/dates/amount for forms, the signatory for a signature, the deposit for a
+     * payment, etc. Empty values are dropped.
+     *
+     * @param  array<string, mixed>  $payload
+     * @return list<array{label: string, value: string}>
+     */
+    private function stepDetails(ContractStep $step, array $payload, ?Contract $contract): array
+    {
+        $currency = $contract?->currency ?? 'EGP';
+        $details = [];
+        $push = function (string $label, mixed $value) use (&$details): void {
+            if ($value !== null && $value !== '' && ! is_array($value)) {
+                $details[] = ['label' => $label, 'value' => (string) $value];
+            }
+        };
+        $unitLabels = ['hour' => 'Per hour', 'day' => 'Per day', 'item' => 'Per item', 'project' => 'Flat project fee'];
+
+        match ($step->step_type) {
+            'form' => (function () use ($step, $payload, $currency, $unitLabels, $push): void {
+                $amountField = data_get($step->settings, 'amount_field');
+                foreach (($payload['fields'] ?? []) as $key => $value) {
+                    $label = ucfirst(str_replace('_', ' ', (string) $key));
+                    if ($key === $amountField && is_numeric($value)) {
+                        $value = number_format((float) $value).' '.$currency;
+                    } elseif ($key === 'pricing_unit') {
+                        $label = 'Pricing';
+                        $value = $unitLabels[$value] ?? $value;
+                    }
+                    $push($label, $value);
+                }
+            })(),
+            'approval' => $push('Note', $payload['note'] ?? null),
+            'contract' => $push('Signed by', $payload['signatory'] ?? null),
+            'schedule' => (function () use ($payload, $push): void {
+                $push('Start', $payload['start_date'] ?? null);
+                $push('Finish', $payload['end_date'] ?? null);
+            })(),
+            'upload' => $push('Files delivered', ($n = count($payload['attachments'] ?? [])) ? $n : null),
+            'payment' => (function () use ($step, $contract, $currency, $push): void {
+                if ($contract?->agreed_amount) {
+                    $pct = (int) data_get($step->settings, 'percentage', 0);
+                    $push('Deposit', number_format(round((float) $contract->agreed_amount * $pct / 100)).' '.$currency);
+                }
+            })(),
+            default => null,
+        };
+
+        return $details;
     }
 
     /**

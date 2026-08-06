@@ -608,6 +608,18 @@ migrate:fresh --seed exits 0):
   email/subject/reason). The review drawer has a **Delete…** composer modal with a LIVE email preview.
   Comment authors already self-delete (CommentPolicy + feed `is_mine`); reviews are anonymous so admin
   removal is their only path. MAIL_MAILER=log in dev — the notice renders to the log.
+- **Contract-template builder + live document preview (2026-08-03, ADR-V, suite 613 green).**
+  `/admin/contract-templates` (gated `manage-flows`) authors a reusable contract "schema": standard-terms
+  params (deposit %, holder, forfeit %, revision rounds) + a fully custom, reorderable `clauses` list with
+  numeric tokens. Two-column builder — author left, WYSIWYG **live document preview** right (debounced
+  `POST …/preview` → `{html}` renders the SAME `contracts/partials/document.blade.php` the contract room
+  uses). Applied per flow via `contract_flows.contract_template_id`; at contract creation the terms FREEZE
+  onto `contracts.terms_snapshot` (InitiateContract) so template edits never rewrite a live contract. ONE
+  renderer: `App\Contracting\ContractDocument` (template→preview / contract→room). Talent+brand rooms show
+  a collapsible **Contract** document. `ContractTemplate` model + `ContractTemplateService` (audited on the
+  `contract_flow` log); morph alias `contract_template` (MUST stay in App\Support\MorphMap). Default "Fama
+  Standard" template seeded + linked to Standard Booking. WATCH OUT: any new model that hits an activity/
+  morph column needs a MorphMap alias or writes throw ClassMorphViolationException.
 - **Mandatory admin verification before public (2026-08-02, ADR-U).** `is_verified` is the go-live gate
   for BOTH entities. Talents gained `is_verified` (migration `2026_08_02_000100`); `ToLive` now needs
   `display_name` AND `is_verified`; brands get a guarded `ToPublished` (needs `is_verified`). Self-serve

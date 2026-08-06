@@ -131,9 +131,9 @@ class BrandDemoSeeder extends Seeder
                 ], $flow);
 
                 // Walk the whole loop to completed (mirrors the standard-booking flow).
-                $brief = ['fields' => ['scope' => 'Autumn menu lifestyle shoot', 'dates' => 'Oct 12–14', 'budget' => 'EGP 30,000']];
+                $brief = ['fields' => ['scope' => 'Autumn menu lifestyle shoot', 'start_date' => '2026-10-12', 'end_date' => '2026-10-14', 'budget' => 'EGP 30,000']];
                 $contracts->advance($contract, $brief, 'brand', $brand);
-                $contracts->advance($contract, ['fields' => ['amount' => 28000, 'note' => 'Includes usage rights']], 'talent', $talent);
+                $contracts->advance($contract, ['fields' => ['amount' => 28000, 'pricing_unit' => 'day', 'note' => 'Includes usage rights']], 'talent', $talent);
                 $contracts->advance($contract, ['note' => 'Approved — excited to start'], 'brand', $brand);
                 // The deposit is mandatory (never skippable) — pay it.
                 $contracts->advance($contract, ['confirmed' => true, 'reference' => 'DEP-NOMAD-01'], 'brand', $brand);

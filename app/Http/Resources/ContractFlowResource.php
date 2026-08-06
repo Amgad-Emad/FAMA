@@ -21,6 +21,11 @@ class ContractFlowResource extends BaseResource
             'slug' => $this->slug,
             'description' => $this->description,
             'applies_to' => $this->applies_to,
+            'contract_template_id' => $this->contract_template_id,
+            'contract_template' => $this->whenLoaded('contractTemplate', fn () => $this->contractTemplate ? [
+                'id' => $this->contractTemplate->id,
+                'name' => $this->contractTemplate->name,
+            ] : null),
             'status' => $this->status->getValue(),
             'is_active' => (bool) $this->is_active,
             'is_default' => (bool) $this->is_default,

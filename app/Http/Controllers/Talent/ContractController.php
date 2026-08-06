@@ -61,14 +61,50 @@ class ContractController extends TalentController
 
         $this->contracts->markThreadRead($contract, 'talent');
 
-        $contract->load(['brand', 'currentStep', 'steps', 'messages.media']);
+        $contract->load(['brand', 'talent', 'currentStep', 'steps', 'messages.media', 'flow.contractTemplate']);
 
         return response()->success([
             'contract' => new ContractResource($contract),
             'steps' => ContractStepResource::collection($contract->steps),
             'messages' => ContractMessageResource::collection($contract->messages),
             'can_act' => $contract->currentStep?->actionableBy('talent') ?? false,
+            // Live contract document (terms snapshot + current headline data), re-rendered
+            // on every thread fetch so it reflects the latest completed steps (ADR-V).
+            'document_html' => view('contracts.partials.document', [
+                'doc' => \App\Contracting\ContractDocument::fromContract($contract),
+            ])->render(),
         ]);
+    }
+
+    /**
+     * The rendered contract document (HTML) — used by the inbox "See contract"
+     * modal so it can show the document without opening the room.
+     */
+    public function document(Contract $contract): JsonResponse
+    {
+        $this->ensureOwns($contract);
+        $contract->load(['brand', 'talent', 'flow.contractTemplate']);
+
+        return response()->success([
+            'html' => view('contracts.partials.document', ['doc' => \App\Contracting\ContractDocument::fromContract($contract)])->render(),
+            'pdf_url' => route('talent.contracts.document.pdf', $contract),
+        ]);
+    }
+
+    /**
+     * Download the contract document as a print-styled PDF (dompdf).
+     */
+    public function documentPdf(Contract $contract): \Symfony\Component\HttpFoundation\Response
+    {
+        $this->ensureOwns($contract);
+        $contract->load(['brand', 'talent', 'flow.contractTemplate']);
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('contracts.pdf.document', [
+            'doc' => \App\Contracting\ContractDocument::fromContract($contract),
+            'generatedAt' => now()->toDayDateTimeString(),
+        ]);
+
+        return $pdf->download('contract-'.$contract->reference.'.pdf');
     }
 
     public function advance(Request $request, Contract $contract): JsonResponse

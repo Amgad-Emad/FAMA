@@ -26,6 +26,44 @@ function roomContract(Talent $talent): Contract
     return $contract->fresh();
 }
 
+it('records phase events with their submitted details (scope, amount, note)', function () {
+    $talent = Talent::factory()->create();
+    $contract = roomContract($talent); // brief already submitted
+    app(ContractService::class)->advance($contract, ['fields' => ['amount' => 4000, 'pricing_unit' => 'day', 'note' => 'Retouch included']], 'talent', $talent);
+
+    $events = $this->actingAs($talent, 'talent')->getJson(route('talent.contracts.thread', $contract))
+        ->assertOk()->json('data.messages');
+
+    $quote = collect($events)->firstWhere('body', 'Talent submitted Talent quote.');
+    expect($quote['is_system'])->toBeTrue();
+    $labels = collect($quote['details'])->pluck('value', 'label');
+    expect($labels['Amount'])->toBe('4,000 EGP');
+    expect($labels['Pricing'])->toBe('Per day');
+    expect($labels['Note'])->toBe('Retouch included');
+});
+
+it('serves the rendered contract document and a downloadable PDF', function () {
+    $talent = Talent::factory()->create();
+    $contract = roomContract($talent);
+
+    // The thread payload carries the live document HTML.
+    $this->actingAs($talent, 'talent')->getJson(route('talent.contracts.thread', $contract))
+        ->assertOk()
+        ->assertJsonPath('data.document_html', fn ($html) => str_contains((string) $html, 'Standard terms'));
+
+    // The document endpoint (used by the inbox "See contract" modal).
+    $this->actingAs($talent, 'talent')->getJson(route('talent.contracts.document', $contract))
+        ->assertOk()
+        ->assertJsonStructure(['data' => ['html', 'pdf_url']]);
+
+    // The PDF download is a real PDF.
+    $res = $this->actingAs($talent, 'talent')->get(route('talent.contracts.document.pdf', $contract));
+    $res->assertOk();
+    expect($res->headers->get('content-type'))->toContain('application/pdf');
+    expect(substr($res->getContent(), 0, 4))->toBe('%PDF');
+    expect($res->headers->get('content-disposition'))->toContain('contract-'.$contract->reference.'.pdf');
+});
+
 it('renders the inbox and the contract room for the owner', function () {
     $talent = Talent::factory()->create();
     $contract = roomContract($talent);

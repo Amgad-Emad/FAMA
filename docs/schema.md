@@ -52,6 +52,12 @@ Deviations from the canonical schema (deliberate, per the standing decisions):
   translatable. Replaces the removed rate card (ADR-K).
 - `profile_blocks.block_type_id` is **restrict-on-delete** (deactivated block types are grandfathered,
   not deleted); all `talent_id` FKs cascade.
+- **`contract_templates` (2026-08-03, ADR-V):** admin-authored contract "schema" — `name`, `slug`,
+  `applies_to` (nullable category), `is_active`/`is_default`, terms params (`deposit_pct`,
+  `deposit_holder`, `cancellation_forfeit_pct`, `revision_rounds`, `preview_currency`), `intro`, and a
+  `clauses` JSON (ordered `{label, body}` with numeric tokens). Migration `2026_08_03_000100` also adds
+  `contract_flows.contract_template_id` (nullable FK, nullOnDelete) and `contracts.terms_snapshot` (JSON —
+  the frozen template terms at contract creation). Morph alias `contract_template`.
 - **Soft deletes on `reviews` (2026-07-31):** `deleted_at` (migration `2026_07_31_000100`) so an admin
   can remove a review with an emailed reason notice while preserving the row for audit.
 - **`talents.is_verified` (2026-08-02, ADR-U):** boolean, default false (migration `2026_08_02_000100`,

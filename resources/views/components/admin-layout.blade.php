@@ -25,6 +25,7 @@
         ]],
         ['heading' => __('Configuration'), 'items' => [
             ['route' => 'admin.flows', 'label' => __('Contract flows'), 'icon' => 'M4 6h16M4 12h16M4 18h7', 'can' => 'manage-flows'],
+            ['route' => 'admin.contract-templates', 'label' => __('Contract templates'), 'icon' => 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z', 'can' => 'manage-flows'],
             ['route' => 'admin.skills', 'label' => __('Skills templates'), 'icon' => 'M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4', 'can' => 'manage-flows'],
             ['route' => 'admin.blocks', 'label' => __('Block catalog'), 'icon' => 'M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z', 'can' => 'manage-blocks'],
         ]],
