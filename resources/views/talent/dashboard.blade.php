@@ -31,6 +31,7 @@
         <x-ui.stat :label="__('Blocks · skills')" :value="$stats['blocks'].' · '.$stats['skills']" />
     </div>
 
+    @feature('contracts')
     <x-ui.section class="mt-10" :title="__('Active contracts')" :eyebrow="__('Whose turn')">
         @if ($activeContracts->isEmpty())
             <x-ui.card class="flex items-center justify-between gap-4">
@@ -60,14 +61,20 @@
             </div>
         @endif
     </x-ui.section>
+    @endfeature
 
     <x-ui.section class="mt-10" :title="__('Manage your profile')">
         <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            @foreach ([
-                ['talent.profile.edit', __('Profile'), __('Identity, skills, username, publishing, pricing & blocks')],
-                ['talent.reviews', __('Reviews'), __('Moderate testimonials')],
-                ['talent.contracts', __('Contracts'), __('Your active bookings')],
-            ] as [$route, $label, $desc])
+            @php
+                $manageCards = [
+                    ['talent.profile.edit', __('Profile'), __('Identity, skills, username, publishing, pricing & blocks')],
+                    ['talent.reviews', __('Reviews'), __('Moderate testimonials')],
+                ];
+                if (\App\Support\Features::contracts()) {
+                    $manageCards[] = ['talent.contracts', __('Contracts'), __('Your active bookings')];
+                }
+            @endphp
+            @foreach ($manageCards as [$route, $label, $desc])
                 <a href="{{ route($route) }}" class="group rounded-lg border border-line bg-surface p-5 transition hover:border-line-strong hover:shadow-e1">
                     <div class="font-medium text-ink group-hover:text-accent-ink">{{ $label }}</div>
                     <div class="mt-1 text-sm text-muted">{{ $desc }}</div>

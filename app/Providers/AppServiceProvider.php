@@ -36,6 +36,10 @@ class AppServiceProvider extends ServiceProvider
         $this->registerResponseMacros();
         $this->configureFeedRateLimiters();
 
+        // Release feature flags (config/features.php): @feature('brands') … @endfeature
+        // (and @unlessfeature) gate brand/contracts/messaging UI in the V1 release.
+        \Illuminate\Support\Facades\Blade::if('feature', fn (string $name) => \App\Support\Features::enabled($name));
+
         // Suggestion caches follow the viewer's own profile (5Z): an update
         // to it re-ranks their rails on the next request.
         \App\Models\Talent::updated(fn ($talent) => app(\App\Services\SuggestionService::class)->forget($talent));

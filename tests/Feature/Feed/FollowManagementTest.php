@@ -221,9 +221,9 @@ it('hides the type filter for brands, who follow only talents', function () {
         ->assertOk()
         ->assertViewHas('showTypeFilter', false);
 
-    // And the talent surface DOES enable it.
+    // And the talent surface (now the Activity → Following tab) DOES enable it.
     $this->actingAs(Talent::factory()->create(), 'talent')
-        ->get('/talent/feed/follows')
+        ->get('/talent/feed/activity?view=following')
         ->assertOk()
         ->assertViewHas('showTypeFilter', true);
 });

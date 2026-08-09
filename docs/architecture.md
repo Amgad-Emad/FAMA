@@ -486,6 +486,12 @@ a Phase 3A service.
 
 ## Cross-cutting
 
+- **Release feature flags (ADR-W):** `config/features.php` (`brands`, `contracts`, `messaging`, each
+  `env('FEATURE_*', true)`) scope a release. Read via `App\Support\Features`; enforced at request time by the
+  `feature:<name>` middleware (`App\Http\Middleware\EnsureFeature`, disabled area → 404) and the
+  `@feature('brands')` Blade directive (registered in `AppServiceProvider::boot`). Default ON (full app);
+  production V1 sets them false to ship talent + feed + public profile only. Nav arrays carry a `feature` key
+  and filter; `config/feed.php` `allow_following_brands` tracks `FEATURE_BRANDS`.
 - **Logging:** dedicated channels `app`, `auth`, `contracts`, `media`, `feed` (`config/logging.php`).
   Failure convention: catch → log to channel with context → rethrow / return error envelope
   (`Service::runInTransaction`).

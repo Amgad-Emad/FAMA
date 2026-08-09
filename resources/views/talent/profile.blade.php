@@ -115,7 +115,9 @@
                                 </button>
                             </div>
                         @endif
-                        <x-ui.button :href="route('brand.talents.message', ['talent' => $talent->slug])" variant="outline" class="w-full sm:w-auto">{{ __('Message') }}</x-ui.button>
+                        @feature('messaging')
+                            <x-ui.button :href="route('brand.talents.message', ['talent' => $talent->slug])" variant="outline" class="w-full sm:w-auto">{{ __('Message') }}</x-ui.button>
+                        @endfeature
                         <x-ui.button :href="route('talent.review.create', ['slug' => $talent->slug])" variant="outline" class="w-full sm:w-auto">{{ __('Leave a review') }}</x-ui.button>
                     </div>
                 </div>

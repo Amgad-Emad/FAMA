@@ -37,10 +37,17 @@ class LoginRequest extends FormRequest
      */
     public function rules(): array
     {
+        // Brand login is gated behind the `brands` feature flag: V1 ships
+        // talent-only, so only the talent role is accepted when brands are off
+        // (the role defaults to Talent anyway).
+        $roles = \App\Support\Features::brands()
+            ? [UserRole::Talent->value, UserRole::Brand->value]
+            : [UserRole::Talent->value];
+
         return [
             'email' => ['required', 'string', 'email'],
             'password' => ['required', 'string'],
-            'role' => ['nullable', 'string', Rule::in([UserRole::Talent->value, UserRole::Brand->value])],
+            'role' => ['nullable', 'string', Rule::in($roles)],
         ];
     }
 

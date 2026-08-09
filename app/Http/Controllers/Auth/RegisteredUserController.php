@@ -37,12 +37,16 @@ class RegisteredUserController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        $type = $request->input('account_type');
+        // Brand self-registration is gated behind the `brands` feature flag: V1
+        // ships talent-only, so only 'talent' is accepted when brands are off.
+        $allowBrand = \App\Support\Features::brands();
+
+        $type = $allowBrand ? $request->input('account_type') : 'talent';
         // Email uniqueness is scoped to the chosen entity's own table.
         $emailTable = $type === 'brand' ? 'brands' : 'talents';
 
         $data = $request->validate([
-            'account_type' => ['required', Rule::in(['talent', 'brand'])],
+            'account_type' => ['required', Rule::in($allowBrand ? ['talent', 'brand'] : ['talent'])],
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', Rule::unique($emailTable, 'email')],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],

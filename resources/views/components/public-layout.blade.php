@@ -28,12 +28,14 @@
             // Feed first (5AB): the feed is the daily-return surface; Discover
             // is the with-intent tool. aria-current + the gestural underline
             // mark the active item — never the underline alone.
-            $navItems = [
+            // Brand/opportunities items carry a `feature` key and drop out of the nav
+            // when that release flag is off (V1 = talent + feed + discover only).
+            $navItems = array_values(array_filter([
                 ['route' => 'feed', 'label' => __('Feed')],
                 ['route' => 'discover', 'label' => __('Discover')],
-                ['route' => 'brands.discover', 'label' => __('Brands')],
-                ['route' => 'projects.browse', 'label' => __('Opportunities')],
-            ];
+                ['route' => 'brands.discover', 'label' => __('Brands'), 'feature' => 'brands'],
+                ['route' => 'projects.browse', 'label' => __('Opportunities'), 'feature' => 'brands'],
+            ], fn ($i) => empty($i['feature']) || \App\Support\Features::enabled($i['feature'])));
             $currentRoute = request()->route()?->getName();
             $isAuthed = auth('talent')->check() || auth('brand')->check() || auth('admin')->check();
         @endphp

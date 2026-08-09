@@ -844,7 +844,9 @@
 /* The composer trigger collapses to a compact pill on scroll-down. */
 [data-surface='daylight'] .composer-trigger {
     transition: max-width var(--dl-dur-fast) var(--dl-ease), transform var(--dl-dur) var(--dl-ease), filter var(--dl-dur) var(--dl-ease);
-    max-width: 640px;
+    /* Track the feed column width so the composer fills the (wider) V1 feed
+       instead of staying pinned at the old 640px. Condenses to 260px on scroll. */
+    max-width: var(--dl-feed-col, 720px);
 }
 
 /* Premium, smooth hover: the box lifts and the notch-following blue shadow
@@ -909,6 +911,26 @@
     max-width: 260px;
 }
 
+/* The middle of the trigger reads as a full-width faux input, so the composer
+   fills the (wider) V1 feed column gracefully instead of leaving a dead centre
+   gap between the prompt and the POST button. */
+[data-surface='daylight'] .composer-field {
+    border: 1px solid var(--dl-seam);
+    border-radius: 12px;
+    background: var(--dl-surface-sunk);
+    padding: .5rem .9rem;
+    transition: border-color 160ms var(--dl-ease), background-color 160ms var(--dl-ease);
+}
+[data-surface='daylight'] .composer-trigger:hover .composer-field {
+    border-color: var(--dl-ink-faint);
+}
+/* Condensed (on scroll): the field collapses back to a plain label. */
+[data-surface='daylight'] .composer-trigger.is-condensed .composer-field {
+    border-color: transparent;
+    background: transparent;
+    padding-inline: 0;
+}
+
 /* Optimistic insert: the frame expands with content fading in behind. */
 [data-surface='daylight'] .dl-insert {
     animation: dl-insert 280ms var(--dl-ease);
@@ -933,13 +955,24 @@
     justify-content: center;
 }
 
+/* The feed column width (composer, header, posts) is a variable so the no-brand-rail
+   layout can widen it without touching the 3-column (brands-on) case. The fallback
+   keeps single-post fragment renders (no .feed-spine ancestor) at the base width. */
+[data-surface='daylight'] .feed-spine { --dl-feed-col: 720px; }
+
+[data-surface='daylight'] .feed-col {
+    inline-size: 100%;
+    max-inline-size: var(--dl-feed-col, 720px);
+    margin-inline: auto;
+}
+
 [data-surface='daylight'] .feed-rail {
     display: none;
 }
 
 @media (min-width: 1100px) {
     [data-surface='daylight'] .feed-grid {
-        grid-template-columns: minmax(0, 720px) 260px;
+        grid-template-columns: minmax(0, 780px) 260px;
     }
 
     [data-surface='daylight'] .feed-rail--brands {
@@ -949,7 +982,7 @@
 
 @media (min-width: 1400px) {
     [data-surface='daylight'] .feed-grid {
-        grid-template-columns: 260px minmax(0, 720px) 260px;
+        grid-template-columns: 260px minmax(0, 780px) 260px;
     }
 
     [data-surface='daylight'] .feed-rail--talents {
@@ -957,16 +990,22 @@
     }
 }
 
-/* A brand viewer has no brand rail — the grid rebalances, no gap. */
+/* No brand rail (a brand viewer, or the V1 release with brands off): the grid
+   rebalances AND the feed column widens to fill the reclaimed space, so wide
+   monitors get big, premium posts instead of a large empty margin. The wider
+   width is driven by --dl-feed-col (below), scoped to this case only. */
 @media (min-width: 1100px) {
     [data-surface='daylight'] .feed-grid.no-brand-rail {
-        grid-template-columns: minmax(0, 720px);
+        grid-template-columns: minmax(0, 1000px);
+        gap: 40px;
     }
+    [data-surface='daylight'] .feed-grid.no-brand-rail .feed-spine { --dl-feed-col: 1000px; }
 }
 
 @media (min-width: 1400px) {
     [data-surface='daylight'] .feed-grid.no-brand-rail {
-        grid-template-columns: 260px minmax(0, 720px);
+        grid-template-columns: 340px minmax(0, 1000px);
+        gap: 40px;
     }
 }
 
@@ -1034,6 +1073,136 @@
     overflow-wrap: anywhere;
 }
 
+/* Premium "TALENT TO FOLLOW" rail — compact editorial rows (a small portrait
+   thumb + name/handle/skill + a ghost Follow pill) instead of full portrait
+   cards, so several curated talents show at once. Talents-only; brands keep the
+   square frame. */
+[data-surface='daylight'] .feed-rail--talents .rail-list { gap: 0; }
+
+[data-surface='daylight'] .suggest-row {
+    display: flex;
+    align-items: center;
+    gap: .85rem;
+    padding: .85rem .65rem;
+    border-radius: 14px;
+    position: relative;
+    transition: background-color 160ms var(--dl-ease), box-shadow 160ms var(--dl-ease), transform 160ms var(--dl-ease);
+}
+[data-surface='daylight'] .suggest-row:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgb(0 0 0 / .05);
+}
+
+/* Hairline between consecutive rows; fades when either side is hovered. */
+[data-surface='daylight'] .suggest-row + .suggest-row::before {
+    content: '';
+    position: absolute;
+    inset-inline: .55rem;
+    inset-block-start: 0;
+    block-size: 1px;
+    background: var(--dl-seam);
+    transition: opacity 160ms var(--dl-ease);
+}
+[data-surface='daylight'] .suggest-row:hover { background: var(--dl-surface-sunk); }
+[data-surface='daylight'] .suggest-row:hover::before,
+[data-surface='daylight'] .suggest-row:hover + .suggest-row::before { opacity: 0; }
+
+[data-surface='daylight'] .suggest-thumb {
+    flex: none;
+    inline-size: 58px;
+    block-size: 72px;
+    border-radius: 12px;
+    overflow: hidden;
+    display: block;
+    background: var(--dl-surface-sunk);
+    box-shadow: 0 1px 2px rgb(0 0 0 / .06), inset 0 0 0 1px rgb(0 0 0 / .05);
+    transition: transform 160ms var(--dl-ease);
+}
+[data-surface='daylight'] .suggest-row:hover .suggest-thumb { transform: scale(1.03); }
+[data-surface='daylight'] .suggest-thumb img {
+    inline-size: 100%;
+    block-size: 100%;
+    object-fit: cover;
+    display: block;
+}
+[data-surface='daylight'] .suggest-thumb__fallback {
+    font-family: var(--dl-font-display);
+    font-size: 24px;
+}
+
+[data-surface='daylight'] .suggest-body { flex: 1; min-inline-size: 0; }
+
+[data-surface='daylight'] .suggest-name {
+    display: block;
+    font-family: var(--dl-font-display);
+    font-size: 17px;
+    line-height: 1.2;
+    color: var(--dl-ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+[data-surface='daylight'] .suggest-name:hover { text-decoration: underline; text-underline-offset: 2px; }
+
+[data-surface='daylight'] .suggest-handle {
+    margin-block-start: 2px;
+    font-family: var(--dl-font-mono);
+    font-size: 12px;
+    color: var(--dl-ink-faint);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+[data-surface='daylight'] .suggest-line {
+    margin-block-start: 5px;
+    font-family: var(--dl-font-mono);
+    font-size: 10.5px;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    color: var(--dl-ink-faint);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+[data-surface='daylight'] .suggest-actions {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: .35rem;
+}
+[data-surface='daylight'] .suggest-follow { padding: .38rem .85rem; font-size: 10px; }
+
+[data-surface='daylight'] .suggest-dismiss {
+    position: absolute;
+    inset-block-start: 6px;
+    inset-inline-end: 6px;
+    inline-size: 22px;
+    block-size: 22px;
+    display: grid;
+    place-items: center;
+    border-radius: 999px;
+    color: var(--dl-ink-faint);
+    font-size: 12px;
+    line-height: 1;
+    opacity: 0;
+    transition: opacity 140ms var(--dl-ease), color 140ms var(--dl-ease), background-color 140ms var(--dl-ease);
+}
+[data-surface='daylight'] .suggest-row:hover .suggest-dismiss,
+[data-surface='daylight'] .suggest-dismiss:focus-visible { opacity: 1; }
+[data-surface='daylight'] .suggest-dismiss:hover { color: var(--dl-ink); background: var(--dl-hover); }
+
+[data-surface='daylight'] .suggest-gate { flex-basis: 100%; margin-block-start: .5rem; }
+
+/* Inline strip (small screens): the same rows scroll horizontally, so drop the
+   between-row hairline and give each a comfortable fixed width. */
+[data-surface='daylight'] .inline-strip .suggest-row {
+    inline-size: 16rem;
+    border: 1px solid var(--dl-seam);
+    border-radius: 12px;
+}
+[data-surface='daylight'] .inline-strip .suggest-row + .suggest-row::before { display: none; }
+
 /* Rail card motion (5AA): 8px rise entrances (no light response — that stays
    exclusive to feed frames) and the slide-out on follow/dismiss. */
 [data-surface='daylight'] .rail-enter {
@@ -1078,7 +1247,22 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
     gap: 1rem;
-    align-items: start;
+    /* Stretch so every card in a row is the same height (a fixed 4/5 image + a
+       flex body with the action pinned to the bottom keeps them uniform). */
+    align-items: stretch;
+}
+
+[data-surface='daylight'] .follow-card { display: flex; }
+[data-surface='daylight'] .follow-card > .frame {
+    display: flex;
+    flex-direction: column;
+    inline-size: 100%;
+    block-size: 100%;
+}
+[data-surface='daylight'] .follow-card__body {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
 }
 
 /* Optimistic unfollow: the row dims + slides out over 280ms (RTL-mirrored),

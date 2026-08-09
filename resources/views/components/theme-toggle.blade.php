@@ -1,3 +1,6 @@
+{{-- Dark-mode toggle. Hidden in the V1 release (FEATURE_DARK_MODE=false), which
+     also forces the app to light in partials/design-head. --}}
+@feature('dark_mode')
 <button
     type="button"
     x-data="{
@@ -21,3 +24,4 @@
         <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
     </svg>
 </button>
+@endfeature

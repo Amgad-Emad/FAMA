@@ -2,6 +2,71 @@
 
 Notable changes to the Fama project. Newest first.
 
+## 2026-08-06 — Premium "TALENT TO FOLLOW" rail (compact editorial rows) + test isolation
+- **Redesigned the feed's talent-suggestion rail.** Each talent was a full ~400px portrait card (only ~1.5
+  fit); it is now a **compact editorial row** — a small rounded portrait thumb + name (Fraunces) + mono
+  handle + one skill/followers line + a ghost **Follow** pill, with hover tint, hairline dividers, and a
+  hover-revealed dismiss. 8–9 curated talents now show at once (`suggestion-cards.blade.php` talent branch +
+  new `.suggest-row/.suggest-thumb/.suggest-*` CSS in `daylight.css`; the rail skeletons shrank to match).
+  Brand cards keep the square frame.
+- **Rail enhancement pass.** Names/handles were badly truncated at 260px; the talent rail now widens to
+  **340px** (no-brand-rail layout), with bigger portrait thumbnails (58×72, subtle ring), larger display
+  names (17px) + handle (12px), more generous row spacing, a hover lift, and the dismiss ✕ moved to an
+  absolute top corner so it no longer steals body width. Names are now readable, and the wider rail also
+  trims the outer feed margins.
+- **Wider feed column (fills the reclaimed V1 space).** With the brand rail gone, the feed sat centred with
+  large empty margins on wide monitors. The feed column width is now a CSS variable `--dl-feed-col` (via a
+  shared `.feed-col` class on composer/header/posts/frame), default `720px` but **`1000px` in the
+  `no-brand-rail` (V1) layout** where the spine widens to match — big, premium posts that fill much more of
+  the screen, cutting the side margins by roughly a third. The 3-column (brands-on) layout is untouched.
+  The **composer trigger** now tracks `--dl-feed-col` too (it was hard-pinned at 640px) and its middle
+  became a full-width faux-input field, so it fills the wider column instead of leaving a dead centre gap;
+  it still condenses to 260px on scroll.
+- **Test isolation for the release flags.** `phpunit.xml` now forces `FEATURE_BRANDS/CONTRACTS/MESSAGING=true`
+  so the suite always runs the full app even while a developer previews V1 locally (`.env FEATURE_*=false`);
+  `FeatureFlagsTest` still flips them off per-test via `config()`. Suite 624 green.
+
+## 2026-08-07 — Consolidated talent "Activity" page + sidebar redesign
+- **Saved · Liked · Following → one page.** The three separate sidebar entries collapse into a single
+  **Activity** page (`/talent/feed/activity`) with a premium segmented tab bar. Top tab = `?view=`; the
+  Following tab keeps its own FOLLOWING/FOLLOWERS sub-toggle (`?tab=`, no collision). `FeedActivityController`
+  chooses which existing partial to render (`feed-collection` / `feed-follows`) — the Ajax data endpoints are
+  unchanged. The old page routes (`feed.saved/liked/follows`) now **redirect** into the matching tab (data
+  routes kept). Deep links + the feed's bookmark/like flows still resolve.
+- **Talent sidebar redesign.** Flat list → **grouped sections** (Dashboard/Feed · Marketplace · Your studio ·
+  Activity) matching the admin pattern, with an inline-start **accent bar** + `aria-current` on the active
+  item, a subtle icon hover, and roomier spacing. Empty groups are dropped, so V1 (no Marketplace) stays
+  clean.
+- **Uniform follow cards.** The Following grid was jagged (brands `aspect-square`, talents `aspect-[4/5]`,
+  skill chips wrapping to a second line). All follow-card images now share the 4/5 ratio, the grid
+  `align-items: stretch`, each card is a flex column with the UNFOLLOW/FOLLOW-BACK pinned to the bottom, and
+  skill chips stay on one line — so every card is the same size. Suite 625 green.
+
+## 2026-08-07 — V1: hide dark mode (light-only release)
+- A fourth release flag `features.dark_mode` (`FEATURE_DARK_MODE`, default true). When off, the
+  `<x-theme-toggle>` component renders nothing (it is the single toggle used by all layouts + the feed) and
+  `partials/design-head` forces `data-theme="light"`, ignoring any stored preference — so V1 ships light-only.
+  Added to `.env.example` + `phpunit.xml` (true, so dev/tests keep dark); `FeatureFlagsTest` covers the off
+  path. Suite 625 green.
+
+## 2026-08-06 — V1 release scoping: talent + feed + public profile (feature flags, ADR-W)
+- **Config-driven feature flags** (`config/features.php`: `brands`, `contracts`, `messaging`) gate whole
+  product areas so the V1 release ships only the talent side, the public feed, and the public talent
+  profile — brand, contracts, and messaging stay in the codebase, dormant. Flags **default ON** (dev +
+  the 624-test suite run the full app); the production `.env` sets `FEATURE_BRANDS/CONTRACTS/MESSAGING=false`.
+- **Enforcement:** `App\Support\Features` helper + a `feature:<name>` route middleware (`EnsureFeature`,
+  disabled area → 404) + a `@feature('brands')` Blade directive. Routes stay registered and the check is
+  runtime, so per-test `config([...])` overrides work.
+- **Gated:** the brand dashboard group + public brand/opportunities/messaging routes (`web.php`), talent
+  contracts + applications + the enquire funnel (`talent.php`), admin contract/flow/template consoles +
+  brand/project moderation queues (`admin.php`), the feed brand suggestion endpoint (`feed.php`).
+  Registration/login become talent-only; the public + talent + admin nav drop brand/contract items; the
+  feed hides the BRANDS rail + brand follow chips; the public profile hides the Message CTA. `config/feed.php`
+  `allow_following_brands` now tracks `FEATURE_BRANDS`, so talent→brand follows are refused off.
+- **Kept in V1:** Reviews (standalone) and the talent "Brands I've worked with" portfolio block. Admin stays
+  fully functional (mandatory talent verification + feed moderation). New `tests/Feature/FeatureFlagsTest`
+  proves the OFF gating; suite 624 green.
+
 ## 2026-08-04 — Timeline phase cards with details + template "applies to" removed
 - **Phase events now show their details.** Step-completion system events carry a `details` list (built in
   `ContractProgression::stepEventMeta` from the step payload — scope/dates/budget for the brief, amount +

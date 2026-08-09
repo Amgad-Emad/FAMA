@@ -37,6 +37,9 @@
                class="well t-body px-3 py-1.5" style="min-inline-size: 14rem;"
                placeholder="{{ __('Search name or handle…') }}" aria-label="{{ __('Search') }}">
 
+        {{-- Talent/Brand type filter — only meaningful when brands can be followed
+             (hidden in the talent-only V1 release). --}}
+        @feature('brands')
         <template x-if="showTypeFilter">
             <div class="flex gap-1" role="group" aria-label="{{ __('Type') }}">
                 <button type="button" class="dl-chip" :class="{ 'is-active': type === 'all' }" @click="type = 'all'; reload()">{{ __('ALL') }}</button>
@@ -44,6 +47,7 @@
                 <button type="button" class="dl-chip" :class="{ 'is-active': type === 'brands' }" @click="type = 'brands'; reload()">{{ __('BRANDS') }}</button>
             </div>
         </template>
+        @endfeature
 
         @if (count($skills) > 0)
             <select x-model="skill" @change="reload()" class="well t-body px-3 py-1.5" aria-label="{{ __('Filter by Skill') }}">
@@ -97,7 +101,7 @@
                     {{-- Avatar / brand mark: portrait for talents, square for brands --}}
                     <a :href="profileUrl(row)" class="block">
                         <template x-if="row.type === 'brand'">
-                            <span class="flex aspect-square w-full items-center justify-center" style="background: var(--dl-surface-sunk);">
+                            <span class="flex aspect-[4/5] w-full items-center justify-center" style="background: var(--dl-surface-sunk);">
                                 <img x-show="row.avatar_url" :src="row.avatar_url" alt="" loading="lazy" class="h-full w-full object-cover">
                                 <span x-show="!row.avatar_url" class="avatar-fallback t-display" :style="tint(row)" x-text="(row.display_name ?? '?').slice(0, 1)"></span>
                             </span>
@@ -112,7 +116,7 @@
                         </template>
                     </a>
 
-                    <div class="p-3">
+                    <div class="p-3 follow-card__body">
                         <a :href="profileUrl(row)" class="block">
                             <span class="block truncate" style="font-family: var(--dl-font-display); font-size: 15px;" x-text="row.display_name"></span>
                         </a>
@@ -120,9 +124,10 @@
 
                         {{-- Talent: top two Skills · Brand: sector + city --}}
                         <template x-if="row.type !== 'brand'">
-                            <p class="mt-1 flex flex-wrap gap-1">
+                            {{-- One line only (no wrap) so every card body is the same height. --}}
+                            <p class="mt-1 flex gap-1 overflow-hidden">
                                 <template x-for="skillTag in (row.skills ?? [])" :key="skillTag.slug">
-                                    <span class="rounded-sm border border-seam px-1 t-meta" x-text="skillTag.name"></span>
+                                    <span class="shrink-0 rounded-sm border border-seam px-1 t-meta" x-text="skillTag.name"></span>
                                 </template>
                             </p>
                         </template>
@@ -140,8 +145,8 @@
                         {{-- Quiet-since prune signal --}}
                         <p x-show="row.quiet_since" x-cloak class="mt-1 t-meta" style="color: var(--dl-ink-faint);" x-text="row.quiet_since"></p>
 
-                        {{-- Control --}}
-                        <div class="mt-3">
+                        {{-- Control — pinned to the bottom so every card is the same height. --}}
+                        <div class="mt-auto pt-3">
                             <button x-show="row.can_unfollow" type="button" class="dl-btn"
                                     @click="unfollow(row)">{{ __('UNFOLLOW') }}</button>
                             <button x-show="row.can_follow_back" type="button" class="dl-btn is-ready"

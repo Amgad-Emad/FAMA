@@ -72,7 +72,9 @@
                                 <p class="t-body">{{ __('Sign in to share your work') }}</p>
                                 <div class="mt-2 flex gap-2">
                                     <a href="{{ route('login', ['role' => 'talent']) }}" class="dl-chip">{{ __("I'm a talent") }}</a>
-                                    <a href="{{ route('login', ['role' => 'brand']) }}" class="dl-chip">{{ __("I'm a brand") }}</a>
+                                    @feature('brands')
+                                        <a href="{{ route('login', ['role' => 'brand']) }}" class="dl-chip">{{ __("I'm a brand") }}</a>
+                                    @endfeature
                                 </div>
                             </div>
                             <button type="button" class="fab" @click="newPost()" aria-label="{{ __('New post') }}">
@@ -86,7 +88,9 @@
         </template>
 
         <div class="mx-auto max-w-[1400px] px-5 py-10">
-            <div class="feed-grid {{ $viewerIsBrand ? 'no-brand-rail' : '' }}">
+            {{-- Rebalance the grid (drop the brand-rail column) for brand viewers OR
+                 when the brands feature is off (V1). --}}
+            <div class="feed-grid {{ ($viewerIsBrand || ! \App\Support\Features::brands()) ? 'no-brand-rail' : '' }}">
 
                 {{-- Left rail: TALENT TO FOLLOW (≥1400px) --}}
                 <aside class="feed-rail feed-rail--talents"
@@ -101,9 +105,11 @@
                     <ul class="rail-list" x-ref="list"
                         @rail-follow.stop="onFollow($event.detail)"
                         @rail-dismiss.stop="onDismiss($event.detail)"></ul>
-                    <div x-show="loading" aria-hidden="true" class="rail-list mt-3">
-                        <div class="skeleton frame" style="block-size: 220px;"></div>
-                        <div class="skeleton frame" style="block-size: 220px;"></div>
+                    <div x-show="loading" aria-hidden="true" class="mt-1 space-y-3">
+                        <div class="skeleton" style="block-size: 58px; border-radius: 12px;"></div>
+                        <div class="skeleton" style="block-size: 58px; border-radius: 12px;"></div>
+                        <div class="skeleton" style="block-size: 58px; border-radius: 12px;"></div>
+                        <div class="skeleton" style="block-size: 58px; border-radius: 12px;"></div>
                     </div>
                     <button type="button" x-show="nextOffset !== null" x-cloak
                             class="dl-btn is-ready mt-4 w-full justify-center" @click="showMore()">{{ __('SHOW MORE') }}</button>
@@ -111,7 +117,7 @@
 
                 {{-- The spine column --}}
                 <div class="feed-spine min-w-0">
-                    <header class="feed-chrome mx-auto mb-10 w-full max-w-[640px]" x-ref="chrome"
+                    <header class="feed-chrome feed-col mb-10" x-ref="chrome"
                             :class="{ 'chrome-handed-off': pastHeader }">
                         <h1 class="t-display">{{ __('Feed') }}</h1>
                         <p class="t-meta chrome-eyebrow mt-1">{{ __('WORK · LIGHT · PEOPLE') }}</p>
@@ -145,7 +151,7 @@
                             @endif
                             @include('feed.partials.post', ['post' => $post, 'eagerMedia' => $index === 0])
                         @empty
-                            <div class="w-full max-w-[640px] frame-shadow">
+                            <div class="feed-col frame-shadow">
                                 <div class="frame p-10 text-center">
                                     <p class="t-note">{{ __('Nothing here yet.') }}</p>
                                     <p class="t-meta mt-2">{{ __('THE LIGHT IS BEING SET') }}</p>
@@ -166,7 +172,9 @@
                 </div>
 
                 {{-- Right rail: brands to get opportunity alerts from (bell) —
-                     ≥1100px; never for brand viewers. --}}
+                     ≥1100px; never for brand viewers. Gated behind the `brands`
+                     release flag (V1 ships a talent-only feed). --}}
+                @feature('brands')
                 @unless ($viewerIsBrand)
                     <aside class="feed-rail feed-rail--brands"
                            x-data="suggestionRail({ type: 'brands' })" x-show="!collapsed" x-cloak
@@ -188,6 +196,7 @@
                                 class="dl-btn is-ready mt-4 w-full justify-center" @click="showMore()">{{ __('SHOW MORE') }}</button>
                     </aside>
                 @endunless
+                @endfeature
             </div>
         </div>
     </div>

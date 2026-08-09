@@ -62,7 +62,9 @@
                         <form method="POST" action="{{ route('login') }}" class="space-y-5">
                             @csrf
 
-                            {{-- Role (guard) selector — Talent | Brand only; ?role=brand pre-checks Brand (ADR-P) --}}
+                            {{-- Role (guard) selector — Talent | Brand only; ?role=brand pre-checks Brand (ADR-P).
+                                 Hidden in the V1 release (brands feature off): talent-only sign-in. --}}
+                            @feature('brands')
                             <fieldset>
                                 <legend class="mb-1.5 block text-sm font-medium text-ink">{{ __('I am a') }}</legend>
                                 @php($defaultRole = old('role', request('role', 'talent')))
@@ -80,6 +82,7 @@
                                 </div>
                                 <x-input-error :messages="$errors->get('role')" class="mt-2" />
                             </fieldset>
+                            @endfeature
 
                             {{-- Email --}}
                             <div>

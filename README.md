@@ -152,6 +152,24 @@ npm run dev
 php artisan test               # Pest suite — runs on MySQL (fama_test, per phpunit.xml)
 ```
 
+## Release feature flags (V1 scoping)
+
+`config/features.php` gates whole product areas so a release can ship a subset while the rest stays in the
+codebase, dormant. Flags **default ON** (dev/staging + the test suite run the full app). The **V1 production
+release** ships only the talent side, the public feed, and the public talent profile — set in production `.env`:
+
+```dotenv
+FEATURE_BRANDS=false
+FEATURE_CONTRACTS=false
+FEATURE_MESSAGING=false
+```
+
+Enforcement is runtime: `App\Support\Features`, the `feature:<name>` route middleware (disabled → 404), and
+the `@feature('brands')` Blade directive. Re-enable a feature later by flipping its env var (contracts and
+messaging imply brands). Reviews and the talent "Brands I've worked with" block stay in V1; admin stays fully
+functional (talent verification + feed moderation). A production V1 seed runs only the catalog/config seeders
+(Roles/TalentType/BlockType/Settings). See ADR-W in `docs/decisions.md`.
+
 ## Three-guard auth model
 
 Fama has **three login entities**, each with its own session guard + Eloquent provider

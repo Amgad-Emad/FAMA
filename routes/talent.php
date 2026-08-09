@@ -50,13 +50,17 @@ Route::patch('/profile/skills/{type}/primary', [SkillController::class, 'primary
 Route::delete('/profile/skills/{type}', [SkillController::class, 'destroy'])->name('profile.skills.destroy');
 
 // --- Reviews moderation -----------------------------------------------------
-// Feed collections (5X, ADR-F9 — private to the owner).
-Route::get('/feed/saved', [\App\Http\Controllers\Talent\FeedCollectionController::class, 'saved'])->name('feed.saved');
-Route::get('/feed/liked', [\App\Http\Controllers\Talent\FeedCollectionController::class, 'liked'])->name('feed.liked');
+// Consolidated "Activity" page — Saved · Liked · Following in one tabbed surface.
+Route::get('/feed/activity', [\App\Http\Controllers\Talent\FeedActivityController::class, 'index'])->name('feed.activity');
+
+// Feed collections (5X, ADR-F9 — private to the owner). The page routes now
+// redirect into the Activity tabs; the Ajax data endpoints are unchanged.
+Route::get('/feed/saved', fn () => redirect()->route('talent.feed.activity', ['view' => 'saved']))->name('feed.saved');
+Route::get('/feed/liked', fn () => redirect()->route('talent.feed.activity', ['view' => 'liked']))->name('feed.liked');
 Route::get('/feed/collection/data', [\App\Http\Controllers\Talent\FeedCollectionController::class, 'data'])->name('feed.collection.data');
 
-// Follow-graph management (FOLLOWING / FOLLOWERS sub-tabs).
-Route::get('/feed/follows', [\App\Http\Controllers\Talent\FollowsController::class, 'index'])->name('feed.follows');
+// Follow-graph management (FOLLOWING / FOLLOWERS sub-tabs) → the Following tab.
+Route::get('/feed/follows', fn (\Illuminate\Http\Request $r) => redirect()->route('talent.feed.activity', ['view' => 'following'] + ($r->query('tab') ? ['tab' => $r->query('tab')] : [])))->name('feed.follows');
 Route::get('/feed/follows/data', [\App\Http\Controllers\Talent\FollowsController::class, 'data'])->name('feed.follows.data');
 
 Route::get('/reviews', [ReviewController::class, 'index'])->name('reviews');
@@ -64,21 +68,25 @@ Route::get('/reviews/data', [ReviewController::class, 'data'])->name('reviews.da
 Route::patch('/reviews/{review}/approve', [ReviewController::class, 'approve'])->name('reviews.approve');
 Route::patch('/reviews/{review}/reject', [ReviewController::class, 'reject'])->name('reviews.reject');
 
-// --- Applications (talent applies to a brand project) -----------------------
-Route::get('/applications/mentions', [ApplicationController::class, 'mentions'])->name('applications.mentions');
-Route::post('/applications/{brandProject}', [ApplicationController::class, 'store'])->name('applications.store');
+// --- Applications + contract room/inbox (talent side of the marketplace) -----
+// Gated behind the `contracts` feature flag for the V1 release.
+Route::middleware('feature:contracts')->group(function () {
+    // Applications (talent applies to a brand project).
+    Route::get('/applications/mentions', [ApplicationController::class, 'mentions'])->name('applications.mentions');
+    Route::post('/applications/{brandProject}', [ApplicationController::class, 'store'])->name('applications.store');
 
-// --- Contract room + inbox ------------------------------------------------------
-Route::get('/contracts', [ContractController::class, 'index'])->name('contracts');
-Route::get('/contracts/data', [ContractController::class, 'data'])->name('contracts.data');
-Route::get('/contracts/{contract}', [ContractController::class, 'show'])->name('contracts.show');
-Route::get('/contracts/{contract}/thread', [ContractController::class, 'thread'])->name('contracts.thread');
-Route::get('/contracts/{contract}/document', [ContractController::class, 'document'])->name('contracts.document');
-Route::get('/contracts/{contract}/document.pdf', [ContractController::class, 'documentPdf'])->name('contracts.document.pdf');
-Route::post('/contracts/{contract}/advance', [ContractController::class, 'advance'])->name('contracts.advance');
-Route::post('/contracts/{contract}/reject', [ContractController::class, 'reject'])->name('contracts.reject');
-Route::post('/contracts/{contract}/skip', [ContractController::class, 'skip'])->name('contracts.skip');
-Route::post('/contracts/{contract}/message', [ContractController::class, 'message'])->name('contracts.message');
+    // Contract room + inbox.
+    Route::get('/contracts', [ContractController::class, 'index'])->name('contracts');
+    Route::get('/contracts/data', [ContractController::class, 'data'])->name('contracts.data');
+    Route::get('/contracts/{contract}', [ContractController::class, 'show'])->name('contracts.show');
+    Route::get('/contracts/{contract}/thread', [ContractController::class, 'thread'])->name('contracts.thread');
+    Route::get('/contracts/{contract}/document', [ContractController::class, 'document'])->name('contracts.document');
+    Route::get('/contracts/{contract}/document.pdf', [ContractController::class, 'documentPdf'])->name('contracts.document.pdf');
+    Route::post('/contracts/{contract}/advance', [ContractController::class, 'advance'])->name('contracts.advance');
+    Route::post('/contracts/{contract}/reject', [ContractController::class, 'reject'])->name('contracts.reject');
+    Route::post('/contracts/{contract}/skip', [ContractController::class, 'skip'])->name('contracts.skip');
+    Route::post('/contracts/{contract}/message', [ContractController::class, 'message'])->name('contracts.message');
+});
 
 // --- Block content editors (child tables; content_source-aware) -------------
 Route::get('/content/{type}', [BlockContentController::class, 'index'])->name('content');

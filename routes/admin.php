@@ -28,6 +28,9 @@ Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard
 
 // --- Contract-flow builder (manage-flows) ---------------------------------------
 Route::middleware('can:manage-flows')->group(function () {
+    // Contract flows + templates are gated behind the `contracts` feature flag for
+    // the V1 release. Skills (below) share `manage-flows` but stay enabled.
+    Route::middleware('feature:contracts')->group(function () {
     Route::get('/flows', [FlowBuilderController::class, 'index'])->name('flows');
     Route::get('/flows/data', [FlowBuilderController::class, 'data'])->name('flows.data');
     Route::post('/flows', [FlowBuilderController::class, 'store'])->name('flows.store');
@@ -55,6 +58,7 @@ Route::middleware('can:manage-flows')->group(function () {
     Route::patch('/contract-templates/{template}/default', [ContractTemplateController::class, 'setDefault'])->name('contract-templates.default');
     Route::patch('/contract-templates/{template}/toggle', [ContractTemplateController::class, 'toggle'])->name('contract-templates.toggle');
     Route::delete('/contract-templates/{template}', [ContractTemplateController::class, 'destroy'])->name('contract-templates.destroy');
+    }); // end feature:contracts (flows + contract-templates)
 
     // Skill/template catalog rides on the same authoring permission.
     Route::get('/skills', [SkillController::class, 'index'])->name('skills');
@@ -93,17 +97,21 @@ Route::middleware('can:moderate-content')->prefix('moderation')->name('moderatio
     Route::patch('/reviews/{review}/{action}', [ModerationController::class, 'moderateReview'])->name('reviews.action');
     Route::post('/reviews/batch', [ModerationController::class, 'batchReviews'])->name('reviews.batch');
 
-    Route::get('/brands', [ModerationController::class, 'brands'])->name('brands');
-    Route::get('/brands/{brand}', [ModerationController::class, 'showBrand'])->withTrashed()->name('brands.show');
-    Route::patch('/brands/{brand}/{action}', [ModerationController::class, 'moderateBrand'])->name('brands.action');
+    // Brand + brand-review + project (brand-owned) moderation queues — gated behind
+    // the `brands` feature flag for the V1 release.
+    Route::middleware('feature:brands')->group(function () {
+        Route::get('/brands', [ModerationController::class, 'brands'])->name('brands');
+        Route::get('/brands/{brand}', [ModerationController::class, 'showBrand'])->withTrashed()->name('brands.show');
+        Route::patch('/brands/{brand}/{action}', [ModerationController::class, 'moderateBrand'])->name('brands.action');
 
-    Route::get('/brand-reviews', [ModerationController::class, 'brandReviews'])->name('brand-reviews');
-    Route::get('/brand-reviews/{review}', [ModerationController::class, 'showBrandReview'])->name('brand-reviews.show');
-    Route::patch('/brand-reviews/{review}/{action}', [ModerationController::class, 'moderateBrandReview'])->name('brand-reviews.action');
+        Route::get('/brand-reviews', [ModerationController::class, 'brandReviews'])->name('brand-reviews');
+        Route::get('/brand-reviews/{review}', [ModerationController::class, 'showBrandReview'])->name('brand-reviews.show');
+        Route::patch('/brand-reviews/{review}/{action}', [ModerationController::class, 'moderateBrandReview'])->name('brand-reviews.action');
 
-    Route::get('/projects', [ModerationController::class, 'projects'])->name('projects');
-    Route::get('/projects/{project}', [ModerationController::class, 'showProject'])->withTrashed()->name('projects.show');
-    Route::patch('/projects/{project}/{action}', [ModerationController::class, 'moderateProject'])->name('projects.action');
+        Route::get('/projects', [ModerationController::class, 'projects'])->name('projects');
+        Route::get('/projects/{project}', [ModerationController::class, 'showProject'])->withTrashed()->name('projects.show');
+        Route::patch('/projects/{project}/{action}', [ModerationController::class, 'moderateProject'])->name('projects.action');
+    });
 
     // --- Feed moderation console (Phase 5Q) ---------------------------------
     Route::get('/feed', [\App\Http\Controllers\Admin\FeedModerationController::class, 'index'])->name('feed');
@@ -121,7 +129,8 @@ Route::middleware('can:moderate-content')->prefix('moderation')->name('moderatio
 });
 
 // --- Contract intervention console (intervene-contracts) ----------------------------
-Route::middleware('can:intervene-contracts')->group(function () {
+// Gated behind the `contracts` feature flag for the V1 release.
+Route::middleware(['can:intervene-contracts', 'feature:contracts'])->group(function () {
     Route::get('/contracts', [ContractInterventionController::class, 'index'])->name('contracts');
     Route::get('/contracts/data', [ContractInterventionController::class, 'data'])->name('contracts.data');
     Route::get('/contracts/{contract}', [ContractInterventionController::class, 'show'])->name('contracts.show');

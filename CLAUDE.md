@@ -631,5 +631,33 @@ migrate:fresh --seed exits 0):
   factory defaults for published/live states are `is_verified=true` (with `unverified()` states). Open
   stakeholder item: whether verify should also auto-publish (today it only unlocks the owner's toggle).
 
+V1 RELEASE SCOPING — talent + feed + public profile only (2026-08-06, ADR-W, suite 624 green).
+Config-driven feature flags gate whole product areas so production V1 ships ONLY the talent side, the public
+feed, and the public talent profile; brand/contracts/messaging stay in the codebase, dormant.
+- `config/features.php` → `brands`/`contracts`/`messaging`/`dark_mode`, each `env('FEATURE_*', true)` — **default ON** so
+  dev/staging + the whole test suite run the full app. Production `.env` sets `FEATURE_BRANDS=false`,
+  `FEATURE_CONTRACTS=false`, `FEATURE_MESSAGING=false`. Re-enable later = flip one env var (contracts/messaging
+  imply brands).
+- Enforcement is RUNTIME (testable via `config([...])`): `App\Support\Features::brands()/contracts()/messaging()`;
+  `feature:<name>` route middleware (`App\Http\Middleware\EnsureFeature`, disabled → 404, alias in
+  bootstrap/app.php); `@feature('brands')` Blade directive (registered in AppServiceProvider::boot). Routes STAY
+  registered — the middleware 404s when off.
+- Gated: brand dashboard group + public brand/opportunities/messaging routes (web.php); talent
+  contracts+applications+enquire (talent.php); admin contract/flow/template consoles + brand/project moderation
+  queues (admin.php); feed brand suggestions (feed.php). Nav arrays (public/talent/admin layouts + admin
+  dashboard) carry a `feature` key and filter. Registration/login talent-only. Feed hides the BRANDS rail +
+  brand follow chips + rebalances `.feed-grid` (`no-brand-rail`). Public profile hides the Message CTA.
+  `config/feed.php` `allow_following_brands` = `env('FEATURE_BRANDS', true)`.
+- `dark_mode` off (V1 light-only): the single `<x-theme-toggle>` component renders nothing (hides the toggle
+  in every layout + the feed) and `partials/design-head` forces `data-theme="light"` (ignores stored pref).
+- WATCH OUT: `@unlessfeature`/`@endunlessfeature` are NOT reliably registered by `Blade::if` — use
+  `@feature(...) … @else … @endfeature` instead (a stray `@endunlessfeature` left a compiled `if` unclosed →
+  500). Do NOT revoke `manage-flows` to hide contract admin — it is shared with Skills templates; gate by
+  feature. KEPT in V1: Reviews (standalone, no brand/contract FK) + the talent "Brands I've worked with" block;
+  admin stays fully functional (mandatory talent verification + feed moderation).
+- Production seed: only Roles/TalentType/BlockType/Settings (skip demo + contract-template/flow + brand
+  seeders); confirm `SettingsSeeder` tolerates a null `default_contract_flow_id` or keep `ContractFlowSeeder`
+  (dormant). `tests/Feature/FeatureFlagsTest` proves the OFF gating.
+
 Phase 4 (mobile API: Sanctum + Scribe over existing services) is deferred; Prompt 5K mirrors the feed
 endpoints under /api/v1 with Sanctum and starts docs/api.md regeneration.

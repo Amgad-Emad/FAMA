@@ -33,6 +33,13 @@
              are assertable; job logic is unit-tested by calling handle(). -->
         <env name="QUEUE_CONNECTION" value="database"/>
         <env name="SESSION_DRIVER" value="array"/>
+        <!-- Release feature flags (config/features.php): the suite always runs the
+             FULL app so a local V1 preview (.env FEATURE_*=false) never breaks it.
+             FeatureFlagsTest flips them off per-test with config(). -->
+        <env name="FEATURE_BRANDS" value="true"/>
+        <env name="FEATURE_CONTRACTS" value="true"/>
+        <env name="FEATURE_MESSAGING" value="true"/>
+        <env name="FEATURE_DARK_MODE" value="true"/>
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>

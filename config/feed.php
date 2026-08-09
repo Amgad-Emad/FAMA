@@ -16,7 +16,9 @@ return [
 
     // Talents may follow brands (flipped TRUE in revision 5Z — the brand
     // suggestion rail requires it; brands.followers_count landed with it).
-    'allow_following_brands' => true,
+    // Tracks the `brands` release flag so a talent-only V1 (FEATURE_BRANDS=false)
+    // also blocks talent→brand follow writes at App\Actions\Feed\ToggleFollow.
+    'allow_following_brands' => env('FEATURE_BRANDS', true),
 
     // Open reports on one reportable that auto-hide it pending review (5Q).
     'auto_hide_reports' => 5,

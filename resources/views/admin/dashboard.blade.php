@@ -7,12 +7,17 @@
             <section>
                 <h2 class="mb-3 font-mono text-[11px] uppercase tracking-wider text-subtle">{{ __('Moderation queues') }}</h2>
                 <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                    @foreach ([
-                        ['label' => __('Pending talent profiles'), 'value' => $stats['moderation']['pending_talents'], 'queue' => 'talents'],
-                        ['label' => __('Pending talent reviews'), 'value' => $stats['moderation']['pending_reviews'], 'queue' => 'reviews'],
-                        ['label' => __('Pending brand reviews'), 'value' => $stats['moderation']['pending_brand_reviews'], 'queue' => 'brand-reviews'],
-                        ['label' => __('Brands awaiting verification'), 'value' => $stats['moderation']['unverified_brands'], 'queue' => 'brands'],
-                    ] as $card)
+                    @php
+                        $moderationCards = [
+                            ['label' => __('Pending talent profiles'), 'value' => $stats['moderation']['pending_talents'], 'queue' => 'talents'],
+                            ['label' => __('Pending talent reviews'), 'value' => $stats['moderation']['pending_reviews'], 'queue' => 'reviews'],
+                        ];
+                        if (\App\Support\Features::brands()) {
+                            $moderationCards[] = ['label' => __('Pending brand reviews'), 'value' => $stats['moderation']['pending_brand_reviews'], 'queue' => 'brand-reviews'];
+                            $moderationCards[] = ['label' => __('Brands awaiting verification'), 'value' => $stats['moderation']['unverified_brands'], 'queue' => 'brands'];
+                        }
+                    @endphp
+                    @foreach ($moderationCards as $card)
                         <a href="{{ route('admin.moderation.index', ['queue' => $card['queue']]) }}" class="rounded-xl border border-line bg-surface p-4 transition hover:border-line-strong">
                             <div class="font-display text-3xl leading-none {{ $card['value'] ? 'text-ink' : 'text-subtle' }}">{{ $card['value'] }}</div>
                             <div class="mt-1 font-mono text-[11px] uppercase tracking-wider text-subtle">{{ $card['label'] }}</div>
@@ -25,8 +30,9 @@
             </section>
         @endcan
 
-        {{-- Contracts + Projects --}}
+        {{-- Contracts + Projects (brand/contract features) --}}
         <div class="grid gap-4 lg:grid-cols-2">
+            @feature('contracts')
             @can('intervene-contracts')
                 <section>
                     <h2 class="mb-3 font-mono text-[11px] uppercase tracking-wider text-subtle">{{ __('Contracts') }}</h2>
@@ -47,7 +53,9 @@
                     </a>
                 </section>
             @endcan
+            @endfeature
 
+            @feature('brands')
             @can('moderate-content')
                 <section>
                     <h2 class="mb-3 font-mono text-[11px] uppercase tracking-wider text-subtle">{{ __('Projects') }}</h2>
@@ -66,17 +74,19 @@
                     </a>
                 </section>
             @endcan
+            @endfeature
         </div>
 
         {{-- Governance quick links --}}
         @php
             $governance = array_filter([
-                ['route' => 'admin.flows', 'label' => __('Contract flows'), 'hint' => __('Author the step sequences contracts run on.'), 'can' => 'manage-flows'],
+                ['route' => 'admin.flows', 'label' => __('Contract flows'), 'hint' => __('Author the step sequences contracts run on.'), 'can' => 'manage-flows', 'feature' => 'contracts'],
                 ['route' => 'admin.skills', 'label' => __('Skills templates'), 'hint' => __('Per-skill preselected blocks and their order.'), 'can' => 'manage-flows'],
                 ['route' => 'admin.blocks', 'label' => __('Block catalog'), 'hint' => __('Which blocks exist and who may use them.'), 'can' => 'manage-blocks'],
                 ['route' => 'admin.settings', 'label' => __('Settings'), 'hint' => __('Platform globals and feature flags.'), 'can' => 'manage-settings'],
                 ['route' => 'admin.users', 'label' => __('Accounts'), 'hint' => __('Create admins, brands, talents; manage staff roles.'), 'can' => 'manage-users'],
-            ], fn ($link) => auth('admin')->user()?->can($link['can']));
+            ], fn ($link) => auth('admin')->user()?->can($link['can'])
+                && (empty($link['feature']) || \App\Support\Features::enabled($link['feature'])));
         @endphp
         @if ($governance)
             <section>

@@ -52,8 +52,13 @@
 
 <script>
     (function () {
+        @feature('dark_mode')
         var stored = localStorage.getItem('theme');
         var dark = stored ? stored === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
         document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+        @else
+        // V1: dark mode disabled — force light regardless of any stored preference.
+        document.documentElement.setAttribute('data-theme', 'light');
+        @endif
     })();
 </script>

@@ -20,7 +20,7 @@
             'imageKb' => (int) config('feed.limits.image_max_kb'),
             'videoKb' => (int) config('feed.limits.video_max_kb'),
         ]),
-     })" class="w-full max-w-[640px]">
+     })" class="feed-col">
 
     {{-- Trigger — an obvious "create a post" box (avatar + prompt + a filled
          CTA). The FAB is the second entry point (5AC). --}}
@@ -34,7 +34,7 @@
                 <span class="grid h-10 w-10 shrink-0 place-items-center rounded-full" style="background: var(--dl-surface-sunk); font-family: var(--dl-font-display);">{{ str($currentActor?->feedDisplayName() ?? '+')->substr(0, 1) }}</span>
             @endif
 
-            <span class="min-w-0 flex-1">
+            <span class="composer-field min-w-0 flex-1">
                 <span class="block t-body text-ink">{{ __('Create a post') }}</span>
                 <span class="block truncate t-meta">{{ __('Share a note, a set, or a Project…') }}</span>
             </span>

@@ -31,20 +31,24 @@ class DashboardController extends AdminController
                 // a moderator reviews before publication.
                 'pending_talents' => Talent::whereIn('status', ['created', 'draft'])->count(),
                 'pending_reviews' => Review::where('status', 'pending')->count(),
-                'pending_brand_reviews' => BrandReview::where('status', 'pending')->count(),
-                'unverified_brands' => Brand::where('is_verified', false)->count(),
             ];
 
-            $byStatus = BrandProject::toBase()
-                ->groupBy('status')->selectRaw('status, count(*) as n')->pluck('n', 'status');
-            $stats['projects'] = [
-                'open' => (int) ($byStatus['open'] ?? 0),
-                'in_progress' => (int) ($byStatus['in_progress'] ?? 0),
-                'completed' => (int) ($byStatus['completed'] ?? 0),
-            ];
+            // Brand-owned counts only when the brands feature is enabled (V1 off).
+            if (\App\Support\Features::brands()) {
+                $stats['moderation']['pending_brand_reviews'] = BrandReview::where('status', 'pending')->count();
+                $stats['moderation']['unverified_brands'] = Brand::where('is_verified', false)->count();
+
+                $byStatus = BrandProject::toBase()
+                    ->groupBy('status')->selectRaw('status, count(*) as n')->pluck('n', 'status');
+                $stats['projects'] = [
+                    'open' => (int) ($byStatus['open'] ?? 0),
+                    'in_progress' => (int) ($byStatus['in_progress'] ?? 0),
+                    'completed' => (int) ($byStatus['completed'] ?? 0),
+                ];
+            }
         }
 
-        if ($admin->can('intervene-contracts')) {
+        if (\App\Support\Features::contracts() && $admin->can('intervene-contracts')) {
             $turns = Contract::toBase()
                 ->whereIn('status', ['awaiting_brand', 'awaiting_talent', 'awaiting_admin'])
                 ->groupBy('status')->selectRaw('status, count(*) as n')->pluck('n', 'status');

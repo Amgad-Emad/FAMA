@@ -47,6 +47,12 @@ Route::group([
     Route::get('/dashboard', function () {
         $guard = Guards::current();
 
+        // A disabled guard's dashboard no longer exists (V1 feature flags) — send a
+        // stray brand session to login rather than a 404 route.
+        if ($guard === 'brand' && ! \App\Support\Features::brands()) {
+            $guard = null;
+        }
+
         return redirect()->route($guard !== null ? "{$guard}.dashboard" : 'login');
     })->name('dashboard');
 
@@ -61,7 +67,7 @@ Route::group([
     Route::middleware('auth:admin')->prefix('admin')->name('admin.')
         ->group(base_path('routes/admin.php'));
 
-    Route::middleware('auth:brand')->prefix('brand')->name('brand.')
+    Route::middleware(['auth:brand', 'feature:brands'])->prefix('brand')->name('brand.')
         ->group(base_path('routes/brand.php'));
 
     Route::middleware('auth:talent')->prefix('talent')->name('talent.')
@@ -87,28 +93,32 @@ Route::group([
     Route::get('/discover', [DiscoveryController::class, 'index'])->name('discover');
     Route::get('/discover/search', [DiscoveryController::class, 'search'])->name('discover.search');
 
-    // Public brand discovery (talent-facing). The static `/brands` + `/brands/feed`
+    // Public brand discovery + opportunities (talent-facing) — gated behind the
+    // `brands` feature flag for the V1 release. The static `/brands` + `/brands/feed`
     // paths MUST be registered before the `/brands/{brand:slug}` binding, else
     // "feed" is swallowed as a slug.
-    Route::get('/brands', [BrandDiscoveryController::class, 'index'])->name('brands.discover');
-    Route::get('/brands/feed', [BrandDiscoveryController::class, 'feed'])->name('brands.discover.feed');
+    Route::middleware('feature:brands')->group(function () {
+        Route::get('/brands', [BrandDiscoveryController::class, 'index'])->name('brands.discover');
+        Route::get('/brands/feed', [BrandDiscoveryController::class, 'feed'])->name('brands.discover.feed');
 
-    // Public campaign browsing (talent-facing "opportunities" board).
-    Route::get('/projects', [ProjectDiscoveryController::class, 'index'])->name('projects.browse');
-    Route::get('/projects/feed', [ProjectDiscoveryController::class, 'feed'])->name('projects.browse.feed');
+        // Public campaign browsing (talent-facing "opportunities" board).
+        Route::get('/projects', [ProjectDiscoveryController::class, 'index'])->name('projects.browse');
+        Route::get('/projects/feed', [ProjectDiscoveryController::class, 'feed'])->name('projects.browse.feed');
+    });
 
     // Talent→brand messaging entry (mirror of brand.talents.message, ADR-P): the
-    // public brand profile / campaign browser "Message" CTA points here. Public on
-    // purpose — it branches on talent auth itself (guest → talent login with the
-    // return URL kept; talent → the brand↔talent contract room).
-    Route::get('/brands/{brand:slug}/message', BrandMessageController::class)->name('brand.message');
+    // public brand profile / campaign browser "Message" CTA points here.
+    Route::middleware('feature:messaging')->group(function () {
+        Route::get('/brands/{brand:slug}/message', BrandMessageController::class)->name('brand.message');
+    });
 
     // Public brand profile + campaign detail (two-segment paths, so they never
-    // collide with the single-segment /{slug} talent catch-all; kept here for
-    // clarity). The campaign binding is scoped to its brand.
-    Route::get('/brands/{brand:slug}', [BrandProfileController::class, 'show'])->name('brand.public');
-    Route::get('/brands/{brand:slug}/projects/{project:slug}', [BrandProfileController::class, 'project'])
-        ->scopeBindings()->name('brand.project.public');
+    // collide with the single-segment /{slug} talent catch-all). Gated behind `brands`.
+    Route::middleware('feature:brands')->group(function () {
+        Route::get('/brands/{brand:slug}', [BrandProfileController::class, 'show'])->name('brand.public');
+        Route::get('/brands/{brand:slug}/projects/{project:slug}', [BrandProfileController::class, 'project'])
+            ->scopeBindings()->name('brand.project.public');
+    });
 
     Route::get('/{slug}/review', [PublicReviewController::class, 'create'])
         ->where('slug', '[A-Za-z0-9\-]+')->name('talent.review.create');
@@ -123,18 +133,19 @@ Route::group([
     Route::get('/{slug}/tab/{skill}', [TalentProfileController::class, 'tab'])
         ->where('slug', '[A-Za-z0-9\-]+')->where('skill', '[A-Za-z0-9\-]+')->name('talent.tab');
 
-    // Contract initiation — booking CTA (no-login enquiry capture).
-    Route::get('/{slug}/enquire', [EnquiryController::class, 'create'])
-        ->where('slug', '[A-Za-z0-9\-]+')->name('talent.enquire');
-    Route::post('/{slug}/enquire', [EnquiryController::class, 'store'])
-        ->where('slug', '[A-Za-z0-9\-]+')->name('talent.enquire.store');
+    // Contract initiation — booking CTA (no-login enquiry capture). Gated behind `contracts`.
+    Route::middleware('feature:contracts')->group(function () {
+        Route::get('/{slug}/enquire', [EnquiryController::class, 'create'])
+            ->where('slug', '[A-Za-z0-9\-]+')->name('talent.enquire');
+        Route::post('/{slug}/enquire', [EnquiryController::class, 'store'])
+            ->where('slug', '[A-Za-z0-9\-]+')->name('talent.enquire.store');
+    });
 
     // Brand↔talent messaging entry (public profile primary "Message" CTA, ADR-P).
-    // Public on purpose: it branches on brand auth itself (guest → brand login with
-    // the profile as the return URL; brand → interim "coming soon" stub). The real
-    // chat / contract initiation attaches in TalentMessageController later.
-    Route::get('/brand/talents/{talent:slug}/message', TalentMessageController::class)
-        ->name('brand.talents.message');
+    Route::middleware('feature:messaging')->group(function () {
+        Route::get('/brand/talents/{talent:slug}/message', TalentMessageController::class)
+            ->name('brand.talents.message');
+    });
 
     // Public talent profile — fama.com/{slug}. MUST stay last: it is a
     // single-segment catch-all, so all named routes above take precedence. The

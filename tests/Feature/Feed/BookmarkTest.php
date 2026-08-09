@@ -90,9 +90,11 @@ it('serves the talent SAVED and LIKED collections, scoped and filterable', funct
     Like::factory()->on($liked)->by($talent)->create();
     app(ToggleBookmark::class)($other, $othersSave, onlySave: true);
 
-    // Pages render.
-    $this->actingAs($talent, 'talent')->get('/talent/feed/saved')->assertOk();
-    $this->actingAs($talent, 'talent')->get('/talent/feed/liked')->assertOk();
+    // Pages render (the old routes now redirect into the consolidated Activity tabs).
+    $this->actingAs($talent, 'talent')->get('/talent/feed/saved')
+        ->assertRedirect(route('talent.feed.activity', ['view' => 'saved']));
+    $this->actingAs($talent, 'talent')->get('/talent/feed/activity?view=saved')->assertOk();
+    $this->actingAs($talent, 'talent')->get('/talent/feed/activity?view=liked')->assertOk();
 
     // Saved: only the talent's own saves, never another actor's (ADR-F9).
     $saved = collect($this->actingAs($talent, 'talent')

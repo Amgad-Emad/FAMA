@@ -49,6 +49,8 @@ return Application::configure(basePath: dirname(__DIR__))
             // 401-with-intent envelope.
             'resolve.actor' => \App\Http\Middleware\ResolveActor::class,
             'require.actor' => \App\Http\Middleware\RequireActor::class,
+            // Release feature flags (config/features.php) — a disabled area 404s.
+            'feature' => \App\Http\Middleware\EnsureFeature::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

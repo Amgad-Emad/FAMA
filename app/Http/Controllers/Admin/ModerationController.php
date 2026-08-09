@@ -37,7 +37,11 @@ class ModerationController extends AdminController
      */
     public function index(Request $request): View
     {
-        $queues = ['talents', 'all-reviews', 'reviews', 'brands', 'brand-reviews', 'projects'];
+        $queues = ['talents', 'all-reviews', 'reviews'];
+        // Brand-owned queues only exist when the brands feature is enabled (V1 off).
+        if (\App\Support\Features::brands()) {
+            $queues = [...$queues, 'brands', 'brand-reviews', 'projects'];
+        }
         $queue = $request->query('queue');
 
         return view('admin.moderation.index', [

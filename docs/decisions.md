@@ -337,3 +337,24 @@
   funnel, not a passive count. Factory defaults for the published/live states are `is_verified=true` (with
   `unverified()` states for negative tests). Open item: whether verification should also **auto-publish**
   (today it only unlocks the owner's Publish toggle) — deferred to stakeholders.
+
+### ADR-W — V1 release scoping via feature flags (talent + feed + public profile)
+- **Context:** The client wants to ship to production now with ONLY the talent side, the public feed, and
+  the public talent profile. Brand, contracts, and messaging are largely built but must be hidden this
+  release and returned in later versions — without deleting code or forking a throwaway branch.
+- **Decision:** Config-driven feature flags (`config/features.php`: `brands`, `contracts`, `messaging`),
+  **default ON** so dev/staging + the full test suite run the complete app; the **production `.env`** turns
+  them OFF (`FEATURE_*=false`). Enforcement is **runtime** (so it is testable via `config([...])`): a
+  `feature:<name>` middleware (`App\Http\Middleware\EnsureFeature`, disabled → 404) gates route groups, a
+  `@feature('brands')` Blade directive gates views, and `App\Support\Features` is the read accessor. Nav
+  arrays carry a `feature` key and are filtered. Registration/login go talent-only; the feed hides the
+  brand rail/follows; the public profile hides the Message CTA; the admin hides brand/contract consoles.
+  `config/feed.php` `allow_following_brands` tracks `FEATURE_BRANDS`. **Do NOT** revoke `manage-flows` to
+  hide contract admin — it is shared with Skills templates; gate by feature instead.
+- **Kept in V1:** Reviews (no brand/contract FK) and the talent "Brands I've worked with" portfolio block.
+  Admin stays fully functional (mandatory talent verification + feed moderation).
+- **Status:** Accepted (2026-08-06).
+- **Consequences:** Re-enabling a feature later = flip one env var (contracts/messaging imply brands). The
+  contract/brand tables + demo seeders stay; a production V1 seed runs only the catalog/config seeders
+  (Roles/TalentType/BlockType/Settings) — confirm `SettingsSeeder` tolerates a null `default_contract_flow_id`
+  or keep `ContractFlowSeeder` (dormant). Reversibility is test-proven (`tests/Feature/FeatureFlagsTest`).

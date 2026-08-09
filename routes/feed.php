@@ -70,7 +70,7 @@ Route::middleware('resolve.actor')->group(function () {
     Route::get('/feed/suggestions/talents', [\App\Http\Controllers\Feed\SuggestionController::class, 'talents'])
         ->name('feed.suggestions.talents');
     Route::get('/feed/suggestions/brands', [\App\Http\Controllers\Feed\SuggestionController::class, 'brands'])
-        ->name('feed.suggestions.brands');
+        ->middleware('feature:brands')->name('feed.suggestions.brands');
     Route::post('/feed/suggestions/dismiss', [\App\Http\Controllers\Feed\SuggestionController::class, 'dismiss'])
         ->middleware(['require.actor:dismiss', 'throttle:feed-dismissals'])->name('feed.suggestions.dismiss');
 

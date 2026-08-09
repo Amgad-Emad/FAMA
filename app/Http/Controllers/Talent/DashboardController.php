@@ -28,13 +28,16 @@ class DashboardController extends TalentController
             'skills' => (int) $talent->talent_types_count,
         ];
 
-        // Live (non-terminal) contracts for the "whose turn" overview.
-        $activeContracts = Contract::forTalent($talent->getKey())
-            ->whereIn('status', ['draft', 'awaiting_brand', 'awaiting_talent', 'awaiting_admin'])
-            ->with(['brand', 'currentStep'])
-            ->latest()
-            ->limit(5)
-            ->get();
+        // Live (non-terminal) contracts for the "whose turn" overview — only when
+        // the contracts feature is enabled (V1 ships without contracts).
+        $activeContracts = \App\Support\Features::contracts()
+            ? Contract::forTalent($talent->getKey())
+                ->whereIn('status', ['draft', 'awaiting_brand', 'awaiting_talent', 'awaiting_admin'])
+                ->with(['brand', 'currentStep'])
+                ->latest()
+                ->limit(5)
+                ->get()
+            : collect();
 
         return view('talent.dashboard', ['talent' => $talent, 'stats' => $stats, 'activeContracts' => $activeContracts]);
     }

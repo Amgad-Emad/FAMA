@@ -95,7 +95,9 @@
                         <form method="POST" action="{{ route('register') }}" class="space-y-5">
                             @csrf
 
-                            {{-- Account type: rich selectable cards (native radios; talent | brand only, ADR-I) --}}
+                            {{-- Account type: rich selectable cards (native radios; talent | brand only, ADR-I).
+                                 Hidden in the V1 release (brands feature off): talent-only sign-up. --}}
+                            @feature('brands')
                             <fieldset>
                                 <legend class="mb-2 block text-sm font-medium text-ink">{{ __("Choose how you'll use Fama") }}</legend>
                                 <div class="grid grid-cols-2 gap-3">
@@ -127,6 +129,9 @@
                                 </div>
                                 <x-input-error :messages="$errors->get('account_type')" class="mt-2" />
                             </fieldset>
+                            @else
+                                <input type="hidden" name="account_type" value="talent">
+                            @endfeature
 
                             {{-- Name (label adapts) --}}
                             <div>
