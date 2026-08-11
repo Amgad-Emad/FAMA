@@ -92,8 +92,6 @@ class ProfileEditorController extends TalentController
             'slug' => $talent->slug,
             'base_city' => $talent->base_city,
             'base_country' => $talent->base_country,
-            'booking_type' => $talent->booking_type,
-            'booking_value' => $talent->booking_value,
         ], __('Profile updated.'));
     }
 

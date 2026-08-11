@@ -2,6 +2,64 @@
 
 Notable changes to the Fama project. Newest first.
 
+## 2026-08-11 — One talent topbar everywhere + V1 editor trims
+- **`<x-talent-topbar>` is now THE talent chrome**: the dashboard layout renders it, and public-layout
+  renders the SAME component for signed-in talents instead of the fixed `site-topbar` (guests/brands/
+  admins keep the public bar). On public pages the body padding is dropped and `--topbar-h` is
+  overridden to `6.5rem` so the feed's sticky chrome/rails/toasts keep clearing the taller sticky bar.
+- **AR/EN locale switcher removed from the talent topbar** (V1 ships without the language toggle;
+  `/ar` routes still work, the control is just not offered).
+- **Booking method/value removed from the profile editor** (V1): fields gone from the form, payload,
+  `UpdateCoreProfileRequest` rules, and the `updateCore` whitelist. Columns and existing data are
+  untouched; the public profile still renders an existing external booking link.
+- **Profile editor restructure**: the Skills manager moved BELOW the Blocks section; in Blocks, the
+  universal section always shows but each skill's section renders only after selecting that skill in
+  a new pill bar (hint until then; adding a skill auto-selects its section). The scope card lives in
+  `talent/partials/block-scope-card.blade.php`, reused by both spots.
+
+## 2026-08-11 — Standardized talent navigation across top bars
+- **One canonical talent link set** — `App\Support\Navigation::talentItems()` (Dashboard · Feed ·
+  Discover · Activity · [Brands · Opportunities · Contracts when flagged on] · Profile · Content ·
+  Reviews) — consumed by BOTH the talent dashboard topbar (pills + icons) and the public topbar
+  (labels + gestural underline) when a talent is signed in, so navigation is identical everywhere.
+  This adds the missing **Discover** to the dashboard topbar and the missing **Dashboard / Activity /
+  Profile / Content / Reviews** to the public topbar for talents. Guests keep Feed · Discover ·
+  Log in; brand/admin viewers keep the Profile→dashboard link. Active detection is `routeIs()` and
+  param-carrying items (Content) resolve correctly.
+
+## 2026-08-11 — Feed voice pass + talent dashboard topbar
+- **Feed copy no longer speaks in "light" metaphors and now addresses the talent directly** (EN + AR):
+  the header eyebrow "WORK · LIGHT · PEOPLE" → "YOUR WORK · YOUR PEOPLE", the empty-feed line
+  "THE LIGHT IS BEING SET" → "BE THE FIRST — SHARE YOUR WORK", the end-of-feed line "YOU HAVE SEEN
+  TODAY'S LIGHT" → "YOU'RE ALL CAUGHT UP", and the composer placeholder "What did the light do
+  today?…" → "What are you working on?…". Mechanics keep their names (`.dl-light-veil`, light-bar,
+  `in-the-light`) — copy only.
+- **The talent dashboard sidebar is now a topbar** (`components/talent-layout.blade.php`): sticky
+  header with wordmark + page title + actions on the first row and a horizontally-scrollable pill nav
+  below (icons + labels, active = filled accent like the profile tab bar, `aria-current="page"`).
+  The off-canvas drawer, backdrop, and hamburger are gone; group headings flattened (feature-gated
+  items unchanged). Main content is full-width under the bar (same `max-w-7xl` container).
+- Suite 634 green; build green; verified live (EN + AR).
+
+## 2026-08-10 — Talent dashboard home: visibility switch + views analytics KPI
+- **Public/private switch on the dashboard home.** The Profile-status card is now a Profile-visibility
+  card with an inline `role="switch"` toggle reusing `PATCH /talent/profile/publish` (same domain
+  guards as the editor — an unverified profile gets the friendly 422 surfaced inline and the switch
+  stays locked with an *Awaiting verification* hint).
+- **Views KPI compares week over week and expands into a chart.** New `talent_profile_views` daily
+  buckets (unique `(talent_id, viewed_on)`), written by the new `RecordDailyProfileView` listener on
+  `TalentProfileViewed` via an atomic `ON DUPLICATE KEY UPDATE` (lifetime `view_count` unchanged).
+  `ProfileViewStatsService` supplies the rolling this-week/last-week delta on the tile and a
+  zero-filled, server-localized series for `GET /talent/dashboard/views?range=7d|30d|90d|all`
+  ('all' reaches back to the profile's `created_at`; bucket day/week/month picked from the span).
+  Clicking the KPI opens an accent column chart (hairline gridlines, 4px-rounded bars, per-bar
+  hover/focus tooltip, sr-only table, range pills; refetch dims the previous render in place) —
+  `dashboardHome` in `dashboard.js`.
+- **KPI row trimmed to two cards.** The Pending-reviews and Blocks·skills cards are gone (reviews stay
+  reachable from the sidebar + manage grid); the grid is `sm:grid-cols-2`.
+- Suite 634 green; vite build green. WATCH OUT: `foreignId('talent_id')->constrained()` guessed a
+  singular `talent` table here — always pass `constrained('talents')` explicitly.
+
 ## 2026-08-06 — Premium "TALENT TO FOLLOW" rail (compact editorial rows) + test isolation
 - **Redesigned the feed's talent-suggestion rail.** Each talent was a full ~400px portrait card (only ~1.5
   fit); it is now a **compact editorial row** — a small rounded portrait thumb + name (Fraunces) + mono

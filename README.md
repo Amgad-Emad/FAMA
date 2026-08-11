@@ -18,7 +18,9 @@ that walks a brand and a talent through booking, quoting, contracting, payment, 
 
 - **Talent** — public pages (profile, project detail, review, enquiry, discovery/search) and the
   dashboard (**Home · Profile · Content · Reviews · Contracts**), where the **Profile editor** is the
-  single profile surface (identity, Skills, Username, publish, pricing rate, blocks).
+  single profile surface (identity, Skills, Username, publish, pricing rate, blocks). The dashboard
+  home carries a public/private visibility switch and a views KPI with a week-over-week delta that
+  expands into a range-filterable chart (back to the profile's creation date).
 - **Brand** — core + satellites, **projects**, the brand contract room, brand discovery, plus the
   talent-facing brand/opportunity pages and the apply flow (rich-text brief with @-mentions +
   attachments, sanitized server-side).

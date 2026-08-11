@@ -25,6 +25,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+Route::get('/dashboard/views', [DashboardController::class, 'viewStats'])->name('dashboard.views');
 
 // --- Profile editor (the single profile surface) ----------------------------
 Route::get('/profile', [ProfileEditorController::class, 'edit'])->name('profile.edit');

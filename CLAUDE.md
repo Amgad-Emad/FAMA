@@ -659,5 +659,47 @@ feed, and the public talent profile; brand/contracts/messaging stay in the codeb
   seeders); confirm `SettingsSeeder` tolerates a null `default_contract_flow_id` or keep `ContractFlowSeeder`
   (dormant). `tests/Feature/FeatureFlagsTest` proves the OFF gating.
 
+TALENT DASHBOARD HOME REWORK (2026-08-10, suite 634 green, build green). The home KPI row is TWO cards:
+(1) **Profile visibility** — inline public/private `role="switch"` reusing PATCH /talent/profile/publish
+(unverified → 422 surfaced inline, switch disabled with an *Awaiting verification* hint); (2) **Profile
+views** — lifetime total + rolling week-over-week delta, clickable (aria-expanded) into a column chart
+with range pills 7d/30d/90d/**all** ('all' = since the profile's `created_at`). The Pending-reviews and
+Blocks·skills cards are REMOVED. Time-series = NEW `talent_profile_views` daily buckets (unique
+(talent_id, viewed_on)), written by `RecordDailyProfileView` (atomic ON DUPLICATE KEY UPDATE, MySQL-only)
+on the existing `TalentProfileViewed` event — `view_count` stays the lifetime counter; NO backfill, the
+series starts 2026-08-10. `ProfileViewStatsService` (read-only) owns weeklyComparison + series (buckets
+day/week/month by span, zero-filled, labels localized server-side); endpoint GET /talent/dashboard/views
+(ViewStatsRequest, bad range → 422). Front-end = `dashboardHome` in dashboard.js (chart is HTML/CSS
+columns — accent bars, hairline gridlines, per-bar hover/focus tooltip, sr-only table; refetch dims the
+old render in place; per-range cache). WATCH OUT: `foreignId('talent_id')->constrained()` inferred a
+singular `talent` table in this repo — always write `constrained('talents')`; the half-applied migration
+left an unrecorded table behind (create succeeded, FK alter failed).
+
+FEED VOICE + TALENT TOPBAR (2026-08-11, suite 634 green, build green). Feed copy dropped the "light"
+metaphor and now addresses the talent in second person (EN+AR): eyebrow "YOUR WORK · YOUR PEOPLE",
+empty state "BE THE FIRST — SHARE YOUR WORK", end-of-feed "YOU'RE ALL CAUGHT UP", composer placeholder
+"What are you working on? Type @ to credit someone." — CSS/JS mechanics keep light-y names
+(.dl-light-veil, light-bar, in-the-light); copy only. The TALENT dashboard layout
+(components/talent-layout.blade.php) is now a TOPBAR, not a sidebar: sticky header (row 1 = wordmark ·
+divider · page title (sm+) · View profile/locale/theme/logout; row 2 = horizontally-scrollable pill nav
+with icons, active = FILLED bg-accent+text-on-accent like the profile tab bar, aria-current="page");
+no off-canvas drawer/backdrop/hamburger, body has no Alpine sidebar state, group headings flattened
+(feature-gated Marketplace items still filter). Brand + admin layouts still use sidebars.
+NAV IS STANDARDIZED (2026-08-11): `App\Support\Navigation::talentItems()` is THE canonical talent link
+set (Dashboard · Feed · Discover · Activity · [flagged marketplace] · Profile · Content · Reviews) —
+consumed by the talent-layout topbar AND by public-layout's topbar when auth('talent') (guests: Feed ·
+Discover · Log in; brand/admin: Profile→dashboard). Add/rename a talent nav link THERE, never in a
+layout. Public topbar active check is routeIs() and items may carry `params`.
+ONE TOPBAR COMPONENT (2026-08-11, suite 634 green): `<x-talent-topbar :title>` is the single talent
+chrome — talent-layout renders it, and public-layout swaps its fixed `site-topbar` for it when
+auth('talent') (sticky, in-flow; body padding dropped and `--topbar-h` overridden inline to 6.5rem so
+feed sticky offsets keep working — if the bar's height changes, change that override with it). NO
+locale switcher in it (V1 has no AR/EN toggle; /ar still routes). V1 editor trims: booking_type/
+booking_value are NOT editable (columns + public external-link rendering kept); the Profile editor
+order is Publishing → Core → Pricing → **Blocks → Skills**, and in Blocks each skill's section renders
+ONLY when selected in the pill bar (activeSkillTab in profileEditor; universal section always visible;
+adding a skill auto-selects it; the scope card partial is talent/partials/block-scope-card.blade.php —
+keep it the single card markup).
+
 Phase 4 (mobile API: Sanctum + Scribe over existing services) is deferred; Prompt 5K mirrors the feed
 endpoints under /api/v1 with Sanctum and starts docs/api.md regeneration.

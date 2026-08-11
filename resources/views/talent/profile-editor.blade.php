@@ -6,8 +6,6 @@
         'slug' => $talent->slug,
         'base_city' => $talent->base_city,
         'base_country' => $talent->base_country,
-        'booking_type' => $talent->booking_type,
-        'booking_value' => $talent->booking_value,
     ];
     $publish = ['is_published' => (bool) $talent->is_published, 'status' => $talent->status->getValue(), 'is_verified' => (bool) $talent->is_verified];
     $rate = ['rate_unit' => $talent->rate_unit, 'rate_amount' => $talent->rate_amount, 'rate_currency' => $talent->rate_currency];
@@ -131,19 +129,6 @@
                         <label class="mb-1 block text-sm font-medium text-ink">{{ __('Base country') }}</label>
                         <input x-model="core.base_country" type="text" class="w-full rounded-md border-line bg-elevated text-ink shadow-sm focus:border-accent focus:ring-accent">
                     </div>
-                    <div>
-                        <label class="mb-1 block text-sm font-medium text-ink">{{ __('Booking method') }}</label>
-                        <select x-model="core.booking_type" class="w-full rounded-md border-line bg-elevated text-ink shadow-sm focus:border-accent focus:ring-accent">
-                            <option value="email">{{ __('Email') }}</option>
-                            <option value="calendar">{{ __('Calendar') }}</option>
-                            <option value="form">{{ __('Form') }}</option>
-                            <option value="external">{{ __('External link') }}</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-sm font-medium text-ink">{{ __('Booking value') }}</label>
-                        <input x-model="core.booking_value" type="text" class="w-full rounded-md border-line bg-elevated text-ink shadow-sm focus:border-accent focus:ring-accent">
-                    </div>
                 </div>
 
                 <div class="flex items-center gap-3">
@@ -156,7 +141,74 @@
             </x-ui.card>
         </x-ui.section>
 
-        {{-- Skills (folded into the profile from the old standalone tab) --}}
+        {{-- Pricing rate (ADR-N — replaces the removed rate card) --}}
+        <x-ui.section :title="__('Pricing rate')" :eyebrow="__('An indicative rate shown on your profile')">
+            <x-ui.card class="space-y-4">
+                <div class="grid gap-4 sm:grid-cols-3">
+                    <div>
+                        <label class="mb-1 block text-sm font-medium text-ink">{{ __('Amount') }}</label>
+                        <input x-model="rate.rate_amount" type="number" min="0" step="0.01" class="w-full rounded-md border-line bg-elevated text-ink shadow-sm focus:border-accent focus:ring-accent">
+                        <p x-show="rateErrors.rate_amount" x-cloak class="mt-1 text-xs text-danger" x-text="rateErrors.rate_amount?.[0]"></p>
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-sm font-medium text-ink">{{ __('Currency') }}</label>
+                        <input x-model="rate.rate_currency" type="text" maxlength="3" placeholder="EGP" class="w-full rounded-md border-line bg-elevated font-mono uppercase text-ink shadow-sm focus:border-accent focus:ring-accent">
+                        <p x-show="rateErrors.rate_currency" x-cloak class="mt-1 text-xs text-danger" x-text="rateErrors.rate_currency?.[0]"></p>
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-sm font-medium text-ink">{{ __('Per') }}</label>
+                        <select x-model="rate.rate_unit" class="w-full rounded-md border-line bg-elevated text-ink shadow-sm focus:border-accent focus:ring-accent">
+                            <option value="">{{ __('Choose…') }}</option>
+                            <option value="project">{{ __('Project') }}</option>
+                            <option value="day">{{ __('Day') }}</option>
+                            <option value="hour">{{ __('Hour') }}</option>
+                        </select>
+                        <p x-show="rateErrors.rate_unit" x-cloak class="mt-1 text-xs text-danger" x-text="rateErrors.rate_unit?.[0]"></p>
+                    </div>
+                </div>
+                <p class="text-xs text-subtle">{{ __('Fill all three fields, or leave them blank to hide your rate.') }}</p>
+                <div class="flex items-center gap-3">
+                    <x-ui.button variant="accent" x-on:click="saveRate()" x-bind:disabled="savingRate">{{ __('Save rate') }}</x-ui.button>
+                    <button type="button" x-on:click="clearRate()" class="text-sm text-muted underline hover:text-ink">{{ __('Clear rate') }}</button>
+                    <span x-show="rateSaved" x-cloak class="text-sm text-success">{{ __('Saved') }}</span>
+                </div>
+            </x-ui.card>
+        </x-ui.section>
+
+        {{-- Blocks — the universal/profile-level section is always shown; each
+             skill's section renders only after that skill is SELECTED in the
+             pill bar (nothing shows until a skill is picked). --}}
+        <x-ui.section :title="__('Blocks')" :eyebrow="__('Per skill · drag to reorder within a section')">
+            <div class="space-y-6">
+                <template x-for="group in universalGroups" :key="group.key">
+                    @include('talent.partials.block-scope-card')
+                </template>
+
+                <div x-show="skills.length > 0" x-cloak class="space-y-3">
+                    <p class="font-mono text-[10px] uppercase tracking-wider text-subtle">{{ __('Skill sections') }}</p>
+                    <div class="flex flex-wrap gap-1.5" role="group" aria-label="{{ __('Skill sections') }}">
+                        <template x-for="g in skillGroups" :key="g.key">
+                            <button type="button"
+                                    @click="activeSkillTab = activeSkillTab === g.typeId ? null : g.typeId"
+                                    :aria-pressed="activeSkillTab === g.typeId ? 'true' : 'false'"
+                                    class="flex items-center gap-1.5 rounded-pill border px-3.5 py-1.5 text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                                    :class="activeSkillTab === g.typeId ? 'border-accent bg-accent text-on-accent' : 'border-line text-muted hover:border-line-strong hover:text-ink'">
+                                <span x-text="g.label"></span>
+                                <span x-show="g.is_primary" x-cloak aria-hidden="true">★</span>
+                            </button>
+                        </template>
+                    </div>
+                    <p x-show="activeSkillGroups.length === 0" x-cloak class="rounded-lg border border-dashed border-line p-6 text-center text-sm text-subtle">{{ __('Select a skill above to manage its blocks.') }}</p>
+                    <template x-for="group in activeSkillGroups" :key="group.key">
+                        @include('talent.partials.block-scope-card')
+                    </template>
+                </div>
+
+                <p x-show="skills.length === 0" x-cloak class="rounded-lg border border-line bg-surface p-6 text-center text-sm text-subtle">{{ __('Add a skill below to create its tab and blocks.') }}</p>
+            </div>
+        </x-ui.section>
+
+        {{-- Skills (below the blocks; adding one creates its section above) --}}
         <x-ui.section :title="__('Skills')" :eyebrow="__('Drag to reorder · star to set primary')">
             <div class="space-y-4">
                 <div class="space-y-2">
@@ -195,107 +247,6 @@
                     </div>
                     <x-ui.button variant="accent" x-on:click="addSkill()" x-bind:disabled="!addSkillId">{{ __('Add skill') }}</x-ui.button>
                 </x-ui.card>
-            </div>
-        </x-ui.section>
-
-        {{-- Pricing rate (ADR-N — replaces the removed rate card) --}}
-        <x-ui.section :title="__('Pricing rate')" :eyebrow="__('An indicative rate shown on your profile')">
-            <x-ui.card class="space-y-4">
-                <div class="grid gap-4 sm:grid-cols-3">
-                    <div>
-                        <label class="mb-1 block text-sm font-medium text-ink">{{ __('Amount') }}</label>
-                        <input x-model="rate.rate_amount" type="number" min="0" step="0.01" class="w-full rounded-md border-line bg-elevated text-ink shadow-sm focus:border-accent focus:ring-accent">
-                        <p x-show="rateErrors.rate_amount" x-cloak class="mt-1 text-xs text-danger" x-text="rateErrors.rate_amount?.[0]"></p>
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-sm font-medium text-ink">{{ __('Currency') }}</label>
-                        <input x-model="rate.rate_currency" type="text" maxlength="3" placeholder="EGP" class="w-full rounded-md border-line bg-elevated font-mono uppercase text-ink shadow-sm focus:border-accent focus:ring-accent">
-                        <p x-show="rateErrors.rate_currency" x-cloak class="mt-1 text-xs text-danger" x-text="rateErrors.rate_currency?.[0]"></p>
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-sm font-medium text-ink">{{ __('Per') }}</label>
-                        <select x-model="rate.rate_unit" class="w-full rounded-md border-line bg-elevated text-ink shadow-sm focus:border-accent focus:ring-accent">
-                            <option value="">{{ __('Choose…') }}</option>
-                            <option value="project">{{ __('Project') }}</option>
-                            <option value="day">{{ __('Day') }}</option>
-                            <option value="hour">{{ __('Hour') }}</option>
-                        </select>
-                        <p x-show="rateErrors.rate_unit" x-cloak class="mt-1 text-xs text-danger" x-text="rateErrors.rate_unit?.[0]"></p>
-                    </div>
-                </div>
-                <p class="text-xs text-subtle">{{ __('Fill all three fields, or leave them blank to hide your rate.') }}</p>
-                <div class="flex items-center gap-3">
-                    <x-ui.button variant="accent" x-on:click="saveRate()" x-bind:disabled="savingRate">{{ __('Save rate') }}</x-ui.button>
-                    <button type="button" x-on:click="clearRate()" class="text-sm text-muted underline hover:text-ink">{{ __('Clear rate') }}</button>
-                    <span x-show="rateSaved" x-cloak class="text-sm text-success">{{ __('Saved') }}</span>
-                </div>
-            </x-ui.card>
-        </x-ui.section>
-
-        {{-- Blocks — organised by scope: the universal section + one tab per skill (ADR-Q) --}}
-        <x-ui.section :title="__('Blocks')" :eyebrow="__('Per skill · drag to reorder within a section')">
-            <div class="space-y-6">
-                <template x-for="group in scopeGroups" :key="group.key">
-                    <x-ui.card class="space-y-3">
-                        <div class="flex items-center gap-2">
-                            <span class="font-display text-lg text-ink" x-text="group.label"></span>
-                            <span x-show="group.is_primary" x-cloak class="rounded-pill bg-gold-weak px-2 py-0.5 text-[10px] font-medium text-gold">{{ __('Primary') }}</span>
-                            <span x-show="group.typeId === null" x-cloak class="font-mono text-[10px] uppercase tracking-wider text-subtle">{{ __('Above the tabs') }}</span>
-                        </div>
-
-                        {{-- Blocks in this scope --}}
-                        <div class="space-y-2">
-                            <template x-for="block in blocksInScope(group.typeId)" :key="block.id">
-                                <div draggable="true"
-                                     @dragstart="dragId = block.id"
-                                     @dragover.prevent
-                                     @drop.prevent="onDrop(block)"
-                                     class="flex flex-wrap items-center gap-3 rounded-lg border border-line bg-elevated p-3"
-                                     :class="block.is_visible ? '' : 'opacity-60'">
-                                    <span class="cursor-grab text-subtle" title="{{ __('Drag') }}">⋮⋮</span>
-                                    <div class="min-w-0 flex-1">
-                                        <div class="font-mono text-[10px] uppercase tracking-wider text-subtle" x-text="block.block_type.key"></div>
-                                        <input type="text" :value="t(block.title) || t(block.block_type.name)"
-                                               @change="block.title = { ...(block.title||{}), en: $event.target.value }; saveTitle(block)"
-                                               class="w-full border-0 bg-transparent p-0 text-ink focus:ring-0">
-                                    </div>
-                                    <template x-if="block.block_type.content_source === 'table'">
-                                        <a :href="'/talent/content/' + block.block_type.key" class="rounded-pill border border-line-strong px-3 py-1 text-xs text-muted hover:text-ink">{{ __('Edit content') }}</a>
-                                    </template>
-                                    {{-- Move between scopes (only shows eligible targets) --}}
-                                    <template x-if="moveTargets(block).length">
-                                        <select @change="moveBlock(block, $event.target.value); $event.target.value=''"
-                                                class="rounded-md border-line bg-surface py-1 text-xs text-muted focus:border-accent focus:ring-accent">
-                                            <option value="">{{ __('Move to…') }}</option>
-                                            <template x-for="g in moveTargets(block)" :key="g.key">
-                                                <option :value="g.typeId === null ? '' : g.typeId" x-text="g.label"></option>
-                                            </template>
-                                        </select>
-                                    </template>
-                                    <button @click="toggleVisible(block)" class="rounded-pill px-3 py-1 text-xs font-medium"
-                                            :class="block.is_visible ? 'bg-success-weak text-success' : 'bg-surface text-muted border border-line'">
-                                        <span x-text="block.is_visible ? '{{ __('Visible') }}' : '{{ __('Hidden') }}'"></span>
-                                    </button>
-                                    <button @click="$confirm({ title: '{{ __('Remove this block?') }}', message: '{{ __('The block and its content will be removed from your profile.') }}', confirmLabel: '{{ __('Remove') }}' }).then(ok => ok && removeBlock(block))" class="text-subtle hover:text-danger" title="{{ __('Remove') }}">✕</button>
-                                </div>
-                            </template>
-                            <p x-show="blocksInScope(group.typeId).length === 0" x-cloak class="rounded-lg border border-dashed border-line p-4 text-center text-xs text-subtle">{{ __('No blocks here yet.') }}</p>
-                        </div>
-
-                        {{-- Add a block into this scope --}}
-                        <div class="flex flex-wrap items-end gap-2 border-t border-line pt-3">
-                            <select x-model="newBlock[group.key]" class="flex-1 rounded-md border-line bg-elevated text-sm text-ink shadow-sm focus:border-accent focus:ring-accent">
-                                <option value="">{{ __('Add a block…') }}</option>
-                                <template x-for="bt in pickerForScope(group)" :key="bt.id">
-                                    <option :value="bt.id" x-text="t(bt.name)"></option>
-                                </template>
-                            </select>
-                            <x-ui.button variant="accent" size="sm" x-on:click="addBlock(group)" x-bind:disabled="!newBlock[group.key]">{{ __('Add') }}</x-ui.button>
-                        </div>
-                    </x-ui.card>
-                </template>
-
-                <p x-show="skills.length === 0" x-cloak class="rounded-lg border border-line bg-surface p-6 text-center text-sm text-subtle">{{ __('Add a skill above to create its tab and blocks.') }}</p>
             </div>
         </x-ui.section>
     </div>

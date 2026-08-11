@@ -120,7 +120,7 @@
                     <header class="feed-chrome feed-col mb-10" x-ref="chrome"
                             :class="{ 'chrome-handed-off': pastHeader }">
                         <h1 class="t-display">{{ __('Feed') }}</h1>
-                        <p class="t-meta chrome-eyebrow mt-1">{{ __('WORK · LIGHT · PEOPLE') }}</p>
+                        <p class="t-meta chrome-eyebrow mt-1">{{ __('YOUR WORK · YOUR PEOPLE') }}</p>
 
                         {{-- Filtered modes (5P): live Ajax swap, seeded ordering kept --}}
                         <div class="chrome-chips mt-4 flex flex-wrap gap-2" role="group" aria-label="{{ __('Feed filters') }}">
@@ -154,7 +154,7 @@
                             <div class="feed-col frame-shadow">
                                 <div class="frame p-10 text-center">
                                     <p class="t-note">{{ __('Nothing here yet.') }}</p>
-                                    <p class="t-meta mt-2">{{ __('THE LIGHT IS BEING SET') }}</p>
+                                    <p class="t-meta mt-2">{{ __('BE THE FIRST — SHARE YOUR WORK') }}</p>
                                 </div>
                             </div>
                         @endforelse
@@ -168,7 +168,7 @@
                     {{-- Infinite-scroll sentinel --}}
                     <div x-ref="sentinel" class="h-px w-full" aria-hidden="true"></div>
 
-                    <p x-show="finished" x-cloak class="t-meta mt-10 text-center">{{ __('YOU HAVE SEEN TODAY’S LIGHT') }}</p>
+                    <p x-show="finished" x-cloak class="t-meta mt-10 text-center">{{ __('YOU’RE ALL CAUGHT UP') }}</p>
                 </div>
 
                 {{-- Right rail: brands to get opportunity alerts from (bell) —

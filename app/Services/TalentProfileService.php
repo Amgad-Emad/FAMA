@@ -22,7 +22,9 @@ class TalentProfileService extends Service
     // ----- Core identity -----------------------------------------------------
 
     /**
-     * Update core identity fields (name, headline, bio, slug, location, booking).
+     * Update core identity fields (name, headline, bio, slug, location).
+     * The booking method/value pair is no longer editable here (removed from
+     * the V1 editor); existing column data is preserved untouched.
      *
      * @param  array<string, mixed>  $data
      */
@@ -31,7 +33,7 @@ class TalentProfileService extends Service
         return $this->runInTransaction(function () use ($talent, $data): Talent {
             $talent->fill(Arr::only($data, [
                 'display_name', 'headline', 'bio', 'slug',
-                'base_city', 'base_country', 'booking_type', 'booking_value',
+                'base_city', 'base_country',
             ]));
             $talent->save();
 

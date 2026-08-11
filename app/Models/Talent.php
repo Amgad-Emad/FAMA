@@ -192,6 +192,16 @@ class Talent extends Authenticatable implements \App\Feed\Actor, HasMedia
     }
 
     /**
+     * Daily profile-view buckets (dashboard views KPI + chart).
+     *
+     * @return HasMany<TalentProfileView, $this>
+     */
+    public function profileViews(): HasMany
+    {
+        return $this->hasMany(TalentProfileView::class);
+    }
+
+    /**
      * Contracts this talent is party to.
      *
      * @return HasMany<Contract, $this>

@@ -137,6 +137,11 @@ lifecycles are **state machines**; side effects are **events**.
   it), `setPrimary`, `reorderTypes`. (Skills manager; renamed from `ProfessionsService` — ADR-N.)
 - `TalentProfileService` — core fields, the Pricing rate (`updatePricingRate`, all-or-nothing),
   publish/unpublish, reviews moderation. *(The hero/cover uploader was removed — ADR-O.)*
+- `ProfileViewStatsService` — read-model over `talent_profile_views` for the dashboard views KPI:
+  `weeklyComparison` (rolling last-7-days vs the 7 before; `delta_pct` null when the previous window
+  is empty) and `series` (range presets `7d`/`30d`/`90d`/`all` — 'all' reaches back to the profile's
+  `created_at`; bucket = day/week/month chosen from the span; gaps zero-filled; labels localized
+  server-side via `translatedFormat`).
 
 **State machines** (`app/States`, spatie/laravel-model-states). Each has explicit allowed transitions;
 the state is authoritative and a synced boolean/timestamp **projection** (kept by `SyncStateProjections`)
@@ -152,7 +157,9 @@ serves the Phase 1A queries/views.
 *(The Availability, Service, and Affiliation state machines were removed with their features — ADR-K/L/M.)*
 
 **Events / listeners** (auto-discovered in `app/Listeners` by handle() type-hint):
-- `TalentProfileViewed` → `IncrementProfileViewCount` (bumps `view_count`; controller dispatches it).
+- `TalentProfileViewed` → `IncrementProfileViewCount` (bumps `view_count`; controller dispatches it)
+  **and** `RecordDailyProfileView` (atomic `INSERT … ON DUPLICATE KEY UPDATE` into the
+  `talent_profile_views` daily bucket — MySQL-only, feeds the dashboard views chart).
 - spatie `StateChanged` → `SyncStateProjections` (projections + published_at stamp).
 - medialibrary `MediaHasBeenAddedEvent` → `LogMediaUploaded` (conversions auto-queue).
 - medialibrary `ConversionHasBeenCompletedEvent` → `AdvancePortfolioMediaState` (uploaded → processed).

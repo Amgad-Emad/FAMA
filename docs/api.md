@@ -98,8 +98,8 @@ controllers, form requests, actions and Resources**. Reads are public; writes re
 `auth:sanctum` (talent/brand tokens; `CurrentActor` resolves the sanctum tokenable). No sessions —
 no intent replay; guests simply get the 401 envelope. 34 routes.
 
-**Endpoint count: 200** — 130 pre-feed web endpoints + 36 feed web endpoints (31 + saves + the
-suggestion rails) + 34 API v1 mirrors.
+**Endpoint count: 201** — 131 pre-feed web endpoints (incl. `GET /talent/dashboard/views`) + 36 feed
+web endpoints (31 + saves + the suggestion rails) + 34 API v1 mirrors.
 
 ## Public pages — web endpoints (unguarded)
 
@@ -146,7 +146,8 @@ Contracts). The old standalone Professions + Account tabs are folded into it (AD
 
 | Area | Method + path | Purpose |
 |---|---|---|
-| Home | `GET /talent/dashboard` | status overview (draft/live, views, pending reviews, contracts slot) |
+| Home | `GET /talent/dashboard` | status overview (visibility switch, views KPI + weekly delta, contracts slot) |
+| Home | `GET /talent/dashboard/views?range=7d\|30d\|90d\|all` | bucketed view series for the KPI chart ('all' = since profile creation; bad range → 422) |
 | Profile | `GET /talent/profile` · `PATCH /talent/profile` | editor shell · update core fields (incl. `slug`, shown as **Username**) |
 | Pricing rate | `PATCH /talent/profile/pricing` | set/clear the indicative rate (`rate_unit`/`rate_amount`/`rate_currency`; all-or-nothing) |
 | Publish | `PATCH /talent/profile/publish` | publish/unpublish toggle (`{publish: bool}`) |

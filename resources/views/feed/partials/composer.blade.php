@@ -112,7 +112,7 @@
                                               field-class="t-comment"
                                               @mention-picked="mentions.push($event.detail.actor)"
                                               @mention-input="onBodyChanged()"
-                                              :placeholder="__('What did the light do today? Type @ to credit someone.')" />
+                                              :placeholder="__('What are you working on? Type @ to credit someone.')" />
                     </div>
 
                     {{-- Counter: appears at 1900, DANGER at the limit. NEVER add a

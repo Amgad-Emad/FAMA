@@ -23,57 +23,68 @@
 
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
-    <body class="min-h-screen bg-bg text-ink antialiased" style="padding-block-start: var(--topbar-h);">
-        @php
-            // Feed first (5AB): the feed is the daily-return surface; Discover
-            // is the with-intent tool. aria-current + the gestural underline
-            // mark the active item — never the underline alone.
-            // Brand/opportunities items carry a `feature` key and drop out of the nav
-            // when that release flag is off (V1 = talent + feed + discover only).
-            $navItems = array_values(array_filter([
-                ['route' => 'feed', 'label' => __('Feed')],
-                ['route' => 'discover', 'label' => __('Discover')],
-                ['route' => 'brands.discover', 'label' => __('Brands'), 'feature' => 'brands'],
-                ['route' => 'projects.browse', 'label' => __('Opportunities'), 'feature' => 'brands'],
-            ], fn ($i) => empty($i['feature']) || \App\Support\Features::enabled($i['feature'])));
-            $currentRoute = request()->route()?->getName();
-            $isAuthed = auth('talent')->check() || auth('brand')->check() || auth('admin')->check();
-        @endphp
-        <header class="site-topbar" data-topbar>
-            <div class="mx-auto flex h-full max-w-6xl items-center justify-between px-4 sm:px-6">
-                <a href="{{ url('/') }}" class="font-display text-2xl tracking-tight text-ink">
-                    Fama<span class="text-accent">.</span>
-                </a>
-                <nav class="flex items-center gap-3" aria-label="{{ __('Primary') }}">
-                    @foreach ($navItems as $item)
-                        @php $active = $currentRoute === $item['route']; @endphp
-                        <a href="{{ route($item['route']) }}"
-                           @if ($active) aria-current="page" @endif
-                           class="nav-underline hidden text-sm font-medium sm:inline {{ $active ? 'text-ink' : 'text-muted hover:text-ink' }}">
-                            {{ $item['label'] }}
-                            @if ($active)
-                                <svg viewBox="0 0 60 6" preserveAspectRatio="none" aria-hidden="true"><path d="M2 4 C 14 1.5, 30 5, 58 2.5" /></svg>
-                            @endif
-                        </a>
-                    @endforeach
+    @php
+        // A signed-in TALENT gets the STANDARD talent topbar — the exact same
+        // component the dashboard renders (<x-talent-topbar>), so the bar is
+        // identical everywhere. It is sticky/in-flow and taller than the fixed
+        // public bar, so the body padding is dropped and --topbar-h is
+        // overridden to its height — every sticky offset that reads the token
+        // (feed chrome, rails, toasts) keeps clearing the bar.
+        $talentTopbar = auth('talent')->check();
+    @endphp
+    <body class="min-h-screen bg-bg text-ink antialiased" style="{{ $talentTopbar ? '--topbar-h: 6.5rem;' : 'padding-block-start: var(--topbar-h);' }}">
+        @if ($talentTopbar)
+            <x-talent-topbar :title="$title" />
+        @else
+            @php
+                // Feed first (5AB): the feed is the daily-return surface; Discover
+                // is the with-intent tool. aria-current + the gestural underline
+                // mark the active item — never the underline alone. `feature`
+                // items drop out of the nav when that release flag is off (V1).
+                $navItems = array_values(array_filter([
+                    ['route' => 'feed', 'label' => __('Feed')],
+                    ['route' => 'discover', 'label' => __('Discover')],
+                    ['route' => 'brands.discover', 'label' => __('Brands'), 'feature' => 'brands'],
+                    ['route' => 'projects.browse', 'label' => __('Opportunities'), 'feature' => 'brands'],
+                ], fn ($i) => empty($i['feature']) || \App\Support\Features::enabled($i['feature'])));
+                $isAuthed = auth('brand')->check() || auth('admin')->check();
+            @endphp
+            <header class="site-topbar" data-topbar>
+                <div class="mx-auto flex h-full max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
+                    <a href="{{ url('/') }}" class="shrink-0 font-display text-2xl tracking-tight text-ink">
+                        Fama<span class="text-accent">.</span>
+                    </a>
+                    <nav class="flex min-w-0 items-center gap-3 overflow-x-auto" aria-label="{{ __('Primary') }}">
+                        @foreach ($navItems as $item)
+                            @php $active = request()->routeIs($item['route']); @endphp
+                            <a href="{{ route($item['route']) }}"
+                               @if ($active) aria-current="page" @endif
+                               class="nav-underline hidden shrink-0 text-sm font-medium sm:inline {{ $active ? 'text-ink' : 'text-muted hover:text-ink' }}">
+                                {{ $item['label'] }}
+                                @if ($active)
+                                    <svg viewBox="0 0 60 6" preserveAspectRatio="none" aria-hidden="true"><path d="M2 4 C 14 1.5, 30 5, 58 2.5" /></svg>
+                                @endif
+                            </a>
+                        @endforeach
 
-                    {{-- Profile → the signed-in user's dashboard (guard-aware);
-                         guests get a sign-in link instead. --}}
-                    @if ($isAuthed)
-                        <a href="{{ route('dashboard') }}"
-                           class="nav-underline hidden text-sm font-medium text-muted hover:text-ink sm:inline">{{ __('Profile') }}</a>
-                    @else
-                        <a href="{{ route('login') }}"
-                           class="hidden rounded-pill bg-primary px-3.5 py-1.5 text-sm font-medium text-on-primary transition hover:opacity-90 sm:inline-block">{{ __('Log in') }}</a>
-                    @endif
+                        {{-- Signed-in brand/admin users get a link to their dashboard;
+                             guests get a sign-in link instead. --}}
+                        @if ($isAuthed)
+                            <a href="{{ route('dashboard') }}"
+                               class="nav-underline hidden shrink-0 text-sm font-medium text-muted hover:text-ink sm:inline">{{ __('Profile') }}</a>
+                        @else
+                            <a href="{{ route('login') }}"
+                               class="hidden shrink-0 rounded-pill bg-primary px-3.5 py-1.5 text-sm font-medium text-on-primary transition hover:opacity-90 sm:inline-block">{{ __('Log in') }}</a>
+                        @endif
 
-                    {{-- Language switcher hidden for now — English only until the
-                         Arabic pass ships (keep the component for later). --}}
-                    {{-- <x-public-locale-switcher /> --}}
-                    <x-theme-toggle />
-                </nav>
-            </div>
-        </header>
+                        {{-- Language switcher hidden for now — English only until the
+                             Arabic pass ships (keep the component for later). --}}
+                        {{-- <x-public-locale-switcher /> --}}
+                        <x-theme-toggle />
+                    </nav>
+                </div>
+            </header>
+        @endif
 
         @if (session('status'))
             <div x-data="{ show: true }" x-show="show" x-transition

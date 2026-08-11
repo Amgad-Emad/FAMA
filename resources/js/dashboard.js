@@ -187,6 +187,88 @@ document.addEventListener('alpine:init', () => {
         },
     }));
 
+    // --- Dashboard home (status toggle + views KPI chart) --------------------
+    // The public/private switch reuses PATCH /talent/profile/publish (same
+    // domain guards as the Profile editor: unverified profiles get a 422 whose
+    // message is surfaced inline). The views KPI expands into a column chart
+    // of daily/weekly/monthly buckets from GET /talent/dashboard/views; ranges
+    // are cached per preset and a refetch keeps the previous render dimmed
+    // (no skeleton, no layout jump).
+    Alpine.data('dashboardHome', (initial) => ({
+        // Publish toggle.
+        isPublished: initial.publish.is_published,
+        isVerified: initial.publish.is_verified,
+        publishing: false,
+        publishError: '',
+
+        // Views chart.
+        chartOpen: false,
+        range: '30d',
+        loading: false,
+        chart: null,
+        cache: {},
+
+        async togglePublish() {
+            if (this.publishing) return;
+            this.publishing = true;
+            this.publishError = '';
+            try {
+                const { data } = await patch('/talent/profile/publish', { publish: !this.isPublished });
+                this.isPublished = data.is_published;
+            } catch (e) {
+                if (e instanceof ApiError) this.publishError = e.message;
+            } finally {
+                this.publishing = false;
+            }
+        },
+
+        async toggleChart() {
+            this.chartOpen = !this.chartOpen;
+            if (this.chartOpen && !this.chart) await this.loadRange(this.range);
+        },
+        async setRange(range) {
+            if (this.range === range && this.chart) return;
+            this.range = range;
+            await this.loadRange(range);
+        },
+        async loadRange(range) {
+            if (this.cache[range]) { this.chart = this.cache[range]; return; }
+            this.loading = true;
+            try {
+                const { data } = await get(`/talent/dashboard/views?range=${range}`);
+                this.cache[range] = data;
+                this.chart = data;
+            } catch (e) {
+                // Non-fatal: keep whatever is currently rendered.
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        /** A "nice" y-axis max so the gridline ticks land on clean numbers. */
+        get yMax() {
+            const max = Math.max(0, ...(this.chart?.series ?? []).map((p) => p.views));
+            if (max <= 4) return 4;
+            const pow = Math.pow(10, Math.floor(Math.log10(max)));
+            for (const m of [1, 2, 4, 5, 10]) {
+                if (m * pow >= max) return m * pow;
+            }
+            return 10 * pow;
+        },
+        get yTicks() { return [this.yMax, this.yMax / 2]; },
+        get hasViews() { return (this.chart?.series ?? []).some((p) => p.views > 0); },
+        barHeight(views) {
+            return this.yMax ? Math.round((views / this.yMax) * 1000) / 10 : 0;
+        },
+        /** Sparse x labels: roughly six across the axis, always the last bucket. */
+        xLabel(index) {
+            const n = this.chart?.series?.length ?? 0;
+            if (!n) return false;
+            const step = Math.max(1, Math.ceil(n / 6));
+            return index === n - 1 || (index % step === 0 && n - 1 - index >= step / 2);
+        },
+    }));
+
     // --- Profile editor (the single profile surface) ------------------------
     // Holds identity + username, Skills, the Pricing rate, the publish toggle,
     // and the reorderable blocks — the old Skills + Account tabs folded in.
@@ -237,6 +319,13 @@ document.addEventListener('alpine:init', () => {
                 sorted.map((s) => ({ key: String(s.id), typeId: s.id, label: this.t(s.name), category: s.category, is_primary: s.is_primary })),
             );
         },
+
+        // The editor shows the universal section always, but a skill's section
+        // only after that skill is SELECTED in the pill bar (none by default).
+        activeSkillTab: null,
+        get universalGroups() { return this.scopeGroups.filter((g) => g.typeId === null); },
+        get skillGroups() { return this.scopeGroups.filter((g) => g.typeId !== null); },
+        get activeSkillGroups() { return this.skillGroups.filter((g) => g.typeId === this.activeSkillTab); },
 
         blocksInScope(typeId) {
             return this.blocks.filter((b) => (b.talent_type_id ?? null) === typeId).sort((a, b) => a.position - b.position);
@@ -460,9 +549,11 @@ document.addEventListener('alpine:init', () => {
         async addSkill() {
             if (!this.addSkillId) return;
             try {
+                const added = Number(this.addSkillId);
                 const { data } = await post('/talent/profile/skills', { talent_type_id: this.addSkillId });
                 this.applySkills(data);
                 this.addSkillId = '';
+                this.activeSkillTab = added; // reveal the new skill's section right away
                 await this.refreshBlocks(); // its tab was seeded with blocks
             } catch (e) {
                 if (e instanceof ApiError) window.alert(e.message);

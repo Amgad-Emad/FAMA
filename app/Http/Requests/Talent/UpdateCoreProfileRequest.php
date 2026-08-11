@@ -30,8 +30,6 @@ class UpdateCoreProfileRequest extends FormRequest
             'slug' => ['nullable', 'string', 'max:255', 'alpha_dash', Rule::unique('talents', 'slug')->ignore($talentId)],
             'base_city' => ['nullable', 'string', 'max:255'],
             'base_country' => ['nullable', 'string', 'max:255'],
-            'booking_type' => ['nullable', Rule::in(['email', 'calendar', 'form', 'external'])],
-            'booking_value' => ['nullable', 'string', 'max:255'],
         ];
     }
 

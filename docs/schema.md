@@ -219,6 +219,15 @@ uploads via medialibrary, `embed_url` external, `caption` translatable).
   `feed.allow_following_brands = true` (the schema-master §7 deliberate omission is closed);
   maintained by FollowObserver, reconciled nightly.
 
+## Dashboard analytics (2026-08-10 — migrated)
+
+- **`talent_profile_views`**: daily view buckets — `talent_id` FK (cascade), `viewed_on` date,
+  `views` unsigned int, unique `(talent_id, viewed_on)`. Written by `RecordDailyProfileView` (atomic
+  `ON DUPLICATE KEY UPDATE` increment per `TalentProfileViewed`); `talents.view_count` stays the
+  lifetime total. Read by `ProfileViewStatsService` for the dashboard views KPI (week-over-week
+  delta) + expandable chart (`GET /talent/dashboard/views`). No history backfill — the series starts
+  the day the table shipped.
+
 ## Not yet built
 
 - **Mobile API** (Phase 4) — Sanctum tokens + Scribe docs over the existing services/resources.
