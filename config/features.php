@@ -33,4 +33,13 @@ return [
     // light (V1 ships light-only). FEATURE_DARK_MODE=false in the production .env.
     'dark_mode' => env('FEATURE_DARK_MODE', true),
 
+    // Public talent discovery (/discover): hidden in V1 — the route 404s and the
+    // nav links drop out. FEATURE_DISCOVER=false in the production .env.
+    'discover' => env('FEATURE_DISCOVER', true),
+
+    // Pricing rate (ADR-N): hidden in V1 — the editor section and the public
+    // profile chip disappear, and the pricing endpoint 404s. Existing column
+    // data is preserved. FEATURE_PRICING=false in the production .env.
+    'pricing' => env('FEATURE_PRICING', true),
+
 ];

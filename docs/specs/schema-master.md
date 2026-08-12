@@ -84,7 +84,7 @@ Each row is a block the platform offers. `availability` is the key field — whe
 | Column | Type / constraints |
 |---|---|
 | id | BIGINT UNSIGNED, PK |
-| key | VARCHAR, UNIQUE (hero, gallery, comp_card, showreel…) |
+| key | VARCHAR, UNIQUE (gallery, comp_card, showreel…; `hero` is retired — `is_active = false`, ADR-O follow-up) |
 | name | VARCHAR (display) |
 | description | VARCHAR |
 | icon | VARCHAR |

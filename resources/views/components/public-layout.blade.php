@@ -26,13 +26,12 @@
     @php
         // A signed-in TALENT gets the STANDARD talent topbar — the exact same
         // component the dashboard renders (<x-talent-topbar>), so the bar is
-        // identical everywhere. It is sticky/in-flow and taller than the fixed
-        // public bar, so the body padding is dropped and --topbar-h is
-        // overridden to its height — every sticky offset that reads the token
-        // (feed chrome, rails, toasts) keeps clearing the bar.
+        // identical everywhere. It is sticky/in-flow (body padding dropped) and
+        // its single row is h-16 = the default --topbar-h, so every sticky
+        // offset that reads the token (feed chrome, rails, toasts) still clears it.
         $talentTopbar = auth('talent')->check();
     @endphp
-    <body class="min-h-screen bg-bg text-ink antialiased" style="{{ $talentTopbar ? '--topbar-h: 6.5rem;' : 'padding-block-start: var(--topbar-h);' }}">
+    <body class="min-h-screen bg-bg text-ink antialiased" style="{{ $talentTopbar ? '' : 'padding-block-start: var(--topbar-h);' }}">
         @if ($talentTopbar)
             <x-talent-topbar :title="$title" />
         @else
@@ -43,7 +42,7 @@
                 // items drop out of the nav when that release flag is off (V1).
                 $navItems = array_values(array_filter([
                     ['route' => 'feed', 'label' => __('Feed')],
-                    ['route' => 'discover', 'label' => __('Discover')],
+                    ['route' => 'discover', 'label' => __('Discover'), 'feature' => 'discover'],
                     ['route' => 'brands.discover', 'label' => __('Brands'), 'feature' => 'brands'],
                     ['route' => 'projects.browse', 'label' => __('Opportunities'), 'feature' => 'brands'],
                 ], fn ($i) => empty($i['feature']) || \App\Support\Features::enabled($i['feature'])));
@@ -51,8 +50,8 @@
             @endphp
             <header class="site-topbar" data-topbar>
                 <div class="mx-auto flex h-full max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
-                    <a href="{{ url('/') }}" class="shrink-0 font-display text-2xl tracking-tight text-ink">
-                        Fama<span class="text-accent">.</span>
+                    <a href="{{ url('/') }}" class="shrink-0" aria-label="{{ __('Fama') }}">
+                        <x-fama-logo class="h-7 w-auto" />
                     </a>
                     <nav class="flex min-w-0 items-center gap-3 overflow-x-auto" aria-label="{{ __('Primary') }}">
                         @foreach ($navItems as $item)

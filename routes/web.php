@@ -90,8 +90,11 @@ Route::group([
     require __DIR__.'/feed.php';
 
     // --- Public discovery + talent sub-pages (before the {slug} catch-all) ---
-    Route::get('/discover', [DiscoveryController::class, 'index'])->name('discover');
-    Route::get('/discover/search', [DiscoveryController::class, 'search'])->name('discover.search');
+    // Hidden in V1 (feature `discover` — the routes stay registered and 404 when off).
+    Route::middleware('feature:discover')->group(function () {
+        Route::get('/discover', [DiscoveryController::class, 'index'])->name('discover');
+        Route::get('/discover/search', [DiscoveryController::class, 'search'])->name('discover.search');
+    });
 
     // Public brand discovery + opportunities (talent-facing) — gated behind the
     // `brands` feature flag for the V1 release. The static `/brands` + `/brands/feed`

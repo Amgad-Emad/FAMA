@@ -118,6 +118,22 @@ class TalentProfileService extends Service
     }
 
     /**
+     * Persist where the universal/profile-level section sits among the skill
+     * sections (talents.meta['universal_position']). 0 = above the skill tabs
+     * (the ADR-R default); any higher index renders the universal blocks BELOW
+     * the tab region on the public profile.
+     */
+    public function updateUniversalPosition(Talent $talent, int $position): Talent
+    {
+        return $this->runInTransaction(function () use ($talent, $position): Talent {
+            $talent->meta = array_merge($talent->meta ?? [], ['universal_position' => $position]);
+            $talent->save();
+
+            return $talent;
+        }, ['talent_id' => $talent->id]);
+    }
+
+    /**
      * Take a live profile back down (Live → Unpublished).
      */
     public function unpublish(Talent $talent): Talent

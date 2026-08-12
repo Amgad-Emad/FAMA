@@ -32,8 +32,9 @@ Route::get('/profile', [ProfileEditorController::class, 'edit'])->name('profile.
 Route::patch('/profile', [ProfileEditorController::class, 'updateCore'])->name('profile.update');
 Route::post('/profile/avatar', [ProfileEditorController::class, 'updateAvatar'])->name('profile.avatar.update');
 Route::delete('/profile/avatar', [ProfileEditorController::class, 'removeAvatar'])->name('profile.avatar.destroy');
-Route::patch('/profile/pricing', [ProfileEditorController::class, 'updatePricingRate'])->name('profile.pricing');
+Route::patch('/profile/pricing', [ProfileEditorController::class, 'updatePricingRate'])->name('profile.pricing')->middleware('feature:pricing');
 Route::patch('/profile/publish', [ProfileEditorController::class, 'publish'])->name('profile.publish');
+Route::patch('/profile/sections/universal-position', [ProfileEditorController::class, 'updateSectionOrder'])->name('profile.sections.universal');
 Route::get('/profile/blocks', [ProfileEditorController::class, 'blocks'])->name('profile.blocks');
 Route::get('/profile/block-picker', [ProfileEditorController::class, 'picker'])->name('profile.picker');
 Route::post('/profile/blocks', [ProfileEditorController::class, 'addBlock'])->name('profile.blocks.store');
@@ -90,7 +91,9 @@ Route::middleware('feature:contracts')->group(function () {
 });
 
 // --- Block content editors (child tables; content_source-aware) -------------
-Route::get('/content/{type}', [BlockContentController::class, 'index'])->name('content');
+// The page is SECTION-based ({section} = `universal` or a skill slug); a legacy
+// content-type key still resolves to the section that shows it.
+Route::get('/content/{section?}', [BlockContentController::class, 'index'])->name('content');
 Route::get('/content/{type}/data', [BlockContentController::class, 'data'])->name('content.data');
 Route::post('/content/{type}', [BlockContentController::class, 'store'])->name('content.store');
 Route::patch('/content/{type}/reorder', [BlockContentController::class, 'reorder'])->name('content.reorder');

@@ -13,8 +13,10 @@
     // Secondary line: the primary skill, else the headline.
     $secondary = $primaryType?->name ?: $talent->headline;
 
-    // Pricing rate (ADR-N) — render only when the whole rate is set.
-    $hasRate = filled($talent->rate_amount) && filled($talent->rate_unit) && filled($talent->rate_currency);
+    // Pricing rate (ADR-N) — render only when the whole rate is set AND the
+    // pricing feature is on (hidden in V1).
+    $hasRate = \App\Support\Features::enabled('pricing')
+        && filled($talent->rate_amount) && filled($talent->rate_unit) && filled($talent->rate_currency);
     $rateUnitLabels = ['project' => __('project'), 'day' => __('day'), 'hour' => __('hour')];
     $rateAmount = null;
     if ($hasRate) {
@@ -38,6 +40,11 @@
     // Active tab: `?skill=` when it names a skill with visible blocks, else the primary.
     $activeSkill = $tabSkills->firstWhere('slug', request('skill')) ?? $tabSkills->first();
     $tabUrls = $tabSkills->mapWithKeys(fn ($s) => [$s->slug => route('talent.tab', ['slug' => $talent->slug, 'skill' => $s->slug])]);
+
+    // Section order (editor pill bar): universal renders above the skill tabs
+    // by default; any position > 0 moves it below them.
+    $universalAfterTabs = ((int) ($talent->meta['universal_position'] ?? 0)) > 0;
+    $universalAbove = $universalBlocks->isNotEmpty() && ! $universalAfterTabs;
 @endphp
 
 <x-public-layout :title="$talent->display_name">
@@ -46,130 +53,123 @@
 
     <div x-data="profileTabs({ active: @js($activeSkill?->slug), tabs: @js($tabSkills->pluck('slug')), labels: @js($tabSkills->pluck('name', 'slug')), urls: @js($tabUrls) })">
 
-        {{-- ═══ REGION 1 — Identity & universal (always visible) ═══ --}}
-        {{-- Instagram-style identity header (no cover image) --}}
-        <header class="mx-auto max-w-3xl px-4 pt-10 sm:px-6">
-            <div class="flex flex-col items-center gap-6 sm:flex-row sm:items-start sm:gap-10">
-                <x-ui.avatar :src="$avatar" :name="$talent->display_name" size="2xl" class="shadow-e2" />
+        {{-- ═══ REGION 1 — Identity (always visible) ═══ --}}
+        {{-- Full-width single-row header: avatar · name/handle/skill/location ·
+             stats · CTAs, with the bio on its own row below. --}}
+        <header class="mx-auto max-w-6xl px-4 pt-10 sm:px-6">
+            <div class="flex flex-col items-center gap-6 text-center lg:flex-row lg:items-center lg:gap-8 lg:text-start">
+                <x-ui.avatar :src="$avatar" :name="$talent->display_name" size="2xl" class="shrink-0 shadow-e2" />
 
-                <div class="min-w-0 flex-1 text-center sm:text-start">
-                    {{-- Name + @username + optional … menu --}}
-                    <div class="flex flex-col items-center gap-x-4 gap-y-1 sm:flex-row sm:items-center">
+                <div class="min-w-0">
+                    <div class="flex flex-col items-center gap-x-3 gap-y-1 lg:flex-row lg:items-baseline">
                         <h1 class="font-display text-3xl leading-tight text-ink sm:text-4xl">{{ $talent->display_name }}</h1>
                         <span class="font-mono text-sm text-subtle">{{ '@'.$talent->slug }}</span>
-
-                        <div x-data="{ open: false }" class="relative sm:ms-auto">
-                            <button @click="open = !open" @click.outside="open = false" aria-label="{{ __('More') }}"
-                                    class="rounded-pill px-2 py-0.5 text-xl leading-none text-muted hover:bg-surface hover:text-ink">…</button>
-                            <div x-show="open" x-cloak x-transition
-                                 class="absolute end-0 z-20 mt-1 w-48 overflow-hidden rounded-md border border-line bg-elevated py-1 shadow-e2">
-                                <button type="button"
-                                        @click="navigator.clipboard?.writeText(window.location.href); open = false"
-                                        class="block w-full px-3 py-2 text-start text-sm text-ink hover:bg-surface">{{ __('Copy profile link') }}</button>
-                            </div>
-                        </div>
                     </div>
-
                     {{-- Secondary line: primary skill / headline --}}
                     @if ($secondary)
                         <p class="mt-1 text-sm font-medium text-accent-ink">{{ $secondary }}</p>
                     @endif
-
-                    {{-- Stats row: Projects · Views · Rating (rating hidden when there are no reviews) --}}
-                    <div class="mt-5 flex items-start justify-center gap-8 sm:justify-start">
-                        <div class="text-center sm:text-start">
-                            <div class="font-display text-xl text-ink">{{ number_format($projectsCount) }}</div>
-                            <div class="font-mono text-[11px] uppercase tracking-wider text-subtle">{{ __('Projects') }}</div>
-                        </div>
-                        <div class="text-center sm:text-start">
-                            <div class="font-display text-xl text-ink">{{ number_format($talent->view_count) }}</div>
-                            <div class="font-mono text-[11px] uppercase tracking-wider text-subtle">{{ __('Views') }}</div>
-                        </div>
-                        @if ($avgRating !== null)
-                            <div class="text-center sm:text-start">
-                                <div class="font-display text-xl text-ink">{{ number_format($avgRating, 1) }}<span class="ms-1 text-gold">★</span></div>
-                                <div class="font-mono text-[11px] uppercase tracking-wider text-subtle">{{ __('Rating') }}</div>
-                            </div>
-                        @endif
-                    </div>
-
-                    {{-- CTAs: Follow + Message (brand↔talent chat, ADR-P) + Leave a review --}}
-                    <div class="mt-5 flex flex-col justify-center gap-2 sm:flex-row sm:justify-start">
-                        @if ($canFollow ?? true)
-                            <div x-data="talentFollow({
-                                    id: {{ $talent->id }},
-                                    following: {{ ($following ?? false) ? 'true' : 'false' }},
-                                    confirm: {
-                                        title: @js(__('Unfollow :name?', ['name' => $talent->display_name])),
-                                        message: @js(__('You will stop seeing their new posts in your feed.')),
-                                        confirmLabel: @js(__('Unfollow')),
-                                    },
-                                 })" class="w-full sm:w-auto">
-                                <button type="button" @click="toggle()" :disabled="busy" :aria-pressed="following ? 'true' : 'false'"
-                                        class="inline-flex w-full select-none items-center justify-center gap-2 rounded-pill px-4 py-2.5 text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg disabled:opacity-60 sm:w-auto"
-                                        :class="following ? 'border border-line-strong text-ink hover:bg-surface' : 'bg-accent text-on-accent hover:opacity-90'">
-                                    {{-- following: checkmark · not following: plus --}}
-                                    <svg x-show="following" x-cloak class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-                                    <svg x-show="!following" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
-                                    <span x-text="following ? '{{ __('Following') }}' : '{{ __('Follow') }}'">{{ __('Follow') }}</span>
-                                </button>
-                            </div>
-                        @endif
-                        @feature('messaging')
-                            <x-ui.button :href="route('brand.talents.message', ['talent' => $talent->slug])" variant="outline" class="w-full sm:w-auto">{{ __('Message') }}</x-ui.button>
-                        @endfeature
-                        <x-ui.button :href="route('talent.review.create', ['slug' => $talent->slug])" variant="outline" class="w-full sm:w-auto">{{ __('Leave a review') }}</x-ui.button>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Pricing rate + location + bio + link + skill chips --}}
-            <div class="mt-6 space-y-3 text-center sm:text-start">
-                <div class="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 sm:justify-start">
-                    @if ($hasRate)
-                        <span class="inline-flex items-baseline gap-1.5 rounded-pill bg-accent-weak px-3.5 py-1.5 text-accent-ink">
-                            <span class="font-mono text-[10px] uppercase tracking-wider">{{ __('Rate') }}</span>
-                            <span class="font-display text-sm">{{ __('From') }} {{ $talent->rate_currency }} {{ $rateAmount }} / {{ $rateUnitLabels[$talent->rate_unit] ?? $talent->rate_unit }}</span>
-                        </span>
-                    @endif
                     @if ($talent->base_city)
-                        <span class="inline-flex items-center gap-1.5 text-sm text-muted">
+                        <span class="mt-1.5 inline-flex items-center gap-1.5 text-sm text-muted">
                             <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 1 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                             {{ $talent->base_city }}{{ $talent->base_country ? ', '.$talent->base_country : '' }}
                         </span>
                     @endif
                 </div>
 
-                @if ($talent->bio)
-                    <p class="mx-auto max-w-2xl text-sm leading-relaxed text-ink sm:mx-0">{{ $talent->bio }}</p>
-                @endif
+                {{-- Stats: Projects · Views · Rating (rating hidden when there are no reviews) --}}
+                <div class="flex shrink-0 items-start gap-8 lg:ms-auto">
+                    <div class="text-center lg:text-start">
+                        <div class="font-display text-xl text-ink">{{ number_format($projectsCount) }}</div>
+                        <div class="font-mono text-[11px] uppercase tracking-wider text-subtle">{{ __('Projects') }}</div>
+                    </div>
+                    <div class="text-center lg:text-start">
+                        <div class="font-display text-xl text-ink">{{ number_format($talent->view_count) }}</div>
+                        <div class="font-mono text-[11px] uppercase tracking-wider text-subtle">{{ __('Views') }}</div>
+                    </div>
+                    @if ($avgRating !== null)
+                        <div class="text-center lg:text-start">
+                            <div class="font-display text-xl text-ink">{{ number_format($avgRating, 1) }}<span class="ms-1 text-gold">★</span></div>
+                            <div class="font-mono text-[11px] uppercase tracking-wider text-subtle">{{ __('Rating') }}</div>
+                        </div>
+                    @endif
+                </div>
 
-                @if ($externalUrl)
-                    <a href="{{ $externalUrl }}" target="_blank" rel="noopener nofollow"
-                       class="inline-flex items-center gap-1.5 text-sm font-medium text-accent-ink hover:underline">
-                        <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M10 13a5 5 0 0 0 7.07 0l3-3A5 5 0 0 0 12.99 3l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7.07 0l-3 3A5 5 0 0 0 11 21.01l1.5-1.5"/></svg>
-                        {{ $externalLabel }}
-                    </a>
-                @endif
-                {{-- Skill chips were removed: the prominent skill TAB BAR below is the
-                     profile's navigation (the primary-skill line above stays). --}}
+                {{-- CTAs: Follow · Message (flagged) · Leave a review · Share profile --}}
+                <div class="flex shrink-0 flex-wrap items-center justify-center gap-2">
+                    @if ($canFollow ?? true)
+                        <div x-data="talentFollow({
+                                id: {{ $talent->id }},
+                                following: {{ ($following ?? false) ? 'true' : 'false' }},
+                                confirm: {
+                                    title: @js(__('Unfollow :name?', ['name' => $talent->display_name])),
+                                    message: @js(__('You will stop seeing their new posts in your feed.')),
+                                    confirmLabel: @js(__('Unfollow')),
+                                },
+                             })">
+                            <button type="button" @click="toggle()" :disabled="busy" :aria-pressed="following ? 'true' : 'false'"
+                                    class="inline-flex select-none items-center justify-center gap-2 rounded-pill px-4 py-2.5 text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg disabled:opacity-60"
+                                    :class="following ? 'border border-line-strong text-ink hover:bg-surface' : 'bg-accent text-on-accent hover:opacity-90'">
+                                {{-- following: checkmark · not following: plus --}}
+                                <svg x-show="following" x-cloak class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                                <svg x-show="!following" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                                <span x-text="following ? '{{ __('Following') }}' : '{{ __('Follow') }}'">{{ __('Follow') }}</span>
+                            </button>
+                        </div>
+                    @endif
+                    @feature('messaging')
+                        <x-ui.button :href="route('brand.talents.message', ['talent' => $talent->slug])" variant="outline">{{ __('Message') }}</x-ui.button>
+                    @endfeature
+                    <x-ui.button :href="route('talent.review.create', ['slug' => $talent->slug])" variant="outline">{{ __('Leave a review') }}</x-ui.button>
+                    {{-- Share profile: copies the canonical profile link. --}}
+                    <div x-data="{ copied: false }">
+                        <button type="button"
+                                @click="navigator.clipboard?.writeText(@js(url($talent->slug))); copied = true; setTimeout(() => copied = false, 2000)"
+                                class="inline-flex select-none items-center justify-center gap-2 rounded-pill border border-line-strong px-4 py-2.5 text-sm font-medium text-ink transition hover:bg-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg">
+                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg>
+                            <span x-show="!copied">{{ __('Share profile') }}</span>
+                            <span x-show="copied" x-cloak>{{ __('Link copied!') }}</span>
+                        </button>
+                    </div>
+                </div>
             </div>
+
+            {{-- Bio row (below the identity row) + rate chip + external link --}}
+            @if ($talent->bio)
+                <p class="mt-6 text-sm leading-relaxed text-ink">{{ $talent->bio }}</p>
+            @endif
+            @if ($hasRate || $externalUrl)
+                <div class="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+                    @if ($hasRate)
+                        <span class="inline-flex items-baseline gap-1.5 rounded-pill bg-accent-weak px-3.5 py-1.5 text-accent-ink">
+                            <span class="font-mono text-[10px] uppercase tracking-wider">{{ __('Rate') }}</span>
+                            <span class="font-display text-sm">{{ __('From') }} {{ $talent->rate_currency }} {{ $rateAmount }} / {{ $rateUnitLabels[$talent->rate_unit] ?? $talent->rate_unit }}</span>
+                        </span>
+                    @endif
+                    @if ($externalUrl)
+                        <a href="{{ $externalUrl }}" target="_blank" rel="noopener nofollow"
+                           class="inline-flex items-center gap-1.5 text-sm font-medium text-accent-ink hover:underline">
+                            <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M10 13a5 5 0 0 0 7.07 0l3-3A5 5 0 0 0 12.99 3l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7.07 0l-3 3A5 5 0 0 0 11 21.01l1.5-1.5"/></svg>
+                            {{ $externalLabel }}
+                        </a>
+                    @endif
+                </div>
+            @endif
         </header>
 
-        {{-- Universal / profile-level blocks (above the tabs), always visible --}}
+        {{-- Universal / profile-level blocks — above the tabs by default, or
+             below them when the talent reordered the sections in the editor. --}}
         <div class="mx-auto mt-12 max-w-6xl px-4 pb-4 sm:px-6">
-            @if ($universalBlocks->isNotEmpty())
-                <div class="space-y-16">
-                    @foreach ($universalBlocks as $block)
-                        @include('talent.blocks._dispatch', ['talent' => $talent, 'block' => $block])
-                    @endforeach
+            @if ($universalAbove)
+                <div id="universal-blocks" class="space-y-16">
+                    @include('talent.partials.universal-blocks', ['talent' => $talent, 'blocks' => $universalBlocks])
                 </div>
             @endif
 
             {{-- ═══ REGION 2 — Skill tabs (the profile's primary navigation) ═══ --}}
             @if ($tabSkills->isNotEmpty())
                 @if ($tabSkills->count() > 1)
-                    <div @class(['mt-12' => $universalBlocks->isNotEmpty()])>
+                    <div @class(['mt-12' => $universalAbove])>
                         {{-- Sticky segmented tab bar — sits under the site header (z-30) so it --}}
                         {{-- reads as primary nav; a top divider separates it from the identity region. --}}
                         <div class="sticky top-16 z-20 -mx-4 border-y border-line bg-bg/90 px-4 backdrop-blur sm:-mx-6 sm:px-6">
@@ -219,10 +219,17 @@
                     </div>
                 @else
                     {{-- Single skill: no tab bar (renders directly, per Prompt H). --}}
-                    <div x-ref="panel" @class(['mt-12' => $universalBlocks->isNotEmpty()])>
+                    <div x-ref="panel" @class(['mt-12' => $universalAbove])>
                         @include('talent.partials.skill-blocks', ['talent' => $talent, 'blocks' => $blocksFor($activeSkill->id)])
                     </div>
                 @endif
+            @endif
+
+            {{-- Universal region moved BELOW the skill tabs (section order). --}}
+            @if ($universalBlocks->isNotEmpty() && $universalAfterTabs)
+                <div id="universal-blocks" @class(['space-y-16', 'mt-16' => $tabSkills->isNotEmpty()])>
+                    @include('talent.partials.universal-blocks', ['talent' => $talent, 'blocks' => $universalBlocks])
+                </div>
             @endif
 
             @if ($universalBlocks->isEmpty() && $tabSkills->isEmpty())

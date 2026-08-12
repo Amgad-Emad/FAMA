@@ -26,7 +26,8 @@ it('seeds a multi-type demo talent with merged blocks and populated content', fu
     $photographer = $talent->talentTypes->firstWhere('slug', 'photography');
 
     $universalKeys = $talent->profileBlocks->whereNull('talent_type_id')->map(fn ($b) => $b->blockType->key);
-    expect($universalKeys->all())->toContain('hero')->toContain('reviews')->toContain('brand_collabs');
+    expect($universalKeys->all())->toContain('reviews')->toContain('brand_collabs');
+    expect($universalKeys->all())->not->toContain('hero'); // retired block (ADR-O)
 
     $modelKeys = $talent->profileBlocks->where('talent_type_id', $model->id)->map(fn ($b) => $b->blockType->key);
     expect($modelKeys->all())->toContain('gallery')->toContain('comp_card');

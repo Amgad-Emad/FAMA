@@ -690,16 +690,127 @@ set (Dashboard · Feed · Discover · Activity · [flagged marketplace] · Profi
 consumed by the talent-layout topbar AND by public-layout's topbar when auth('talent') (guests: Feed ·
 Discover · Log in; brand/admin: Profile→dashboard). Add/rename a talent nav link THERE, never in a
 layout. Public topbar active check is routeIs() and items may carry `params`.
-ONE TOPBAR COMPONENT (2026-08-11, suite 634 green): `<x-talent-topbar :title>` is the single talent
+ONE TOPBAR COMPONENT (2026-08-11, suite 636 green): `<x-talent-topbar :title>` is the single talent
 chrome — talent-layout renders it, and public-layout swaps its fixed `site-topbar` for it when
-auth('talent') (sticky, in-flow; body padding dropped and `--topbar-h` overridden inline to 6.5rem so
-feed sticky offsets keep working — if the bar's height changes, change that override with it). NO
-locale switcher in it (V1 has no AR/EN toggle; /ar still routes). V1 editor trims: booking_type/
+auth('talent') (sticky, in-flow; body padding dropped). It is a SINGLE ROW (h-16 = the default
+--topbar-h, so feed sticky offsets need no override — if the bar grows taller again, re-override the
+token in public-layout): primary links are ONLY **Feed** + **Preview profile** (public profile,
+_blank); EVERYTHING else (Dashboard · Activity · Profile · Content · Reviews · flagged marketplace ·
+Log out) lives in the corner AVATAR DROPDOWN (Alpine-local open state, click-outside/Escape,
+role=menu). NO locale switcher in it (V1 has no AR/EN toggle; /ar still routes). NEW `discover`
+feature flag (config/features.php, FEATURE_DISCOVER — false in the V1 .env, pinned true in
+phpunit.xml): /discover routes 404 behind `feature:discover` and the nav item drops from
+Navigation::talentItems() + the guest topbar. V1 editor trims: booking_type/
 booking_value are NOT editable (columns + public external-link rendering kept); the Profile editor
 order is Publishing → Core → Pricing → **Blocks → Skills**, and in Blocks each skill's section renders
 ONLY when selected in the pill bar (activeSkillTab in profileEditor; universal section always visible;
 adding a skill auto-selects it; the scope card partial is talent/partials/block-scope-card.blade.php —
 keep it the single card markup).
+OFFICIAL FAMA BRANDING (2026-08-11, from the "FAMA - BRANDING PHASE 3" PDF in the repo root; suite
+637 green; SUPERSEDES the same-day #BA49DA pass): primary **Orchid Purple #AD50D3** (accent; wash
+#F7E0FF; accent-ink #8B2FA8), yellow **#FFEB73** = gold-weak (gold #7E6600), mint **#6CEAC2** →
+success family (#0B7059 / #BDF4E3). Neutrals are the PDF's **WARM CREAM** — --bg #FAF6E0, --surface
+#FDFBEF, warm lines, plum ink #231A25; dark theme = plum night (#171019 base). **BLUE IS BANNED**:
+Daylight's --dl-base is the cream, --dl-daylight is deep orchid #8B2FA8 (was indigo), veil lavender,
+shadows ORCHID-tinted ("warm ground, purple light" — the old blue-shadow rule is dead);
+CheckFeedContrast's formula table + daylight.css @supports fallback hexes were regenerated together
+(run `php artisan feed:check-contrast` after ANY daylight edit). GeneratesCoverImages seeds
+brand-arc hues only, accent circles constrained to the ground's hue family (cross-family alpha
+blends made cyan). The review-removed EMAIL inlines the brand hexes (emails can't read tokens).
+Older "teal accent"/"cloud" wording below this line is historical. "+ Add skill" is a SOLID accent pill. The editor's
+block scope cards have NO "Add a block…" picker and NO per-block ✕ remove — V1 blocks are the seeded
+set (hide via the Visible toggle, reorder, move scope); the add/remove endpoints + ProfileBlockService
+methods still exist (UI-only removal — restore the partial's rows to re-enable). NEW `pricing` feature
+flag (FEATURE_PRICING — false in the V1 .env, true in phpunit.xml): editor section @feature-gated,
+PATCH /talent/profile/pricing 404s, public profile rate chip suppressed via the $hasRate condition.
+EDITOR CONSOLIDATED + BAR FINALIZED (2026-08-11, suite 636 green): the topbar's Feed + Preview links
+sit on the START side next to the wordmark — NO page title in the bar (layouts still set <title>).
+The feed's chrome header (t-display title + eyebrow + inline chips) is REMOVED — the Filters FAB is
+the only filter surface and is ALWAYS visible (no pastHeader gate; feedStream's $refs.chrome uses are
+null-safe). The profile editor page is titled **Edit profile** (nav label too); the old Publishing
+section is a ROW inside the Core-details card. There is NO standalone Skills section — the skill
+PILLS in Blocks are the manager: whole pill draggable (onSkillDrop({id})), ★ button = makePrimarySkill,
+✕ = removeSkill (confirmed), dashed "+ Add skill" toggles showAddSkill picker inline.
+
+UNIFIED DRAG LAYER (2026-08-11, suite 644 green): every draggable in the Blocks card (pills, skill
+rows, block rows) goes through profileEditor.onRowDragStart/Over/Drop/End — dragging state
+`dragging{type,key}`, hover `dragOverKey`, denial `denyKey` (600ms danger flash). Semantics:
+block↔block same scope = onDrop reorder; block→section (row, pill, or expanded list) = dropMove →
+moveBlock (moveTargets-gated); section↔section = onSectionDrop; section→universal block row =
+onSectionDrop('universal') (crosses the group). dataTransfer.setData at dragstart is REQUIRED
+(Firefox won't drag without it). Feedback classes live on the rows (:class arrays — scale/opacity on
+source, ring-accent on target, ring-danger on deny; transition-all duration-150).
+UNIFIED BLOCKS CARD (2026-08-11, suite 644 green, SUPERSEDES the All-pill pass): the editor's Blocks
+area is ONE card — universal block rows + each SKILL as a single collapsed row (kicker "Skill
+section", Primary badge, N-blocks count, "Manage blocks" expander revealing its rows inline), all in
+true section order via profileEditor.unifiedRows (universal group spliced at universalPosition among
+skill rows). Skill rows drag with onSectionDrop (same keys as the pills); block rows use the shared
+partial talent/partials/block-row.blade.php (block-scope-card is DELETED). State: expanded{} +
+toggleExpanded (activeSection/activeGroups are GONE); skill PILL click toggles that row's expansion;
+there is NO "All" pill.
+FEED WIDTH + REVIEWS + ALL-SECTIONS (2026-08-11, suite 644 green): the no-brand-rail feed spine is
+BACK to `--dl-feed-col: 720px` (the 1000px V1 widening is dead — grid templates match). The talent
+/talent/reviews page is READ-ONLY: no Approve/Reject UI (endpoints remain; admin queue moderates),
+rating filter chips (All · 5★…1★) → `?rating=` on the data endpoint; crudList has `setQuery(q)` +
+`activeQuery`. The editor's Sections bar has an **All** pill — activeSection 'all' (THE DEFAULT)
+renders every section card stacked; pill click toggles focus⇄all.
+ORDERABLE SECTIONS + PUBLIC HEADER (2026-08-11, suite 642 green): the editor's Blocks pill bar is ONE
+orderable list — the UNIVERSAL section is a pill among the skills (card opens on select; open by
+default; no star/✕) and dragging persists its slot to `talents.meta['universal_position']` via PATCH
+/talent/profile/sections/universal-position. PUBLIC semantic (small ADR-R extension): position 0 =
+universal region ABOVE the skill tabs (default), ANY later slot = BELOW the tab region (in-between
+slots all mean below; the editor hint says so). Blade: profile.blade.php renders
+talent/partials/universal-blocks in one of two spots keyed on $universalAfterTabs; `id=
+"universal-blocks"` marks the region (tests assert order via strpos). JS: profileEditor.sectionPills/
+activeSection/onSectionDrop (activeSkillTab is GONE). The public profile header is FULL-WIDTH
+(max-w-6xl), single-row on lg (avatar · identity+location · stats · CTAs), bio on its own row below,
+and a **Share profile** copy-link button (canonical url($slug), "Link copied!" state) sits beside
+Leave a review — the old "…" menu was removed. WATCH OUT: the `hero` block type NEVER renders
+publicly (ADR-O) — tests seeding a universal block must pick a non-hero universal type.
+
+HERO BLOCK RETIRED (2026-08-12, suite 644 green): the `hero` block type is DEAD — migration
+2026_08_12_000100 deletes every placement, strips the key from `talent_types.default_blocks`, and sets
+`block_types.is_active = false`; TalentTypeSeeder no longer seeds it and BlockTypeSeeder seeds it
+inactive (`'active' => false` entry key). The catalog row STAYS (keys are frozen) and the defensive
+`key !== 'hero'` filters in profile.blade.php / PublicProfileResource / TalentProfileController stay for
+un-migrated data. Tests must NOT use `hero` as a stand-in for "an active universal block" — use
+`brand_collabs` (SkillCatalogService::updateDefaultBlocks now 422s on `hero` as ineligible).
+
+TOPBAR LOGO + DASHBOARD QUICK LINKS + NAV RENAMES (2026-08-12, suite 647 green, build green): the
+topbar shows the BRAND LOGO via `<x-fama-logo>` (inline SVG, brand hexes #B247D4/#FFE72F — NOT tokens;
+the source `<style>`/.st0/.st1 classes were converted to fill attributes because those generic class
+names leak) — rendered by `<x-talent-topbar>` and public-layout's guest `site-topbar`; auth
+split-screens, admin/brand layouts, the footer and the review-removed e-mail still use the TEXT
+wordmark (`Fama.`). `Navigation::talentItems()` items now carry a one-line **`description`**, and the
+talent dashboard's "Where to next" grid renders THE WHOLE NAV SET (minus Dashboard) + a Preview-profile
+card — add a nav item and it appears on the dashboard too. Labels: **Profile structure**
+(talent.profile.edit) and **Profile content** (talent.content); **Reviews is NOT in the nav** (it is a
+panel inside Profile content; /talent/reviews stays for the page + its data endpoint).
+
+PROFILE CONTENT IS SECTION-FIRST (2026-08-12, suite 647 green, build green): `GET /talent/content/
+{section?}` — `{section}` is `universal` or a SKILL SLUG (a legacy content-type key still resolves to
+the section showing it; unknown → 404; no arg → first section). The page renders ONE section with ALL
+its content blocks STACKED (`talent/partials/content-editor` per block, anchor `id="block-{key}"`);
+the switcher is a row of premium section buttons (icon · name · Primary · count, active = filled
+accent). The CRUD endpoints are UNCHANGED and still per type (`/talent/content/{type}/data|store|…`).
+**Reviews are a panel here** — the list lives in `talent/partials/reviews-list` and BOTH
+/talent/reviews and the Reviews block panel include it (one implementation). The type registry moved
+to **`App\Support\ContentRegistry`** (add a content type THERE, not in the controller);
+`ContentRegistry::keys()` gates the editor's "Edit content" link (`contentKeys` → profileEditor.
+hasContentEditor/contentUrl in dashboard.js) so `comp_card` no longer offers a dead link, and the link
+targets the block's own section + anchor. Block types with no editor are skipped when building panels.
+
+PROFILE CONTENT SWITCHER (2026-08-12, suite 644 green, SUPERSEDED by the section-first pass above): the talent nav item `talent.content` is
+labelled **Profile content** (change it in `App\Support\Navigation::talentItems()` — the avatar
+dropdown and the public topbar both read it). /talent/content/{type} no longer shows a flat pill bar
+of every content table: `BlockContentController::sections()` builds the switcher from the talent's
+OWN `profile_blocks` — the **Profile-wide** section plus one section per skill (x-skill-icon + name +
+Primary badge), each listing its table-backed blocks in block order, universal slot placed by
+`meta.universal_position` (same order as the editor pill bar / public profile). Only block keys that
+exist in the controller's registry become pills (so `reviews`/`comp_card` blocks are skipped and no
+pill dead-ends); hidden blocks stay listed dimmed with a "Hidden" tag; a type opened by URL with no
+block gets a trailing **Not on your profile** section. `$types` is gone from the view — use
+`$sections`.
 
 Phase 4 (mobile API: Sanctum + Scribe over existing services) is deferred; Prompt 5K mirrors the feed
 endpoints under /api/v1 with Sanctum and starts docs/api.md regeneration.

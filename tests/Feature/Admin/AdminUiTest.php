@@ -126,12 +126,12 @@ it('edits talent-type default_blocks and adds a skill', function () {
     $type = TalentType::where('slug', 'modeling')->firstOrFail();
 
     $this->actingAs($this->admin, 'admin')
-        ->patchJson("/admin/skills/{$type->id}/blocks", ['default_blocks' => ['hero', 'gallery']])
+        ->patchJson("/admin/skills/{$type->id}/blocks", ['default_blocks' => ['brand_collabs', 'gallery']])
         ->assertOk();
-    expect($type->fresh()->default_blocks)->toBe(['hero', 'gallery']);
+    expect($type->fresh()->default_blocks)->toBe(['brand_collabs', 'gallery']);
 
     $this->actingAs($this->admin, 'admin')
-        ->postJson('/admin/skills', ['name' => ['en' => 'DJ'], 'category' => 'creative', 'default_blocks' => ['hero']])
+        ->postJson('/admin/skills', ['name' => ['en' => 'DJ'], 'category' => 'creative', 'default_blocks' => ['brand_collabs']])
         ->assertCreated();
     expect(TalentType::where('slug', 'dj')->exists())->toBeTrue();
 });

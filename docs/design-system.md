@@ -3,9 +3,18 @@
 Fama runs **two token systems**, both keyed on the same `data-theme` (light/dark) and `dir`
 (LTR/RTL) switches:
 
-1. **Fama core** (`resources/css/app.css`) — cool cloud surfaces, graphite ink, teal accent;
-   Bricolage Grotesque + Sora + IBM Plex Sans Arabic + IBM Plex Mono. Used by every surface except
-   the feed. Documented inline in `app.css`; restyling is token-only.
+1. **Fama core** (`resources/css/app.css`) — the official FAMA brand system (FAMA — BRANDING PHASE 3
+   PDF, adopted 2026-08-11): **warm cream ground** (`--bg #FAF6E0` / `--surface #FDFBEF` — never
+   cool/blue-grey), warm-plum ink, and **primary Orchid Purple `#AD50D3`** (R173 G80 B211;
+   `--accent`; wash = brand lavender `#F7E0FF`; `--accent-ink` darkened `#8B2FA8` for 4.5:1+ text).
+   Brand secondaries fill existing roles: **yellow `#FFEB73`** as `--gold-weak` (star/Primary-badge
+   wash; `--gold #7E6600` for WCAG text on it) and **mint `#6CEAC2`** tinting the success family
+   (`--success #0B7059` / `--success-weak #BDF4E3`). The dark theme is a plum night re-derivation.
+   **Blue is banned everywhere** — including the demo-image generator
+   (`GeneratesCoverImages` constrains hues to the brand arc, circles stay in the ground's family).
+   Text-role variants are always darkened/lightened for contrast; raw brand values live in fills
+   and washes. Bricolage Grotesque + Sora + IBM Plex Sans Arabic + IBM Plex Mono. Used by every
+   surface except the feed. Documented inline in `app.css`; restyling is token-only.
 2. **Daylight** (`resources/css/daylight.css`) — the feed's system (Phase 5, playbook §3).
    **Feed-scoped**: everything inside a `[data-surface='daylight']` node.
 

@@ -98,8 +98,9 @@ controllers, form requests, actions and Resources**. Reads are public; writes re
 `auth:sanctum` (talent/brand tokens; `CurrentActor` resolves the sanctum tokenable). No sessions —
 no intent replay; guests simply get the 401 envelope. 34 routes.
 
-**Endpoint count: 201** — 131 pre-feed web endpoints (incl. `GET /talent/dashboard/views`) + 36 feed
-web endpoints (31 + saves + the suggestion rails) + 34 API v1 mirrors.
+**Endpoint count: 202** — 132 pre-feed web endpoints (incl. `GET /talent/dashboard/views` and
+`PATCH /talent/profile/sections/universal-position`) + 36 feed web endpoints (31 + saves + the
+suggestion rails) + 34 API v1 mirrors.
 
 ## Public pages — web endpoints (unguarded)
 
@@ -151,10 +152,11 @@ Contracts). The old standalone Professions + Account tabs are folded into it (AD
 | Profile | `GET /talent/profile` · `PATCH /talent/profile` | editor shell · update core fields (incl. `slug`, shown as **Username**) |
 | Pricing rate | `PATCH /talent/profile/pricing` | set/clear the indicative rate (`rate_unit`/`rate_amount`/`rate_currency`; all-or-nothing) |
 | Publish | `PATCH /talent/profile/publish` | publish/unpublish toggle (`{publish: bool}`) |
+| Sections | `PATCH /talent/profile/sections/universal-position` | universal section's slot among the skills (`{position: int}`; 0 = above the tabs, else below) |
 | Blocks | `GET /talent/profile/blocks` · `GET /talent/profile/block-picker?talent_type_id=` | list blocks (each carries `talent_type_id`) · **per-scope** eligibility picker (ADR-Q) |
 | Blocks | `POST /talent/profile/blocks` (`{block_type_id, talent_type_id?}`) · `PATCH …/{block}` · `PATCH …/reorder` (`{talent_type_id?, order}`) · `PATCH …/{block}/move` (`{talent_type_id?}`) · `PATCH …/{block}/visibility` · `DELETE …/{block}` | add-to-scope · fill · reorder-within-scope · **move between scopes** · show/hide · remove |
 | Skills | `GET /talent/profile/skills` · `POST …` · `PATCH …/{type}/primary` · `PATCH …/reorder` · `DELETE …/{type}` | manage skills (seeds blocks) |
-| Content | `GET /talent/content/{type}` (+ `/data`, `POST`, `PATCH {id}`, `DELETE {id}`, `PATCH reorder`, `POST {id}/media`) | child-table editors (gallery, digitals, showreel, equipment, projects, software, brand collabs, looks) |
+| Content | `GET /talent/content/{section?}` — page; `{section}` = `universal` or a skill slug (a legacy `{type}` key resolves to the section showing it). CRUD stays per type: `GET /talent/content/{type}/data`, `POST`, `PATCH {id}`, `DELETE {id}`, `PATCH reorder`, `POST {id}/media` | one section at a time, every content block in it stacked (gallery, digitals, showreel, equipment, projects, software, brand collabs, looks + the read-only reviews list) |
 | Reviews | `GET /talent/reviews` (+ `/data?status=`, `PATCH {review}/approve`, `PATCH {review}/reject`) | moderation queue |
 | Contracts inbox | `GET /talent/contracts` · `GET /talent/contracts/data?status=` | list, whose-turn, filter, paginated |
 | Contract room | `GET /talent/contracts/{contract}` · `GET /talent/contracts/{contract}/thread` | room shell · header+stepper+timeline payload (marks read) |

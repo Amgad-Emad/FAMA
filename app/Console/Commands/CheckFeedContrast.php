@@ -32,8 +32,8 @@ class CheckFeedContrast extends Command
      */
     private array $themes = [
         'light' => [
-            'base' => '#EDEFF3',
-            'daylight' => '#3D4FD6',
+            'base' => '#FAF6E0',
+            'daylight' => '#8B2FA8',
             'mixes' => [
                 'ground-sunk' => ['#14110B', 4],
                 'surface' => ['#FFFFFF', 55],
@@ -45,8 +45,8 @@ class CheckFeedContrast extends Command
             ],
         ],
         'dark' => [
-            'base' => '#0D0F13',
-            'daylight' => '#7B8AFF',
+            'base' => '#171019',
+            'daylight' => '#CE8BE8',
             'mixes' => [
                 'ground-sunk' => ['#000000', 35],
                 'surface' => ['#FFFFFF', 6],

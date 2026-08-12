@@ -172,23 +172,44 @@
     </x-ui.section>
     @endfeature
 
-    <x-ui.section class="mt-10" :title="__('Manage your profile')">
+    {{-- Every page in the talent nav, reachable straight from the dashboard.
+         Driven by App\Support\Navigation::talentItems() (minus this page), so a
+         new nav item appears here automatically — feature flags included. --}}
+    @php
+        $quickLinks = array_values(array_filter(
+            \App\Support\Navigation::talentItems(),
+            fn ($item) => $item['route'] !== 'talent.dashboard',
+        ));
+    @endphp
+    <x-ui.section class="mt-10" :title="__('Where to next')" :eyebrow="__('All your pages')">
         <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            @php
-                $manageCards = [
-                    ['talent.profile.edit', __('Profile'), __('Identity, skills, username, publishing, pricing & blocks')],
-                    ['talent.reviews', __('Reviews'), __('Moderate testimonials')],
-                ];
-                if (\App\Support\Features::contracts()) {
-                    $manageCards[] = ['talent.contracts', __('Contracts'), __('Your active bookings')];
-                }
-            @endphp
-            @foreach ($manageCards as [$route, $label, $desc])
-                <a href="{{ route($route) }}" class="group rounded-lg border border-line bg-surface p-5 transition hover:border-line-strong hover:shadow-e1">
-                    <div class="font-medium text-ink group-hover:text-accent-ink">{{ $label }}</div>
-                    <div class="mt-1 text-sm text-muted">{{ $desc }}</div>
+            @foreach ($quickLinks as $item)
+                <a href="{{ route($item['route'], $item['params'] ?? []) }}"
+                   class="group flex items-start gap-3 rounded-lg border border-line bg-surface p-5 transition hover:border-line-strong hover:shadow-e1 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+                    <span class="grid h-9 w-9 shrink-0 place-items-center rounded-pill bg-accent-weak text-accent-ink transition group-hover:bg-accent group-hover:text-on-accent">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="{{ $item['icon'] }}"/></svg>
+                    </span>
+                    <span class="min-w-0">
+                        <span class="block font-medium text-ink group-hover:text-accent-ink">{{ $item['label'] }}</span>
+                        <span class="mt-1 block text-sm text-muted">{{ $item['description'] }}</span>
+                    </span>
                 </a>
             @endforeach
+
+            {{-- Not a nav item, but the one link that leaves the dashboard for
+                 the public side. --}}
+            @if ($talent->slug)
+                <a href="{{ url($talent->slug) }}" target="_blank" rel="noopener"
+                   class="group flex items-start gap-3 rounded-lg border border-line bg-surface p-5 transition hover:border-line-strong hover:shadow-e1 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+                    <span class="grid h-9 w-9 shrink-0 place-items-center rounded-pill bg-accent-weak text-accent-ink transition group-hover:bg-accent group-hover:text-on-accent">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    </span>
+                    <span class="min-w-0">
+                        <span class="block font-medium text-ink group-hover:text-accent-ink">{{ __('Preview profile') }}</span>
+                        <span class="mt-1 block text-sm text-muted">{{ __('See your public profile the way brands see it') }}</span>
+                    </span>
+                </a>
+            @endif
         </div>
     </x-ui.section>
 </x-talent-layout>

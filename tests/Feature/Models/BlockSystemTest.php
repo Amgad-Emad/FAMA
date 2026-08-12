@@ -6,9 +6,9 @@ use App\Models\Talent;
 use App\Models\TalentType;
 
 it('casts talent_type default_blocks to an array', function () {
-    $type = TalentType::factory()->create(['default_blocks' => ['hero', 'gallery']]);
+    $type = TalentType::factory()->create(['default_blocks' => ['brand_collabs', 'gallery']]);
 
-    expect(TalentType::find($type->id)->default_blocks)->toBe(['hero', 'gallery']);
+    expect(TalentType::find($type->id)->default_blocks)->toBe(['brand_collabs', 'gallery']);
 });
 
 it('translates talent_type name', function () {

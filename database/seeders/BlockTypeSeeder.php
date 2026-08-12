@@ -15,7 +15,11 @@ class BlockTypeSeeder extends Seeder
     public function run(): void
     {
         $catalog = [
-            ['key' => 'hero', 'en' => 'Hero', 'ar' => 'الواجهة', 'availability' => 'universal', 'content_source' => 'inline', 'layout' => null, 'repeatable' => false, 'categories' => []],
+            // RETIRED (ADR-O): the cover/hero region became the avatar-led header,
+            // which the profile renders itself — a hero block showed an editable
+            // row that rendered nothing. Kept in the catalog (keys are frozen)
+            // but INACTIVE, so it is never seeded, picked, or placed again.
+            ['key' => 'hero', 'en' => 'Hero', 'ar' => 'الواجهة', 'availability' => 'universal', 'content_source' => 'inline', 'layout' => null, 'repeatable' => false, 'categories' => [], 'active' => false],
             ['key' => 'gallery', 'en' => 'Gallery', 'ar' => 'المعرض', 'availability' => 'universal', 'content_source' => 'table', 'layout' => 'masonry', 'repeatable' => true, 'categories' => []],
             ['key' => 'brand_collabs', 'en' => 'Brand Collaborations', 'ar' => 'تعاونات العلامات', 'availability' => 'universal', 'content_source' => 'table', 'layout' => 'grid', 'repeatable' => false, 'categories' => []],
             ['key' => 'reviews', 'en' => 'Reviews', 'ar' => 'التقييمات', 'availability' => 'universal', 'content_source' => 'table', 'layout' => 'list', 'repeatable' => false, 'categories' => []],
@@ -37,7 +41,7 @@ class BlockTypeSeeder extends Seeder
                     'availability' => $entry['availability'],
                     'content_source' => $entry['content_source'],
                     'default_layout' => $entry['layout'],
-                    'is_active' => true,
+                    'is_active' => $entry['active'] ?? true,
                     'is_repeatable' => $entry['repeatable'],
                     'position' => $position,
                 ],

@@ -2,17 +2,13 @@
 
 namespace App\Http\Controllers\Talent;
 
-use App\Models\BrandCollab;
-use App\Models\Digital;
-use App\Models\Equipment;
-use App\Models\LookType;
-use App\Models\PortfolioItem;
-use App\Models\Project;
-use App\Models\Showreel;
-use App\Models\SoftwareStack;
+use App\Models\ProfileBlock;
+use App\Models\TalentType;
+use App\Support\ContentRegistry;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -28,71 +24,125 @@ use Illuminate\View\View;
 class BlockContentController extends TalentController
 {
     /**
-     * @return array<string, array<string, mixed>>
-     */
-    private function registry(): array
-    {
-        return [
-            'gallery' => ['model' => PortfolioItem::class, 'relation' => 'portfolioItems', 'label' => 'Gallery', 'labelField' => 'caption', 'media' => 'gallery', 'thumb' => 'thumbnail_url', 'fields' => [
-                ['caption', 'translatable', []],
-                ['media_type', 'select', ['image', 'video', 'embed']],
-                ['embed_url', 'url', []],
-            ]],
-            'look_types' => ['model' => LookType::class, 'relation' => 'lookTypes', 'label' => 'Looks', 'labelField' => 'name', 'media' => null, 'thumb' => null, 'fields' => [
-                ['name', 'translatable', ['required']],
-            ]],
-            'digitals' => ['model' => Digital::class, 'relation' => 'digitals', 'label' => 'Digitals', 'labelField' => 'shot_type', 'media' => 'digital', 'thumb' => 'thumbnail_url', 'fields' => [
-                ['shot_type', 'select', ['front', 'side', 'back', 'full', 'headshot', 'smile']],
-                ['captured_at', 'date', []],
-            ]],
-            'showreel' => ['model' => Showreel::class, 'relation' => 'showreels', 'label' => 'Showreel', 'labelField' => 'title', 'media' => 'thumbnail', 'thumb' => 'thumbnail_url', 'fields' => [
-                ['title', 'translatable', []],
-                ['video_url', 'url', ['required']],
-                ['platform', 'select', ['youtube', 'vimeo', 'self_hosted']],
-                ['duration_seconds', 'number', []],
-            ]],
-            'equipment' => ['model' => Equipment::class, 'relation' => 'equipment', 'label' => 'Equipment', 'labelField' => 'name', 'media' => null, 'thumb' => null, 'fields' => [
-                ['category', 'select', ['camera', 'lens', 'lighting', 'audio', 'grip', 'drone', 'accessory']],
-                ['brand', 'text', []],
-                ['model', 'text', []],
-                ['name', 'text', ['required']],
-                ['notes', 'translatable', []],
-            ]],
-            'projects' => ['model' => Project::class, 'relation' => 'projects', 'label' => 'Projects', 'labelField' => 'title', 'media' => 'cover', 'thumb' => 'cover_image_url', 'skill_scoped' => true, 'fields' => [
-                ['title', 'translatable', ['required']],
-                ['client_name', 'text', []],
-                ['summary', 'translatable', [], true],
-                ['body', 'translatable', [], true],
-                ['year', 'number', []],
-                ['url', 'url', []],
-            ]],
-            'software_stack' => ['model' => SoftwareStack::class, 'relation' => 'softwareStack', 'label' => 'Software', 'labelField' => 'software_name', 'media' => 'icon', 'thumb' => 'icon_url', 'fields' => [
-                ['software_name', 'text', ['required']],
-                ['proficiency', 'select', ['beginner', 'intermediate', 'advanced', 'expert']],
-            ]],
-            'brand_collabs' => ['model' => BrandCollab::class, 'relation' => 'brandCollabs', 'label' => 'Brand collabs', 'labelField' => 'brand_name', 'media' => 'logo', 'thumb' => 'brand_logo_url', 'fields' => [
-                ['brand_name', 'text', ['required']],
-                ['project_title', 'translatable', []],
-                ['year', 'number', []],
-                ['url', 'url', []],
-            ]],
-        ];
-    }
-
-    /**
      * @return array<string, mixed>
      */
     private function config(string $type): array
     {
-        return $this->registry()[$type] ?? abort(404);
+        return ContentRegistry::get($type) ?? abort(404);
     }
 
-    public function index(string $type): View
+    /**
+     * The profile-content page: ONE section at a time, with every content block
+     * in that section stacked down the page. Sections are the profile's own
+     * shape (ADR-Q/ADR-R) — the universal (profile-wide) scope plus one per
+     * skill — so editing content follows the same mental model as the editor
+     * and the public profile.
+     *
+     * `{section}` is a section key (`universal` or a skill slug). A legacy
+     * content-type key (`/talent/content/gallery`) still resolves, to the first
+     * section that shows that block, so old links and bookmarks keep working.
+     */
+    public function index(?string $section = null): View
     {
-        $config = $this->config($type);
+        $sections = $this->sections();
+        $active = $this->resolveSection($sections, $section);
 
         return view('talent.content', [
-            'type' => $type,
+            'sections' => array_map(fn (array $s) => Arr::except($s, ['panels']), $sections),
+            'active' => $active['key'],
+            'activeLabel' => $active['label'],
+            'panels' => $active['panels'],
+        ]);
+    }
+
+    /**
+     * Every section of this talent's profile, in the talent's own section order
+     * (`meta.universal_position` decides where the universal slot sits among the
+     * skills), each carrying its editable panels in block order.
+     *
+     * A panel is one block: `content` for the table-backed types this controller
+     * serves, `reviews` for the (read-only) reviews block — reviews live on the
+     * profile like any other block, so they are edited/read here too. Blocks
+     * with no editor at all (comp_card) are skipped.
+     *
+     * @return list<array{key: string, label: string, icon: ?string, is_primary: bool, count: int, panels: list<array<string, mixed>>}>
+     */
+    private function sections(): array
+    {
+        $locale = app()->getLocale();
+        $talent = $this->talent()->loadMissing(['profileBlocks.blockType', 'talentTypes']);
+
+        // The panels of one scope (NULL = universal), in block order.
+        $panelsFor = fn (?int $typeId) => $talent->profileBlocks
+            ->filter(fn (ProfileBlock $b) => $b->talent_type_id === $typeId)
+            ->sortBy('position')
+            ->map(fn (ProfileBlock $b) => $this->panel($b, $locale))
+            ->filter()
+            ->values()
+            ->all();
+
+        $sections = $talent->talentTypes
+            ->sortBy(fn (TalentType $t) => [$t->pivot->is_primary ? 0 : 1, (int) $t->pivot->position])
+            ->map(fn (TalentType $t) => $this->section(
+                (string) $t->slug,
+                $t->getTranslation('name', $locale, false) ?: $t->getTranslation('name', 'en', false),
+                $panelsFor($t->id),
+                icon: $t->icon,
+                isPrimary: (bool) $t->pivot->is_primary,
+            ))
+            ->values()
+            ->all();
+
+        $position = (int) ($talent->meta['universal_position'] ?? 0);
+        array_splice($sections, max(0, min($position, count($sections))), 0, [
+            $this->section('universal', __('Profile-wide'), $panelsFor(null)),
+        ]);
+
+        return $sections;
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $panels
+     * @return array<string, mixed>
+     */
+    private function section(string $key, string $label, array $panels, ?string $icon = null, bool $isPrimary = false): array
+    {
+        return [
+            'key' => $key,
+            'label' => $label,
+            'icon' => $icon,
+            'is_primary' => $isPrimary,
+            'count' => count($panels),
+            'panels' => $panels,
+        ];
+    }
+
+    /**
+     * One block rendered as an editable panel — or null when the block type has
+     * no editor (comp_card, and any inline block edited on the profile editor).
+     *
+     * @return array<string, mixed>|null
+     */
+    private function panel(ProfileBlock $block, string $locale): ?array
+    {
+        $key = $block->blockType->key;
+        $title = $block->getTranslation('title', $locale, false);
+
+        if ($key === 'reviews') {
+            return ['kind' => 'reviews', 'type' => $key, 'title' => $title ?: __('Reviews'), 'is_visible' => (bool) $block->is_visible];
+        }
+
+        $config = ContentRegistry::get($key);
+
+        if ($config === null) {
+            return null;
+        }
+
+        return [
+            'kind' => 'content',
+            'type' => $key,
+            'title' => $title ?: __($config['label']),
+            'is_visible' => (bool) $block->is_visible,
             'config' => [
                 'label' => $config['label'],
                 'media' => $config['media'],
@@ -103,8 +153,42 @@ class BlockContentController extends TalentController
                     ? $this->talent()->talentTypes->map(fn ($s) => ['id' => $s->id, 'name' => $s->getTranslations('name')])->values()
                     : [],
             ],
-            'types' => collect($this->registry())->map(fn ($c, $k) => ['type' => $k, 'label' => $c['label']])->values(),
-        ]);
+        ];
+    }
+
+    /**
+     * Resolve the requested section: a section key, a legacy content-type key
+     * (→ the first section showing that block), or nothing (→ the first
+     * section). An unknown key 404s rather than silently showing something else.
+     *
+     * @param  list<array<string, mixed>>  $sections
+     * @return array<string, mixed>
+     */
+    private function resolveSection(array $sections, ?string $requested): array
+    {
+        if ($requested === null) {
+            return $sections[0] ?? abort(404);
+        }
+
+        foreach ($sections as $section) {
+            if ($section['key'] === $requested) {
+                return $section;
+            }
+        }
+
+        if (ContentRegistry::has($requested)) {
+            foreach ($sections as $section) {
+                if (in_array($requested, array_column($section['panels'], 'type'), true)) {
+                    return $section;
+                }
+            }
+
+            // The type is real but sits on no block — show the first section
+            // rather than 404ing a link the editor may still hold.
+            return $sections[0] ?? abort(404);
+        }
+
+        abort(404);
     }
 
     public function data(string $type): JsonResponse

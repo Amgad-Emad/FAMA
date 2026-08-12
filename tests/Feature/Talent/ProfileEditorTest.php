@@ -24,9 +24,10 @@ it('renders the consolidated profile editor (skills, username, publishing, prici
 
     $this->actingAs($talent, 'talent')->withoutVite()->get(route('talent.profile.edit'))
         ->assertOk()
-        ->assertSee(__('Skills'))
+        ->assertSee(__('Sections'))
+        ->assertSee(__('Add skill'))
         ->assertSee(__('Username'))
-        ->assertSee(__('Publishing'))
+        ->assertSee(__('Core details'))
         ->assertSee(__('Pricing rate'))
         // ADR-N retired the "Professions" label in favour of "Skills" — the old one
         // must not survive anywhere in the consolidated editor.
@@ -158,12 +159,13 @@ it('exposes the eligibility-filtered block picker for a skill tab', function () 
     $keys = collect($this->actingAs($talent, 'talent')->getJson(route('talent.profile.picker', ['talent_type_id' => $skillId]))->json('data'))
         ->pluck('key');
 
-    expect($keys)->toContain('hero')->toContain('comp_card'); // universal + model-gated
-    expect($keys)->not->toContain('equipment');               // crew-only
+    expect($keys)->toContain('brand_collabs')->toContain('comp_card'); // universal + model-gated
+    expect($keys)->not->toContain('equipment');                        // crew-only
+    expect($keys)->not->toContain('hero');                             // retired: inactive (ADR-O)
 
     // The universal (profile-level) section offers only universal blocks.
     $universalKeys = collect($this->actingAs($talent, 'talent')->getJson(route('talent.profile.picker'))->json('data'))->pluck('key');
-    expect($universalKeys)->toContain('hero')->not->toContain('comp_card');
+    expect($universalKeys)->toContain('brand_collabs')->not->toContain('comp_card');
 });
 
 it('adds a block to a skill tab, then moves it to the universal section', function () {

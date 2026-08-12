@@ -320,12 +320,124 @@ document.addEventListener('alpine:init', () => {
             );
         },
 
-        // The editor shows the universal section always, but a skill's section
-        // only after that skill is SELECTED in the pill bar (none by default).
-        activeSkillTab: null,
+        // The pill bar is ONE orderable list of sections — universal included —
+        // and doubles as the skills manager (drag/star/remove/add). Below it,
+        // ONE unified card lists the universal block rows with each SKILL as a
+        // single collapsed row (expand to manage its blocks) in the true
+        // section order. The universal slot persists to meta.universal_position
+        // (0 = above the skill tabs on the public profile, later = below them).
+        expanded: {},
+        showAddSkill: false,
+        sectionDragKey: null,
+        universalPosition: initial.universalPosition ?? 0,
+        toggleExpanded(key) { this.expanded[key] = ! this.expanded[key]; },
         get universalGroups() { return this.scopeGroups.filter((g) => g.typeId === null); },
         get skillGroups() { return this.scopeGroups.filter((g) => g.typeId !== null); },
-        get activeSkillGroups() { return this.skillGroups.filter((g) => g.typeId === this.activeSkillTab); },
+        get sectionPills() {
+            const list = [...this.skillGroups];
+            const uni = this.universalGroups[0];
+            if (uni) list.splice(Math.min(Math.max(this.universalPosition, 0), list.length), 0, uni);
+            return list;
+        },
+        // The unified card's rows: universal blocks inserted at the universal
+        // slot among the skill rows — exactly the pill order.
+        get unifiedRows() {
+            const blocks = this.blocksInScope(null).map((b) => ({ kind: 'block', key: 'b' + b.id, block: b }));
+            const rows = this.skillGroups.map((g) => ({ kind: 'skill', key: g.key, group: g }));
+            rows.splice(Math.min(Math.max(this.universalPosition, 0), rows.length), 0, ...blocks);
+            return rows;
+        },
+
+        // --- ONE drag layer for every row (blocks AND skill sections) --------
+        // Block↔block same scope = reorder; block→other section = MOVE it there
+        // (eligibility-gated, red flash when denied); skill↔skill = section
+        // reorder; skill→universal block row = the skill crosses the universal
+        // group. dataTransfer is fed so Firefox actually starts the drag.
+        dragging: null,
+        dragOverKey: null,
+        denyKey: null,
+
+        onRowDragStart(event, type, key) {
+            this.dragging = { type, key };
+            if (type === 'block') this.dragId = Number(key.slice(1));
+            if (type === 'section') this.sectionDragKey = key;
+            if (event.dataTransfer) {
+                event.dataTransfer.effectAllowed = 'move';
+                event.dataTransfer.setData('text/plain', key);
+            }
+        },
+        onRowDragOver(event, key) {
+            if (this.dragging && this.dragging.key !== key) this.dragOverKey = key;
+            if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+        },
+        onRowDragEnd() {
+            this.dragging = null;
+            this.dragOverKey = null;
+            this.dragId = null;
+            this.sectionDragKey = null;
+        },
+        onRowDrop(targetType, target) {
+            const drag = this.dragging;
+            this.dragging = null;
+            this.dragOverKey = null;
+            if (! drag) return;
+
+            if (drag.type === 'block') {
+                const dragged = this.blocks.find((b) => b.id === Number(drag.key.slice(1)));
+                if (! dragged) return;
+                if (targetType === 'block') {
+                    if ((dragged.talent_type_id ?? null) === (target.talent_type_id ?? null)) {
+                        this.dragId = dragged.id;
+                        this.onDrop(target); // same-scope reorder
+                    } else {
+                        this.dropMove(dragged, target.talent_type_id ?? null, 'b' + target.id);
+                    }
+                } else {
+                    this.dropMove(dragged, target.typeId, target.key);
+                }
+                return;
+            }
+
+            // Dragging a skill-section row.
+            this.sectionDragKey = drag.key;
+            this.onSectionDrop(targetType === 'section' ? target.key : 'universal');
+        },
+        dropMove(block, typeId, flashKey) {
+            const targetKey = typeId === null ? 'universal' : String(typeId);
+            if (! this.moveTargets(block).some((g) => g.key === targetKey)) {
+                this.denyKey = flashKey;
+                setTimeout(() => { this.denyKey = null; }, 600);
+                return;
+            }
+            this.moveBlock(block, typeId === null ? '' : typeId);
+        },
+
+        onSectionDrop(targetKey) {
+            const drag = this.sectionDragKey;
+            this.sectionDragKey = null;
+            if (drag === null || drag === targetKey) return;
+            const keys = this.sectionPills.map((g) => g.key);
+            const from = keys.indexOf(drag);
+            const to = keys.indexOf(targetKey);
+            if (from < 0 || to < 0) return;
+            const [moved] = keys.splice(from, 1);
+            keys.splice(to, 0, moved);
+
+            // Universal slot → its own endpoint.
+            const uni = keys.indexOf('universal');
+            if (uni >= 0 && uni !== this.universalPosition) {
+                this.universalPosition = uni;
+                patch('/talent/profile/sections/universal-position', { position: uni }).catch(() => {});
+            }
+
+            // Skill relative order → the existing reorder endpoint.
+            const order = keys.filter((k) => k !== 'universal').map(Number);
+            if (order.join() !== this.skills.map((s) => s.id).join()) {
+                this.skills.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
+                this.skills.forEach((s, i) => { s.position = i; });
+                patch('/talent/profile/skills/reorder', { order }).catch(() => {});
+            }
+        },
 
         blocksInScope(typeId) {
             return this.blocks.filter((b) => (b.talent_type_id ?? null) === typeId).sort((a, b) => a.position - b.position);
@@ -333,6 +445,20 @@ document.addEventListener('alpine:init', () => {
 
         catalogFor(block) {
             return this.catalog.find((c) => c.id === block.block_type.id) || null;
+        },
+
+        // --- Link out to the profile-content page -------------------------
+        // Only block types that HAVE an editor there link out (comp_card is
+        // table-backed but has none), and the link opens the block's own
+        // section — the page is section-based, so 'universal' or a skill slug.
+        contentKeys: initial.contentKeys || [],
+        hasContentEditor(block) {
+            return this.contentKeys.includes(block.block_type.key);
+        },
+        contentUrl(block) {
+            const skill = this.skills.find((s) => s.id === (block.talent_type_id ?? null));
+            const section = skill ? skill.slug : 'universal';
+            return window.fama.localizeUrl(`/talent/content/${section}#block-${block.block_type.key}`);
         },
 
         eligibleInScope(bt, group) {
@@ -553,7 +679,8 @@ document.addEventListener('alpine:init', () => {
                 const { data } = await post('/talent/profile/skills', { talent_type_id: this.addSkillId });
                 this.applySkills(data);
                 this.addSkillId = '';
-                this.activeSkillTab = added; // reveal the new skill's section right away
+                this.showAddSkill = false;
+                this.expanded[String(added)] = true; // open the new skill's row right away
                 await this.refreshBlocks(); // its tab was seeded with blocks
             } catch (e) {
                 if (e instanceof ApiError) window.alert(e.message);
@@ -569,6 +696,7 @@ document.addEventListener('alpine:init', () => {
             try {
                 const { data } = await del(`/talent/profile/skills/${type.id}`);
                 this.applySkills(data);
+                delete this.expanded[String(type.id)];
                 await this.refreshBlocks(); // that tab's blocks are gone (content preserved)
             } catch (e) {
                 if (e instanceof ApiError) window.alert(e.message);
@@ -1279,6 +1407,14 @@ document.addEventListener('alpine:init', () => {
             } finally {
                 this.loading = false;
             }
+        },
+
+        // Swap the data query string (e.g. a rating filter) and reload from page 1.
+        activeQuery: '',
+        async setQuery(query = '') {
+            this.activeQuery = query;
+            this.dataUrl = `${this.endpoint}/data${query}`;
+            await this.load(1);
         },
 
         async create() {

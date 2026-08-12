@@ -19,27 +19,27 @@ class TalentTypeSeeder extends Seeder
         $types = [
             [
                 'slug' => 'modeling', 'en' => 'Modeling', 'ar' => 'عرض الأزياء', 'category' => 'model',
-                'default_blocks' => ['hero', 'gallery', 'comp_card', 'look_types', 'digitals', 'brand_collabs', 'reviews'],
+                'default_blocks' => ['gallery', 'comp_card', 'look_types', 'digitals', 'brand_collabs', 'reviews'],
             ],
             [
                 'slug' => 'photography', 'en' => 'Photography', 'ar' => 'التصوير الفوتوغرافي', 'category' => 'crew',
-                'default_blocks' => ['hero', 'gallery', 'showreel', 'equipment', 'brand_collabs', 'reviews'],
+                'default_blocks' => ['gallery', 'showreel', 'equipment', 'brand_collabs', 'reviews'],
             ],
             [
                 'slug' => 'cinematography', 'en' => 'Cinematography', 'ar' => 'التصوير السينمائي', 'category' => 'crew',
-                'default_blocks' => ['hero', 'showreel', 'equipment', 'projects', 'reviews'],
+                'default_blocks' => ['showreel', 'equipment', 'projects', 'reviews'],
             ],
             [
                 'slug' => 'creative-direction', 'en' => 'Creative Direction', 'ar' => 'الإدارة الإبداعية', 'category' => 'creative',
-                'default_blocks' => ['hero', 'gallery', 'projects', 'brand_collabs', 'reviews'],
+                'default_blocks' => ['gallery', 'projects', 'brand_collabs', 'reviews'],
             ],
             [
                 'slug' => 'styling', 'en' => 'Styling', 'ar' => 'تنسيق الأزياء', 'category' => 'creative',
-                'default_blocks' => ['hero', 'gallery', 'brand_collabs', 'reviews'],
+                'default_blocks' => ['gallery', 'brand_collabs', 'reviews'],
             ],
             [
                 'slug' => 'graphic-design', 'en' => 'Graphic Design', 'ar' => 'التصميم الجرافيكي', 'category' => 'creative',
-                'default_blocks' => ['hero', 'gallery', 'projects', 'software_stack', 'reviews'],
+                'default_blocks' => ['gallery', 'projects', 'software_stack', 'reviews'],
             ],
         ];
 

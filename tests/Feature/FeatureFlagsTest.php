@@ -100,3 +100,26 @@ it('falls back to the talents queue for a disabled moderation deep-link', functi
     // And the brand queue data route 404s outright.
     $this->actingAs($admin, 'admin')->get('/admin/moderation/brands')->assertNotFound();
 });
+
+it('404s public discovery when the discover feature is off', function () {
+    config(['features.discover' => false]);
+
+    $this->get('/discover')->assertNotFound();
+    $this->get('/discover/search')->assertNotFound();
+});
+
+it('keeps public discovery reachable while the discover feature is on', function () {
+    $this->withoutVite();
+
+    $this->get('/discover')->assertOk();
+});
+
+it('hides the pricing rate when the pricing feature is off', function () {
+    config(['features.pricing' => false]);
+    $talent = Talent::factory()->create(['rate_unit' => 'day', 'rate_amount' => 100, 'rate_currency' => 'EGP']);
+
+    $this->actingAs($talent, 'talent')->withoutVite();
+    $this->get(route('talent.profile.edit'))->assertOk()->assertDontSee(__('Pricing rate'));
+    $this->patch(route('talent.profile.pricing'), ['rate_unit' => 'day', 'rate_amount' => 50, 'rate_currency' => 'EGP'])->assertNotFound();
+    $this->get('/'.$talent->slug)->assertOk()->assertDontSee(__('From').' EGP');
+});

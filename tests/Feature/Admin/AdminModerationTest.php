@@ -103,13 +103,13 @@ it('edits a talent-type default_blocks (future seeds only) and adds a skill', fu
     $type = TalentType::where('slug', 'modeling')->firstOrFail();
     $svc = app(SkillCatalogService::class);
 
-    $svc->updateDefaultBlocks($this->admin, $type, ['hero', 'gallery']);
-    expect($type->fresh()->default_blocks)->toBe(['hero', 'gallery']);
+    $svc->updateDefaultBlocks($this->admin, $type, ['brand_collabs', 'gallery']);
+    expect($type->fresh()->default_blocks)->toBe(['brand_collabs', 'gallery']);
 
     $new = $svc->addSkill($this->admin, [
         'name' => ['en' => 'Voice Artist', 'ar' => 'فنان صوت'],
         'category' => 'creative',
-        'default_blocks' => ['hero'],
+        'default_blocks' => ['brand_collabs'],
     ]);
     expect($new->slug)->toBe('voice-artist');
     expect(TalentType::where('slug', 'voice-artist')->exists())->toBeTrue();
@@ -130,7 +130,7 @@ it('denies catalog edits to an admin without manage-flows', function () {
     $this->seed(TalentTypeSeeder::class);
     $type = TalentType::where('slug', 'modeling')->firstOrFail();
 
-    expect(fn () => app(SkillCatalogService::class)->updateDefaultBlocks($this->powerless, $type, ['hero']))
+    expect(fn () => app(SkillCatalogService::class)->updateDefaultBlocks($this->powerless, $type, ['brand_collabs']))
         ->toThrow(AuthorizationException::class);
 });
 

@@ -2,6 +2,189 @@
 
 Notable changes to the Fama project. Newest first.
 
+## 2026-08-12 — Logo mark in the topbar, dashboard quick links, nav renames
+- **The topbar now carries the Fama logo** (the branding SVG) instead of the text wordmark, via a new
+  `<x-fama-logo>` component — inlined (no request, sizeable with a height class) with the source file's
+  `<style>`/`.st0`/`.st1` classes converted to `fill` attributes, because those generic class names
+  would otherwise leak onto anything else on the page. Used by `<x-talent-topbar>` and the guest
+  `site-topbar` in `public-layout`. Auth split-screens, the admin/brand layouts, the footer, and the
+  e-mail header still use the text wordmark.
+- **The talent dashboard links to every page in the nav.** The stale "Manage your profile" cards are
+  replaced by a "Where to next" grid built from `Navigation::talentItems()` (minus Dashboard itself)
+  plus a Preview-profile card — so a new nav item appears on the dashboard automatically, feature flags
+  included. Nav items gained a one-line `description` for those cards.
+- **Renames:** the talent nav reads **Profile structure** (was "Edit profile") and **Profile content**
+  (was "Content"); the profile editor page title follows. **Reviews left the nav** — they render as a
+  block panel inside Profile content (`/talent/reviews` still exists and still serves the list's data
+  endpoint, which that panel fetches).
+
+## 2026-08-12 — Profile content is section-first, and Reviews live there too
+- **The page is now SECTION-based.** `GET /talent/content/{section?}` (`universal` or a skill slug)
+  renders **one section with every one of its content blocks stacked** down the page, in block order.
+  The per-type pills are gone; the switcher is a row of **premium section buttons** (skill icon,
+  name, Primary badge, block count; active = filled accent). A legacy `/talent/content/{type}` URL
+  still resolves — to the section that shows that block — so old links keep working.
+- **Reviews joined the page.** The Reviews block renders the talent's reviews (read-only list + star
+  filter) inline in its section. The list moved to `talent/partials/reviews-list` and the standalone
+  `/talent/reviews` page now includes the same partial — one implementation, two entry points.
+- The registry of editable content types moved out of the controller into `App\Support\ContentRegistry`
+  (both the content page and the profile editor read it). The editor's **"Edit content"** link is now
+  gated on that registry (no more dead link on `comp_card`) and points at the block's own **section +
+  anchor** (`/talent/content/photography#block-showreel`), localized via `window.fama.localizeUrl`.
+- Blade: `talent/partials/content-editor` (one block's editor) + `talent/partials/reviews-list`;
+  `talent/content.blade.php` is now the switcher + the stack.
+
+## 2026-08-12 — The `hero` block type is retired
+- The `hero` block did nothing: ADR-O replaced the cover/hero region with the avatar-led header the
+  profile renders itself, and every public surface filtered the block out — it survived only as an
+  editable row (title + Visible toggle) in the talent editor.
+- Migration `2026_08_12_000100_retire_hero_block_type` deletes every `hero` placement, strips the key
+  from each skill's `default_blocks`, and sets the catalog entry `is_active = false`. `TalentTypeSeeder`
+  no longer lists it; `BlockTypeSeeder` seeds it inactive (new `active` key, defaults true). The
+  `block_types` row stays — keys are frozen and deactivated types are grandfathered by design — and the
+  defensive `key !== 'hero'` render filters stay for un-migrated data.
+- Tests that used `hero` as a stand-in for "an active universal block" now use `brand_collabs`, and the
+  picker/demo-seeder tests assert `hero` is **absent**.
+
+## 2026-08-12 — "Profile content" nav label + a profile-shaped content switcher
+- The talent nav item `talent.content` is relabelled **Profile content** (`App\Support\Navigation`,
+  so the topbar avatar dropdown and every other consumer follow) — "Content" alone read as a generic
+  bucket.
+- The content page's flat pill bar (Gallery · Looks · Digitals · … · Brand collabs) is replaced by a
+  switcher shaped like the profile itself (ADR-Q/ADR-R): the **Profile-wide** section plus **one
+  section per skill** (icon + name + Primary badge), each listing **its own table-backed blocks** in
+  block order, with the universal slot placed by `meta.universal_position` — the same order the
+  editor's pill bar and the public profile use. Hidden blocks stay listed (dimmed, "Hidden" tag) so
+  their content remains editable; a skill with no content blocks says so. A content type opened by
+  URL but placed on no block gets a trailing **Not on your profile** section, so the page is never
+  orphaned from the nav. Built in `BlockContentController::sections()` from the talent's own
+  `profile_blocks` (registry-backed keys only, so every pill leads somewhere).
+
+## 2026-08-11 — One drag layer for the unified blocks card (cross-row drops + feedback)
+- **Every row in the Blocks card now shares ONE drag system** (`onRowDragStart/Over/Drop/End` in
+  `profileEditor`), so dragging works BETWEEN row kinds: block↔block in the same section reorders;
+  **dragging a block onto a skill row (or into its expanded list, or onto its pill) MOVES the block
+  into that section** — eligibility-gated with a red ring flash when denied; skill↔skill (rows or
+  pills) reorders sections; a skill dropped on a universal block row crosses the universal group
+  (same as dropping on the universal pill). `dataTransfer` is now fed at dragstart (Firefox refuses
+  to start a drag without it).
+- **Drag feedback**: the dragged row dims and shrinks slightly, the hovered drop target shows an
+  accent ring, denied drops flash a danger ring, and rows transition (150ms) — no more silent,
+  cueless drops.
+
+## 2026-08-11 — Skills as single rows inside the unified blocks card
+- **The editor's Blocks area is now ONE card** ("Universal · profile-level"): the universal block
+  rows plus **each skill rendered as a single collapsed row** ("Skill section · Modeling · Primary ·
+  N blocks") with a **Manage blocks** expander revealing its inner block rows inline. Rows sit in the
+  true section order (the universal group inserted at `universal_position` among the skill rows), and
+  the card's kicker says Above/Below the tabs. Skill rows drag with the same section-reorder
+  semantics as the pills; the pill bar stays as the ordering/star/remove/add manager (skill pill
+  click now toggles that row's expansion; the "All" pill is gone — everything is always in view).
+  `block-scope-card` partial replaced by `talent/partials/block-row.blade.php`; profileEditor gained
+  `unifiedRows`/`expanded`/`toggleExpanded` (activeSection is gone).
+- Suite 644 green; build green; verified live.
+
+## 2026-08-11 — Smaller feed posts, read-only reviews with rating filter, All-sections view
+- **Feed posts back to the standard editorial width**: the V1 no-brand-rail layout no longer widens
+  the spine to 1000px — `--dl-feed-col` stays 720px at every breakpoint (grid templates updated to
+  match).
+- **Talent Reviews page is read-only with a rating filter**: Approve/Reject removed from the talent
+  surface (endpoints stay; pending reviews are moderated by the admin queue), the "Moderation queue"
+  framing replaced by a "What clients say" list, and new filter chips (All · 5★…1★) drive a `rating`
+  param on `GET /talent/reviews/data` (crudList gained a generic `setQuery()` helper).
+- **Editor sections gained an "All" pill (the new default)**: shows every section's card stacked —
+  universal + Modeling + Photography managed in one view — while picking a pill still focuses one
+  section (deselect returns to All; removing the focused skill falls back to All).
+- Suite 644 green; build green; verified live.
+
+## 2026-08-11 — Orderable sections (universal among skills) + public header rework
+- **The editor's Blocks area is ONE orderable pill list** — the Universal/profile-level section is
+  now a pill like the skills (its card opens on selection; it opens by default) and the whole row
+  drag-reorders. The universal pill's slot persists to `talents.meta['universal_position']` via the
+  new `PATCH /talent/profile/sections/universal-position` (`UpdateSectionOrderRequest`,
+  `TalentProfileService::updateUniversalPosition`): **0 = universal renders above the skill tabs on
+  the public profile (the ADR-R default); any later slot renders it BELOW the tab region** (a
+  deliberate, small extension of ADR-R — in-between slots all mean "below"). Skill relative order
+  still persists through the existing reorder endpoint; the universal pill has no star/remove.
+- **Public profile header reworked**: spans the full content width (`max-w-3xl` → `max-w-6xl`) and
+  lays out as a single row on desktop — avatar · name/@handle/skill/location · stats · CTAs — with
+  the bio on its own row below (rate chip + external link under it). New **Share profile** button
+  beside Leave a review copies the canonical profile link ("Link copied!" feedback); it replaces the
+  old "…" menu.
+- Suite 642 green; build green; verified live (order round-trip above ⇄ below).
+
+## 2026-08-11 — Official FAMA branding adopted (PDF): cream ground, Orchid Purple, NO blue
+- **Palette re-based on the FAMA — BRANDING PHASE 3 PDF** (supersedes the earlier typed values):
+  primary **Orchid Purple #AD50D3**, secondaries **#FFEB73** (yellow → gold family), **#6CEAC2**
+  (mint → success family), **#F7E0FF** (lavender → accent wash). The cool blue-grey neutrals became
+  the PDF's **warm cream** (`--bg #FAF6E0`, `--surface #FDFBEF`, warm lines/plum ink); dark theme is
+  a plum night. Scrim/focus re-tinted; the review-removed email inlines the new hexes.
+- **Daylight (feed) de-blued**: `--dl-base` is the brand cream, the indigo `--dl-daylight #3D4FD6` is
+  now deep orchid `#8B2FA8`, the veil is lavender, and the signature shadows are **orchid-tinted,
+  not blue** (dark: plum equivalents). `CheckFeedContrast`'s formula table updated in lockstep and
+  the `@supports` fallback hexes regenerated from the command's output — **all gates pass** (ink
+  15:1, ink-faint ≥4.9, daylight ≥6.3).
+- **Demo imagery de-blued**: `GeneratesCoverImages` now draws hues from the brand arc only
+  (yellows/mints/orchids) and keeps accent circles in the ground's hue family (mint-over-purple
+  alpha blends were mixing to cyan). Dev DB re-seeded; 60 live media × 3 sample points → 0 blue.
+- Suite 637 green; build green; `migrate:fresh --seed` exits 0.
+
+## 2026-08-11 — Fama brand palette (purple / yellow / mint / lavender)
+- **Token-only restyle to the brand colors**: `--accent` is now the brand purple **#BA49DA**
+  (`--accent-weak` = brand lavender **#F7E0FF**, `--accent-ink` = darkened #8B2FA8 at 6.5:1,
+  `--focus` re-tinted); brand yellow **#FFEA5A** became the `--gold-weak` wash (star/Primary badge;
+  `--gold` darkened to #7E6600 for 4.5:1 text on the wash); brand mint **#00EDBD** tints the success
+  family (`--success` #0A7A61, `--success-weak` #C9F7EA). Dark-theme equivalents re-derived
+  (#CE7BE5 accent etc., all ≥6:1 on the dark surface). Neutrals, warn, danger, and `--primary`
+  (graphite buttons) unchanged.
+- The Daylight feed system is untouched — it scopes its own `--accent` (`--dl-daylight`), and
+  `php artisan feed:check-contrast` still passes. The one inline-styled surface (the review-removed
+  email) was updated to the purple values. Contrast on every changed pair verified programmatically;
+  white-on-accent buttons sit at 4.16:1 (above the 3:1 UI floor, slightly under 4.5 small-text —
+  accepted to keep the exact brand primary).
+- Suite 637 green; build green.
+
+## 2026-08-11 — Editor V1 trims: fixed block set + pricing hidden
+- **"+ Add skill" is now a solid accent pill** (was a subtle dashed outline).
+- **Blocks are a fixed seeded set in V1**: the "Add a block…" picker row and the per-block ✕ remove
+  button are gone from the editor's scope cards — blocks can be hidden (Visible toggle), reordered,
+  and moved between scopes, but not added or removed. The block endpoints and services are untouched
+  (UI-level removal only).
+- **Pricing rate hidden in V1** behind a new `pricing` feature flag (`FEATURE_PRICING`, default ON,
+  false in the V1 `.env`; pinned ON in phpunit.xml): the editor section disappears
+  (`@feature('pricing')`), `PATCH /talent/profile/pricing` 404s (`feature:pricing`), and the public
+  profile's rate chip is suppressed. Column data preserved. `FeatureFlagsTest` covers it.
+- Suite 637 green; build green; verified live.
+
+## 2026-08-11 — Topbar links left, feed chrome removed, editor consolidation
+- **Topbar**: the Feed + Preview-profile links moved to the START side (next to the wordmark),
+  replacing the page title in the bar (the `<title>` tag keeps the page name); avatar dropdown stays
+  in the corner.
+- **Feed chrome header removed** (title, "YOUR WORK · YOUR PEOPLE" eyebrow, inline filter chips);
+  the Filters FAB — which opens the same chips in a popover — is now always visible instead of
+  appearing only past the header. `feedStream`'s chrome refs were already null-safe.
+- **Profile editor is now "Edit profile"** (page title + nav label): the standalone Publishing
+  section merged into the Core-details card as its first row (status dot · Live/Not live · verified
+  chip · Publish/Unpublish, verification banner above the card).
+- **Skill pills = the skills manager**: the standalone Skills section is gone; the pills in the
+  Blocks area now drag-to-reorder (same reorder endpoint), carry a ★ star button (set primary) and a
+  ✕ remove button (confirmed — deletes the tab's blocks, keeps content), with a dashed "+ Add skill"
+  button beside them revealing the picker inline; adding auto-opens the new skill's section.
+- Suite 636 green; build green; verified live.
+
+## 2026-08-11 — Slim topbar (Feed + Preview + corner menu) and Discover hidden in V1
+- **The talent topbar is now a single row**: two primary links — **Feed** and **Preview profile**
+  (opens the public profile in a new tab) — plus an avatar button in the corner that opens a
+  dropdown with everything else (Dashboard, Activity, Profile, Content, Reviews, flagged
+  marketplace items, and Log out). Alpine-local open state, click-outside/Escape close,
+  `aria-haspopup`/`aria-expanded`/`role="menu"`. The bar is h-16 = the default `--topbar-h`, so
+  public-layout no longer overrides the token for signed-in talents.
+- **Discover is hidden in V1** via a new `discover` feature flag (`FEATURE_DISCOVER`, default ON;
+  false in the V1 `.env`): `/discover` + `/discover/search` 404 behind `feature:discover`, and the
+  nav item drops out of both the canonical talent set and the guest topbar. `phpunit.xml` pins the
+  flag ON so the suite still exercises discovery; `FeatureFlagsTest` covers both states.
+- Suite 636 green; build green; verified live.
+
 ## 2026-08-11 — One talent topbar everywhere + V1 editor trims
 - **`<x-talent-topbar>` is now THE talent chrome**: the dashboard layout renders it, and public-layout
   renders the SAME component for signed-in talents instead of the fixed `site-topbar` (guests/brands/

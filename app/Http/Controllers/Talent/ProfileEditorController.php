@@ -9,6 +9,7 @@ use App\Http\Requests\Talent\ReorderRequest;
 use App\Http\Requests\Talent\UpdateAvatarRequest;
 use App\Http\Requests\Talent\UpdateCoreProfileRequest;
 use App\Http\Requests\Talent\UpdatePricingRateRequest;
+use App\Http\Requests\Talent\UpdateSectionOrderRequest;
 use App\Http\Resources\BlockTypeResource;
 use App\Http\Resources\ProfileBlockResource;
 use App\Http\Resources\TalentTypeResource;
@@ -17,6 +18,7 @@ use App\Models\ProfileBlock;
 use App\Models\TalentType;
 use App\Services\ProfileBlockService;
 use App\Services\TalentProfileService;
+use App\Support\ContentRegistry;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -53,6 +55,9 @@ class ProfileEditorController extends TalentController
             'availableSkills' => TalentTypeResource::collection(
                 TalentType::whereNotIn('id', $talent->talentTypes->pluck('id'))->orderBy('id')->get()
             ),
+            // Block types whose content is editable on the profile-content page —
+            // the rest (comp_card) must not offer a dead "Edit content" link.
+            'contentKeys' => [...ContentRegistry::keys(), 'reviews'],
         ]);
     }
 
@@ -127,6 +132,20 @@ class ProfileEditorController extends TalentController
             'rate_amount' => $talent->rate_amount,
             'rate_currency' => $talent->rate_currency,
         ], __('Pricing rate updated.'));
+    }
+
+    /**
+     * Reposition the universal section among the skill sections (the editor's
+     * pill bar): 0 keeps it above the skill tabs on the public profile, any
+     * higher index moves it below them.
+     */
+    public function updateSectionOrder(UpdateSectionOrderRequest $request): JsonResponse
+    {
+        $talent = $this->profile->updateUniversalPosition($this->talent(), $request->position());
+
+        return response()->success([
+            'universal_position' => (int) ($talent->meta['universal_position'] ?? 0),
+        ], __('Sections updated.'));
     }
 
     /**

@@ -17,10 +17,14 @@ trait GeneratesCoverImages
     {
         $img = imagecreatetruecolor($w, $h);
         $n = crc32($seed);
-        $hue = $n % 360;
+        // Brand-arc hues only (orchid purples, yellows, mints) — the full
+        // 0–360 wheel produced blue/navy covers, and blue is banned by the
+        // FAMA branding. Deterministic per seed, like before.
+        $hues = [45, 52, 58, 150, 160, 168, 275, 285, 295, 305, 315, 325];
+        $hue = $hues[$n % count($hues)];
 
         $top = $this->hsl($hue, 46, 32);
-        $bottom = $this->hsl(($hue + 28) % 360, 52, 13);
+        $bottom = $this->hsl(($hue + 340) % 360, 52, 13);
         for ($y = 0; $y < $h; $y++) {
             $t = $y / $h;
             $c = imagecolorallocate(
@@ -33,8 +37,16 @@ trait GeneratesCoverImages
         }
 
         imagealphablending($img, true);
+        // Accent circles stay in the SAME hue family as the ground — a mint
+        // circle alpha-blended over a purple gradient mixes to cyan/blue,
+        // which the branding bans.
+        $family = array_values(array_filter($hues, function ($h) use ($hue) {
+            $d = abs($h - $hue);
+
+            return min($d, 360 - $d) <= 40;
+        })) ?: [$hue];
         for ($k = 0; $k < 4; $k++) {
-            $col = $this->hsl(($hue + 55 + $k * 32) % 360, 60, 56);
+            $col = $this->hsl($family[($n >> ($k + 2)) % count($family)], 60, 56);
             $c = imagecolorallocatealpha($img, $col[0], $col[1], $col[2], 96);
             $cx = ($n >> ($k * 3)) % $w;
             $cy = ($n >> ($k * 4 + 2)) % $h;

@@ -11,7 +11,7 @@
     $rate = ['rate_unit' => $talent->rate_unit, 'rate_amount' => $talent->rate_amount, 'rate_currency' => $talent->rate_currency];
 @endphp
 
-<x-talent-layout :title="__('Profile')">
+<x-talent-layout :title="__('Profile structure')">
     <div x-data="profileEditor({
         core: @js($core),
         avatarUrl: @js($talent->avatar_url),
@@ -19,14 +19,18 @@
         blocks: @js($blocks),
         catalog: @js($catalog),
         universalLabel: @js(__('Universal · profile-level')),
+        universalPosition: {{ (int) ($talent->meta['universal_position'] ?? 0) }},
         skills: @js($skills),
         availableSkills: @js($availableSkills),
+        contentKeys: @js($contentKeys),
         publish: @js($publish),
         rate: @js($rate),
     })" class="space-y-10">
 
-        {{-- Publishing (moved from the old Account tab) --}}
-        <x-ui.section :title="__('Publishing')" :eyebrow="__('Profile visibility')">
+        {{-- Core details — identity + username, with the publishing status/toggle
+             merged in as the card's first row (the old standalone Publishing
+             section is folded in here). --}}
+        <x-ui.section :title="__('Core details')" :eyebrow="__('Your identity')">
             {{-- Awaiting verification: an admin must approve before going public. --}}
             <div x-show="!isVerified && !isPublished" x-cloak
                  class="mb-3 flex items-start gap-3 rounded-xl border border-warn/40 bg-warn/10 p-4">
@@ -36,27 +40,25 @@
                     <p class="mt-0.5 text-sm text-muted">{{ __('Our team is reviewing your profile. You can keep editing now — the Publish button unlocks once your account is verified.') }}</p>
                 </div>
             </div>
-            <x-ui.card class="flex flex-wrap items-center justify-between gap-4">
-                <div>
-                    <div class="flex items-center gap-2">
-                        <span class="h-2.5 w-2.5 rounded-pill" :class="isPublished ? 'bg-success' : (isVerified ? 'bg-warn' : 'bg-muted')"></span>
-                        <span class="font-display text-xl text-ink" x-text="isPublished ? '{{ __('Live') }}' : ('{{ __('Not live') }}' + ' · ' + status)"></span>
-                        <template x-if="isVerified">
-                            <span class="rounded-pill bg-accent-weak px-2 py-0.5 text-xs text-accent-ink">{{ __('verified') }}</span>
-                        </template>
-                    </div>
-                    <p x-show="publishError" x-cloak class="mt-1 text-xs text-danger" x-text="publishError"></p>
-                </div>
-                <x-ui.button variant="accent" x-on:click="togglePublish()" x-bind:disabled="publishing || (!isVerified && !isPublished)"
-                             x-bind:title="(!isVerified && !isPublished) ? '{{ __('Your account must be verified before you can publish.') }}' : ''">
-                    <span x-text="isPublished ? '{{ __('Unpublish') }}' : '{{ __('Publish') }}'"></span>
-                </x-ui.button>
-            </x-ui.card>
-        </x-ui.section>
-
-        {{-- Core fields (identity + username) --}}
-        <x-ui.section :title="__('Core details')" :eyebrow="__('Your identity')">
             <x-ui.card class="space-y-6">
+                {{-- Publishing (merged): status + publish/unpublish. --}}
+                <div class="flex flex-wrap items-center justify-between gap-4 border-b border-line pb-6">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="h-2.5 w-2.5 rounded-pill" :class="isPublished ? 'bg-success' : (isVerified ? 'bg-warn' : 'bg-muted')"></span>
+                            <span class="font-display text-xl text-ink" x-text="isPublished ? '{{ __('Live') }}' : ('{{ __('Not live') }}' + ' · ' + status)"></span>
+                            <template x-if="isVerified">
+                                <span class="rounded-pill bg-accent-weak px-2 py-0.5 text-xs text-accent-ink">{{ __('verified') }}</span>
+                            </template>
+                        </div>
+                        <p x-show="publishError" x-cloak class="mt-1 text-xs text-danger" x-text="publishError"></p>
+                    </div>
+                    <x-ui.button variant="accent" x-on:click="togglePublish()" x-bind:disabled="publishing || (!isVerified && !isPublished)"
+                                 x-bind:title="(!isVerified && !isPublished) ? '{{ __('Your account must be verified before you can publish.') }}' : ''">
+                        <span x-text="isPublished ? '{{ __('Unpublish') }}' : '{{ __('Publish') }}'"></span>
+                    </x-ui.button>
+                </div>
+
                 {{-- Profile image (avatar) — uploads to the `avatar` collection, Ajax, no reload. --}}
                 <div class="flex flex-col items-center gap-5 border-b border-line pb-6 sm:flex-row sm:items-center">
                     <span class="inline-flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-pill border border-line-strong bg-elevated shadow-e1">
@@ -141,7 +143,8 @@
             </x-ui.card>
         </x-ui.section>
 
-        {{-- Pricing rate (ADR-N — replaces the removed rate card) --}}
+        {{-- Pricing rate (ADR-N — replaces the removed rate card). Hidden in V1. --}}
+        @feature('pricing')
         <x-ui.section :title="__('Pricing rate')" :eyebrow="__('An indicative rate shown on your profile')">
             <x-ui.card class="space-y-4">
                 <div class="grid gap-4 sm:grid-cols-3">
@@ -174,79 +177,140 @@
                 </div>
             </x-ui.card>
         </x-ui.section>
+        @endfeature
 
-        {{-- Blocks — the universal/profile-level section is always shown; each
-             skill's section renders only after that skill is SELECTED in the
-             pill bar (nothing shows until a skill is picked). --}}
-        <x-ui.section :title="__('Blocks')" :eyebrow="__('Per skill · drag to reorder within a section')">
+        {{-- Blocks — ONE orderable list of section pills: the universal/profile-
+             level section sits AMONG the skill sections and drags like them (its
+             slot decides whether its blocks render above or below the skill tabs
+             on the public profile). A section's card shows when selected. --}}
+        <x-ui.section :title="__('Blocks')" :eyebrow="__('Sections · drag to reorder your profile')">
             <div class="space-y-6">
-                <template x-for="group in universalGroups" :key="group.key">
-                    @include('talent.partials.block-scope-card')
-                </template>
-
-                <div x-show="skills.length > 0" x-cloak class="space-y-3">
-                    <p class="font-mono text-[10px] uppercase tracking-wider text-subtle">{{ __('Skill sections') }}</p>
-                    <div class="flex flex-wrap gap-1.5" role="group" aria-label="{{ __('Skill sections') }}">
-                        <template x-for="g in skillGroups" :key="g.key">
-                            <button type="button"
-                                    @click="activeSkillTab = activeSkillTab === g.typeId ? null : g.typeId"
-                                    :aria-pressed="activeSkillTab === g.typeId ? 'true' : 'false'"
-                                    class="flex items-center gap-1.5 rounded-pill border px-3.5 py-1.5 text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-                                    :class="activeSkillTab === g.typeId ? 'border-accent bg-accent text-on-accent' : 'border-line text-muted hover:border-line-strong hover:text-ink'">
-                                <span x-text="g.label"></span>
-                                <span x-show="g.is_primary" x-cloak aria-hidden="true">★</span>
-                            </button>
-                        </template>
-                    </div>
-                    <p x-show="activeSkillGroups.length === 0" x-cloak class="rounded-lg border border-dashed border-line p-6 text-center text-sm text-subtle">{{ __('Select a skill above to manage its blocks.') }}</p>
-                    <template x-for="group in activeSkillGroups" :key="group.key">
-                        @include('talent.partials.block-scope-card')
-                    </template>
-                </div>
-
-                <p x-show="skills.length === 0" x-cloak class="rounded-lg border border-line bg-surface p-6 text-center text-sm text-subtle">{{ __('Add a skill below to create its tab and blocks.') }}</p>
-            </div>
-        </x-ui.section>
-
-        {{-- Skills (below the blocks; adding one creates its section above) --}}
-        <x-ui.section :title="__('Skills')" :eyebrow="__('Drag to reorder · star to set primary')">
-            <div class="space-y-4">
-                <div class="space-y-2">
-                    <template x-for="type in skills" :key="type.id">
-                        <div draggable="true"
-                             @dragstart="skillDragId = type.id" @dragover.prevent @drop.prevent="onSkillDrop(type)"
-                             class="flex items-center gap-3 rounded-lg border border-line bg-surface p-3">
-                            <span class="cursor-grab text-subtle">⋮⋮</span>
-                            <div class="flex-1">
-                                <span class="font-medium text-ink" x-text="t(type.name)"></span>
-                                {{-- Category display label (Modeling / Crew / Creative), not the raw enum. --}}
-                                <span class="ms-2 font-mono text-[10px] uppercase tracking-wider text-subtle"
-                                      x-text="({ model: '{{ __('Modeling') }}', crew: '{{ __('Crew') }}', creative: '{{ __('Creative') }}' })[type.category] || type.category"></span>
+                <div class="space-y-3">
+                    <p class="font-mono text-[10px] uppercase tracking-wider text-subtle">{{ __('Sections') }} · {{ __('Drag to reorder · star to set primary') }}</p>
+                    <div class="flex flex-wrap items-center gap-1.5" role="group" aria-label="{{ __('Sections') }}">
+                        <template x-for="g in sectionPills" :key="g.key">
+                            <div draggable="true"
+                                 @dragstart="onRowDragStart($event, 'section', g.key)"
+                                 @dragover.prevent="onRowDragOver($event, g.key)"
+                                 @drop.prevent="onRowDrop('section', g)"
+                                 @dragend="onRowDragEnd()"
+                                 class="flex select-none items-center rounded-pill border transition-all duration-150"
+                                 :class="[
+                                     g.typeId !== null && expanded[g.key] ? 'border-accent bg-accent text-on-accent' : 'border-line text-muted hover:border-line-strong',
+                                     dragging?.key === g.key ? 'scale-[.97] opacity-40' : '',
+                                     dragOverKey === g.key ? 'ring-2 ring-accent' : '',
+                                 ]">
+                                <button type="button"
+                                        @click="g.typeId !== null && toggleExpanded(g.key)"
+                                        :aria-pressed="g.typeId !== null && expanded[g.key] ? 'true' : 'false'"
+                                        class="flex cursor-grab items-center gap-1.5 rounded-s-pill ps-3.5 py-1.5 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                                        :class="[g.typeId !== null && expanded[g.key] ? '' : 'hover:text-ink', g.typeId === null ? 'rounded-e-pill pe-3.5' : 'pe-1']">
+                                    <span x-text="g.label"></span>
+                                </button>
+                                <template x-if="g.typeId !== null">
+                                    <button type="button" @click.stop="makePrimarySkill({ id: g.typeId })"
+                                            class="px-1 py-1.5 text-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                                            :class="g.is_primary ? (expanded[g.key] ? 'text-on-accent' : 'text-gold') : 'opacity-60 hover:opacity-100'"
+                                            :title="g.is_primary ? '{{ __('Primary') }}' : '{{ __('Make primary') }}'"
+                                            :aria-label="g.is_primary ? '{{ __('Primary') }}' : '{{ __('Make primary') }}'"
+                                            x-text="g.is_primary ? '★' : '☆'"></button>
+                                </template>
+                                {{-- Removing a skill deletes its tab's blocks (content is kept) — confirm first. --}}
+                                <template x-if="g.typeId !== null">
+                                    <button type="button"
+                                            @click.stop="$confirm({ title: '{{ __('Remove this skill?') }}', message: '{{ __('Delete this tab’s blocks? (your content is kept)') }}', confirmLabel: '{{ __('Remove') }}' }).then(ok => ok && removeSkill({ id: g.typeId }))"
+                                            class="rounded-e-pill py-1.5 pe-2.5 ps-1 text-xs opacity-60 transition hover:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                                            :aria-label="'{{ __('Remove skill') }}: ' + g.label" title="{{ __('Remove skill') }}">✕</button>
+                                </template>
                             </div>
-                            <button @click="makePrimarySkill(type)" class="text-lg"
-                                    :class="type.is_primary ? 'text-gold' : 'text-subtle hover:text-gold'"
-                                    :title="type.is_primary ? '{{ __('Primary') }}' : '{{ __('Make primary') }}'"
-                                    x-text="type.is_primary ? '★' : '☆'"></button>
-                            {{-- Removing a skill deletes its tab's blocks (content is kept) — confirm first. --}}
-                            <button @click="$confirm({ title: '{{ __('Remove this skill?') }}', message: '{{ __('Delete this tab’s blocks? (your content is kept)') }}', confirmLabel: '{{ __('Remove') }}' }).then(ok => ok && removeSkill(type))"
-                                    class="text-subtle hover:text-danger" title="{{ __('Remove skill') }}">✕</button>
-                        </div>
-                    </template>
-                    <p x-show="skills.length === 0" x-cloak class="rounded-lg border border-line bg-surface p-6 text-center text-sm text-subtle">{{ __('Add your first skill below.') }}</p>
-                </div>
+                        </template>
 
-                <x-ui.card class="flex flex-wrap items-end gap-3">
-                    <div class="flex-1">
-                        <label class="mb-1 block text-sm font-medium text-ink">{{ __('Skill') }}</label>
-                        <select x-model="addSkillId" class="w-full rounded-md border-line bg-elevated text-ink shadow-sm focus:border-accent focus:ring-accent">
+                        {{-- Add skill: reveals the picker beside the pills. --}}
+                        <button type="button" @click="showAddSkill = !showAddSkill" x-show="availableSkills.length > 0"
+                                :aria-expanded="showAddSkill ? 'true' : 'false'"
+                                class="flex items-center gap-1.5 rounded-pill bg-accent px-3.5 py-1.5 text-sm font-semibold text-on-accent shadow-e1 transition hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg">
+                            <span aria-hidden="true">+</span> {{ __('Add skill') }}
+                        </button>
+                    </div>
+                    <p class="text-xs text-subtle">{{ __('The universal section shows above your skill tabs — drag it after a skill to show it below them.') }}</p>
+
+                    <div x-show="showAddSkill" x-cloak class="flex flex-wrap items-center gap-2">
+                        <select x-model="addSkillId" class="rounded-md border-line bg-elevated text-sm text-ink shadow-sm focus:border-accent focus:ring-accent">
                             <option value="">{{ __('Choose…') }}</option>
                             <template x-for="type in availableSkills" :key="type.id">
                                 <option :value="type.id" x-text="t(type.name)"></option>
                             </template>
                         </select>
+                        <x-ui.button variant="accent" size="sm" x-on:click="addSkill()" x-bind:disabled="!addSkillId">{{ __('Add skill') }}</x-ui.button>
                     </div>
-                    <x-ui.button variant="accent" x-on:click="addSkill()" x-bind:disabled="!addSkillId">{{ __('Add skill') }}</x-ui.button>
-                </x-ui.card>
+
+                    <p x-show="skills.length === 0" x-cloak class="rounded-lg border border-line bg-surface p-6 text-center text-sm text-subtle">{{ __('Add your first skill to create its tab and blocks.') }}</p>
+                    {{-- The ONE unified card: universal block rows + each skill as a
+                         SINGLE collapsed row (expand to manage its blocks), in the
+                         true section order (universal_position). --}}
+                    <x-ui.card class="space-y-3">
+                        <div class="flex items-center gap-2">
+                            <span class="font-display text-lg text-ink">{{ __('Universal · profile-level') }}</span>
+                            <span class="font-mono text-[10px] uppercase tracking-wider text-subtle"
+                                  x-text="universalPosition === 0 ? '{{ __('Above the tabs') }}' : '{{ __('Below the tabs') }}'"></span>
+                        </div>
+
+                        <div class="space-y-2">
+                            <template x-for="entry in unifiedRows" :key="entry.key">
+                                <div>
+                                    {{-- A universal / profile-level block row --}}
+                                    <template x-if="entry.kind === 'block'">
+                                        <div>
+                                            <template x-for="block in [entry.block]" :key="block.id">
+                                                @include('talent.partials.block-row')
+                                            </template>
+                                        </div>
+                                    </template>
+
+                                    {{-- A skill section, treated as ONE block row (expandable) --}}
+                                    <template x-if="entry.kind === 'skill'">
+                                        <div class="rounded-lg border border-line bg-elevated transition-all duration-150"
+                                             :class="[
+                                                 dragging?.key === entry.key ? 'scale-[.99] opacity-40' : '',
+                                                 dragOverKey === entry.key ? 'border-transparent ring-2 ring-accent' : '',
+                                                 denyKey === entry.key ? 'border-transparent ring-2 ring-danger' : '',
+                                             ]">
+                                            <div draggable="true"
+                                                 @dragstart="onRowDragStart($event, 'section', entry.key)"
+                                                 @dragover.prevent="onRowDragOver($event, entry.key)"
+                                                 @drop.prevent="onRowDrop('section', entry.group)"
+                                                 @dragend="onRowDragEnd()"
+                                                 class="flex select-none flex-wrap items-center gap-3 p-3">
+                                                <span class="cursor-grab text-subtle" title="{{ __('Drag') }}">⋮⋮</span>
+                                                <div class="min-w-0 flex-1">
+                                                    <div class="font-mono text-[10px] uppercase tracking-wider text-subtle">{{ __('Skill section') }}</div>
+                                                    <div class="flex items-center gap-2">
+                                                        <span class="text-ink" x-text="entry.group.label"></span>
+                                                        <span x-show="entry.group.is_primary" x-cloak class="rounded-pill bg-gold-weak px-2 py-0.5 text-[10px] font-medium text-gold">{{ __('Primary') }}</span>
+                                                    </div>
+                                                </div>
+                                                <span class="font-mono text-[11px] text-subtle" x-text="blocksInScope(entry.group.typeId).length + ' {{ __('blocks') }}'"></span>
+                                                <button type="button" @click="toggleExpanded(entry.key)"
+                                                        :aria-expanded="expanded[entry.key] ? 'true' : 'false'"
+                                                        class="flex items-center gap-1.5 rounded-pill border border-line-strong px-3 py-1 text-xs font-medium text-muted transition hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+                                                    <span x-text="expanded[entry.key] ? '{{ __('Collapse') }}' : '{{ __('Manage blocks') }}'"></span>
+                                                    <svg class="h-3 w-3 transition-transform" :class="expanded[entry.key] ? 'rotate-180' : ''" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                                </button>
+                                            </div>
+                                            <div x-show="expanded[entry.key]" x-cloak class="space-y-2 border-t border-line p-3">
+                                                <template x-for="block in blocksInScope(entry.group.typeId)" :key="block.id">
+                                                    @include('talent.partials.block-row')
+                                                </template>
+                                                <p x-show="blocksInScope(entry.group.typeId).length === 0" x-cloak class="rounded-lg border border-dashed border-line p-4 text-center text-xs text-subtle">{{ __('No blocks here yet.') }}</p>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </template>
+                            <p x-show="unifiedRows.length === 0" x-cloak class="rounded-lg border border-dashed border-line p-4 text-center text-xs text-subtle">{{ __('No blocks here yet.') }}</p>
+                        </div>
+                    </x-ui.card>
+                </div>
             </div>
         </x-ui.section>
     </div>

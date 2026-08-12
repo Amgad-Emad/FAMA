@@ -8,9 +8,10 @@
   inside the feed and cloud/graphite/teal everywhere else. Daylight-only
   concepts live under --dl-* variables and the signature classes below.
 
-  The governing rule: warm ground, cold light — SHADOWS ARE BLUE, never
-  neutral grey. No Tailwind default shadow utility is used anywhere in the
-  feed; frames compose .frame-shadow (a notched drop-shadow) instead.
+  The governing rule: warm ground, purple light — SHADOWS ARE PURPLE-TINTED
+  (the brand orchid), never neutral grey and never blue. No Tailwind default
+  shadow utility is used anywhere in the feed; frames compose .frame-shadow
+  (a notched drop-shadow) instead.
 
   Fonts: Fraunces variable (SOFT+WONK axes on) / Amiri for display,
   Instrument Sans / IBM Plex Sans Arabic for body & UI, Geist Mono for
@@ -21,13 +22,13 @@
 
 [data-surface='daylight'] {
     /* — Daylight (light) — the whole neutral ramp derives from ONE base:
-       the topbar colour (core --bg, #EDEFF3). Change --dl-base and the
-       entire feed follows (Prompt 5S). The bar and the ground are the SAME
-       colour on purpose — frames float above on --dl-surface, lifted by the
-       blue shadow, never by a border. ink-faint mixes at 56% (not the
+       the topbar colour (core --bg, brand cream #FAF6E0). Change --dl-base
+       and the entire feed follows (Prompt 5S). The bar and the ground are the
+       SAME colour on purpose — frames float above on --dl-surface, lifted by
+       the purple shadow, never by a border. ink-faint mixes at 56% (not the
        drafted 48%) so 12px mono meta clears 4.5:1 on both grounds —
        verified by `php artisan feed:check-contrast`. */
-    --dl-base: #EDEFF3;
+    --dl-base: #FAF6E0;
     --dl-ground: var(--dl-base);
     --dl-ground-sunk: color-mix(in oklch, var(--dl-base), #14110B 4%);
     --dl-surface: color-mix(in oklch, var(--dl-base), #FFFFFF 55%);
@@ -37,11 +38,12 @@
     --dl-ink-soft: color-mix(in oklch, var(--dl-base), #14110B 64%);
     --dl-ink-faint: color-mix(in oklch, var(--dl-base), #14110B 56%);
 
-    /* The accent is unchanged and SCARCE: glint, links/mentions, focus,
-       light bar. Never buttons, chip backgrounds or filled surfaces. */
-    --dl-daylight: #3D4FD6;
-    --dl-veil: #C9D0F5;
-    --dl-shadow: rgba(61, 79, 214, .10);
+    /* The accent is SCARCE: glint, links/mentions, focus, light bar. Never
+       buttons, chip backgrounds or filled surfaces. Deep orchid (the brand
+       primary darkened for 4.5:1 text) — no blue anywhere. */
+    --dl-daylight: #8B2FA8;
+    --dl-veil: #EBD7F4;
+    --dl-shadow: rgba(139, 47, 168, .10);
 
     /* Hover system (5AD) — derived, never the only signal: every hover
        pairs a background move with a second cue (shadow lift, underline,
@@ -50,7 +52,7 @@
     --dl-hover-strong: color-mix(in oklch, var(--dl-surface), var(--dl-ink) 9%);
     --dl-hover-on-ground: color-mix(in oklch, var(--dl-ground), var(--dl-ink) 5%);
 
-    /* Blue-tinted elevation — never neutral grey. */
+    /* Orchid-tinted elevation — never neutral grey, never blue. */
     --dl-shadow-frame: 0 2px 6px var(--dl-shadow), 0 10px 24px -8px var(--dl-shadow);
     --dl-shadow-raised: 0 4px 10px var(--dl-shadow), 0 16px 36px -10px var(--dl-shadow);
     --dl-shadow-lifted: 0 8px 18px var(--dl-shadow), 0 28px 60px -14px var(--dl-shadow);
@@ -92,10 +94,10 @@
 }
 
 /* — Night Shoot (dark) — the same derivation from the dark topbar colour
-   (core dark --bg, #0D0F13). ink-faint likewise tuned to 56%. */
+   (core dark --bg, plum #171019). ink-faint likewise tuned to 56%. */
 [data-theme='dark'] [data-surface='daylight'],
 [data-theme='dark'][data-surface='daylight'] {
-    --dl-base: #0D0F13;
+    --dl-base: #171019;
     --dl-ground: var(--dl-base);
     --dl-ground-sunk: color-mix(in oklch, var(--dl-base), #000000 35%);
     --dl-surface: color-mix(in oklch, var(--dl-base), #FFFFFF 6%);
@@ -104,34 +106,34 @@
     --dl-ink: color-mix(in oklch, var(--dl-base), #FFF6E8 94%);
     --dl-ink-soft: color-mix(in oklch, var(--dl-base), #FFF6E8 62%);
     --dl-ink-faint: color-mix(in oklch, var(--dl-base), #FFF6E8 56%);
-    --dl-daylight: #7B8AFF;
-    --dl-veil: #2A2F5C;
-    --dl-shadow: rgba(0, 0, 8, .55);
-    --on-accent: #0D0F13;
+    --dl-daylight: #CE8BE8;
+    --dl-veil: #3B2150;
+    --dl-shadow: rgba(14, 2, 17, .55);
+    --on-accent: #171019;
 }
 
 /* Static fallbacks for browsers without oklch color-mix — the values the
    formulas above compute (feed:check-contrast prints them). */
 @supports not (color: color-mix(in oklch, red, blue)) {
     [data-surface='daylight'] {
-        --dl-ground-sunk: #E3E5E9;
-        --dl-surface: #F6F8F7;
-        --dl-surface-sunk: #E8EAEE;
-        --dl-seam: #D7D8DC;
-        --dl-ink: #231F19;
-        --dl-ink-soft: #5D5555;
-        --dl-ink-faint: #6E6668;
+        --dl-ground-sunk: #F0EBD6;
+        --dl-surface: #FDFBF1;
+        --dl-surface-sunk: #F5F1DB;
+        --dl-seam: #E3DECA;
+        --dl-ink: #231F18;
+        --dl-ink-soft: #5D594E;
+        --dl-ink-faint: #6F6B5E;
     }
 
     [data-theme='dark'] [data-surface='daylight'],
     [data-theme='dark'][data-surface='daylight'] {
-        --dl-ground-sunk: #040406;
-        --dl-surface: #171A1E;
-        --dl-surface-sunk: #08080C;
-        --dl-seam: #23262A;
-        --dl-ink: #F0E5D9;
-        --dl-ink-soft: #9F9192;
-        --dl-ink-faint: #8F8385;
+        --dl-ground-sunk: #090408;
+        --dl-surface: #231B23;
+        --dl-surface-sunk: #100910;
+        --dl-seam: #30272E;
+        --dl-ink: #F1E6D9;
+        --dl-ink-soft: #A4938F;
+        --dl-ink-faint: #958482;
     }
 }
 
@@ -991,20 +993,19 @@
 }
 
 /* No brand rail (a brand viewer, or the V1 release with brands off): the grid
-   rebalances AND the feed column widens to fill the reclaimed space, so wide
-   monitors get big, premium posts instead of a large empty margin. The wider
-   width is driven by --dl-feed-col (below), scoped to this case only. */
+   rebalances. Posts keep the STANDARD editorial column (720px) — the earlier
+   1000px "fill the space" width made frames feel oversized (2026-08-11). */
 @media (min-width: 1100px) {
     [data-surface='daylight'] .feed-grid.no-brand-rail {
-        grid-template-columns: minmax(0, 1000px);
+        grid-template-columns: minmax(0, 720px);
         gap: 40px;
     }
-    [data-surface='daylight'] .feed-grid.no-brand-rail .feed-spine { --dl-feed-col: 1000px; }
+    [data-surface='daylight'] .feed-grid.no-brand-rail .feed-spine { --dl-feed-col: 720px; }
 }
 
 @media (min-width: 1400px) {
     [data-surface='daylight'] .feed-grid.no-brand-rail {
-        grid-template-columns: 340px minmax(0, 1000px);
+        grid-template-columns: 340px minmax(0, 720px);
         gap: 40px;
     }
 }

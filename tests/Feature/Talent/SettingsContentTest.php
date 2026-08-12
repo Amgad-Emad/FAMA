@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\BlockType;
 use App\Models\PortfolioItem;
 use App\Models\Project;
 use App\Models\Talent;
@@ -161,4 +162,89 @@ it('forbids managing another talent’s content item', function () {
     $this->actingAs($intruder, 'talent')
         ->deleteJson(route('talent.content.destroy', ['type' => 'gallery', 'id' => $item->id]))
         ->assertForbidden();
+});
+
+// ---------------------------------------------------------------------------
+// The profile-content page is SECTION-based: pick a section, get all of its
+// content blocks stacked (ADR-Q/ADR-R ordering).
+// ---------------------------------------------------------------------------
+
+/** A talent with two skills and one block per scope, blocks seeded per skill. */
+function sectionedTalent(): Talent
+{
+    $talent = Talent::factory()->create();
+    $model = TalentType::where('slug', 'modeling')->firstOrFail();
+    $photographer = TalentType::where('slug', 'photography')->firstOrFail();
+    $talent->talentTypes()->attach([
+        $model->id => ['is_primary' => true, 'position' => 0],
+        $photographer->id => ['is_primary' => false, 'position' => 1],
+    ]);
+
+    $block = fn (string $key, ?int $scope) => $talent->profileBlocks()->create([
+        'block_type_id' => BlockType::where('key', $key)->firstOrFail()->id,
+        'talent_type_id' => $scope,
+        'position' => 0,
+        'is_visible' => true,
+        'status' => 'visible',
+    ]);
+
+    $block('brand_collabs', null);
+    $block('reviews', null);
+    $block('look_types', $model->id);
+    $block('showreel', $photographer->id);
+
+    return $talent;
+}
+
+it('renders one section at a time with every content block in it stacked', function () {
+    $this->seed([TalentTypeSeeder::class, BlockTypeSeeder::class]);
+    $talent = sectionedTalent();
+
+    // Universal: the brand-collabs editor AND the reviews list, both on the page.
+    $page = $this->actingAs($talent, 'talent')->get(route('talent.content', ['section' => 'universal']))->assertOk();
+    $page->assertSee('id="block-brand_collabs"', false)
+        ->assertSee('id="block-reviews"', false)
+        ->assertDontSee('id="block-look_types"', false);
+
+    // A skill section shows only its own blocks.
+    $this->actingAs($talent, 'talent')->get(route('talent.content', ['section' => 'modeling']))
+        ->assertOk()
+        ->assertSee('id="block-look_types"', false)
+        ->assertDontSee('id="block-showreel"', false);
+
+    // Every section is offered as a button, with its block count.
+    $page->assertSee(route('talent.content', ['section' => 'photography']), false);
+});
+
+it('resolves a legacy content-type url to the section that shows that block, and 404s on an unknown one', function () {
+    $this->seed([TalentTypeSeeder::class, BlockTypeSeeder::class]);
+    $talent = sectionedTalent();
+
+    $this->actingAs($talent, 'talent')->get('/talent/content/showreel')
+        ->assertOk()
+        ->assertSee('id="block-showreel"', false);
+
+    $this->actingAs($talent, 'talent')->get('/talent/content/nope')->assertNotFound();
+});
+
+it('never offers an editor for a block type that has none (comp_card)', function () {
+    $this->seed([TalentTypeSeeder::class, BlockTypeSeeder::class]);
+    $talent = sectionedTalent();
+    $model = TalentType::where('slug', 'modeling')->firstOrFail();
+    $talent->profileBlocks()->create([
+        'block_type_id' => BlockType::where('key', 'comp_card')->firstOrFail()->id,
+        'talent_type_id' => $model->id,
+        'position' => 1,
+        'is_visible' => true,
+        'status' => 'visible',
+    ]);
+
+    $this->actingAs($talent, 'talent')->get(route('talent.content', ['section' => 'modeling']))
+        ->assertOk()
+        ->assertDontSee('id="block-comp_card"', false);
+
+    // The editor knows which keys are editable, so it hides the dead link.
+    $this->actingAs($talent, 'talent')->get(route('talent.profile.edit'))
+        ->assertOk()
+        ->assertViewHas('contentKeys', fn (array $keys) => in_array('reviews', $keys, true) && ! in_array('comp_card', $keys, true));
 });

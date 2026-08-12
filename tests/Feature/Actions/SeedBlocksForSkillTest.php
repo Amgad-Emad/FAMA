@@ -24,7 +24,7 @@ it('seeds a skill’s default blocks into that skill’s scope and moves Created
 
     // Every seeded block is stamped with the skill.
     expect($created->every(fn ($b) => $b->talent_type_id === $model->id))->toBeTrue();
-    // model default_blocks: hero, gallery, comp_card, look_types, digitals, brand_collabs, reviews
+    // model default_blocks: gallery, comp_card, look_types, digitals, brand_collabs, reviews
     $keys = $talent->profileBlocks()->where('talent_type_id', $model->id)->with('blockType')->get()->map(fn ($b) => $b->blockType->key);
     expect($keys->all())->toContain('gallery')->toContain('comp_card');
     expect($talent->fresh()->status->getValue())->toBe('draft');

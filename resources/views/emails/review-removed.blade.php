@@ -7,7 +7,7 @@
 </head>
 <body style="margin:0;background:#EDEFF3;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#1A1A1C;">
     <div style="max-width:560px;margin:0 auto;padding:32px 20px;">
-        <div style="font-size:20px;font-weight:700;letter-spacing:-.01em;">Fama<span style="color:#0E8A83;">.</span></div>
+        <div style="font-size:20px;font-weight:700;letter-spacing:-.01em;">Fama<span style="color:#AD50D3;">.</span></div>
 
         <div style="margin-top:20px;background:#F8FAFC;border:1px solid #E2E6EC;border-radius:14px;padding:28px;">
             <h1 style="margin:0 0 12px;font-size:20px;line-height:1.3;">{{ __('A review was removed') }}</h1>
@@ -16,7 +16,7 @@
                 {{ __('Our team removed a review on Fama. Here is why:') }}
             </p>
 
-            <div style="margin:0 0 20px;padding:14px 16px;border-inline-start:3px solid #0E8A83;background:#D0EBE9;border-radius:8px;font-size:14px;line-height:1.6;color:#0A5F5A;white-space:pre-wrap;">{{ $reason }}</div>
+            <div style="margin:0 0 20px;padding:14px 16px;border-inline-start:3px solid #AD50D3;background:#F7E0FF;border-radius:8px;font-size:14px;line-height:1.6;color:#8B2FA8;white-space:pre-wrap;">{{ $reason }}</div>
 
             @if (!empty($review['body']) || !empty($review['reviewer_name']))
                 <p style="margin:20px 0 8px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#93939A;">{{ __('The removed review') }}</p>

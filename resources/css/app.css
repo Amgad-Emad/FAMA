@@ -26,19 +26,24 @@
   utilities (bg-surface, text-ink, border-line, font-display, rounded-lg, …).
 */
 :root {
-    /* Egyptian creative-marketplace theme — cool cloud surfaces, graphite ink, teal accent. */
-    --bg: #EDEFF3; --surface: #F8FAFC; --elevated: #FFFFFF;
-    --line: #E2E6EC; --line-strong: #CFD5DE;
-    --ink: #1A1A1C; --muted: #5E5E63; --subtle: #93939A;
-    --accent: #0E8A83; --accent-weak: #D0EBE9; --accent-ink: #0A5F5A; --on-accent: #FFFFFF;
-    --focus: rgba(14, 138, 131, .42);
-    --primary: #1A1A1C; --on-primary: #F8FAFC;
-    --gold: #B0862F; --gold-weak: #EEE0C2;
-    --success: #4E7C59; --success-weak: #DDE8DB;
+    /* Fama brand theme (FAMA — BRANDING PHASE 3): WARM CREAM ground — never
+       cool/blue — with the official palette: primary Orchid Purple #AD50D3
+       (R173 G80 B211), secondaries yellow #FFEB73 → gold family, mint #6CEAC2
+       → success family, pale lavender #F7E0FF → accent wash. Text-role
+       variants (--accent-ink, --gold, --success) are darkened for WCAG
+       contrast on the cream surfaces — raw brand values live in washes/fills. */
+    --bg: #FAF6E0; --surface: #FDFBEF; --elevated: #FFFFFF;
+    --line: #EDE6CB; --line-strong: #D8CEAC;
+    --ink: #231A25; --muted: #695E6D; --subtle: #98909D;
+    --accent: #AD50D3; --accent-weak: #F7E0FF; --accent-ink: #8B2FA8; --on-accent: #FFFFFF;
+    --focus: rgba(173, 80, 211, .45);
+    --primary: #231A25; --on-primary: #FDFBEF;
+    --gold: #7E6600; --gold-weak: #FFEB73;
+    --success: #0B7059; --success-weak: #BDF4E3;
     --warn: #A87B2C; --warn-weak: #EFE4C8;
     --danger: #B14A3A; --danger-weak: #F0DAD2;
     /* Modal/overlay scrim — deliberately dark in BOTH themes so dialogs read as elevated. */
-    --scrim: rgba(13, 15, 19, .52);
+    --scrim: rgba(26, 16, 29, .55);
     --r-xs: 2px; --r-sm: 4px; --r-md: 8px; --r-lg: 14px; --r-pill: 999px;
     --e1: 0 1px 2px rgba(26, 26, 28, .05), 0 1px 3px rgba(26, 26, 28, .04);
     --e2: 0 6px 16px -8px rgba(26, 26, 28, .14), 0 2px 6px -3px rgba(26, 26, 28, .08);
@@ -75,17 +80,17 @@
 }
 
 [data-theme='dark'] {
-    --bg: #0D0F13; --surface: #16191F; --elevated: #1E222A;
-    --line: #2A2F38; --line-strong: #3A414C;
-    --ink: #ECECEE; --muted: #A6A6AC; --subtle: #74747C;
-    --accent: #4FBDB4; --accent-weak: #123230; --accent-ink: #84D6CE; --on-accent: #0D0F13;
-    --focus: rgba(79, 189, 180, .5);
-    --primary: #ECECEE; --on-primary: #0D0F13;
-    --gold: #CCA45E; --gold-weak: #332913;
-    --success: #6FA277; --success-weak: #1E2B20;
+    --bg: #171019; --surface: #201826; --elevated: #2A1F31;
+    --line: #382C40; --line-strong: #4C3D57;
+    --ink: #F1EAF3; --muted: #ADA1B3; --subtle: #7C7083;
+    --accent: #C87BE7; --accent-weak: #3D1C4E; --accent-ink: #E4B4F5; --on-accent: #171019;
+    --focus: rgba(200, 123, 231, .5);
+    --primary: #F1EAF3; --on-primary: #171019;
+    --gold: #EFD874; --gold-weak: #363009;
+    --success: #4FE0BA; --success-weak: #113329;
     --warn: #CDA04A; --warn-weak: #302813;
     --danger: #D2715F; --danger-weak: #35201B;
-    --scrim: rgba(0, 0, 0, .62);
+    --scrim: rgba(10, 4, 12, .64);
     --e1: 0 1px 2px rgba(0, 0, 0, .4), 0 1px 3px rgba(0, 0, 0, .3);
     --e2: 0 8px 20px -8px rgba(0, 0, 0, .55), 0 2px 6px -3px rgba(0, 0, 0, .4);
     --e3: 0 20px 44px -14px rgba(0, 0, 0, .6), 0 6px 14px -10px rgba(0, 0, 0, .45);

@@ -25,10 +25,15 @@ class ReviewController extends TalentController
     public function data(Request $request): JsonResponse
     {
         $status = $request->query('status');
+        $rating = (int) $request->query('rating');
 
         $query = $this->talent()->reviews()->latest();
         if (in_array($status, ['pending', 'approved', 'rejected'], true)) {
             $query->where('status', $status);
+        }
+        // Star-rating filter (the V1 reviews page is a read-only list filtered by rate).
+        if ($rating >= 1 && $rating <= 5) {
+            $query->where('rating', $rating);
         }
 
         $paginator = $query->paginate(15);

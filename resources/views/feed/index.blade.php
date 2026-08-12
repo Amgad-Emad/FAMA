@@ -38,10 +38,10 @@
                         <span aria-hidden="true">↑</span>
                     </button>
 
-                    {{-- Filters FAB: appears once the sticky chrome hands off
-                         (pastHeader, from feedStream). Opens the same chips in a
-                         popover above the button; no clip trap (teleported). --}}
-                    <div class="relative" x-show="pastHeader" x-cloak
+                    {{-- Filters FAB: THE feed filter surface (the chrome header
+                         and its inline chips were removed) — always visible.
+                         Opens the chips in a popover above the button. --}}
+                    <div class="relative"
                          @keydown.escape="filtersOpen = false" @click.outside="filtersOpen = false">
                         <div x-show="filtersOpen" x-cloak class="fab-filter-panel" role="group" aria-label="{{ __('Feed filters') }}">
                             <button type="button" class="dl-chip" :class="{ 'is-active': !skill && !following }"
@@ -115,28 +115,10 @@
                             class="dl-btn is-ready mt-4 w-full justify-center" @click="showMore()">{{ __('SHOW MORE') }}</button>
                 </aside>
 
-                {{-- The spine column --}}
+                {{-- The spine column. The old chrome header (title · eyebrow ·
+                     inline filter chips) is gone — filtering lives in the
+                     always-visible Filters FAB. --}}
                 <div class="feed-spine min-w-0">
-                    <header class="feed-chrome feed-col mb-10" x-ref="chrome"
-                            :class="{ 'chrome-handed-off': pastHeader }">
-                        <h1 class="t-display">{{ __('Feed') }}</h1>
-                        <p class="t-meta chrome-eyebrow mt-1">{{ __('YOUR WORK · YOUR PEOPLE') }}</p>
-
-                        {{-- Filtered modes (5P): live Ajax swap, seeded ordering kept --}}
-                        <div class="chrome-chips mt-4 flex flex-wrap gap-2" role="group" aria-label="{{ __('Feed filters') }}">
-                            <button type="button" class="dl-chip" :class="{ 'is-active': !skill && !following }"
-                                    @click="setFilter(null, false)">{{ __('ALL') }}</button>
-                            @if ($currentActor !== null)
-                                <button type="button" class="dl-chip" :class="{ 'is-active': following }"
-                                        @click="setFilter(null, true)">{{ __('FOLLOWING') }}</button>
-                            @endif
-                            @foreach ($filterSkills as $skillOption)
-                                <button type="button" class="dl-chip" :class="{ 'is-active': skill === '{{ $skillOption->slug }}' }"
-                                        @click="setFilter('{{ $skillOption->slug }}', false)">{{ $skillOption->name }}</button>
-                            @endforeach
-                        </div>
-                    </header>
-
                     @if ($composer !== null)
                         <div class="mb-10 flex justify-center">
                             @include('feed.partials.composer', ['composer' => $composer])

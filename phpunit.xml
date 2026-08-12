@@ -40,6 +40,8 @@
         <env name="FEATURE_CONTRACTS" value="true"/>
         <env name="FEATURE_MESSAGING" value="true"/>
         <env name="FEATURE_DARK_MODE" value="true"/>
+        <env name="FEATURE_DISCOVER" value="true"/>
+        <env name="FEATURE_PRICING" value="true"/>
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
