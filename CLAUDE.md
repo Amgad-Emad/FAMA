@@ -812,5 +812,12 @@ pill dead-ends); hidden blocks stay listed dimmed with a "Hidden" tag; a type op
 block gets a trailing **Not on your profile** section. `$types` is gone from the view — use
 `$sections`.
 
+BLOCK NAMES ADMIN-GOVERNED (2026-08-13, suite 647 green, build green): talents can NOT rename blocks —
+the editor block row shows a read-only name (`title` fallback to catalog `block_types.name`),
+`saveTitle` is gone from dashboard.js, and `FillBlockRequest` has NO `title` rules (submitted titles
+are silently ignored by validated(); content/settings/layout still accepted). Naming lives with the
+admin block catalog (/admin/blocks). ProfileBlockService::fillBlock still handles `title` internally
+(seed/admin paths) — the gate is the Form Request boundary.
+
 Phase 4 (mobile API: Sanctum + Scribe over existing services) is deferred; Prompt 5K mirrors the feed
 endpoints under /api/v1 with Sanctum and starts docs/api.md regeneration.

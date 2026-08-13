@@ -16,9 +16,8 @@
     <span class="cursor-grab text-subtle" title="{{ __('Drag') }}">⋮⋮</span>
     <div class="min-w-0 flex-1">
         <div class="font-mono text-[10px] uppercase tracking-wider text-subtle" x-text="block.block_type.key"></div>
-        <input type="text" :value="t(block.title) || t(block.block_type.name)"
-               @change="block.title = { ...(block.title||{}), en: $event.target.value }; saveTitle(block)"
-               class="w-full border-0 bg-transparent p-0 text-ink focus:ring-0">
+        {{-- Block names are admin-governed (block catalog) — read-only here. --}}
+        <div class="truncate text-ink" x-text="t(block.title) || t(block.block_type.name)"></div>
     </div>
     {{-- Only blocks with an editor on the profile-content page link there
          (comp_card is table-backed but has no editor). --}}

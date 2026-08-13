@@ -132,10 +132,13 @@ it('adds an eligible block, fills, toggles, reorders and removes it', function (
         ->assertCreated()
         ->json('data.id');
 
+    // Block names are admin-governed: a talent-submitted title is silently ignored.
     $this->actingAs($talent, 'talent')
-        ->patchJson(route('talent.profile.blocks.update', $blockId), ['title' => ['en' => 'My work']])
+        ->patchJson(route('talent.profile.blocks.update', $blockId), ['title' => ['en' => 'My work'], 'content' => ['x' => 1]])
         ->assertOk();
-    expect(ProfileBlock::find($blockId)->getTranslation('title', 'en'))->toBe('My work');
+    $filled = ProfileBlock::find($blockId);
+    expect($filled->getTranslation('title', 'en'))->toBe('Gallery')
+        ->and($filled->content)->toBe(['x' => 1]);
 
     $this->actingAs($talent, 'talent')
         ->patchJson(route('talent.profile.blocks.visibility', $blockId), ['is_visible' => false])

@@ -2,6 +2,13 @@
 
 Notable changes to the Fama project. Newest first.
 
+## 2026-08-13 — Block names are admin-governed
+- **Talents can no longer rename profile blocks.** The inline title input in the editor's block rows is
+  now a read-only label (`title` fallback to the catalog `block_types.name`); `saveTitle` was removed
+  from `dashboard.js`, and `FillBlockRequest` dropped its `title` rules so a submitted title never
+  reaches the service through `validated()` — `PATCH /talent/profile/blocks/{block}` still accepts
+  `content`/`settings`/`layout`. Block naming lives with the admin block catalog (`/admin/blocks`).
+
 ## 2026-08-12 — Logo mark in the topbar, dashboard quick links, nav renames
 - **The topbar now carries the Fama logo** (the branding SVG) instead of the text wordmark, via a new
   `<x-fama-logo>` component — inlined (no request, sizeable with a height class) with the source file's

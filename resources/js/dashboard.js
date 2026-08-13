@@ -574,16 +574,6 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
-        async saveTitle(block) {
-            try {
-                await patch(`/talent/profile/blocks/${block.id}`, { title: block.title });
-                block._saved = true;
-                setTimeout(() => (block._saved = false), 1500);
-            } catch (e) {
-                /* validation ignored for the inline title */
-            }
-        },
-
         // Move a block to another scope (re-stamp talent_type_id + reposition).
         async moveBlock(block, targetTypeId) {
             const value = targetTypeId === '' ? null : Number(targetTypeId);

@@ -13,14 +13,15 @@ class FillBlockRequest extends FormRequest
     }
 
     /**
+     * Block names are admin-governed (block_types.name via /admin/blocks) —
+     * `title` is deliberately absent so a talent-submitted title never reaches
+     * the service through validated().
+     *
      * @return array<string, mixed>
      */
     public function rules(): array
     {
         return [
-            'title' => ['nullable', 'array'],
-            'title.en' => ['nullable', 'string', 'max:255'],
-            'title.ar' => ['nullable', 'string', 'max:255'],
             'content' => ['nullable', 'array'],
             'settings' => ['nullable', 'array'],
             'layout' => ['nullable', Rule::in(['grid', 'carousel', 'list', 'masonry'])],
