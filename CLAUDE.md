@@ -812,6 +812,40 @@ pill dead-ends); hidden blocks stay listed dimmed with a "Hidden" tag; a type op
 block gets a trailing **Not on your profile** section. `$types` is gone from the view — use
 `$sections`.
 
+PROJECTS PAGE + AT-LEAST-ONE-SKILL (2026-08-18, ADR-X, suite 659 green, build green, migrate:fresh --seed
+exits 0): the talent's portfolio projects live on their OWN page — `GET /talent/projects` (+ `/data`,
+`POST`, `PATCH {project}`, `DELETE {project}`, `PATCH reorder`, `POST|DELETE {project}/cover`) — and a
+project MUST carry at least one of the talent's own skills. New pivot `project_talent_type` (migration
+2026_08_18_000100, unique (project_id, talent_type_id), `position` = tag order, backfilled from the old
+column); `projects.talent_type_id` STAYS as the HOME tab and equals tag 0, so every ADR-Q reader is
+unchanged. **The tab test matches the home column OR a tag** (`Project::belongsToScope()` /
+`scopeInSkillScope()` / `scopeWithoutSkill()`) — the pivot only ADDS tabs, so a column-only row can never
+fall off the public profile; a project tagged twice appears in BOTH tabs. The rule is enforced in
+`TalentProjectService::assertOwnedSkills()` (422) AND `StoreProjectRequest` — never reimplement it.
+WATCH OUTS: (1) `ProjectFactory::configure()` mirrors a factory-set `talent_type_id` into the pivot — a
+MODEL hook would NOT work because DatabaseSeeder uses `WithoutModelEvents`; tests must therefore NOT
+manually attach the home skill again (duplicate-key 1062) — attach only the EXTRA tags. (2)
+`SkillsService::removeType` now calls `untagProjects()`: drop the tag, re-home on the next remaining tag,
+un-scope only what ran out (ADR-Q content preservation intact). (3) **`projects` was REMOVED from
+`App\Support\ContentRegistry`** — ONE write path. The profile-content page renders a `link`-kind signpost
+panel instead of a second editor, `/talent/content/projects` REDIRECTS to the Projects page, and
+`contentUrl()` in dashboard.js special-cases the key; the dead `skill_scoped` machinery in
+`BlockContentController` + the generic editor partial is gone. (4) The composer modal reuses `filterModal()`
+(scroll lock + focus trap; NO x-transition on the teleported node) and its `form` is seeded in the data
+factory, NOT `init()`, because a teleported template is parsed on first paint. (5) Runtime JS strings come
+from Blade via the `strings` option — the dashboard has no `window.famaLang`. `Projects` is in
+`Navigation::talentItems()` so it shows in the avatar dropdown AND the dashboard "Where to next" grid; the
+WYSIWYG is now the shared partial `talent/partials/rich-input` (include with `['model' => 'form.summary.en']`).
+Reorder is offered only on the unfiltered single-page list (a partial list cannot express an order).
+V1 TRIMS on the composer (2026-08-18): it is ENGLISH-ONLY — the Arabic title input is COMMENTED OUT with the
+same note profile-editor.blade.php uses for its AR headline/bio (that is the house pattern for V1 AR trims:
+comment the input, keep the `.ar` key in the payload). WATCH OUT: never let a hidden locale submit an empty
+string — `TalentProjectService::dropEmptyForeignTranslations()` strips blank NON-ENGLISH locales before
+storage, because spatie returns a stored `''` instead of falling back (a blank title on /ar); spatie's
+setTranslations() MERGES per locale, so a previously stored AR value survives an English-only edit, and a
+blank EN value still clears (that input is on screen). The COVER IS OPTIONAL — no rule in
+StoreProjectRequest, not part of `canSave`, tagged `Optional` in the UI with a placeholder-fallback note.
+
 BLOCK NAMES ADMIN-GOVERNED (2026-08-13, suite 647 green, build green): talents can NOT rename blocks —
 the editor block row shows a read-only name (`title` fallback to catalog `block_types.name`),
 `saveTitle` is gone from dashboard.js, and `FillBlockRequest` has NO `title` rules (submitted titles

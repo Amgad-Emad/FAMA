@@ -57,8 +57,11 @@ class SkillsService extends Service
     public function removeType(Talent $talent, TalentType $type): void
     {
         $this->runInTransaction(function () use ($talent, $type): void {
-            // Preserve project content — un-scope this skill's projects.
-            $talent->projects()->where('talent_type_id', $type->id)->update(['talent_type_id' => null]);
+            // Preserve project content — drop this skill's tag from the talent's
+            // projects (ADR-X) and re-home each one on its first remaining tag.
+            // A project left with no tags becomes un-scoped (ADR-Q) rather than
+            // being deleted: the write-up survives the skill.
+            $this->untagProjects($talent, $type);
 
             // Preserve gallery content — detach items from this skill's blocks, then
             // delete the blocks (the FK is nullOnDelete; this is explicit + logged).
@@ -114,5 +117,26 @@ class SkillsService extends Service
                 $talent->talentTypes()->updateExistingPivot($id, ['position' => $index]);
             }
         }, ['talent_id' => $talent->id]);
+    }
+
+    /**
+     * Remove a skill's tag from every one of the talent's projects and re-home
+     * each affected project on its first remaining tag (NULL when none is left,
+     * which parks it in the universal region — ADR-Q/ADR-X).
+     */
+    private function untagProjects(Talent $talent, TalentType $type): void
+    {
+        $projects = $talent->projects()
+            ->whereHas('talentTypes', fn ($q) => $q->whereKey($type->id))
+            ->with('talentTypes')
+            ->get();
+
+        foreach ($projects as $project) {
+            $project->talentTypes()->detach($type->id);
+
+            $remaining = $project->talentTypes()->pluck('talent_types.id')->map('intval')->all();
+
+            $project->forceFill(['talent_type_id' => $remaining[0] ?? null])->save();
+        }
     }
 }

@@ -55,9 +55,10 @@ class ProfileEditorController extends TalentController
             'availableSkills' => TalentTypeResource::collection(
                 TalentType::whereNotIn('id', $talent->talentTypes->pluck('id'))->orderBy('id')->get()
             ),
-            // Block types whose content is editable on the profile-content page —
-            // the rest (comp_card) must not offer a dead "Edit content" link.
-            'contentKeys' => [...ContentRegistry::keys(), 'reviews'],
+            // Block types whose content is editable somewhere — the rest
+            // (comp_card) must not offer a dead "Edit content" link. `projects`
+            // is editable on its own page (ADR-X), not the content page.
+            'contentKeys' => [...ContentRegistry::keys(), 'reviews', 'projects'],
         ]);
     }
 

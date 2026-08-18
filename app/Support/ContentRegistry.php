@@ -7,7 +7,6 @@ use App\Models\Digital;
 use App\Models\Equipment;
 use App\Models\LookType;
 use App\Models\PortfolioItem;
-use App\Models\Project;
 use App\Models\Showreel;
 use App\Models\SoftwareStack;
 
@@ -23,8 +22,12 @@ use App\Models\SoftwareStack;
  * actually editable — `reviews` and `comp_card` are table-backed but have no
  * editor here).
  *
- * A field is [name, kind, options, rich?]; `skill_scoped` marks content that
- * carries a talent_type_id (projects — ADR-Q).
+ * A field is [name, kind, options, rich?].
+ *
+ * NOT here: `projects`. A project is not a row in a generic table — it carries
+ * one or more skills, a cover, metrics and long-form copy, and it is authored on
+ * its own page (/talent/projects, ADR-X). Keeping it out of this registry keeps
+ * ONE write path for projects.
  */
 final class ContentRegistry
 {
@@ -60,14 +63,6 @@ final class ContentRegistry
                 ['model', 'text', []],
                 ['name', 'text', ['required']],
                 ['notes', 'translatable', []],
-            ]],
-            'projects' => ['model' => Project::class, 'relation' => 'projects', 'label' => 'Projects', 'labelField' => 'title', 'media' => 'cover', 'thumb' => 'cover_image_url', 'skill_scoped' => true, 'fields' => [
-                ['title', 'translatable', ['required']],
-                ['client_name', 'text', []],
-                ['summary', 'translatable', [], true],
-                ['body', 'translatable', [], true],
-                ['year', 'number', []],
-                ['url', 'url', []],
             ]],
             'software_stack' => ['model' => SoftwareStack::class, 'relation' => 'softwareStack', 'label' => 'Software', 'labelField' => 'software_name', 'media' => 'icon', 'thumb' => 'icon_url', 'fields' => [
                 ['software_name', 'text', ['required']],

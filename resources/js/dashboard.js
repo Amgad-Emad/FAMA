@@ -456,6 +456,8 @@ document.addEventListener('alpine:init', () => {
             return this.contentKeys.includes(block.block_type.key);
         },
         contentUrl(block) {
+            // Projects are authored on their own page (ADR-X), not the content page.
+            if (block.block_type.key === 'projects') return window.fama.localizeUrl('/talent/projects');
             const skill = this.skills.find((s) => s.id === (block.talent_type_id ?? null));
             const section = skill ? skill.slug : 'universal';
             return window.fama.localizeUrl(`/talent/content/${section}#block-${block.block_type.key}`);
@@ -1471,6 +1473,346 @@ document.addEventListener('alpine:init', () => {
             this.items.splice(to, 0, moved);
             this.dragId = null;
             patch(`${this.endpoint}/reorder`, { order: this.items.map((x) => x.id) }).catch(() => {});
+        },
+    }));
+
+    // --- Projects (the talent's own portfolio of work) ----------------------
+    // One page owns projects (ADR-X): a skill filter bar, a reorderable card
+    // grid, and a portalled composer modal. EVERY project needs at least one
+    // skill, so the composer's Save is disabled until one is picked and the
+    // server re-checks it. Runtime strings come from Blade (this page uses
+    // design-head, so window.famaLang is undefined here).
+    Alpine.data('talentProjects', ({ skills = [], total = 0, strings = {} } = {}) => ({
+        ...filterModal(),
+
+        skills,
+        strings,
+        t,
+        items: [],
+        meta: null,
+        counts: { all: total, none: 0, by_skill: {} },
+        filter: '',            // '' = every project, 'none' = untagged, else a skill id
+        loading: true,
+        saving: false,
+        errors: {},
+        page: 1,
+        dragId: null,
+        dragOverId: null,
+
+        // Composer state
+        editing: null,         // the project being edited; null = a new one
+        // Seeded here, not in init(): the composer is teleported and therefore
+        // parsed on first paint, so `form` must exist before any child directive
+        // touches it.
+        form: {
+            title: { en: '', ar: '' },
+            role: { en: '', ar: '' },
+            summary: { en: '', ar: '' },
+            body: { en: '', ar: '' },
+            client_name: '',
+            year: '',
+            url: '',
+            skill_ids: [],
+            results: [],
+        },
+        dirty: false,
+        coverFile: null,       // staged cover for a project that does not exist yet
+        coverPreview: null,
+        coverBusy: false,
+
+        async init() {
+            await this.load();
+        },
+
+        // --- Listing ---------------------------------------------------------
+
+        blank() {
+            return {
+                title: { en: '', ar: '' },
+                role: { en: '', ar: '' },
+                summary: { en: '', ar: '' },
+                body: { en: '', ar: '' },
+                client_name: '',
+                year: '',
+                url: '',
+                skill_ids: [],
+                results: [],
+            };
+        },
+
+        get query() {
+            return this.filter === '' ? '' : `&skill=${encodeURIComponent(this.filter)}`;
+        },
+
+        async load(page = 1) {
+            this.loading = true;
+            try {
+                const { data, meta } = await get(`/talent/projects/data?page=${page}${this.query}`);
+                this.items = data || [];
+                this.meta = meta;
+                this.page = page;
+                if (meta?.counts) this.counts = meta.counts;
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        async setFilter(value) {
+            if (this.filter === value) return;
+            this.filter = value;
+            await this.load(1);
+        },
+
+        countFor(value) {
+            if (value === '') return this.counts.all ?? 0;
+            if (value === 'none') return this.counts.none ?? 0;
+            return this.counts.by_skill?.[value] ?? 0;
+        },
+
+        get pages() {
+            return this.meta?.pagination?.last_page ?? 1;
+        },
+
+        // --- Composer --------------------------------------------------------
+
+        // filterModal() hooks: the composer has nothing to stage/commit, its own
+        // save() does the writing.
+        snapshotDraft() {},
+        applyFilters() {},
+
+        openComposer(project = null) {
+            this.errors = {};
+            this.dirty = false;
+            this.coverFile = null;
+            this.editing = project;
+
+            if (project) {
+                this.form = {
+                    title: { ...{ en: '', ar: '' }, ...(project.title || {}) },
+                    role: { ...{ en: '', ar: '' }, ...(project.role || {}) },
+                    summary: { ...{ en: '', ar: '' }, ...(project.summary || {}) },
+                    body: { ...{ en: '', ar: '' }, ...(project.body || {}) },
+                    client_name: project.client_name || '',
+                    year: project.year || '',
+                    url: project.url || '',
+                    skill_ids: [...(project.skill_ids || [])],
+                    results: (project.results || []).map((r) => ({ ...r })),
+                };
+                this.coverPreview = project.cover_image_url || null;
+            } else {
+                this.form = this.blank();
+                // A single-skill talent never has to think about it.
+                if (this.skills.length === 1) this.form.skill_ids = [this.skills[0].id];
+                this.coverPreview = null;
+            }
+
+            this.openFilters();
+        },
+
+        // Closing throws away unsaved work, so it asks first.
+        async requestClose() {
+            if (this.dirty && !(await Alpine.store('confirm').ask({
+                title: this.strings.discardTitle,
+                message: this.strings.discardMessage,
+                confirmLabel: this.strings.discardConfirm,
+                tone: 'danger',
+            }))) return;
+
+            this.closeFilters();
+        },
+
+        touch() {
+            this.dirty = true;
+        },
+
+        // --- Skills (the one rule: at least one) ------------------------------
+
+        hasSkill(id) {
+            return this.form.skill_ids.includes(id);
+        },
+
+        toggleSkill(id) {
+            const at = this.form.skill_ids.indexOf(id);
+            if (at === -1) this.form.skill_ids.push(id);
+            else this.form.skill_ids.splice(at, 1);
+            this.touch();
+        },
+
+        // The first pick is the project's home tab on the public profile.
+        get homeSkillId() {
+            return this.form.skill_ids[0] ?? null;
+        },
+
+        get canSave() {
+            return !this.saving
+                && this.form.skill_ids.length > 0
+                && (this.form.title.en || '').trim() !== '';
+        },
+
+        // Why Save is still disabled — never leave the talent guessing.
+        get saveHint() {
+            if ((this.form.title.en || '').trim() === '') return this.strings.needTitle;
+            if (this.form.skill_ids.length === 0) return this.strings.needSkill;
+            return '';
+        },
+
+        skillName(id) {
+            return this.skills.find((s) => s.id === id)?.name || '';
+        },
+
+        // --- Metrics ---------------------------------------------------------
+
+        addResult() {
+            if (this.form.results.length >= 6) return;
+            this.form.results.push({ label: '', value: '' });
+            this.touch();
+        },
+
+        removeResult(index) {
+            this.form.results.splice(index, 1);
+            this.touch();
+        },
+
+        // --- Cover -----------------------------------------------------------
+
+        // On an existing project the cover uploads straight away; on a new one it
+        // is staged and sent right after the project is created.
+        async pickCover(file) {
+            if (!file) return;
+            this.coverPreview = URL.createObjectURL(file);
+
+            if (!this.editing) {
+                this.coverFile = file;
+                this.touch();
+                return;
+            }
+
+            await this.sendCover(this.editing.id, file);
+        },
+
+        async sendCover(id, file) {
+            this.coverBusy = true;
+            try {
+                const body = new FormData();
+                body.append('cover', file);
+                const { data } = await post(`/talent/projects/${id}/cover`, body);
+                this.coverPreview = data.cover_image_url;
+                this.replaceItem(data);
+            } catch (e) {
+                if (e instanceof ApiError) this.errors = e.errors || { _: [e.message] };
+            } finally {
+                this.coverBusy = false;
+            }
+        },
+
+        async clearCover() {
+            this.coverFile = null;
+            this.coverPreview = null;
+
+            if (!this.editing) return;
+
+            const { data } = await del(`/talent/projects/${this.editing.id}/cover`);
+            this.replaceItem(data);
+        },
+
+        // --- Writes ----------------------------------------------------------
+
+        payload() {
+            const f = this.form;
+            return {
+                title: f.title,
+                role: f.role,
+                summary: f.summary,
+                body: f.body,
+                client_name: f.client_name || null,
+                year: f.year === '' || f.year === null ? null : Number(f.year),
+                url: f.url || null,
+                skill_ids: f.skill_ids,
+                results: f.results.filter((r) => r.label && r.value),
+            };
+        },
+
+        async save() {
+            if (!this.canSave) return;
+            this.errors = {};
+            this.saving = true;
+
+            try {
+                if (this.editing) {
+                    await patch(`/talent/projects/${this.editing.id}`, this.payload());
+                } else {
+                    const { data } = await post('/talent/projects', this.payload());
+                    if (this.coverFile) await this.sendCover(data.id, this.coverFile);
+                }
+
+                this.dirty = false;
+                this.closeFilters();
+                await this.load(this.editing ? this.page : 1);
+            } catch (e) {
+                if (e instanceof ApiError) this.errors = e.errors || { _: [e.message] };
+            } finally {
+                this.saving = false;
+            }
+        },
+
+        async remove(project) {
+            const ok = await Alpine.store('confirm').ask({
+                title: this.strings.deleteTitle,
+                message: this.strings.deleteMessage.replace(':title', project.label || ''),
+                confirmLabel: this.strings.deleteConfirm,
+                tone: 'danger',
+            });
+            if (!ok) return;
+
+            await del(`/talent/projects/${project.id}`);
+            await this.load(this.items.length === 1 && this.page > 1 ? this.page - 1 : this.page);
+        },
+
+        replaceItem(data) {
+            const at = this.items.findIndex((x) => x.id === data.id);
+            if (at !== -1) this.items.splice(at, 1, data);
+        },
+
+        // --- Reorder ---------------------------------------------------------
+
+        // Ordering is the talent's own (it drives the public profile), so it is
+        // only offered on the unfiltered list — a partial list cannot express it.
+        get canReorder() {
+            return this.filter === '' && this.pages === 1;
+        },
+
+        onDragStart(event, project) {
+            if (!this.canReorder) return;
+            this.dragId = project.id;
+            // Firefox refuses to start a drag without payload.
+            event.dataTransfer?.setData('text/plain', String(project.id));
+            if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
+        },
+
+        onDrop(project) {
+            this.dragOverId = null;
+            if (!this.canReorder || this.dragId === null || this.dragId === project.id) return;
+
+            const from = this.items.findIndex((x) => x.id === this.dragId);
+            const to = this.items.findIndex((x) => x.id === project.id);
+            const [moved] = this.items.splice(from, 1);
+            this.items.splice(to, 0, moved);
+            this.dragId = null;
+
+            patch('/talent/projects/reorder', { order: this.items.map((x) => x.id) }).catch(() => {});
+        },
+
+        // Deterministic placeholder tint so a coverless project still reads as
+        // its own thing in the grid (same trick as the feed rails).
+        tint(project) {
+            const seed = String(project.label || project.id);
+            let hash = 0;
+            for (let i = 0; i < seed.length; i += 1) hash = (hash * 31 + seed.charCodeAt(i)) % 360;
+            return `linear-gradient(135deg, oklch(0.88 0.06 ${hash}), oklch(0.82 0.09 ${(hash + 40) % 360}))`;
+        },
+
+        iconFor(skill) {
+            return disciplineIcon(skill);
         },
     }));
 });

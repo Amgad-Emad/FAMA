@@ -13,7 +13,7 @@ final class Navigation
 {
     /**
      * Ordered, feature-filtered talent nav items:
-     * Dashboard · Feed · Discover · Activity · [marketplace] · Profile · Profile content.
+     * Dashboard · Feed · Discover · Activity · [marketplace] · Profile · Profile content · Projects.
      *
      * Each item carries a one-line `description` — the dashboard renders the
      * same set as quick-link cards, so a new nav item shows up there too.
@@ -31,7 +31,8 @@ final class Navigation
             ['route' => 'projects.browse', 'label' => __('Opportunities'), 'feature' => 'brands', 'description' => __('Open projects looking for talent'), 'icon' => 'M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z'],
             ['route' => 'talent.contracts', 'label' => __('Contracts'), 'feature' => 'contracts', 'description' => __('Your active bookings'), 'icon' => 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01'],
             ['route' => 'talent.profile.edit', 'label' => __('Profile structure'), 'description' => __('Identity, skills, publishing and the sections of your profile'), 'icon' => 'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z'],
-            ['route' => 'talent.content', 'label' => __('Profile content'), 'description' => __('Galleries, projects, looks and reviews — the content inside each block'), 'icon' => 'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14M4 6h16a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2z'],
+            ['route' => 'talent.content', 'label' => __('Profile content'), 'description' => __('Galleries, looks and reviews — the content inside each block'), 'icon' => 'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14M4 6h16a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2z'],
+            ['route' => 'talent.projects', 'label' => __('Projects'), 'description' => __('Your selected work — each project tagged with the skills behind it'), 'icon' => 'M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2M3 7h18v12a2 2 0 01-2 2H5a2 2 0 01-2-2V7zm0 5h18'],
             // Reviews are NOT a nav item: they render as a block panel inside
             // Profile content (the standalone /talent/reviews page still exists
             // and still serves the list's data endpoint).

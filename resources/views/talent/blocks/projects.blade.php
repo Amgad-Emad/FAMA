@@ -1,7 +1,8 @@
 @php
-    // Projects are skill-scoped (ADR-Q): a projects block shows the projects belonging
-    // to its tab's skill (or the un-scoped ones for a universal projects block).
-    $projects = $talent->projects->where('talent_type_id', $block->talent_type_id);
+    // Projects are skill-tagged (ADR-Q + ADR-X): a projects block shows every project
+    // tagged with its tab's skill — a project tagged with two skills appears in both
+    // tabs. A universal projects block shows the projects that carry no skill.
+    $projects = $talent->projects->filter(fn ($project) => $project->belongsToScope($block->talent_type_id));
 @endphp
 
 @if ($projects->isNotEmpty())

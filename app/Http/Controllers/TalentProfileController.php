@@ -108,6 +108,8 @@ class TalentProfileController extends Controller
             'showreels.media',
             'equipment',
             'projects.media',
+            // Projects carry one or more skills (ADR-X) — the tab test reads them.
+            'projects.talentTypes',
             'softwareStack.media',
         ];
     }

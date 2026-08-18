@@ -133,8 +133,17 @@ lifecycles are **state machines**; side effects are **events**.
   validated for eligibility + per-scope repeatability), `setVisibility`, `removeBlock`. Rendering
   resolves via `block_type_id → block_types`, so deactivated (grandfathered) blocks still render.
 - `SkillsService` — `addType` (seeds **that skill's** tab via `SeedBlocksForSkill`), `removeType`
-  (deletes the tab's blocks but **preserves content** — items un-linked, projects un-scoped — and logs
-  it), `setPrimary`, `reorderTypes`. (Skills manager; renamed from `ProfessionsService` — ADR-N.)
+  (deletes the tab's blocks but **preserves content** — items un-linked, and `untagProjects` drops the
+  skill's tag from each project, re-homing it on its **next remaining tag** and un-scoping only the ones
+  that ran out, ADR-X — and logs it), `setPrimary`, `reorderTypes`. (Skills manager; renamed from
+  `ProfessionsService` — ADR-N.)
+- `TalentProjectService` — the ONLY write path for the talent's portfolio projects (ADR-X):
+  `create`/`update` (skill tags synced in the same transaction, tag 0 mirrored onto the
+  `talent_type_id` home column), `delete`, `reorder`, `setCover`/`removeCover` (single-file `cover`
+  collection, `media` log channel). `assertOwnedSkills()` holds THE rule — at least one skill, all of
+  them the talent's own — so a caller that bypasses `StoreProjectRequest` still cannot break it. Rich
+  text (`summary`/`body`) is sanitized with `BriefSanitizer`, and `results` is normalised from the
+  editor's label/value rows into the stored metric map.
 - `TalentProfileService` — core fields, the Pricing rate (`updatePricingRate`, all-or-nothing),
   publish/unpublish, reviews moderation. *(The hero/cover uploader was removed — ADR-O.)*
 - `ProfileViewStatsService` — read-model over `talent_profile_views` for the dashboard views KPI:

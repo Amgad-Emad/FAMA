@@ -2,7 +2,6 @@
 
 use App\Models\BlockType;
 use App\Models\PortfolioItem;
-use App\Models\Project;
 use App\Models\Talent;
 use App\Models\TalentType;
 use Database\Seeders\BlockTypeSeeder;
@@ -10,32 +9,21 @@ use Database\Seeders\TalentTypeSeeder;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
-it('scopes a project to a skill — defaults to the primary skill, honours an explicit one, rejects a foreign one', function () {
+it('retires the generic projects content editor — the type 404s and the page redirects to the Projects page', function () {
     $this->seed([TalentTypeSeeder::class, BlockTypeSeeder::class]);
     $talent = Talent::factory()->create();
-    $model = TalentType::where('slug', 'modeling')->firstOrFail();
-    $photographer = TalentType::where('slug', 'photography')->firstOrFail();
-    $talent->talentTypes()->attach([
-        $model->id => ['is_primary' => true, 'position' => 0],
-        $photographer->id => ['is_primary' => false, 'position' => 1],
-    ]);
+    $talent->talentTypes()->attach(TalentType::where('slug', 'modeling')->firstOrFail()->id, ['is_primary' => true, 'position' => 0]);
 
-    // No skill given → defaults to the primary skill.
-    $id = $this->actingAs($talent, 'talent')
+    // Projects are authored on their own page (ADR-X) — the registry no longer
+    // serves them, so the generic CRUD endpoint is gone.
+    $this->actingAs($talent, 'talent')
         ->postJson(route('talent.content.store', ['type' => 'projects']), ['title' => ['en' => 'Campaign']])
-        ->assertCreated()->json('data.id');
-    expect(Project::find($id)->talent_type_id)->toBe($model->id);
+        ->assertNotFound();
 
-    // Explicit skill honoured.
+    // A stale link into the content page lands on the Projects page instead.
     $this->actingAs($talent, 'talent')
-        ->postJson(route('talent.content.store', ['type' => 'projects']), ['title' => ['en' => 'Shoot'], 'talent_type_id' => $photographer->id])
-        ->assertCreated()->assertJsonPath('data.talent_type_id', $photographer->id);
-
-    // A skill the talent does not have → 422.
-    $foreign = TalentType::where('slug', 'styling')->firstOrFail();
-    $this->actingAs($talent, 'talent')
-        ->postJson(route('talent.content.store', ['type' => 'projects']), ['title' => ['en' => 'X'], 'talent_type_id' => $foreign->id])
-        ->assertStatus(422);
+        ->get(route('talent.content', ['section' => 'projects']))
+        ->assertRedirect(route('talent.projects'));
 });
 
 it('publishes and unpublishes from the profile editor', function () {

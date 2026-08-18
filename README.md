@@ -17,8 +17,10 @@ that walks a brand and a talent through booking, quoting, contracting, payment, 
 [`docs/conventions.md`](docs/conventions.md#qa-checklist--talent-slice-manual).
 
 - **Talent** — public pages (profile, project detail, review, enquiry, discovery/search) and the
-  dashboard (**Home · Profile · Content · Reviews · Contracts**), where the **Profile editor** is the
-  single profile surface (identity, Skills, Username, publish, pricing rate, blocks). The dashboard
+  dashboard (**Home · Profile structure · Profile content · Projects · Reviews · Contracts**), where the
+  **Profile editor** is the single profile surface (identity, Skills, Username, publish, pricing rate,
+  blocks) and **Projects** (`/talent/projects`) owns the portfolio of work — every project tagged with
+  **at least one skill** (ADR-X), which is what places it in the public profile's tabs. The dashboard
   home carries a public/private visibility switch and a views KPI with a week-over-week delta that
   expands into a range-filterable chart (back to the profile's creation date).
 - **Brand** — core + satellites, **projects**, the brand contract room, brand discovery, plus the
@@ -58,16 +60,19 @@ that walks a brand and a talent through booking, quoting, contracting, payment, 
 > line + a **Projects · Views · Rating** stats row + bio + optional link + the **Pricing rate** chip +
 > Message / Leave-a-review CTAs. Token-only; verified dark + light + RTL.
 >
-> **Skill-scoped blocks & projects (ADR-Q):** `profile_blocks` and `projects` belong to a skill
+> **Skill-scoped blocks & projects (ADR-Q, extended by ADR-X):** `profile_blocks` belong to a skill
 > (`talent_type_id`; NULL = profile-level). Adding a skill seeds **its own tab's** blocks (per-skill —
 > gallery in both tabs); the picker is per-scope, blocks move between tabs, and removing a skill deletes
-> its tab's blocks but preserves content. The editor manages blocks per scope.
+> its tab's blocks but preserves content. The editor manages blocks per scope. A **project** carries
+> **one or more** skills (`project_talent_type`; `projects.talent_type_id` is its home tab) — so a
+> project tagged with two disciplines appears in **both** tabs, and removing a skill re-homes its
+> projects on the next tag rather than dropping them.
 >
 > **Public profile — two regions (ADR-R):** Region 1 = the IG identity header + universal/meta (location,
 > pricing rate, clickable skill chips) + profile-level blocks; Region 2 = **skill tabs** (primary active
 > by default, tabs only for skills with visible blocks). The active tab renders server-side; others
 > **lazy-load** on click (`GET /{slug}/tab/{skill}`, no reload) and cache; the active tab is deep-linked
-> in the URL (`?skill=`, shareable + back button). Projects in a tab are scoped to that skill.
+> in the URL (`?skill=`, shareable + back button). A tab shows every project tagged with its skill.
 >
 > **Skills named as disciplines (ADR-S):** the six Skills read as the **discipline/activity** — Modeling,
 > Photography, Cinematography, Creative Direction, Styling, Graphic Design (slugs `modeling` /

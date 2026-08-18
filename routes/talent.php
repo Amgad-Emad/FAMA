@@ -5,6 +5,7 @@ use App\Http\Controllers\Talent\BlockContentController;
 use App\Http\Controllers\Talent\DashboardController;
 use App\Http\Controllers\Talent\ContractController;
 use App\Http\Controllers\Talent\ProfileEditorController;
+use App\Http\Controllers\Talent\ProjectController;
 use App\Http\Controllers\Talent\ReviewController;
 use App\Http\Controllers\Talent\SkillController;
 use Illuminate\Support\Facades\Route;
@@ -50,6 +51,18 @@ Route::post('/profile/skills', [SkillController::class, 'store'])->name('profile
 Route::patch('/profile/skills/reorder', [SkillController::class, 'reorder'])->name('profile.skills.reorder');
 Route::patch('/profile/skills/{type}/primary', [SkillController::class, 'primary'])->name('profile.skills.primary');
 Route::delete('/profile/skills/{type}', [SkillController::class, 'destroy'])->name('profile.skills.destroy');
+
+// --- Projects (the talent's own portfolio of work) ---------------------------
+// A project carries at least one skill (ADR-X) — the tags decide which skill
+// tabs it appears in on the public profile.
+Route::get('/projects', [ProjectController::class, 'index'])->name('projects');
+Route::get('/projects/data', [ProjectController::class, 'data'])->name('projects.data');
+Route::post('/projects', [ProjectController::class, 'store'])->name('projects.store');
+Route::patch('/projects/reorder', [ProjectController::class, 'reorder'])->name('projects.reorder');
+Route::patch('/projects/{project}', [ProjectController::class, 'update'])->name('projects.update');
+Route::delete('/projects/{project}', [ProjectController::class, 'destroy'])->name('projects.destroy');
+Route::post('/projects/{project}/cover', [ProjectController::class, 'uploadCover'])->name('projects.cover.store');
+Route::delete('/projects/{project}/cover', [ProjectController::class, 'destroyCover'])->name('projects.cover.destroy');
 
 // --- Reviews moderation -----------------------------------------------------
 // Consolidated "Activity" page — Saved · Liked · Following in one tabbed surface.

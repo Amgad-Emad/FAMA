@@ -31,4 +31,19 @@ class ProjectFactory extends Factory
             'position' => fake()->numberBetween(0, 10),
         ];
     }
+
+    /**
+     * Mirror a factory-set home skill into the `project_talent_type` pivot so
+     * factory-built projects carry the same tag set the Projects editor writes
+     * (ADR-X). This runs even inside a WithoutModelEvents seeder, which model
+     * hooks would not.
+     */
+    public function configure(): static
+    {
+        return $this->afterCreating(function (Project $project): void {
+            if ($project->talent_type_id !== null && $project->talentTypes()->count() === 0) {
+                $project->talentTypes()->attach($project->talent_type_id, ['position' => 0]);
+            }
+        });
+    }
 }

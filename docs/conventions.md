@@ -220,9 +220,26 @@ logout. Toggle theme + locale on each page and confirm both render.
         shown). Adding a skill creates its tab + seeds its blocks; **removing a skill** confirms first,
         then deletes that tab's blocks while preserving content. Ineligible add/move → 422. (No hero/cover
         uploader — ADR-O.)
-      - Projects editor — each project has a **Skill** selector (defaults to the primary skill).
-- [ ] Content editors (gallery/projects/digitals/…) — upload image (appears in grid), add via fields,
-      reorder, remove. Switch content types via the tabs.
+- [ ] Content editors (gallery/digitals/…) — upload image (appears in grid), add via fields,
+      reorder, remove. Switch sections via the section buttons. A **`projects` block shows a signpost**
+      to the Projects page, never a second editor (ADR-X); `/talent/content/projects` redirects there.
+- [ ] **Projects** (`/talent/projects`) — the page owns projects (ADR-X):
+      - With **no skills** on the profile the grid is replaced by an "Add a skill first" card and the
+        New-project CTA is gone.
+      - Skill filter bar (sticky, primary first) — All work · one pill per skill with a live count ·
+        "No skill yet" only when leftovers exist. Counts match the filtered lists.
+      - Composer modal — **Save stays disabled** until a title and ≥1 skill are set, and the footer says
+        which is missing. The first skill picked is badged **Home**. Cover (**Optional** — a project saves
+        with no cover and the card falls back to a tinted placeholder), title, client, role, year, link,
+        rich Summary + full story, up to 6 result metrics. **No Arabic inputs in V1** (English-only editor,
+        matching the profile editor's commented-out AR fields) — and saving must NOT blank a stored Arabic
+        title.
+      - Submitting with zero skills (or a skill you do not have) → **422** shown on the Skills section.
+      - Closing a dirty composer asks to discard; Remove asks to confirm.
+      - Drag cards to reorder — offered only on the unfiltered single-page list, and the order shows up
+        on the public profile.
+      - A project tagged with **two** skills appears in **both** tabs on the public profile; removing a
+        skill re-homes its projects on the next tag and leaves single-tag ones un-scoped, never deleted.
 - [ ] Reviews — approve/reject in the moderation queue; filter by status.
 - [ ] No standalone **Professions** or **Account** tabs remain (folded into Profile).
 

@@ -7,6 +7,7 @@ use App\Models\TalentType;
 use App\Support\ContentRegistry;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -16,8 +17,9 @@ use Illuminate\View\View;
 /**
  * Block content editors (talent-spec) — the child content tables surfaced from
  * the profile editor. Driven by a per-type registry so one controller serves
- * every "table" block (gallery, digitals, showreel, equipment, projects,
- * software, brand collabs, looks). Uploaded assets go through medialibrary.
+ * every "table" block (gallery, digitals, showreel, equipment, software, brand
+ * collabs, looks — projects have their own page, ADR-X). Uploaded assets go
+ * through medialibrary.
  * (Inline-JSON blocks are edited on the profile editor via ProfileBlockService;
  * comp_card is a 1:1 singleton handled separately.)
  */
@@ -40,10 +42,15 @@ class BlockContentController extends TalentController
      *
      * `{section}` is a section key (`universal` or a skill slug). A legacy
      * content-type key (`/talent/content/gallery`) still resolves, to the first
-     * section that shows that block, so old links and bookmarks keep working.
+     * section that shows that block, so old links and bookmarks keep working —
+     * and `/talent/content/projects` redirects to the Projects page (ADR-X).
      */
-    public function index(?string $section = null): View
+    public function index(?string $section = null): View|RedirectResponse
     {
+        if ($section === 'projects') {
+            return redirect()->route('talent.projects');
+        }
+
         $sections = $this->sections();
         $active = $this->resolveSection($sections, $section);
 
@@ -61,7 +68,8 @@ class BlockContentController extends TalentController
      * skills), each carrying its editable panels in block order.
      *
      * A panel is one block: `content` for the table-backed types this controller
-     * serves, `reviews` for the (read-only) reviews block — reviews live on the
+     * serves, `link` for a block authored elsewhere (projects — ADR-X),
+     * `reviews` for the (read-only) reviews block — reviews live on the
      * profile like any other block, so they are edited/read here too. Blocks
      * with no editor at all (comp_card) are skipped.
      *
@@ -132,6 +140,20 @@ class BlockContentController extends TalentController
             return ['kind' => 'reviews', 'type' => $key, 'title' => $title ?: __('Reviews'), 'is_visible' => (bool) $block->is_visible];
         }
 
+        // Projects are authored on their own page (ADR-X); this panel is the
+        // signpost, never a second editor.
+        if ($key === 'projects') {
+            return [
+                'kind' => 'link',
+                'type' => $key,
+                'title' => $title ?: __('Projects'),
+                'is_visible' => (bool) $block->is_visible,
+                'url' => route('talent.projects'),
+                'blurb' => __('Projects have their own page — covers, credits, metrics and the skills behind each piece of work.'),
+                'cta' => __('Open Projects'),
+            ];
+        }
+
         $config = ContentRegistry::get($key);
 
         if ($config === null) {
@@ -147,11 +169,6 @@ class BlockContentController extends TalentController
                 'label' => $config['label'],
                 'media' => $config['media'],
                 'fields' => array_map(fn ($f) => ['name' => $f[0], 'kind' => $f[1], 'options' => $f[2], 'rich' => $f[3] ?? false], $config['fields']),
-                // Skill-scoped content (projects) exposes a skill selector (ADR-Q).
-                'skill_scoped' => $config['skill_scoped'] ?? false,
-                'skills' => ($config['skill_scoped'] ?? false)
-                    ? $this->talent()->talentTypes->map(fn ($s) => ['id' => $s->id, 'name' => $s->getTranslations('name')])->values()
-                    : [],
             ],
         ];
     }
@@ -209,10 +226,6 @@ class BlockContentController extends TalentController
         // Append at the end when no position is given (the front-end blank sends
         // null); `position` is a NOT NULL column, so never insert null.
         $data['position'] = $data['position'] ?? $this->talent()->{$config['relation']}()->count();
-        // Skill-scoped content defaults to the talent's primary skill (ADR-Q).
-        if (($config['skill_scoped'] ?? false) && empty($data['talent_type_id'])) {
-            $data['talent_type_id'] = $this->talent()->talentTypes()->wherePivot('is_primary', true)->value('talent_types.id');
-        }
         $item = $this->talent()->{$config['relation']}()->create($data);
 
         return response()->success($this->present($item, $config), __('Added.'), status: 201);
@@ -306,12 +319,6 @@ class BlockContentController extends TalentController
     {
         $rules = ['position' => ['nullable', 'integer']];
 
-        if ($config['skill_scoped'] ?? false) {
-            // Must be one of the talent's own skills (or null = un-scoped).
-            $skillIds = $this->talent()->talentTypes()->pluck('talent_types.id')->all();
-            $rules['talent_type_id'] = ['nullable', 'integer', Rule::in($skillIds)];
-        }
-
         foreach ($config['fields'] as [$name, $kind, $options]) {
             match ($kind) {
                 'translatable' => $rules = $rules + [
@@ -347,6 +354,6 @@ class BlockContentController extends TalentController
             'position' => (int) $item->position,
             'label' => $label,
             'thumb' => $config['thumb'] ? $item->{$config['thumb']} : null,
-        ] + (($config['skill_scoped'] ?? false) ? ['talent_type_id' => $item->getAttribute('talent_type_id')] : []);
+        ];
     }
 }

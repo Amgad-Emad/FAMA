@@ -54,6 +54,15 @@
                 @if ($panel['kind'] === 'reviews')
                     <p class="mb-4 text-sm text-muted">{{ __('Reviews are written by clients and moderated by Fama — you can read and filter them here.') }}</p>
                     @include('talent.partials.reviews-list')
+                @elseif ($panel['kind'] === 'link')
+                    {{-- A block authored on its own page (projects — ADR-X): a signpost, not a second editor. --}}
+                    <div class="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-line bg-elevated p-5">
+                        <p class="max-w-xl text-sm text-muted">{{ $panel['blurb'] }}</p>
+                        <x-ui.button variant="accent" :href="$panel['url']">
+                            {{ $panel['cta'] }}
+                            <svg class="h-4 w-4 rtl:-scale-x-100" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg>
+                        </x-ui.button>
+                    </div>
                 @else
                     @include('talent.partials.content-editor', ['type' => $panel['type'], 'config' => $panel['config']])
                 @endif

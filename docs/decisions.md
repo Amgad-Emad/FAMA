@@ -359,3 +359,42 @@
   contract/brand tables + demo seeders stay; a production V1 seed runs only the catalog/config seeders
   (Roles/TalentType/BlockType/Settings) — confirm `SettingsSeeder` tolerates a null `default_contract_flow_id`
   or keep `ContractFlowSeeder` (dormant). Reversibility is test-proven (`tests/Feature/FeatureFlagsTest`).
+
+### ADR-X — A project carries one or more skills, on its own page
+- **Context:** Projects were a row in the generic content-table editor (`ContentRegistry` +
+  `BlockContentController`) with a single optional `talent_type_id` scope (ADR-Q). Two things were wrong.
+  A project is not a flat table row — it has a cover, credits, long-form copy and metrics, and it is the
+  most important thing a talent publishes; the generic form gave it a two-field treatment. And a single
+  optional scope both (a) let a project exist with no discipline at all, which makes it unplaceable on the
+  public profile, and (b) forced a campaign film that is cinematography *and* creative direction into one
+  tab.
+- **Decision:** Projects get a **dedicated page** (`/talent/projects`) that is the ONLY write path, and a
+  project must be tagged with **at least one** of the talent's own skills.
+  - New pivot `project_talent_type` (unique `(project_id, talent_type_id)`, `position` = tag order).
+  - `projects.talent_type_id` **stays** as the HOME tab and is kept equal to tag 0, so ADR-Q's single-scope
+    readers keep working untouched.
+  - The tab test is `Project::belongsToScope()` / `scopeInSkillScope()`, which matches the home column **OR**
+    a tag — the pivot only ever ADDS tabs, so a row written straight to the column (factory, a seeder muted
+    by `WithoutModelEvents`, un-migrated data) can never drop off the public profile.
+  - The rule is enforced in `TalentProjectService` (domain, 422) *and* `StoreProjectRequest` (field error), so
+    it holds no matter who calls.
+  - `projects` was **removed from `ContentRegistry`**: the content page shows a signpost panel instead of a
+    second editor, and `/talent/content/projects` redirects to the Projects page. The now-dead `skill_scoped`
+    machinery in `BlockContentController` and the generic editor partial went with it.
+- **Status:** Accepted (2026-08-18).
+- **Consequences:** Removing a skill still preserves content (ADR-Q) but now re-homes each affected project on
+  its **next remaining tag** and only un-scopes the ones that ran out (`SkillsService::untagProjects`).
+  `ProjectFactory::configure()` mirrors a factory-set `talent_type_id` into the pivot so factories and
+  seeders produce the same shape the editor writes. A project tagged with two skills appears in **both**
+  tabs — a deliberate widening of ADR-R's tab semantics. Aliases/keys unchanged (a pivot needs no MorphMap
+  entry). Open item for stakeholders: whether an un-scoped leftover project should stay visible in the
+  universal region or be hidden until it is re-tagged (today: visible).
+- **V1 trims (2026-08-18):** the composer is **English-only** — the Arabic title input is commented out with
+  the same note the profile editor uses for its AR headline/bio, since V1 ships without an AR/EN toggle
+  (ADR-W). `form.title.ar` stays in the payload, and `TalentProjectService::dropEmptyForeignTranslations()`
+  strips blank non-English locales before storage: storing `ar => ''` would make spatie return the blank
+  instead of falling back, so a title would render EMPTY on /ar. Because spatie's `setTranslations()` merges
+  per locale, an Arabic value stored earlier survives an edit through the English-only editor. A blank
+  **English** value is deliberately left alone — that input is on screen, so clearing it must clear the
+  translation. The **cover is optional** (no rule in `StoreProjectRequest`, not part of `canSave`) and now
+  says so in the UI.

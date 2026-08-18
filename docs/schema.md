@@ -23,7 +23,7 @@
 `profile_blocks`.
 
 **Content tables:** `portfolio_items`, `brand_collabs`, `reviews`, `comp_cards`
-(1:1, unique `talent_id`), `look_types`, `digitals`, `showreels`, `equipment`, `projects`,
+(1:1, unique `talent_id`), `look_types`, `digitals`, `showreels`, `equipment`, `projects` (+ `project_talent_type`),
 `software_stack`.
 
 > **Removed features (ADR-K/L/M):** `services`, `agency_affiliations`, `press_features` (tables +
@@ -73,6 +73,13 @@ Deviations from the canonical schema (deliberate, per the standing decisions):
   (position is per-scope) and `projects (talent_type_id)`. The migration **backfills**: projects → the
   talent's primary skill; blocks → the single skill their gate matches (universal/ambiguous → NULL), and
   reports the counts. Seeding is now per-skill (`SeedBlocksForSkill`).
+- **Project skill tags (ADR-X, migration `2026_08_18_000100`):** `project_talent_type`
+  (`project_id` → projects cascade, `talent_type_id` → talent_types cascade, `position` = tag order,
+  unique `(project_id, talent_type_id)`, index on `talent_type_id`). A project carries **one or more**
+  skills; `projects.talent_type_id` remains the **home tab** and is kept equal to tag 0, so every ADR-Q
+  reader is unchanged. The tab test matches the home column **OR** a tag, so a column-only row (factory,
+  muted seeder, legacy data) still renders. The migration backfills tag 0 from the existing scope column.
+  Enforced at the one authoring surface (`TalentProjectService` + `StoreProjectRequest`).
 
 ## Discovery search indexes (Phase 1C — migrated, ADR-6)
 

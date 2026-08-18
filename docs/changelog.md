@@ -2,6 +2,43 @@
 
 Notable changes to the Fama project. Newest first.
 
+## 2026-08-18 — Projects get their own page, and at least one skill (ADR-X)
+- **New `/talent/projects` page** — the talent's portfolio of work, on its own premium surface instead of
+  a row in the generic content-table editor: a sticky skill filter bar with live counts (All work · one
+  pill per skill, primary first · "No skill yet" only when leftovers exist), a drag-to-reorder card grid
+  with covers, credits and skill tags, skeleton loaders, distinct empty states, and a portalled composer
+  modal (cover drop/replace/remove, EN + AR title, client, role, year, link, rich Summary + full story,
+  up to 6 result metrics). Every interaction is Ajax on the shared envelope; nothing reloads.
+- **A project must carry at least one skill.** New `project_talent_type` pivot (migration
+  `2026_08_18_000100`, backfilled from the existing scope column); `projects.talent_type_id` stays the
+  **home tab** and equals tag 0, so every ADR-Q reader is untouched. The rule lives in
+  `TalentProjectService::assertOwnedSkills()` (domain 422) *and* `StoreProjectRequest` (field error). The
+  composer's Save is disabled until a title and a skill exist, and the footer names what is missing.
+- **A project tagged with two skills now appears in both tabs** on the public profile. The tab test
+  (`Project::belongsToScope()` / `scopeInSkillScope()`) matches the home column **OR** a tag, so the pivot
+  only ever *adds* tabs — a row written straight to the column (factory, a seeder muted by
+  `WithoutModelEvents`, un-migrated data) can never fall off the profile. `ProjectFactory::configure()`
+  mirrors a factory-set home skill into the pivot so factories and seeders match what the editor writes.
+- **Removing a skill re-homes its projects** instead of blanket un-scoping them:
+  `SkillsService::untagProjects()` drops the tag, moves the project to its next remaining tag, and only
+  un-scopes the ones that ran out (ADR-Q's "content is preserved" still holds).
+- **One write path.** `projects` was removed from `ContentRegistry`, so the profile-content page renders a
+  signpost panel (kind `link`) pointing at the Projects page rather than a second, weaker editor;
+  `/talent/content/projects` redirects there, and the profile editor's "Edit content" link on a projects
+  block goes straight to the page. The dead `skill_scoped` machinery in `BlockContentController` and the
+  generic content-editor partial went with it.
+- **V1 trims:** the composer is **English-only** — the Arabic title input is commented out with the same
+  note the profile editor uses for its AR headline/bio (V1 has no AR/EN toggle, ADR-W). New
+  `TalentProjectService::dropEmptyForeignTranslations()` strips blank non-English locales before storage, so
+  a project never stores `ar => ''` (which spatie would return instead of falling back — a blank title on
+  `/ar`); an Arabic value stored earlier survives an edit, while blanking the visible English input still
+  clears it. The **cover is optional** — it was never required server-side, and the composer now says so
+  (an `Optional` tag + a line explaining the placeholder fallback).
+- Also: `Projects` joins `Navigation::talentItems()` (so it appears in the avatar dropdown *and* the
+  dashboard's "Where to next" grid); new `<x-…>`-free shared partial `talent/partials/rich-input` extracts
+  the lightweight WYSIWYG so the composer and the generic editor share one implementation; AR strings added
+  for the whole page. Suite **659 green**, build green, `migrate:fresh --seed` exits 0.
+
 ## 2026-08-13 — Block names are admin-governed
 - **Talents can no longer rename profile blocks.** The inline title input in the editor's block rows is
   now a read-only label (`title` fallback to the catalog `block_types.name`); `saveTitle` was removed
