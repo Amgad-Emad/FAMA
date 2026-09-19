@@ -398,3 +398,195 @@
   **English** value is deliberately left alone — that input is on screen, so clearing it must clear the
   translation. The **cover is optional** (no rule in `StoreProjectRequest`, not part of `canSave`) and now
   says so in the UI.
+
+---
+
+## ADR-Y — Skills nest into a controlled speciality vocabulary (nine skills, two levels)
+- **Date:** 2026-08-22
+- **Context:** The client's structure specs (`profile.html`, `project.html`, `spcialist.html`) define the
+  portfolio as a set of skills, each carrying its own proof, and add a **second level** the schema did not
+  have: a skill nests into four-to-seven *specialities*. The spec also expands the catalog from six skills
+  to nine, adding **Direction**, **Hair & makeup** and **Retouching & post**.
+- **Decision:**
+  - `talent_types` grows to **nine** rows (migration `2026_08_22_000200`, idempotent with
+    `TalentTypeSeeder`). The spec's orthography lands too — "Modeling" → **Modelling**, title-case →
+    sentence-case. **Slugs are unchanged**: `modeling` stays `modeling` because the slug is the public deep
+    link (`?skill=`, `filter[type]=`) and ADR-S already broke those once; an orthographic fix does not
+    justify breaking them again.
+  - New `specialities` table (migration `2026_08_22_000100`) owned by one skill, plus
+    `speciality_talent` and `project_speciality` pivots. `slug` is unique **per skill, not globally** —
+    "Fashion" legitimately lives under photography, modelling *and* styling, and that overlap is precisely
+    what lets one search assemble a whole crew.
+  - **Two levels is the whole tree.** There is no third level and no free-text field anywhere: a talent
+    picks from the list and can never type into it. An invented entry would never match on the project
+    side, and the filter would silently stop working.
+  - Every speciality answers **one question — what kind of subject**. Output format (campaign, editorial,
+    lookbook, e-commerce) is a property of the project, not the person, and stays out of this tree.
+    Four-to-six is the target; Photography earns a seventh for genuinely different commercial work.
+  - `is_regional` flags the entries added for this market specifically (**Modest fashion**, **Arabic
+    lettering**). They are commercial categories with their own clients and casting logic in KSA and the
+    UAE, not filters applied to a broader category.
+  - **Two rules, each enforced in exactly one place.** A talent's picks must belong to a skill they hold:
+    `SkillsService::setSpecialities()` (422). A project's picks must hang off one of its tagged skills:
+    `TalentProjectService::assertSkillSpecialities()` (422), validated against the skill set the project
+    will **end up** with, so re-tagging skills and specialities in one request stays consistent. Never
+    reimplement either.
+  - Governance mirrors ADR-T's block catalog: `/admin/skills` is the only way an entry is born; the slug is
+    **locked** once created (renaming it would drop every talent and project already matched through it);
+    and retiring is **grandfathering, never a delete** — `is_active = false` removes it from every picker
+    while existing claims keep rendering and keep being found.
+- **Status:** Accepted (2026-08-22).
+- **Consequences:**
+  - `Speciality` needs its `speciality` **MorphMap alias** (the admin catalog writes it to the activity
+    log) — as does any future model touching a morph column.
+  - Removing a skill now detaches that skill's speciality claims. This deliberately does **not** follow
+    ADR-Q's preserve-the-content rule: a claim carries no content, and an orphaned one would keep the talent
+    in a discovery filter for a skill they no longer hold.
+  - Discovery gains `filter[speciality]` (matched on slug). Because slugs repeat across skills, passing
+    `fashion` alone matches fashion photographers, models *and* stylists — narrowing is what combining it
+    with `filter[type]` is for. Retired entries still match so nobody drops out of search when the catalog
+    moves on.
+  - Categories for the new skills: **Direction = `crew`** (the spec says it deliberately mirrors
+    cinematography, so it takes the same category and therefore the same eligible blocks);
+    **Hair & makeup = `crew`** (a HMUA books with a kit — the equipment block); **Retouching & post =
+    `creative`** (the software stack is the proof).
+  - Two latent test fragilities surfaced and were fixed rather than papered over: an assertion comparing a
+    *sorted* actual against an *unsorted* expectation (it only passed while modeling held a lower id than
+    photography), and one comparing a raw skill name against escaped HTML (`Hair & makeup` renders as
+    `Hair &amp; makeup`).
+- **Open for stakeholders:** the Arabic speciality names are a first pass and need a native review; the
+  spec's "left out on purpose" list (production, location scouting, set design, illustration, 3D & CGI,
+  sound & music, copywriting, crew roles) is deliberately **not** seeded — promote an entry when a request
+  repeats three times.
+
+---
+
+## ADR-Z — The portfolio is six sections: Now, About, Skills, Reviews, Recognitions, Willing to explore
+- **Date:** 2026-08-22
+- **Context:** The client's `profile.html` structure spec defines a talent page as six named sections. Three
+  already existed in some form (About ≈ the identity header, Skills ≈ ADR-Q/R + ADR-Y, Reviews ≈ the
+  reviews block). Three did not: the **Now** strip, **Recognitions**, and **Willing to explore** — plus two
+  new About fields (`worldview`, `social`).
+- **Decision:** Map the spec onto the EXISTING block system rather than replacing it (the stakeholder call).
+  Sections that describe the *page* stay in the header; sections that are *content* become blocks.
+  - **NOW** — `will_travel` and `is_available` booleans + `availability_changed_at` on `talents`, rendered
+    as one strip at the top of the header. `will_travel` is a **yes/no, never a list of cities**: which
+    city and on whose budget is the conversation the platform wants people to start.
+    `availability_changed_at` is stamped **only when availability actually flips** — an undated toggle
+    looks current forever, which is worse than showing nothing.
+  - **This supersedes the availability half of ADR-L, and is NOT a revert.** ADR-L removed an
+    `availability_status` ENUM (available/booked/unavailable) + `willing_to_travel` + a `travel_regions`
+    JSON list. The spec asks for two plain toggles, so these are new columns with new names and simpler
+    semantics. ADR-L's *other* half stands unchanged: **availability is INFORMATION, never a gate** —
+    enquiries are not blocked by it, and discovery only narrows on it when a brand explicitly asks.
+  - **ABOUT** — `worldview` (translatable) is taste and point of view, kept apart from `bio`
+    (background and track record) and **prompted** in the editor with specific questions; an unprompted
+    second textarea beside Bio just gets a second bio typed into it. `talent_social_handles` mirrors
+    `brand_social_handles` so both sides of the platform describe a social presence identically.
+  - **RECOGNITIONS** — peer vouches, and the distinction from reviews is entirely **who writes them**:
+    a review is BRAND → talent after a booking completes (verified because the booking happened here, and
+    therefore impossible at launch); a recognition is TALENT → talent, needs no booking, and so works from
+    day one. The author is always a talent on the platform, which is what stops the section becoming
+    anonymous praise. Both go through the **same admin moderation queue**, and `RecognitionState` is
+    deliberately identical to `ReviewState`. Rendered to look **visibly different** from reviews — no star
+    ratings, quote-led, relationship given prominence — because if both render as one wall of praise
+    neither gets read.
+  - **WILLING TO EXPLORE** — `talent_interests`: a direction tied to a skill and (optionally) a kind of
+    work. **Structured, not free text**, because as prose it reads as a mood, nobody acts on it, and brands
+    cannot filter it. The skill is deliberately **NOT** required to be one the talent already holds —
+    naming a discipline you do not yet list is the entire point of the section.
+  - **Profile-level blocks are DATA, not a hardcoded list.** `talent_types.default_blocks` seeds into one
+    skill's TAB (ADR-Q), which is right for a gallery and wrong for a section describing the person — it
+    would repeat down the page once per skill. New column `block_types.is_profile_default` flags the blocks
+    seeded ONCE at `talent_type_id = NULL`, so the catalog governs it the way it governs eligibility
+    (ADR-T's principle) instead of a list of keys living in the seeding action.
+- **Status:** Accepted (2026-08-22).
+- **Consequences:**
+  - `SeedBlocksForSkill` now returns blocks in **two scopes** — the skill's tab blocks and, on the first
+    call for a talent, the profile-level defaults. Two existing tests encoded the old invariant ("every
+    seeded block is stamped with the skill", "zero universal blocks") and were updated to the new one,
+    deriving the expected count from the catalog rather than hardcoding it.
+  - Demo seeders build `profile_blocks` by hand (for control over positions and content), so they read
+    `default_blocks` and would miss profile-level blocks entirely. Shared trait
+    `Database\Seeders\Concerns\SeedsProfileDefaultBlocks` keeps that rule in one place.
+  - `Recognition`, `TalentSocialHandle` and `TalentInterest` each need a **MorphMap alias** — as does any
+    new model that can reach a morph column, or writes throw `ClassMorphViolationException`.
+  - Discovery gains `filter[available]`, `filter[will_travel]` and `filter[open_to]` (a stated direction's
+    skill slug). `open_to` is the one filter that surfaces someone who **wants** the work but has not done
+    it yet — which no keyword search over prose could.
+  - A peer vouches **once**; re-submitting REPLACES the earlier vouch and sends it back through moderation
+    rather than throwing. An approved vouch that is then reworded must not stay public on the strength of
+    the old decision.
+- **Bug this surfaced (worth remembering):** the first cut of `updateNow()` compared the incoming value
+  against `$talent->is_available` by hand to decide whether to stamp the date. On a model whose attribute
+  was never hydrated — a fresh insert relying on the column default, a `select()`ed subset — the unset
+  attribute reads as `null`, `(bool) null` is `false`, and flipping to "not available" compared
+  `false !== false` and **silently saved nothing**. The fix is to assign first and let `isDirty()` (which
+  consults the original attributes and treats a newly-known value as a change) decide. `TalentFactory` now
+  also sets both toggles explicitly so a factory model matches a real row.
+- **Open for stakeholders:** whether an approved recognition should survive a *minor* edit rather than
+  always returning to the queue; whether "Willing to explore" should also accept a direction with no skill
+  at all (today a skill is required, which is what keeps it filterable); AR copy for the new sections.
+
+---
+
+## ADR-AA — A project is client, description, media, collaborators, skills and a hidden date
+- **Date:** 2026-08-22
+- **Context:** The client's `project.html` structure spec. Three of its six sections already existed
+  (Description, Skills & specialities via ADR-X/ADR-Y, and Client as a plain column). Three did not
+  behave as specified: **Media** was a single cover rather than the ordered work, **Collaborators** did
+  not exist at all, and **Date** was a `year` rendered on the page when the spec says it must be
+  recorded and never shown.
+- **Decision:**
+  - **CLIENT is hidden when empty.** No "personal project" placeholder and no empty label. A test, a
+    personal shoot, an editorial nobody commissioned: the absence says it.
+  - **DATE is recorded, not displayed.** New `projects.occurred_on` (indexed with `talent_id`) so work
+    can be ordered by recency and "shot recently" is answerable. It appears nowhere on the public page —
+    a strong project from three years ago should not be discounted for its age, and a date in the corner
+    of a card is exactly how that discounting happens. **`year` becomes a DERIVED PROJECTION** of it,
+    kept because the feed's project spreads, the API resources and existing rows read it.
+  - **MEDIA is the ordered work.** New multi-file `media` collection (images + video) beside the
+    single-file `cover`. The ORDER is the edit: the first frame is doing the most work, so it is chosen
+    rather than defaulted. Uploads append; `lead_image_url` falls back cover → first media item.
+  - **COLLABORATORS: `person + skill + role → one credit`.** Skill says what someone CAN do, role says
+    what they did HERE — on a shoot with six people credited, only the role separates the director from
+    the assistant. **Two kinds, and the difference decides everything:**
+    - **On-platform** (`talent_id`): tagging writes the credit onto THEIR portfolio, so it REQUIRES
+      THEIR CONFIRMATION. Lands `pending` and is invisible *everywhere* — public project page
+      included — until accepted. Without that, anyone could attach a name to work they did not do.
+    - **Off-platform** (`name`): a real credit for someone not on Fama. Nobody to ask, no portfolio to
+      write to, never leaves this project — so it is `listed` immediately. The confirmation rule does
+      not apply because there is nothing to claim on anyone's behalf.
+  - **Declining and withdrawing are the SAME transition** (`accepted → declined`). Someone who no longer
+    wants to be publicly associated with a project must be able to say so at any point, not only in the
+    first minute.
+  - **A credited project is filed under the CREDIT's skill, not the project's** — you can be credited as
+    a stylist on someone else's photography job, and it belongs under Styling on your page.
+- **Status:** Accepted (2026-08-22).
+- **Consequences:**
+  - `Talent::portfolioProjects(?int $scope)` is THE portfolio view: owned projects in that scope plus
+    accepted credits, de-duplicated. The public projects block and the profile's project count both read
+    it, so the count matches what the page shows.
+  - **Accepting a credit ensures a `projects` block exists in the target scope.** Discovered live:
+    photography's `default_blocks` seed a gallery, not projects, so confirming a credit put the work in
+    a tab that rendered nothing — the confirmation promise ("this now appears on your profile") was a
+    lie. `ProjectCreditService::ensureProjectsBlock()` closes it, and any seeder writing `accepted`
+    straight to the column skips that step (the showcase seeder now goes through `accept()`).
+  - **A credit may name a skill the collaborator does not hold** — the project OWNER picks it. Those fall
+    back to the universal region rather than vanishing into a tab that does not exist.
+  - Owning a project and being named on a credit are **separate authorisation questions**, checked
+    separately: owning never lets you answer on someone else's behalf, and being credited never lets you
+    edit someone else's credit block.
+  - Credit notifications deliberately reuse the feed notification payload shape so they land in the ONE
+    notification inbox — a talent should not have to look in two places to learn they were credited.
+  - `ProjectCredit` needs its `project_credit` MorphMap alias.
+- **Bug this surfaced (worth remembering):** with `year` still mass-assignable, the demo seeder set
+  `year` directly while the factory set `occurred_on`, and the two silently disagreed (`occurred_on`
+  2022, `year` 2025). A projection that anything can write is not a projection. `year` was removed from
+  `$fillable` — the mutator assigns `$this->attributes` directly and so bypasses fillable — which makes
+  divergence impossible and, with `preventSilentlyDiscardingAttributes` on, turns any attempt to
+  mass-assign it into a throw rather than a silent inconsistency.
+- **Open for stakeholders:** whether a credit should be restricted to skills the collaborator actually
+  lists (today the owner may name any skill, with the universal-region fallback above); whether a
+  declined credit should be re-requestable by the owner or stay refused; video length limits for the
+  media gallery (today only file size is capped, at 50 MB); AR copy for the new sections.

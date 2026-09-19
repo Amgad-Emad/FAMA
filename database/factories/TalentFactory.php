@@ -44,6 +44,10 @@ class TalentFactory extends Factory
             'booking_value' => fake()->safeEmail(),
             'is_verified' => true,
             'is_published' => true,
+            // Explicit so a factory model matches a real row: relying on the
+            // column default leaves the attribute unhydrated (ADR-Z).
+            'is_available' => true,
+            'will_travel' => false,
             'published_at' => now(),
             'status' => 'live',
             'view_count' => fake()->numberBetween(0, 5000),

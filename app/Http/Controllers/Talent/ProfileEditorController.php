@@ -8,13 +8,19 @@ use App\Http\Requests\Talent\MoveBlockRequest;
 use App\Http\Requests\Talent\ReorderRequest;
 use App\Http\Requests\Talent\UpdateAvatarRequest;
 use App\Http\Requests\Talent\UpdateCoreProfileRequest;
+use App\Http\Requests\Talent\UpdateNowRequest;
 use App\Http\Requests\Talent\UpdatePricingRateRequest;
 use App\Http\Requests\Talent\UpdateSectionOrderRequest;
+use App\Http\Requests\Talent\UpdateSocialHandlesRequest;
 use App\Http\Resources\BlockTypeResource;
 use App\Http\Resources\ProfileBlockResource;
+use App\Http\Resources\SpecialityResource;
+use App\Http\Resources\TalentInterestResource;
 use App\Http\Resources\TalentTypeResource;
 use App\Models\BlockType;
 use App\Models\ProfileBlock;
+use App\Models\Speciality;
+use App\Models\Talent;
 use App\Models\TalentType;
 use App\Services\ProfileBlockService;
 use App\Services\TalentProfileService;
@@ -41,7 +47,10 @@ class ProfileEditorController extends TalentController
 
     public function edit(): View
     {
-        $talent = $this->talent()->load(['profileBlocks.blockType', 'talentTypes']);
+        $talent = $this->talent()->load([
+            'profileBlocks.blockType', 'talentTypes', 'specialities',
+            'socialHandles', 'interests.talentType', 'interests.speciality',
+        ]);
         $skills = $this->orderedSkills($talent);
 
         $catalog = BlockType::query()->where('is_active', true)
@@ -55,11 +64,99 @@ class ProfileEditorController extends TalentController
             'availableSkills' => TalentTypeResource::collection(
                 TalentType::whereNotIn('id', $talent->talentTypes->pluck('id'))->orderBy('id')->get()
             ),
+            // The controlled speciality vocabulary + current picks, keyed by
+            // skill id (ADR-Y) — the same shape the skills endpoint returns, so
+            // the picker re-renders from either.
+            'specialities' => $this->specialityPayload($talent, $skills),
+            // ADR-Z sections. `now` carries the humanised stamp so the editor
+            // can render "as of …" on first paint without a round trip.
+            'now' => [
+                'will_travel' => (bool) $talent->will_travel,
+                'is_available' => (bool) $talent->is_available,
+                'availability_changed_at' => $talent->availability_changed_at?->toIso8601String(),
+                'availability_changed_for_humans' => $talent->availability_changed_at?->diffForHumans(),
+            ],
+            'social' => $this->socialPayload($talent),
+            'interests' => TalentInterestResource::collection($talent->interests)->resolve(),
+            // Every skill, not just the talent's own — this section names
+            // directions they do NOT yet work in (ADR-Z).
+            'interestSkills' => $this->interestSkillPayload(),
             // Block types whose content is editable somewhere — the rest
             // (comp_card) must not offer a dead "Edit content" link. `projects`
             // is editable on its own page (ADR-X), not the content page.
             'contentKeys' => [...ContentRegistry::keys(), 'reviews', 'projects'],
         ]);
+    }
+
+    /**
+     * The full pickable vocabulary for "willing to explore" — EVERY skill with
+     * its specialities, because the section exists to name directions the talent
+     * does not yet work in (ADR-Z). One query for the whole speciality catalog.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function interestSkillPayload(): array
+    {
+        $specialities = Speciality::query()
+            ->selectable()
+            ->orderBy('position')->orderBy('id')
+            ->get()
+            ->groupBy('talent_type_id');
+
+        $locale = app()->getLocale();
+
+        return TalentType::query()->orderBy('id')->get()->map(fn (TalentType $type) => [
+            'id' => (int) $type->id,
+            'slug' => $type->slug,
+            'name' => $type->getTranslation('name', $locale, false) ?: $type->getTranslation('name', 'en', false),
+            'icon' => $type->icon,
+            'specialities' => $specialities->get($type->id, collect())->map(fn (Speciality $s) => [
+                'id' => (int) $s->id,
+                'name' => $s->getTranslation('name', $locale, false) ?: $s->getTranslation('name', 'en', false),
+            ])->values()->all(),
+        ])->values()->all();
+    }
+
+    /**
+     * The talent's social handles, shaped for the editor's list.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function socialPayload(Talent $talent): array
+    {
+        return $talent->load('socialHandles')->socialHandles
+            ->map(fn ($handle) => [
+                'platform' => $handle->platform,
+                'handle' => $handle->handle,
+                'url' => $handle->url,
+            ])->values()->all();
+    }
+
+    /**
+     * The speciality options + picks for each skill the talent holds, keyed by
+     * skill id. ONE query for the whole vocabulary — the picker needs every
+     * skill's options up front because the sections open independently.
+     *
+     * @param  Collection<int, TalentType>  $skills
+     * @return array<int, array<string, mixed>>
+     */
+    private function specialityPayload(Talent $talent, Collection $skills): array
+    {
+        $catalog = Speciality::query()
+            ->selectable()
+            ->whereIn('talent_type_id', $skills->pluck('id'))
+            ->orderBy('position')->orderBy('id')
+            ->get()
+            ->groupBy('talent_type_id');
+
+        $claimed = $talent->specialities->groupBy('talent_type_id');
+
+        return $skills->mapWithKeys(fn (TalentType $type) => [
+            $type->id => [
+                'options' => SpecialityResource::collection($catalog->get($type->id, collect()))->resolve(),
+                'selected' => $claimed->get($type->id, collect())->pluck('id')->map('intval')->values()->all(),
+            ],
+        ])->all();
     }
 
     /**
@@ -95,10 +192,40 @@ class ProfileEditorController extends TalentController
             'display_name' => $talent->display_name,
             'headline' => $talent->getTranslations('headline'),
             'bio' => $talent->getTranslations('bio'),
+            'worldview' => $talent->getTranslations('worldview'),
             'slug' => $talent->slug,
             'base_city' => $talent->base_city,
             'base_country' => $talent->base_country,
         ], __('Profile updated.'));
+    }
+
+    /**
+     * The NOW strip (ADR-Z) — the two time-sensitive toggles. Returns the
+     * stamp so the editor can show "as of …" without a re-fetch.
+     */
+    public function updateNow(UpdateNowRequest $request): JsonResponse
+    {
+        $talent = $this->profile->updateNow($this->talent(), $request->validated());
+
+        return response()->success([
+            'will_travel' => (bool) $talent->will_travel,
+            'is_available' => (bool) $talent->is_available,
+            'availability_changed_at' => $talent->availability_changed_at?->toIso8601String(),
+            'availability_changed_for_humans' => $talent->availability_changed_at?->diffForHumans(),
+        ], __('Saved.'));
+    }
+
+    /**
+     * Replace the social handles with one ordered list (ADR-Z, About).
+     */
+    public function updateSocial(UpdateSocialHandlesRequest $request): JsonResponse
+    {
+        $talent = $this->profile->updateSocialHandles($this->talent(), $request->validated('handles'));
+
+        return response()->success(
+            ['handles' => $this->socialPayload($talent)],
+            __('Links saved.'),
+        );
     }
 
     /**

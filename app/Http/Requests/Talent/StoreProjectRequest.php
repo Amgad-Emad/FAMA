@@ -9,6 +9,7 @@ use Illuminate\Validation\Rule;
  * Create a portfolio project. `skill_ids` is REQUIRED with at least one entry,
  * each one of the talent's own skills (ADR-X) — the same rule the service
  * enforces, surfaced here as a field error the editor can show inline.
+ * `speciality_ids` is optional and must resolve under those skills (ADR-Y).
  */
 class StoreProjectRequest extends FormRequest
 {
@@ -28,6 +29,11 @@ class StoreProjectRequest extends FormRequest
             'skill_ids' => ['required', 'array', 'min:1'],
             'skill_ids.*' => ['integer', Rule::in($ownSkills)],
 
+            // Optional, but every pick must hang off a tagged skill — the
+            // service is what proves that (ADR-Y); this is the shape check.
+            'speciality_ids' => ['sometimes', 'array'],
+            'speciality_ids.*' => ['integer', 'exists:specialities,id'],
+
             'title' => ['required', 'array'],
             'title.en' => ['required', 'string', 'max:255'],
             'title.ar' => ['nullable', 'string', 'max:255'],
@@ -45,7 +51,9 @@ class StoreProjectRequest extends FormRequest
             'body.ar' => ['nullable', 'string', 'max:20000'],
 
             'client_name' => ['nullable', 'string', 'max:255'],
-            'year' => ['nullable', 'integer', 'min:1900', 'max:'.(date('Y') + 1)],
+            // Recorded, not displayed (ADR-AA). `year` is a derived projection
+            // of this and is no longer accepted from a client at all.
+            'occurred_on' => ['nullable', 'date', 'before_or_equal:'.now()->addYear()->toDateString()],
             'url' => ['nullable', 'url', 'max:2048'],
 
             'results' => ['nullable', 'array', 'max:6'],

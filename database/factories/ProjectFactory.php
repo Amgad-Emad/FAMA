@@ -26,7 +26,9 @@ class ProjectFactory extends Factory
             'summary' => ['en' => fake()->sentence(), 'ar' => 'ملخص'],
             'body' => ['en' => fake()->paragraphs(3, true), 'ar' => 'المحتوى الكامل'],
             'results' => ['reach' => fake()->numberBetween(10000, 5000000), 'roi' => fake()->numberBetween(2, 12).'x'],
-            'year' => fake()->numberBetween(2019, 2026),
+            // ADR-AA: `occurred_on` is the real field; the mutator derives `year`
+            // from it, so setting the date alone keeps both consistent.
+            'occurred_on' => fake()->dateTimeBetween('-6 years', 'now')->format('Y-m-d'),
             'url' => fake()->optional()->url(),
             'position' => fake()->numberBetween(0, 10),
         ];

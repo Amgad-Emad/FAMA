@@ -855,3 +855,162 @@ admin block catalog (/admin/blocks). ProfileBlockService::fillBlock still handle
 
 Phase 4 (mobile API: Sanctum + Scribe over existing services) is deferred; Prompt 5K mirrors the feed
 endpoints under /api/v1 with Sanctum and starts docs/api.md regeneration.
+
+SKILLS NEST INTO SPECIALITIES — CLIENT SPEC PHASE 1/3 (2026-08-22, ADR-Y; suite 677 green / 2464
+assertions, build green, migrate:fresh --seed exits 0). Implements the client's three structure specs
+(`profile.html`, `project.html`, `spcialist.html` in the repo root — they are SPEC DOCUMENTS, not
+designs: their paper/blue/Sofia-Condensed styling is the document's dress, NOT a brand restyle; the app
+keeps the Orchid branding). Phase 1 = the taxonomy everything else hangs off.
+- **Nine skills** (was six): added **Direction** (`crew` — the spec says it mirrors cinematography, so
+  same category, same eligible blocks), **Hair & makeup** (`crew` — a HMUA books with a kit = the
+  equipment block), **Retouching & post** (`creative` — the software stack is the proof). Migration
+  `2026_08_22_000200` renames in place ("Modeling" → **Modelling**, title-case → sentence-case) and
+  inserts the three; `TalentTypeSeeder` seeds the same nine. **SLUGS ARE UNCHANGED** — `modeling` stays
+  `modeling` because the slug is the public deep link (`?skill=`, `filter[type]=`) and ADR-S already
+  broke those once.
+- **NEW second level: `specialities`** (migration `2026_08_22_000100`) + `speciality_talent` +
+  `project_speciality` pivots. 45 seeded entries, 4–7 per skill (`SpecialitySeeder`, runs right after
+  `TalentTypeSeeder` in `DatabaseSeeder` — specialities nest under skills, so the catalog must exist
+  first). Model `Speciality` (`$table = 'specialities'`, `scopeSelectable()` = `is_active`).
+- **`slug` is unique PER SKILL, not globally** — "Fashion" lives under photography, modelling AND
+  styling, and that overlap is the feature (one search assembles a whole crew). Never add a global
+  unique index on it.
+- **THE VOCABULARY IS CONTROLLED**: pickers only, no free-text field anywhere. Two levels is the whole
+  tree. Every entry answers ONE question — what kind of SUBJECT; output format (campaign, editorial,
+  lookbook, e-commerce) belongs to the project and stays out.
+- **TWO RULES, ONE HOME EACH — never reimplement them.** A talent's picks must belong to a skill they
+  hold: `SkillsService::setSpecialities()` (per-skill replace, so one skill's picker can't wipe
+  another's; empty list is a legitimate clear). A project's picks must hang off one of its TAGGED
+  skills: `TalentProjectService::assertSkillSpecialities()`, validated against the skill set the project
+  will END UP with — `update()` with new `skill_ids` but no `speciality_ids` calls `pruneSpecialities()`
+  rather than orphaning them.
+- **Retiring ≠ deleting** (ADR-T's grandfathering, applied to the vocabulary): `is_active = false`
+  removes an entry from every picker while existing claims keep rendering and keep being found. The
+  **slug is LOCKED** once created — renaming would silently drop every talent and project matched
+  through it. Admin: `/admin/skills` (`manage-flows`) is the only way an entry is born.
+- **Removing a skill DETACHES its speciality claims** — deliberately NOT ADR-Q's preserve-the-content
+  rule, because a claim carries no content and an orphan would keep the talent in a discovery filter for
+  a skill they no longer hold.
+- `Speciality` needs its **`speciality` MorphMap alias** (the admin catalog writes it to the activity
+  log) — as does any new model touching a morph column, or writes throw ClassMorphViolationException.
+- Surfaces: profile editor (pill picker inside each skill section, optimistic, `PUT
+  /talent/profile/skills/{type}/specialities`); public profile (`talent/partials/skill-blocks` leads
+  with the skill's specialities — it takes an optional `$skill`, and BOTH the server-rendered active tab
+  and the lazy `/{slug}/tab/{skill}` endpoint pass it; the discovery link is `@feature('discover')`-gated
+  so V1 renders a static pill, not a link to a 404); projects composer (`specialityGroups()` reveals
+  groups BY the tagged skills, `toggleSkill` calls `pruneSpecialities`); admin `/admin/skills`.
+- Discovery: `filter[speciality]` (slug-matched). Combine with `filter[type]` to narrow.
+- **WATCH OUT — two latent test fragilities this exposed** (fixed at the root, worth knowing the shape):
+  an assertion comparing a **sorted actual against an unsorted expectation** only passed while modeling
+  held a lower id than photography (the seeder order changed), and one comparing a **raw skill name
+  against escaped HTML** broke as soon as a name contained `&` ("Hair & makeup" → `Hair &amp; makeup`).
+  Sort both sides; wrap name expectations in `e()`.
+- **STILL TO COME (phases 2 and 3 of the client spec)** — not built yet:
+  - *Portfolio* (`profile.html`): the six fixed sections. **Now** (`based_in` ✓ exists as `base_city`,
+    but `will_travel` + `available` toggles must come BACK — ADR-L dropped them — with a visible
+    last-changed date), **About** (`worldview` and `social` are new fields), **Recognitions** (NEW —
+    invited peer vouches, must look visibly different from reviews), **Willing to explore** (NEW —
+    structured interests tied to a skill so brands can filter, not free text).
+  - *Project* (`project.html`): **Collaborators** is the big one — a credit is `person + skill + role`,
+    needs the taggee's CONFIRMATION, and writes onto their portfolio. Plus `date` stored-but-not-shown
+    (`year` exists; the spec wants a real date, hidden from the page).
+
+PORTFOLIO = SIX SECTIONS — CLIENT SPEC PHASE 2/3 (2026-08-22, ADR-Z; suite 695 green / 2522 assertions,
+build green, migrate:fresh --seed exits 0, all six sections verified rendering live). Implements
+`profile.html` ONTO the existing block system (the stakeholder call): sections that describe the PAGE
+live in the header (Now, About); sections that are CONTENT are blocks (Reviews, Recognitions, Willing to
+explore).
+- **NOW** (migration `2026_08_22_000300`): `talents.will_travel` + `is_available` +
+  `availability_changed_at`, rendered as one strip at the top of the public header and as two
+  save-on-flip toggles in the editor (no Save button — this is what goes stale fastest).
+  **SUPERSEDES the availability half of ADR-L and is NOT a revert** — ADR-L dropped an
+  `availability_status` ENUM + `willing_to_travel` + `travel_regions` JSON; these are NEW columns with
+  simpler semantics. ADR-L's other half STANDS: **availability is INFORMATION, never a gate** (never
+  blocks an enquiry; only narrows discovery when a brand asks). `will_travel` is a YES/NO, never a list
+  of cities.
+- **WATCH OUT — the `availability_changed_at` stamp:** it moves ONLY when availability actually flips.
+  Never compare the incoming value against `$talent->is_available` by hand: on a model whose attribute
+  was never hydrated (fresh insert relying on the column default, a `select()`ed subset) it reads NULL,
+  `(bool) null` is `false`, and flipping to "not available" compares `false !== false` and SILENTLY SAVES
+  NOTHING. Assign first, then let `isDirty()` decide. `TalentFactory` now sets both toggles explicitly so
+  a factory model matches a real row.
+- **ABOUT**: `talents.worldview` (translatable) is taste + point of view, NOT a second bio — bio is
+  background/track record, and the editor PROMPTS worldview with specific questions because an empty box
+  beside Bio just gets a second bio typed into it. `talent_social_handles` mirrors `brand_social_handles`
+  (whole-list replace via `PUT /talent/profile/social`; UNIQUE(talent_id, platform), 422 on a duplicate).
+  **`UpdateCoreProfileRequest` must list `worldview`** or `validated()` silently drops it.
+- **RECOGNITIONS** = peer vouches. **Reviews are BRAND → talent (after a booking, so impossible at
+  launch); recognitions are TALENT → talent (invited, no booking, so they work from day one).** Same
+  admin moderation queue, `RecognitionState` identical to `ReviewState`, `is_approved` synced by
+  `SyncStateProjections` (never set by hand). Written at `GET|POST /{slug}/recognise` (talent guard —
+  guest → talent login as intended URL; own profile → redirect). `UNIQUE(talent_id, author_talent_id)`:
+  a peer vouches ONCE and re-submitting REPLACES + returns to pending (an approved vouch that is reworded
+  must not stay public on the old decision). They MUST render differently from reviews — no stars,
+  quote-led, relationship first — or the page is one wall of praise and neither gets read.
+  Admin: `/admin/moderation?queue=recognitions`.
+- **WILLING TO EXPLORE** = `talent_interests` (skill + OPTIONAL speciality + note, capped at 6).
+  Structured, never free text (as prose it reads as a mood and is unfilterable). **The skill is
+  deliberately NOT restricted to ones the talent holds** — naming a direction you have not worked in yet
+  is the whole point; only the speciality is checked (must belong to the chosen skill).
+  `TalentInterestService` is the only write path.
+- **PROFILE-LEVEL BLOCKS ARE DATA (new column `block_types.is_profile_default`):**
+  `talent_types.default_blocks` seeds into ONE SKILL'S TAB (ADR-Q) — right for a gallery, wrong for a
+  section describing the person, which would repeat once per tab. Flagged blocks are seeded ONCE at
+  `talent_type_id = NULL`. Never hardcode that list in a seeding action.
+  **WATCH OUT:** `SeedBlocksForSkill` now returns blocks in TWO scopes (skill tab + profile defaults) —
+  two old tests encoded "every seeded block belongs to a skill / zero universal blocks" and were updated
+  to derive the expected count from the catalog. Hand-rolled demo seeders read `default_blocks` (skill
+  blocks only), so they MUST use `Database\Seeders\Concerns\SeedsProfileDefaultBlocks` or the sections
+  exist in the catalog, exist in the data, and render NOWHERE.
+- Discovery gains `filter[available]`, `filter[will_travel]`, `filter[open_to]` (skill slug of a stated
+  direction — the one filter that surfaces someone who WANTS the work but has not done it).
+- New MorphMap aliases: `recognition`, `talent_social_handle`, `talent_interest`.
+- Phase 3/3 (`project.html`) landed the same day — see ADR-AA below.
+
+PROJECT = CLIENT · DESCRIPTION · MEDIA · COLLABORATORS · SKILLS · DATE — CLIENT SPEC PHASE 3/3 COMPLETE
+(2026-08-22, ADR-AA; suite 711 green / 2573 assertions, build green, migrate:fresh --seed exits 0,
+credit loop verified live in both directions). **The client's three structure specs (`profile.html`,
+`project.html`, `spcialist.html`) are now fully implemented.**
+- **COLLABORATORS** (`project_credits`, migration `2026_08_22_000700`) = `person + skill + role`. Skill
+  says what someone CAN do; role says what they did HERE. **TWO KINDS, and the difference decides
+  everything:**
+  - **ON-PLATFORM** (`talent_id`): tagging writes the project onto THEIR portfolio, so it **REQUIRES
+    THEIR CONFIRMATION** — `pending`, invisible EVERYWHERE (public project page included) until
+    accepted. This is the whole safeguard; without it anyone could attach a name to work they did not do.
+  - **OFF-PLATFORM** (`name` only): `listed` immediately. Nobody to ask, no portfolio to write to, never
+    leaves this project — so nothing can be claimed on anyone's behalf.
+  - `accepted → declined` IS allowed: declining and withdrawing are the same transition, because being
+    publicly associated with a project stays the collaborator's call at any point.
+  - **Owning a project and being named on a credit are SEPARATE authorisation questions.** Owning never
+    lets you answer for someone else (403); being credited never lets you edit someone else's block.
+  - An accepted credit files the project under the **CREDIT's** skill, not the project's own (you can be
+    credited as a stylist on someone else's photography job).
+- **WATCH OUT — accepting must ensure a `projects` BLOCK exists in the target scope.** A profile only
+  renders projects where such a block exists (ADR-Q), and several skills seed a gallery and NO projects
+  block (photography). Without `ProjectCreditService::ensureProjectsBlock()` the collaborator confirms a
+  credit and sees nothing — the promise is a lie. **Any path writing `accepted` straight to the column
+  (a seeder, a fixture) SKIPS that** and produces demo data where a confirmed credit renders nowhere;
+  go through `accept()`. Also: a credit may name a skill the collaborator does NOT hold (the owner picks
+  it) — those fall back to the universal region instead of vanishing into a non-existent tab.
+- **MEDIA**: a multi-file `media` collection (images + video) beside the single-file `cover`. **The
+  ORDER is the edit** — first frame = the lead, chosen not defaulted. Uploads APPEND (medialibrary
+  stamps `order_column` = max+1 itself, no manual ordering). `Project::orderedMedia()` +
+  `lead_image_url` (cover → first media item).
+- **DATE**: `projects.occurred_on` (migration `2026_08_22_000600`, indexed with `talent_id`) is
+  **RECORDED, NOT DISPLAYED** — it orders work by recency and answers "shot recently", and appears
+  NOWHERE public, so an older strong project is not discounted for its age.
+- **WATCH OUT — `year` is now a DERIVED PROJECTION and was REMOVED from `$fillable`.** It is written
+  only by `Project::setOccurredOnAttribute()` (a MUTATOR, not a model event, so it survives
+  `WithoutModelEvents` seeders and factories). It stayed fillable at first and the demo seeder set
+  `year` while the factory set `occurred_on` — they silently disagreed (2022 vs 2025). A projection
+  anything can write is not a projection. With `preventSilentlyDiscardingAttributes` on, mass-assigning
+  `year` now THROWS. `StoreProjectRequest` no longer accepts it either.
+- **CLIENT** is hidden when empty — no "personal project" placeholder, no empty label; `filled()` gates
+  it on both the project page and the card.
+- `Talent::portfolioProjects(?int $scope)` is THE portfolio view (owned in scope + accepted credits,
+  de-duplicated); the public projects block and the profile's project count both read it so the count
+  matches what the page shows.
+- New: `/talent/credits` (confirm/decline/withdraw, in `Navigation::talentItems()`), credit
+  notifications in `App\Notifications\Credits\*` reusing the FEED payload shape so they land in the ONE
+  inbox, MorphMap alias `project_credit`, `ProjectCreditState` (pending/accepted/declined + terminal
+  `listed`).

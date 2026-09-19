@@ -245,7 +245,7 @@ it('shows full project detail with the budget always visible to the admin', func
         ->assertJsonPath('data.title', 'Drawer Project')
         ->assertJsonPath('data.budget_min', 5000)
         ->assertJsonPath('data.budget_is_public', false)
-        ->assertJsonPath('data.role', 'Modeling');
+        ->assertJsonPath('data.role', 'Modelling');
 });
 
 it('denies the detail endpoints to a powerless admin', function () {

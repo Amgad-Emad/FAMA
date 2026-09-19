@@ -6,7 +6,11 @@
     $avatar = $talent->avatar_url;
 
     // Header stats (from already eager-loaded relations — no N+1).
-    $projectsCount = $talent->projects->count();
+    // Counts what the page SHOWS: own projects plus accepted credits on other
+    // people's work (ADR-AA). A project both owned and credited counts once.
+    $projectsCount = $talent->projects->pluck('id')
+        ->merge($talent->creditedProjects->pluck('id'))
+        ->unique()->count();
     $reviewsCount = $talent->reviews->count();            // reviews eager-loaded with the approved scope
     $avgRating = $reviewsCount ? round((float) $talent->reviews->avg('rating'), 1) : null;
 
@@ -40,6 +44,14 @@
     // Active tab: `?skill=` when it names a skill with visible blocks, else the primary.
     $activeSkill = $tabSkills->firstWhere('slug', request('skill')) ?? $tabSkills->first();
     $tabUrls = $tabSkills->mapWithKeys(fn ($s) => [$s->slug => route('talent.tab', ['slug' => $talent->slug, 'skill' => $s->slug])]);
+
+    // Social platform display labels (ADR-Z). Kept here rather than in the
+    // enum so the copy is translatable and the column stays a stable key.
+    $socialLabels = [
+        'instagram' => 'Instagram', 'tiktok' => 'TikTok', 'x' => 'X',
+        'linkedin' => 'LinkedIn', 'youtube' => 'YouTube', 'behance' => 'Behance',
+        'vimeo' => 'Vimeo', 'website' => __('Website'), 'other' => __('Link'),
+    ];
 
     // Section order (editor pill bar): universal renders above the skill tabs
     // by default; any position > 0 moves it below them.
@@ -121,6 +133,12 @@
                         <x-ui.button :href="route('brand.talents.message', ['talent' => $talent->slug])" variant="outline">{{ __('Message') }}</x-ui.button>
                     @endfeature
                     <x-ui.button :href="route('talent.review.create', ['slug' => $talent->slug])" variant="outline">{{ __('Leave a review') }}</x-ui.button>
+                    {{-- Peer recognition (ADR-Z) — offered only to a signed-in
+                         talent who is not this talent. A brand sees "Leave a
+                         review"; a peer sees both, and they mean different things. --}}
+                    @if (auth('talent')->check() && ! auth('talent')->user()->is($talent))
+                        <x-ui.button :href="route('talent.recognition.create', ['slug' => $talent->slug])" variant="outline">{{ __('Recognise') }}</x-ui.button>
+                    @endif
                     {{-- Share profile: copies the canonical profile link. --}}
                     <div x-data="{ copied: false }">
                         <button type="button"
@@ -134,9 +152,52 @@
                 </div>
             </div>
 
+            {{-- ═══ NOW (ADR-Z) ═══ Everything time-sensitive, in one strip, because
+                 this is what a brand checks before anything else. Availability
+                 ALWAYS carries its last-confirmed date: without it a stale toggle
+                 looks current forever, which is worse than showing nothing. --}}
+            <div class="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 border-y border-line py-3">
+                <span class="font-mono text-[10px] uppercase tracking-[0.14em] text-subtle">{{ __('Now') }}</span>
+
+                <span class="inline-flex items-center gap-2 text-sm">
+                    <span @class([
+                        'h-1.5 w-1.5 rounded-full',
+                        'bg-success' => $talent->is_available,
+                        'bg-subtle' => ! $talent->is_available,
+                    ])></span>
+                    <span class="font-medium text-ink">
+                        {{ $talent->is_available ? __('Taking work') : __('Not taking work') }}
+                    </span>
+                    @if ($talent->availability_changed_at)
+                        <span class="font-mono text-[11px] text-subtle"
+                              title="{{ $talent->availability_changed_at->toDayDateTimeString() }}">
+                            {{ __('as of :date', ['date' => $talent->availability_changed_at->diffForHumans()]) }}
+                        </span>
+                    @endif
+                </span>
+
+                @if ($talent->will_travel)
+                    {{-- A yes/no, never a list of cities: which city and on whose
+                         budget is the conversation this is meant to start. --}}
+                    <span class="inline-flex items-center gap-1.5 text-sm text-muted">
+                        <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h20"/><path d="M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20z"/><circle cx="12" cy="12" r="10"/></svg>
+                        {{ __('Will travel') }}
+                    </span>
+                @endif
+            </div>
+
             {{-- Bio row (below the identity row) + rate chip + external link --}}
             @if ($talent->bio)
                 <p class="mt-6 text-sm leading-relaxed text-ink">{{ $talent->bio }}</p>
+            @endif
+
+            {{-- Worldview (ADR-Z, About) — taste and point of view, kept visually
+                 apart from the bio so it does not read as a second one. --}}
+            @if ($talent->worldview)
+                <div class="mt-4 border-s-2 border-accent ps-4">
+                    <div class="font-mono text-[10px] uppercase tracking-[0.14em] text-subtle">{{ __('Point of view') }}</div>
+                    <p class="mt-1.5 text-sm leading-relaxed text-ink">{{ $talent->worldview }}</p>
+                </div>
             @endif
             @if ($hasRate || $externalUrl)
                 <div class="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
@@ -154,6 +215,21 @@
                         </a>
                     @endif
                 </div>
+            @endif
+
+            {{-- Social (ADR-Z, About) — Instagram and anywhere else the work lives. --}}
+            @if ($talent->socialHandles->isNotEmpty())
+                <ul class="mt-3 flex flex-wrap items-center gap-2">
+                    @foreach ($talent->socialHandles as $social)
+                        <li>
+                            <a href="{{ $social->url }}" target="_blank" rel="noopener nofollow"
+                               class="inline-flex items-center gap-1.5 rounded-pill border border-line-strong px-3 py-1.5 font-mono text-[11px] text-muted transition hover:border-accent hover:text-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+                                <span class="uppercase tracking-wider">{{ $socialLabels[$social->platform] ?? $social->platform }}</span>
+                                <bdi>{{ $social->handle }}</bdi>
+                            </a>
+                        </li>
+                    @endforeach
+                </ul>
             @endif
         </header>
 
@@ -213,14 +289,14 @@
                             <div id="skill-tabpanel" role="tabpanel" tabindex="0"
                                  x-ref="panel" :aria-labelledby="'skill-tab-' + active" :aria-busy="loading"
                                  class="min-h-[4rem] transition-opacity duration-200 ease-out motion-reduce:transition-none focus:outline-none">
-                                @include('talent.partials.skill-blocks', ['talent' => $talent, 'blocks' => $blocksFor($activeSkill->id)])
+                                @include('talent.partials.skill-blocks', ['talent' => $talent, 'skill' => $activeSkill, 'blocks' => $blocksFor($activeSkill->id)])
                             </div>
                         </div>
                     </div>
                 @else
                     {{-- Single skill: no tab bar (renders directly, per Prompt H). --}}
                     <div x-ref="panel" @class(['mt-12' => $universalAbove])>
-                        @include('talent.partials.skill-blocks', ['talent' => $talent, 'blocks' => $blocksFor($activeSkill->id)])
+                        @include('talent.partials.skill-blocks', ['talent' => $talent, 'skill' => $activeSkill, 'blocks' => $blocksFor($activeSkill->id)])
                     </div>
                 @endif
             @endif

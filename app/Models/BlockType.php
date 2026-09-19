@@ -27,7 +27,7 @@ class BlockType extends Model
      */
     protected $fillable = [
         'key', 'name', 'description', 'icon', 'availability', 'content_source',
-        'default_layout', 'is_active', 'is_repeatable', 'position', 'settings_schema',
+        'default_layout', 'is_active', 'is_repeatable', 'is_profile_default', 'position', 'settings_schema',
     ];
 
     /**
@@ -47,6 +47,7 @@ class BlockType extends Model
         return [
             'is_active' => 'boolean',
             'is_repeatable' => 'boolean',
+            'is_profile_default' => 'boolean',
             'position' => 'integer',
             'settings_schema' => 'array',
         ];

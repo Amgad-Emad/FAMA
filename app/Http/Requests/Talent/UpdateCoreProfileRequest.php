@@ -27,6 +27,10 @@ class UpdateCoreProfileRequest extends FormRequest
             'bio' => ['nullable', 'array'],
             'bio.en' => ['nullable', 'string', 'max:5000'],
             'bio.ar' => ['nullable', 'string', 'max:5000'],
+            // Taste and point of view, kept apart from the bio (ADR-Z).
+            'worldview' => ['nullable', 'array'],
+            'worldview.en' => ['nullable', 'string', 'max:2000'],
+            'worldview.ar' => ['nullable', 'string', 'max:2000'],
             'slug' => ['nullable', 'string', 'max:255', 'alpha_dash', Rule::unique('talents', 'slug')->ignore($talentId)],
             'base_city' => ['nullable', 'string', 'max:255'],
             'base_country' => ['nullable', 'string', 'max:255'],

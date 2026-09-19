@@ -10,12 +10,17 @@ use App\Models\Equipment;
 use App\Models\LookType;
 use App\Models\ProfileBlock;
 use App\Models\Project;
+use App\Models\ProjectCredit;
+use App\Models\Recognition;
 use App\Models\Review;
 use App\Models\Showreel;
 use App\Models\SoftwareStack;
+use App\Models\Speciality;
 use App\Models\Talent;
 use App\Models\TalentType;
+use App\Services\ProjectCreditService;
 use Database\Seeders\Concerns\GeneratesCoverImages;
+use Database\Seeders\Concerns\SeedsProfileDefaultBlocks;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -31,7 +36,7 @@ use Illuminate\Support\Facades\DB;
  */
 class TalentShowcaseSeeder extends Seeder
 {
-    use GeneratesCoverImages;
+    use GeneratesCoverImages, SeedsProfileDefaultBlocks;
 
     public function run(): void
     {
@@ -39,6 +44,132 @@ class TalentShowcaseSeeder extends Seeder
 
         foreach ($this->talents() as $spec) {
             DB::transaction(fn () => $this->build($spec, $types));
+        }
+
+        // Recognitions are talent → talent, so they can only be wired once every
+        // showcase talent exists (ADR-Z).
+        DB::transaction(fn () => $this->seedRecognitions());
+
+        // Credits are talent → talent too (ADR-AA), and need the projects.
+        DB::transaction(fn () => $this->seedCredits());
+    }
+
+    /**
+     * Credit a couple of peers on each talent's projects (ADR-AA), mixing all
+     * three states so every branch of the UI has real data: accepted credits
+     * that surface on the collaborator's profile, one pending confirmation, and
+     * an off-platform name that never needed confirming.
+     */
+    private function seedCredits(): void
+    {
+        $talents = Talent::where('is_published', true)->with('talentTypes')->orderBy('id')->get();
+
+        if ($talents->count() < 3) {
+            return;
+        }
+
+        $roles = ['Stylist', 'First AD', 'Groomer', 'Retoucher', 'Photographer', 'Set design'];
+        $offPlatform = ['Hana Farouk', 'Yusuf Barakat', 'Mona Adel'];
+        $pendingLeft = 2; // leave a couple awaiting confirmation
+
+        foreach ($talents as $index => $owner) {
+            $project = Project::where('talent_id', $owner->id)->orderBy('id')->first();
+
+            if ($project === null) {
+                continue;
+            }
+
+            foreach ([1, 2] as $offset) {
+                $peer = $talents[($index + $offset) % $talents->count()];
+
+                if ($peer->is($owner) || $peer->talentTypes->isEmpty()) {
+                    continue;
+                }
+
+                $accepted = $pendingLeft <= 0 || $offset === 1;
+
+                $credit = ProjectCredit::updateOrCreate(
+                    ['project_id' => $project->id, 'talent_id' => $peer->id],
+                    [
+                        'talent_type_id' => $peer->talentTypes->first()->id,
+                        'role' => $roles[($index + $offset) % count($roles)],
+                        'status' => 'pending',
+                        'position' => $offset,
+                    ],
+                );
+
+                if ($accepted) {
+                    // Go through the SERVICE rather than writing 'accepted'
+                    // straight to the column: accepting also guarantees the
+                    // collaborator has a projects block to render the work in,
+                    // and a seeder that skips that produces demo data where a
+                    // confirmed credit shows nowhere.
+                    app(ProjectCreditService::class)->accept($credit);
+                    $credit->forceFill(['responded_at' => now()->subDays(random_int(1, 30))])->save();
+
+                    continue;
+                }
+
+                $pendingLeft--;
+            }
+
+            // One collaborator who is not on Fama — display-only, no confirming.
+            ProjectCredit::firstOrCreate(
+                ['project_id' => $project->id, 'talent_id' => null, 'name' => $offPlatform[$index % count($offPlatform)]],
+                [
+                    'talent_type_id' => $owner->talentTypes->first()?->id ?? TalentType::value('id'),
+                    'role' => 'Hair & makeup',
+                    'status' => 'listed',
+                    'position' => 3,
+                ],
+            );
+        }
+    }
+
+    /**
+     * A small peer-vouch graph across every published talent — the showcase set
+     * AND the demo talent, who is seeded before this runs. Each is vouched for
+     * by the next two in id order. Most land APPROVED so the section renders on
+     * a profile, with one left pending so the admin queue is not empty on a
+     * fresh seed.
+     */
+    private function seedRecognitions(): void
+    {
+        $talents = Talent::where('is_published', true)->orderBy('id')->get();
+
+        if ($talents->count() < 3) {
+            return;
+        }
+
+        $relationships = [
+            'Shot three campaigns together',
+            'Assisted me for two years',
+            'We share a studio in Zamalek',
+            'Styled every editorial I directed last year',
+            'Crewed together on a shoot in AlUla',
+        ];
+
+        foreach ($talents as $index => $subject) {
+            foreach ([1, 2] as $offset) {
+                $author = $talents[($index + $offset) % $talents->count()];
+
+                if ($author->is($subject)) {
+                    continue;
+                }
+
+                $approved = ! ($index === 0 && $offset === 1); // leave one pending
+
+                Recognition::updateOrCreate(
+                    ['talent_id' => $subject->id, 'author_talent_id' => $author->id],
+                    [
+                        'relationship' => $relationships[($index + $offset) % count($relationships)],
+                        'body' => "Worked with {$subject->display_name} more than once and would again without thinking about it. Calm on set, honest about what a brief needs, and the work speaks for itself.",
+                        'status' => $approved ? 'approved' : 'pending',
+                        'is_approved' => $approved,
+                        'recognized_at' => now()->subDays(random_int(5, 60)),
+                    ],
+                );
+            }
         }
     }
 
@@ -59,6 +190,14 @@ class TalentShowcaseSeeder extends Seeder
             'base_city' => $spec['city'],
             'base_country' => $spec['country'],
             'is_published' => true,
+            // ADR-Z: vary the Now strip across the set so `filter[available]`
+            // and `filter[will_travel]` have something to actually filter.
+            // Derived from the email rather than random_int() so a re-seed
+            // produces the SAME demo dataset — a filter that returns a different
+            // count every seed is useless for eyeballing.
+            'is_available' => $spec['available'] ?? (crc32($spec['email']) % 4 !== 0),
+            'will_travel' => $spec['travels'] ?? (crc32($spec['slug']) % 2 === 0),
+            'availability_changed_at' => now()->subDays(crc32($spec['email']) % 21 + 1),
         ]);
 
         $sync = [];
@@ -87,6 +226,23 @@ class TalentShowcaseSeeder extends Seeder
         $skills = collect($typeSlugs)->map(fn ($slug) => $types[$slug])->filter()->values();
         $allKeys = $skills->flatMap(fn ($s) => $s->default_blocks ?? [])->unique();
         $blockTypes = BlockType::whereIn('key', $allKeys)->get()->keyBy('key');
+
+        // Speciality claims (ADR-Y): give each showcase talent a plausible slice
+        // of its skills' controlled vocabulary — two-to-three per skill, taken
+        // from the top of the catalog order — so discovery has real data to
+        // filter on rather than an empty second level.
+        foreach ($skills as $skill) {
+            $ids = Speciality::query()
+                ->selectable()
+                ->where('talent_type_id', $skill->id)
+                ->orderBy('position')
+                ->limit(random_int(2, 3))
+                ->pluck('id');
+
+            foreach ($ids as $position => $id) {
+                $talent->specialities()->syncWithoutDetaching([$id => ['position' => $position]]);
+            }
+        }
 
         $gallery = null;
         $universalOnce = [];
@@ -126,6 +282,10 @@ class TalentShowcaseSeeder extends Seeder
                 }
             }
         }
+
+        // The profile-level sections (ADR-Z) are not in any skill's
+        // default_blocks — they describe the person, not a discipline.
+        $this->seedProfileDefaultBlocks($talent);
 
         return $gallery;
     }

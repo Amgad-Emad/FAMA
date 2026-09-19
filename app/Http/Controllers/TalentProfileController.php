@@ -57,7 +57,11 @@ class TalentProfileController extends Controller
         $blocks = $this->blocksForSkill($talent, $skill);
         abort_if($blocks->isEmpty(), 404);
 
-        $html = view('talent.partials.skill-blocks', ['talent' => $talent, 'blocks' => $blocks])->render();
+        $html = view('talent.partials.skill-blocks', [
+            'talent' => $talent,
+            'skill' => $skill,
+            'blocks' => $blocks,
+        ])->render();
 
         return response()->success(['html' => $html]);
     }
@@ -98,6 +102,15 @@ class TalentProfileController extends Controller
         return [
             'media',
             'talentTypes',
+            // Claimed specialities (ADR-Y) — the skill tabs render them, so they
+            // must ride along with the profile rather than resolve per tab.
+            'specialities',
+            // ADR-Z sections: About (social), Recognitions, Willing to explore.
+            'socialHandles',
+            'recognitions' => fn (Builder $query) => $query->where('is_approved', true),
+            'recognitions.author',
+            'interests.talentType',
+            'interests.speciality',
             'profileBlocks' => fn (Builder $query) => $query->where('is_visible', true),
             'portfolioItems.media',
             'compCard',
@@ -110,6 +123,11 @@ class TalentProfileController extends Controller
             'projects.media',
             // Projects carry one or more skills (ADR-X) — the tab test reads them.
             'projects.talentTypes',
+            'projects.specialities',
+            // Work this talent was CREDITED on and accepted (ADR-AA) — it renders
+            // in the credited skill's tab alongside their own projects.
+            'creditedProjects.media',
+            'creditedProjects.talent',
             'softwareStack.media',
         ];
     }

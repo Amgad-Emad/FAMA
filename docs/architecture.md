@@ -97,7 +97,23 @@ of content tables (`app/Models`, schema in `docs/schema.md`).
 - **Skills.** `talents` ⇄ `talent_types` many-to-many via `talent_talent_type` (`is_primary` leads
   the headline, `position` orders). Each `talent_type` carries `default_blocks` (ordered block keys).
   `talent_types` is the **Skills catalog** — "Skills" is the product term; the table name is unchanged
-  (ADR-N).
+  (ADR-N). **Nine** skills since ADR-Y.
+- **Project credits (ADR-AA).** `project_credits` — `person + skill + role`. An ON-PLATFORM credit
+  needs the tagged person's confirmation and is invisible until accepted; an OFF-PLATFORM one (a typed
+  name) is `listed` immediately. `Talent::portfolioProjects(?scope)` is THE portfolio view: owned
+  projects in that scope plus accepted credits, filed under the CREDIT's skill.
+  `projects.occurred_on` is the date — recorded for ordering, never rendered — and `year` is a derived
+  projection of it (not fillable).
+- **The six portfolio sections (ADR-Z).** Now (`will_travel` / `is_available` /
+  `availability_changed_at` on `talents`) and About (`worldview` + `talent_social_handles`) render in the
+  profile header; Recognitions (`recognitions` — peer vouches, talent → talent, the sibling of
+  brand → talent reviews) and Willing to explore (`talent_interests` — a skill + optional speciality)
+  are BLOCKS. `block_types.is_profile_default` marks the blocks seeded once at profile level rather than
+  once per skill tab.
+- **Specialities (ADR-Y).** The second and final level: `specialities` (owned by one skill, `slug` unique
+  **per skill**), claimed by talents through `speciality_talent` and by projects through
+  `project_speciality`. A **controlled** vocabulary — pickers only, never free text — so the same name
+  matches on both the portfolio and the project side and discovery keeps working.
 - **Block catalog.** `block_types` is the admin-governed catalog. `availability` gates who can add a
   block: `universal` | `by_category` (→ `block_type_category`) | `by_type` (→ `block_type_talent_type`).
   `content_source` says whether the block stores data inline (JSON) or in a rich content table.
@@ -108,7 +124,9 @@ of content tables (`app/Models`, schema in `docs/schema.md`).
 - **Media.** Every model holding uploaded files is `HasMedia` with single-file collections + a `thumb`
   conversion; `*_url` accessors resolve from the library (ADR-5, list in `docs/conventions.md`). External
   links/embeds stay as plain columns.
-- **Seeders.** `TalentTypeSeeder` (six skills) + `BlockTypeSeeder` (catalog) are the canonical
+- **Seeders.** `TalentTypeSeeder` (nine skills) + `SpecialitySeeder` (45 entries — must run AFTER it,
+  since specialities nest under skills) + `BlockTypeSeeder` (catalog, incl. the `is_profile_default`
+  flags) are the canonical
   reference data; `TalentDemoSeeder` builds one rich multi-type (model + photographer) talent for later
   phases to render.
 
@@ -135,8 +153,22 @@ lifecycles are **state machines**; side effects are **events**.
 - `SkillsService` — `addType` (seeds **that skill's** tab via `SeedBlocksForSkill`), `removeType`
   (deletes the tab's blocks but **preserves content** — items un-linked, and `untagProjects` drops the
   skill's tag from each project, re-homing it on its **next remaining tag** and un-scoping only the ones
-  that ran out, ADR-X — and logs it), `setPrimary`, `reorderTypes`. (Skills manager; renamed from
-  `ProfessionsService` — ADR-N.)
+  that ran out, ADR-X — and logs it; also detaches that skill's speciality claims, ADR-Y), `setPrimary`,
+  `reorderTypes`, `setSpecialities` (per-skill replace; **the** place the "picks belong to a skill you
+  hold" rule lives — 422 otherwise). (Skills manager; renamed from `ProfessionsService` — ADR-N.)
+- `RecognitionService` — the ONLY write path for peer vouches (ADR-Z): `submit` (self-vouch denied;
+  a re-submission REPLACES the earlier one and resets it to pending, respecting the
+  `(talent_id, author_talent_id)` unique index), `approve` / `reject` (state transitions —
+  `is_approved` follows via `SyncStateProjections`, never set by hand), `withdraw` (soft delete, so a
+  later re-submission restores the same row).
+- `ProjectCreditService` — the ONLY write path for collaborator credits (ADR-AA): `add` (on-platform →
+  pending + notify; off-platform → listed), `accept` / `decline` (state transitions; accept also calls
+  `ensureProjectsBlock()` so the confirmation actually surfaces the work), `remove`, `reorder`.
+  Notifications are dispatched POST-COMMIT and guarded, so a notifier bug shows in the log rather than
+  the response.
+- `TalentInterestService` — the ONLY write path for "willing to explore" (ADR-Z). `assertShape()` checks
+  that a speciality belongs to the chosen skill; it deliberately does NOT check that the talent holds
+  that skill.
 - `TalentProjectService` — the ONLY write path for the talent's portfolio projects (ADR-X):
   `create`/`update` (skill tags synced in the same transaction, tag 0 mirrored onto the
   `talent_type_id` home column), `delete`, `reorder`, `setCover`/`removeCover` (single-file `cover`

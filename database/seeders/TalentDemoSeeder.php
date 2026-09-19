@@ -14,10 +14,12 @@ use App\Models\PortfolioItem;
 use App\Models\Project;
 use App\Models\Review;
 use App\Models\Showreel;
+use App\Models\Speciality;
 use App\Models\Talent;
 use App\Models\TalentType;
 use App\Services\ContractService;
 use Database\Seeders\Concerns\GeneratesCoverImages;
+use Database\Seeders\Concerns\SeedsProfileDefaultBlocks;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -32,7 +34,7 @@ use Illuminate\Support\Facades\Hash;
  */
 class TalentDemoSeeder extends Seeder
 {
-    use GeneratesCoverImages;
+    use GeneratesCoverImages, SeedsProfileDefaultBlocks;
 
     // Mirrors the brand demo login (brand-demo@fama.test) — password: "password".
     private const EMAIL = 'talent-demo@fama.test';
@@ -64,6 +66,38 @@ class TalentDemoSeeder extends Seeder
             $talent->talentTypes()->sync([
                 $model->id => ['is_primary' => true, 'position' => 0],
                 $photographer->id => ['is_primary' => false, 'position' => 1],
+            ]);
+
+            // Speciality claims (ADR-Y) — the second level of the tree. Picked
+            // from the controlled list under each skill, never invented.
+            $this->claimSpecialities($talent, $model, ['fashion', 'beauty', 'modest-fashion']);
+            $this->claimSpecialities($talent, $photographer, ['fashion', 'portrait']);
+
+            // ADR-Z sections. The Now strip carries a real stamp so the profile
+            // demonstrates "as of …" rather than a bare toggle.
+            $talent->forceFill([
+                'is_available' => true,
+                'will_travel' => true,
+                'availability_changed_at' => now()->subDays(3),
+                'worldview' => [
+                    'en' => 'Drawn to work that trusts a quiet frame. I turn down anything that needs a model to look bored, and I would rather shoot one honest campaign than five safe ones.',
+                    'ar' => 'أنجذب إلى العمل الذي يثق باللقطة الهادئة.',
+                ],
+            ])->save();
+
+            foreach ([
+                ['platform' => 'instagram', 'handle' => '@laylahassan', 'url' => 'https://instagram.com/laylahassan'],
+                ['platform' => 'behance', 'handle' => 'laylahassan', 'url' => 'https://behance.net/laylahassan'],
+            ] as $position => $social) {
+                $talent->socialHandles()->create($social + ['position' => $position]);
+            }
+
+            // Willing to explore — deliberately includes a skill she does NOT
+            // hold (Direction), which is the point of the section.
+            $this->seedInterests($talent, [
+                ['skill' => 'direction', 'speciality' => 'fashion-film', 'note' => 'Ready to move behind the camera on fashion film.'],
+                ['skill' => 'photography', 'speciality' => 'food', 'note' => null],
+                ['skill' => 'creative-direction', 'speciality' => null, 'note' => 'Would love to shape a campaign end to end.'],
             ]);
 
             // Avatar image (the cover/hero was removed with the IG-style header — ADR-O).
@@ -109,7 +143,7 @@ class TalentDemoSeeder extends Seeder
             Project::factory()->for($talent)->create([
                 'talent_type_id' => $photographer->id,
                 'title' => ['en' => 'Nomad Coffee — Autumn launch', 'ar' => 'نوماد كوفي — إطلاق الخريف'],
-                'client_name' => 'Nomad Coffee Co.', 'year' => 2025, 'position' => 0,
+                'client_name' => 'Nomad Coffee Co.', 'occurred_on' => '2025-09-12', 'position' => 0,
                 'role' => ['en' => 'Lead model & stills', 'ar' => 'عارضة رئيسية وتصوير ثابت'],
                 'summary' => ['en' => 'A two-day lifestyle shoot introducing the autumn menu across three Cairo locations.', 'ar' => 'تصوير لايف ستايل على مدار يومين لتقديم قائمة الخريف في ثلاثة مواقع بالقاهرة.'],
                 'results' => ['Reach' => '2.4M', 'Engagement' => '+38%', 'Assets' => '60+'],
@@ -117,7 +151,7 @@ class TalentDemoSeeder extends Seeder
             Project::factory()->for($talent)->create([
                 'talent_type_id' => $photographer->id,
                 'title' => ['en' => 'Nefertari Cosmetics — SS26', 'ar' => 'مستحضرات نفرتاري — ربيع/صيف ٢٦'],
-                'client_name' => 'Nefertari Cosmetics', 'year' => 2026, 'position' => 1,
+                'client_name' => 'Nefertari Cosmetics', 'occurred_on' => '2026-02-24', 'position' => 1,
                 'role' => ['en' => 'Beauty model', 'ar' => 'عارضة جمال'],
                 'summary' => ['en' => 'Studio beauty campaign for the spring colour range.', 'ar' => 'حملة جمال في الاستوديو لمجموعة ألوان الربيع.'],
                 'results' => ['Reach' => '1.1M', 'Stores' => '40'],
@@ -227,6 +261,58 @@ class TalentDemoSeeder extends Seeder
                     'content' => null,
                 ]);
             }
+        }
+
+        // The profile-level sections (ADR-Z) are not in any skill's
+        // default_blocks — they describe the person, not a discipline.
+        $this->seedProfileDefaultBlocks($talent);
+    }
+
+    /**
+     * Attach a talent's speciality claims under one skill, by slug. Silently
+     * skips a slug the catalog does not carry so a catalog edit cannot break
+     * the demo seed.
+     *
+     * @param  list<string>  $slugs
+     */
+    private function claimSpecialities(Talent $talent, TalentType $skill, array $slugs): void
+    {
+        $ids = Speciality::query()
+            ->where('talent_type_id', $skill->id)
+            ->whereIn('slug', $slugs)
+            ->orderBy('position')
+            ->pluck('id');
+
+        foreach ($ids as $position => $id) {
+            $talent->specialities()->syncWithoutDetaching([$id => ['position' => $position]]);
+        }
+    }
+
+    /**
+     * Attach "willing to explore" directions by slug. Skips a slug the catalog
+     * does not carry so a catalog edit cannot break the demo seed.
+     *
+     * @param  list<array<string, mixed>>  $rows
+     */
+    private function seedInterests(Talent $talent, array $rows): void
+    {
+        foreach (array_values($rows) as $position => $row) {
+            $type = TalentType::where('slug', $row['skill'])->first();
+
+            if ($type === null) {
+                continue;
+            }
+
+            $speciality = $row['speciality'] === null
+                ? null
+                : Speciality::where('talent_type_id', $type->id)->where('slug', $row['speciality'])->first();
+
+            $talent->interests()->create([
+                'talent_type_id' => $type->id,
+                'speciality_id' => $speciality?->id,
+                'note' => $row['note'],
+                'position' => $position,
+            ]);
         }
     }
 }

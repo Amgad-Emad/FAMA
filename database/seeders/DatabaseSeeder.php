@@ -29,6 +29,8 @@ class DatabaseSeeder extends Seeder
         $this->call([
             RolesAndPermissionsSeeder::class,
             TalentTypeSeeder::class,
+            // Specialities nest under the skills, so the catalog must exist first.
+            SpecialitySeeder::class,
             BlockTypeSeeder::class,
             ContractTemplateSeeder::class,
             ContractFlowSeeder::class,

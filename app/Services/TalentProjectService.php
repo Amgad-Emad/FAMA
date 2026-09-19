@@ -3,9 +3,11 @@
 namespace App\Services;
 
 use App\Models\Project;
+use App\Models\Speciality;
 use App\Models\Talent;
 use App\Support\Html\BriefSanitizer;
 use Illuminate\Http\UploadedFile;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use InvalidArgumentException;
 
 /**
@@ -35,20 +37,23 @@ class TalentProjectService extends Service
      *
      * @param  array<string, mixed>  $attributes
      * @param  list<int>  $skillIds
+     * @param  list<int>  $specialityIds  must belong to the tagged skills (ADR-Y)
      */
-    public function create(Talent $talent, array $attributes, array $skillIds): Project
+    public function create(Talent $talent, array $attributes, array $skillIds, array $specialityIds = []): Project
     {
         $skillIds = $this->assertOwnedSkills($talent, $skillIds);
+        $specialityIds = $this->assertSkillSpecialities($skillIds, $specialityIds);
 
-        return $this->runInTransaction(function () use ($talent, $attributes, $skillIds): Project {
+        return $this->runInTransaction(function () use ($talent, $attributes, $skillIds, $specialityIds): Project {
             $project = $talent->projects()->create($this->clean($attributes) + [
                 'position' => (int) $talent->projects()->max('position') + 1,
                 'talent_type_id' => $skillIds[0],
             ]);
 
             $this->syncSkills($project, $skillIds);
+            $this->syncSpecialities($project, $specialityIds);
 
-            return $project->load('talentTypes');
+            return $project->load(['talentTypes', 'specialities']);
         }, ['talent_id' => $talent->id, 'skills' => $skillIds]);
     }
 
@@ -58,14 +63,26 @@ class TalentProjectService extends Service
      *
      * @param  array<string, mixed>  $attributes
      * @param  list<int>|null  $skillIds
+     * @param  list<int>|null  $specialityIds  null leaves the current picks alone
      */
-    public function update(Project $project, array $attributes, ?array $skillIds = null): Project
+    public function update(Project $project, array $attributes, ?array $skillIds = null, ?array $specialityIds = null): Project
     {
         $skillIds = $skillIds === null
             ? null
             : $this->assertOwnedSkills($project->talent, $skillIds);
 
-        return $this->runInTransaction(function () use ($project, $attributes, $skillIds): Project {
+        // Specialities are validated against the skill set the project will END
+        // UP with, not the one it had: re-tagging a project's skills and its
+        // specialities in one request has to be consistent, and dropping a skill
+        // must drop the picks that hung off it rather than orphan them.
+        if ($specialityIds !== null) {
+            $specialityIds = $this->assertSkillSpecialities(
+                $skillIds ?? $project->skillIds(),
+                $specialityIds,
+            );
+        }
+
+        return $this->runInTransaction(function () use ($project, $attributes, $skillIds, $specialityIds): Project {
             $project->fill($this->clean($attributes));
 
             if ($skillIds !== null) {
@@ -78,7 +95,15 @@ class TalentProjectService extends Service
                 $this->syncSkills($project, $skillIds);
             }
 
-            return $project->load('talentTypes');
+            if ($specialityIds !== null) {
+                $this->syncSpecialities($project, $specialityIds);
+            } elseif ($skillIds !== null) {
+                // The skills changed but the picks were not restated — drop any
+                // that no longer hang off a tagged skill.
+                $this->pruneSpecialities($project, $skillIds);
+            }
+
+            return $project->load(['talentTypes', 'specialities']);
         }, ['project_id' => $project->id, 'skills' => $skillIds]);
     }
 
@@ -138,6 +163,70 @@ class TalentProjectService extends Service
         }, ['project_id' => $project->id], channel: 'media');
     }
 
+    /**
+     * Append uploaded work to the project's `media` collection (ADR-AA).
+     *
+     * New items go to the END of the existing order: an upload must never
+     * silently displace the lead frame the talent chose.
+     *
+     * @param  list<UploadedFile>  $files
+     */
+    public function addMedia(Project $project, array $files): Project
+    {
+        return $this->runInTransaction(function () use ($project, $files): Project {
+            foreach ($files as $file) {
+                // medialibrary stamps `order_column` as max+1 on add, so an
+                // upload lands at the END on its own — no manual ordering here.
+                $project->addMedia($file)->toMediaCollection('media');
+            }
+
+            return $project->fresh(['media', 'talentTypes', 'specialities']);
+        }, ['project_id' => $project->id, 'count' => count($files)], channel: 'media');
+    }
+
+    /**
+     * Reorder the project's work. THE ordering rule (ADR-AA): the first frame is
+     * doing the most work, so it is chosen, not defaulted. An id outside this
+     * project's `media` collection is a domain error, so a tampered payload
+     * changes nothing.
+     *
+     * @param  list<int>  $orderedIds
+     */
+    public function reorderMedia(Project $project, array $orderedIds): Project
+    {
+        return $this->runInTransaction(function () use ($project, $orderedIds): Project {
+            $owned = $project->media()->where('collection_name', 'media')
+                ->pluck('id')->map('intval')->all();
+
+            foreach ($orderedIds as $position => $id) {
+                if (! in_array((int) $id, $owned, true)) {
+                    throw new InvalidArgumentException("Media [{$id}] is not on this project.");
+                }
+
+                Media::whereKey($id)->update(['order_column' => $position]);
+            }
+
+            return $project->fresh(['media', 'talentTypes', 'specialities']);
+        }, ['project_id' => $project->id], channel: 'media');
+    }
+
+    /**
+     * Remove one item of work.
+     */
+    public function removeMedia(Project $project, int $mediaId): Project
+    {
+        return $this->runInTransaction(function () use ($project, $mediaId): Project {
+            $media = $project->media()
+                ->where('collection_name', 'media')
+                ->whereKey($mediaId)
+                ->first() ?? throw new InvalidArgumentException(__('That file is not on this project.'));
+
+            $media->delete();
+
+            return $project->fresh(['media', 'talentTypes', 'specialities']);
+        }, ['project_id' => $project->id, 'media_id' => $mediaId], channel: 'media');
+    }
+
     // ----- Internal ----------------------------------------------------------
 
     /**
@@ -178,6 +267,71 @@ class TalentProjectService extends Service
         );
 
         $project->unsetRelation('talentTypes');
+    }
+
+    /**
+     * THE speciality rule (ADR-Y): every pick must belong to one of the skills
+     * the project is tagged with, and still be selectable. Returns the
+     * de-duplicated list in the order given.
+     *
+     * @param  list<int>  $skillIds
+     * @param  list<int>  $specialityIds
+     * @return list<int>
+     */
+    private function assertSkillSpecialities(array $skillIds, array $specialityIds): array
+    {
+        $specialityIds = array_values(array_unique(array_map('intval', $specialityIds)));
+
+        if ($specialityIds === []) {
+            return [];
+        }
+
+        $valid = Speciality::query()
+            ->selectable()
+            ->whereIn('talent_type_id', $skillIds)
+            ->whereIn('id', $specialityIds)
+            ->pluck('id')
+            ->map('intval')
+            ->all();
+
+        if (array_diff($specialityIds, $valid) !== []) {
+            throw new InvalidArgumentException(
+                __('Every speciality must belong to one of the skills you tagged.')
+            );
+        }
+
+        return $specialityIds;
+    }
+
+    /**
+     * Write the speciality set, keeping `position` as the given order.
+     *
+     * @param  list<int>  $specialityIds
+     */
+    private function syncSpecialities(Project $project, array $specialityIds): void
+    {
+        $project->specialities()->sync(
+            collect($specialityIds)->mapWithKeys(fn (int $id, int $i) => [$id => ['position' => $i]])->all()
+        );
+
+        $project->unsetRelation('specialities');
+    }
+
+    /**
+     * Drop the picks that no longer hang off any of the project's skills.
+     *
+     * @param  list<int>  $skillIds
+     */
+    private function pruneSpecialities(Project $project, array $skillIds): void
+    {
+        $orphaned = $project->specialities()
+            ->whereNotIn('specialities.talent_type_id', $skillIds)
+            ->pluck('specialities.id');
+
+        if ($orphaned->isNotEmpty()) {
+            $project->specialities()->detach($orphaned);
+            $project->unsetRelation('specialities');
+        }
     }
 
     /**

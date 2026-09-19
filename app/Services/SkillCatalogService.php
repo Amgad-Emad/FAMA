@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\BlockType;
+use App\Models\Speciality;
 use App\Models\TalentType;
 use App\Models\User;
 use Illuminate\Support\Str;
@@ -80,5 +81,117 @@ class SkillCatalogService extends AdminService
 
             return $type;
         }, ['slug' => $data['slug'] ?? null]);
+    }
+
+    /**
+     * Add a speciality under a skill (ADR-Y). This is the ONLY way an entry
+     * enters the controlled vocabulary — talents pick, they never type — so the
+     * governance lives here with the rest of the catalog.
+     *
+     * The slug is unique per skill, not globally: "fashion" legitimately exists
+     * under photography, modelling and styling, and that overlap is what lets
+     * one search assemble a whole crew.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public function addSpeciality(User $admin, TalentType $type, array $data): Speciality
+    {
+        $this->authorizeAdmin($admin, 'manage', $type);
+
+        $slug = $data['slug'] ?? Str::slug(is_array($data['name']) ? ($data['name']['en'] ?? reset($data['name'])) : $data['name']);
+
+        if ($type->specialities()->where('slug', $slug)->exists()) {
+            throw new InvalidArgumentException(__('This skill already has a speciality called ":slug".', ['slug' => $slug]));
+        }
+
+        return $this->runInTransaction(function () use ($admin, $type, $data, $slug): Speciality {
+            $speciality = $type->specialities()->create([
+                'name' => $data['name'],
+                'slug' => $slug,
+                'description' => $data['description'] ?? null,
+                'is_regional' => (bool) ($data['is_regional'] ?? false),
+                'is_active' => true,
+                'position' => (int) ($type->specialities()->max('position') + 1),
+            ]);
+
+            $this->record($admin, $speciality, 'catalog', 'speciality.created', [
+                'skill' => $type->slug, 'slug' => $speciality->slug,
+            ]);
+
+            return $speciality;
+        }, ['talent_type_id' => $type->getKey(), 'slug' => $slug]);
+    }
+
+    /**
+     * Edit a speciality's copy or its regional flag. The SLUG IS LOCKED once the
+     * entry exists — it is the stable handle the vocabulary is filtered on, and
+     * renaming it would silently drop every talent and project already matched
+     * through it. Retire and re-add instead.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public function updateSpeciality(User $admin, Speciality $speciality, array $data): Speciality
+    {
+        $this->authorizeAdmin($admin, 'manage', $speciality->talentType);
+
+        return $this->runInTransaction(function () use ($admin, $speciality, $data): Speciality {
+            $speciality->update(array_filter([
+                'name' => $data['name'] ?? null,
+                'description' => $data['description'] ?? null,
+                'is_regional' => $data['is_regional'] ?? null,
+            ], fn ($value) => $value !== null));
+
+            $this->record($admin, $speciality, 'catalog', 'speciality.updated', [
+                'slug' => $speciality->slug,
+            ]);
+
+            return $speciality->refresh();
+        }, ['speciality_id' => $speciality->getKey()]);
+    }
+
+    /**
+     * Retire or reinstate a speciality — the grandfathering toggle (ADR-T's rule,
+     * applied to the vocabulary). A retired entry vanishes from every picker
+     * while the talents and projects that already claim it keep rendering and
+     * keep being found. This is deliberately NOT a delete: deleting would cascade
+     * those claims away and rewrite history.
+     */
+    public function setSpecialityActive(User $admin, Speciality $speciality, bool $active): Speciality
+    {
+        $this->authorizeAdmin($admin, 'manage', $speciality->talentType);
+
+        return $this->runInTransaction(function () use ($admin, $speciality, $active): Speciality {
+            $speciality->update(['is_active' => $active]);
+
+            $this->record($admin, $speciality, 'catalog', $active ? 'speciality.reinstated' : 'speciality.retired', [
+                'slug' => $speciality->slug,
+            ]);
+
+            return $speciality->refresh();
+        }, ['speciality_id' => $speciality->getKey(), 'active' => $active]);
+    }
+
+    /**
+     * Reorder a skill's specialities. The catalog order is editorial — it is what
+     * the picker and the public profile render — so it is worth persisting rather
+     * than sorting alphabetically at read time.
+     *
+     * @param  list<int>  $orderedIds
+     */
+    public function reorderSpecialities(User $admin, TalentType $type, array $orderedIds): void
+    {
+        $this->authorizeAdmin($admin, 'manage', $type);
+
+        $this->runInTransaction(function () use ($type, $orderedIds): void {
+            $owned = $type->specialities()->pluck('id')->map('intval')->all();
+
+            foreach ($orderedIds as $position => $id) {
+                if (! in_array((int) $id, $owned, true)) {
+                    throw new InvalidArgumentException("Speciality [{$id}] does not belong to [{$type->slug}].");
+                }
+
+                Speciality::whereKey($id)->update(['position' => $position]);
+            }
+        }, ['talent_type_id' => $type->getKey()]);
     }
 }

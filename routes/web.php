@@ -9,6 +9,7 @@ use App\Http\Controllers\DiscoveryController;
 use App\Http\Controllers\EnquiryController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\PublicRecognitionController;
 use App\Http\Controllers\PublicReviewController;
 use App\Http\Controllers\TalentProfileController;
 use App\Support\Auth\Guards;
@@ -127,6 +128,14 @@ Route::group([
         ->where('slug', '[A-Za-z0-9\-]+')->name('talent.review.create');
     Route::post('/{slug}/review', [PublicReviewController::class, 'store'])
         ->where('slug', '[A-Za-z0-9\-]+')->name('talent.review.store');
+
+    // Peer recognitions (ADR-Z) — talent → talent, so unlike a review these
+    // require a signed-in talent (enforced in the controller, which redirects a
+    // guest to the talent login with this form as the intended URL).
+    Route::get('/{slug}/recognise', [PublicRecognitionController::class, 'create'])
+        ->where('slug', '[A-Za-z0-9\-]+')->name('talent.recognition.create');
+    Route::post('/{slug}/recognise', [PublicRecognitionController::class, 'store'])
+        ->where('slug', '[A-Za-z0-9\-]+')->name('talent.recognition.store');
 
     Route::get('/{slug}/work/{project}', [ProjectController::class, 'show'])
         ->where('slug', '[A-Za-z0-9\-]+')->name('talent.work');

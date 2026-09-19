@@ -22,7 +22,7 @@ class TalentProfileService extends Service
     // ----- Core identity -----------------------------------------------------
 
     /**
-     * Update core identity fields (name, headline, bio, slug, location).
+     * Update core identity fields (name, headline, bio, worldview, slug, location).
      * The booking method/value pair is no longer editable here (removed from
      * the V1 editor); existing column data is preserved untouched.
      *
@@ -32,7 +32,7 @@ class TalentProfileService extends Service
     {
         return $this->runInTransaction(function () use ($talent, $data): Talent {
             $talent->fill(Arr::only($data, [
-                'display_name', 'headline', 'bio', 'slug',
+                'display_name', 'headline', 'bio', 'worldview', 'slug',
                 'base_city', 'base_country',
             ]));
             $talent->save();
@@ -102,6 +102,77 @@ class TalentProfileService extends Service
      * A profile cannot go public until an admin has verified it. The pre-check
      * gives the talent a clear message; the ToLive guard is the hard backstop.
      */
+    /**
+     * The NOW strip (ADR-Z): the two time-sensitive toggles.
+     *
+     * `availability_changed_at` is stamped ONLY when `is_available` actually
+     * flips. That is the whole point of the field — the public profile shows
+     * when availability was last confirmed, and re-saving an unchanged toggle
+     * must not refresh that date into a lie. Travel is not time-sensitive in the
+     * same way and carries no stamp.
+     *
+     * `is_available` is INFORMATION, never a gate: ADR-L removed availability
+     * gating from enquiries and that still stands.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public function updateNow(Talent $talent, array $data): Talent
+    {
+        return $this->runInTransaction(function () use ($talent, $data): Talent {
+            if (array_key_exists('will_travel', $data)) {
+                $talent->will_travel = (bool) $data['will_travel'];
+            }
+
+            if (array_key_exists('is_available', $data)) {
+                // Assign FIRST, then ask Eloquent whether it actually changed.
+                // Comparing against `$talent->is_available` by hand is wrong on a
+                // model whose attribute was never hydrated (a fresh insert relying
+                // on the column default, a `select()`ed subset): the unset
+                // attribute reads as null, `(bool) null` is false, and flipping to
+                // "not available" would compare false !== false and silently save
+                // nothing. isDirty() consults the ORIGINAL attributes and treats a
+                // newly-known value as a change, which is what we want.
+                $talent->is_available = (bool) $data['is_available'];
+
+                if ($talent->isDirty('is_available')) {
+                    $talent->availability_changed_at = now();
+                }
+            }
+
+            $talent->save();
+
+            return $talent;
+        }, ['talent_id' => $talent->id]);
+    }
+
+    /**
+     * Replace the talent's social handles with the given ordered list (ADR-Z).
+     *
+     * A whole-list replace rather than per-row CRUD: the editor renders a short
+     * reorderable list and saves it as one, and (talent_id, platform) is unique,
+     * so an incremental write would have to reconcile against that constraint
+     * on every keystroke.
+     *
+     * @param  list<array<string, mixed>>  $handles
+     */
+    public function updateSocialHandles(Talent $talent, array $handles): Talent
+    {
+        return $this->runInTransaction(function () use ($talent, $handles): Talent {
+            $talent->socialHandles()->delete();
+
+            foreach (array_values($handles) as $position => $handle) {
+                $talent->socialHandles()->create([
+                    'platform' => $handle['platform'],
+                    'handle' => $handle['handle'],
+                    'url' => $handle['url'],
+                    'position' => $position,
+                ]);
+            }
+
+            return $talent->load('socialHandles');
+        }, ['talent_id' => $talent->id, 'count' => count($handles)]);
+    }
+
     public function publish(Talent $talent): Talent
     {
         if (! $talent->is_verified) {

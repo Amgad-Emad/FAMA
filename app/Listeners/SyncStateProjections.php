@@ -6,6 +6,7 @@ use App\Models\Brand;
 use App\Models\BrandReview;
 use App\Models\ContractFlow;
 use App\Models\ProfileBlock;
+use App\Models\Recognition;
 use App\Models\Review;
 use App\Models\Talent;
 use Spatie\ModelStates\Events\StateChanged;
@@ -30,6 +31,7 @@ class SyncStateProjections
             $model instanceof BrandReview => $model->forceFill(['is_approved' => $final === 'approved'])->saveQuietly(),
             $model instanceof ProfileBlock => $model->forceFill(['is_visible' => $final === 'visible'])->saveQuietly(),
             $model instanceof Review => $model->forceFill(['is_approved' => $final === 'approved'])->saveQuietly(),
+            $model instanceof Recognition => $model->forceFill(['is_approved' => $final === 'approved'])->saveQuietly(),
             default => null,
         };
     }

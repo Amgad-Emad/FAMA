@@ -98,9 +98,12 @@ controllers, form requests, actions and Resources**. Reads are public; writes re
 `auth:sanctum` (talent/brand tokens; `CurrentActor` resolves the sanctum tokenable). No sessions —
 no intent replay; guests simply get the 401 envelope. 34 routes.
 
-**Endpoint count: 210** — 140 pre-feed web endpoints (incl. `GET /talent/dashboard/views`,
-`PATCH /talent/profile/sections/universal-position` and the 8 Projects endpoints, ADR-X) + 36 feed web
-endpoints (31 + saves + the suggestion rails) + 34 API v1 mirrors.
+**Endpoint count: 236** — 166 pre-feed web endpoints (incl. `GET /talent/dashboard/views`,
+`PATCH /talent/profile/sections/universal-position`, the 8 Projects endpoints (ADR-X), the 5 speciality
+endpoints (ADR-Y), the 12 portfolio-section endpoints (ADR-Z) and the 9 project endpoints added by
+ADR-AA: 3 × media, 3 × owner-side credits, 3 × credited-person side. Discovery's `filter[...]` params
+are query params on the existing endpoint, never endpoints of their own) + 36 feed web endpoints
+(31 + saves + the suggestion rails) + 34 API v1 mirrors.
 
 ## Public pages — web endpoints (unguarded)
 
@@ -116,13 +119,21 @@ the JSON envelope + `http.js`. All resolve **published** talents only (404 other
 | Review submit | `POST /{slug}/review` | writes a **pending** review (`is_approved = false`) — envelope |
 | Discovery | `GET /discover` | search page shell |
 | Discovery search | `GET /discover/search` | paginated talent cards — envelope; filters below |
+| Recognition form | `GET /{slug}/recognise` | write a peer vouch (ADR-Z). **Talent guard** — a guest is redirected to the talent login with this as the intended URL; own profile redirects back with a notice |
+| Recognition submit | `POST /{slug}/recognise` | talent → talent vouch; lands pending for the admin queue. A peer vouches ONCE — re-submitting replaces and re-moderates — envelope |
 | Booking CTA | `GET /{slug}/enquire` | booking/enquiry form (brief) |
 | Enquiry submit | `POST /{slug}/enquire` | writes a `contract_enquiries` row (always allowed) — envelope |
 
 **Discovery filters** (spatie/laravel-query-builder, `App\Queries\TalentSearch`), passed as
 `filter[...]` query params: `type` & `category` (comma-separated slugs, through the pivot),
 `city`, `country`, `equipment` (category, crew scope), `software` (name, creative scope),
-`looks` (`look_types.name` English path, model scope — indexed), `q` (name search).
+`looks` (`look_types.name` English path, model scope — indexed), `speciality` (comma-separated
+speciality **slugs**, ADR-Y), `available` / `will_travel` (booleans — the Now strip, ADR-Z),
+`open_to` (skill slugs of a stated direction — surfaces talents who WANT the work but have not done it
+yet), `q` (name search). Speciality slugs are unique per skill, **not**
+globally — `filter[speciality]=fashion` deliberately matches fashion photographers, models *and*
+stylists, and combining it with `filter[type]` is how you narrow. Retired specialities still match, so
+nobody drops out of search when the catalog moves on.
 The UI is skills-first with the non-skill filters in an "Advanced filters" modal scoped by category
 (talent-spec). *(No mobile API doc regeneration — the mobile API is Phase 4 and there is no
 `composer api-docs` script yet; this contract doc is updated by hand.)*
@@ -155,10 +166,17 @@ Contracts). The old standalone Professions + Account tabs are folded into it (AD
 | Sections | `PATCH /talent/profile/sections/universal-position` | universal section's slot among the skills (`{position: int}`; 0 = above the tabs, else below) |
 | Blocks | `GET /talent/profile/blocks` · `GET /talent/profile/block-picker?talent_type_id=` | list blocks (each carries `talent_type_id`) · **per-scope** eligibility picker (ADR-Q) |
 | Blocks | `POST /talent/profile/blocks` (`{block_type_id, talent_type_id?}`) · `PATCH …/{block}` · `PATCH …/reorder` (`{talent_type_id?, order}`) · `PATCH …/{block}/move` (`{talent_type_id?}`) · `PATCH …/{block}/visibility` · `DELETE …/{block}` | add-to-scope · fill (`content`/`settings`/`layout` only — block names are admin-governed, `title` is ignored) · reorder-within-scope · **move between scopes** · show/hide · remove |
-| Skills | `GET /talent/profile/skills` · `POST …` · `PATCH …/{type}/primary` · `PATCH …/reorder` · `DELETE …/{type}` | manage skills (seeds blocks) |
+| Skills | `GET /talent/profile/skills` · `POST …` · `PATCH …/{type}/primary` · `PATCH …/reorder` · `DELETE …/{type}` | manage skills (seeds blocks). The GET payload also carries `specialities` keyed by skill id: `{options[], selected[]}` |
+| Now | `PATCH /talent/profile/now` | the two time-sensitive toggles (`will_travel`, `is_available`; both optional so one can flip without restating the other). `availability_changed_at` is stamped ONLY when availability actually flips — response carries the stamp + a humanised form (ADR-Z) |
+| Links | `PUT /talent/profile/social` | replace the social handles as ONE ordered list (`{handles: [{platform, handle, url}]}`, present-but-empty clears them; one row per platform, 422 on a duplicate) |
+| The work | `POST /talent/projects/{project}/media` · `PATCH …/media/reorder` · `DELETE …/media/{media}` | the project's ordered gallery (ADR-AA) — images + video, max 12 per upload, 50 MB each. Uploads APPEND; the **order is the edit** (first item = the lead frame) |
+| Credits (owner) | `POST /talent/projects/{project}/credits` · `PATCH …/credits/reorder` · `DELETE …/credits/{credit}` | collaborator credits (ADR-AA). Exactly one of `talent_id` (on Fama → lands **pending**, notifies them, invisible until they accept) or `name` (not on Fama → **listed** immediately, display-only). `talent_type_id` + `role` required |
+| Credits (you) | `GET /talent/credits` · `GET …/data` · `PATCH /talent/credits/{credit}/{accept\|decline}` | confirm, refuse or withdraw a credit naming YOU. Authorised on the credit's `talent_id` — the project owner can never answer on your behalf (403) |
+| Willing to explore | `GET /talent/profile/interests` · `POST …` · `PATCH …/{interest}` · `DELETE …/{interest}` · `PATCH …/reorder` | directions the talent wants to move toward (ADR-Z). `talent_type_id` required and **need not be a skill they hold**; `speciality_id` optional but must belong to that skill (422); capped at 6 |
+| Specialities | `PUT /talent/profile/skills/{type}/specialities` | replace the picks under ONE skill (`{speciality_ids: []}`, present-but-empty clears them). Every id must belong to that skill and still be selectable, else 422 (ADR-Y) |
 | Content | `GET /talent/content/{section?}` — page; `{section}` = `universal` or a skill slug (a legacy `{type}` key resolves to the section showing it; `projects` **redirects** to the Projects page). CRUD stays per type: `GET /talent/content/{type}/data`, `POST`, `PATCH {id}`, `DELETE {id}`, `PATCH reorder`, `POST {id}/media` | one section at a time, every content block in it stacked (gallery, digitals, showreel, equipment, software, brand collabs, looks + the read-only reviews list); a `projects` block renders a signpost panel, not an editor (ADR-X) |
 | Projects | `GET /talent/projects` · `GET /talent/projects/data?page=&skill=<id>\|none` | page shell (skills + total) · paginated 12 with `meta.counts.{all,none,by_skill}`; `skill` filters to one tab (home column OR tag) or to the untagged leftovers |
-| Projects | `POST /talent/projects` · `PATCH /talent/projects/{project}` · `DELETE /talent/projects/{project}` | create/update/remove — **`skill_ids` is required, min 1**, each one of the talent's own skills (ADR-X); tag 0 becomes the home tab. `title.en` required; `summary`/`body` are rich text sanitized server-side; `results` is a `[{label,value}]` list (max 6) stored as a metric map |
+| Projects | `POST /talent/projects` · `PATCH /talent/projects/{project}` · `DELETE /talent/projects/{project}` | create/update/remove — **`skill_ids` is required, min 1**, each one of the talent's own skills (ADR-X); tag 0 becomes the home tab. `occurred_on` is the date — **recorded, never rendered** (ADR-AA); `year` is a derived projection of it and is no longer accepted from a client. `speciality_ids` is optional and each id must hang off one of the tagged skills (ADR-Y) — on update, omitting it leaves the picks alone while changing `skill_ids` prunes the ones that lost their skill. `title.en` required; `summary`/`body` are rich text sanitized server-side; `results` is a `[{label,value}]` list (max 6) stored as a metric map |
 | Projects | `PATCH /talent/projects/reorder` (`{order: [id,…]}`) | the talent's own display order (drives the public profile); a foreign id → 422 |
 | Projects | `POST /talent/projects/{project}/cover` (`cover` file) · `DELETE /talent/projects/{project}/cover` | single-file `cover` collection via medialibrary (jpg/png/webp, ≤10 MB) |
 | Reviews | `GET /talent/reviews` (+ `/data?status=`, `PATCH {review}/approve`, `PATCH {review}/reject`) | moderation queue |
@@ -235,7 +253,8 @@ every action also re-authorizes + audits inside the Phase 3A service.
 | Contract templates | `GET /admin/contract-templates` · `GET …/data` · `POST …` | manage-flows | builder list · paginated · create |
 | Contract template | `GET …/{t}` · `GET …/data` · `PATCH …` · `DELETE …` | manage-flows | builder · payload · save terms+clauses · delete |
 | Template lifecycle | `PATCH …/{t}/default` · `PATCH …/{t}/toggle` · `POST …/preview` | manage-flows | set default · activate/deactivate · live document preview `{html}` |
-| Skills | `GET /admin/skills` · `GET …/data` · `POST …` · `PATCH …/{type}/blocks` | manage-flows | catalog · list · add skill · edit default_blocks |
+| Skills | `GET /admin/skills` · `GET …/data` · `POST …` · `PATCH …/{type}/blocks` | manage-flows | catalog · list (each type carries its `specialities`) · add skill · edit default_blocks |
+| Specialities | `POST /admin/skills/{type}/specialities` · `PATCH …/{type}/specialities/reorder` · `PATCH /admin/specialities/{speciality}` · `PATCH …/{speciality}/active` | manage-flows | the controlled vocabulary (ADR-Y): add · reorder · edit copy/regional flag (**slug is locked**) · retire/reinstate (grandfathers existing claims — never a delete) |
 | Moderation | `GET /admin/moderation` + `/{talents,reviews,brands,brand-reviews,projects}` | moderate-content | queues (paginated JSON) |
 | Moderation actions | `PATCH …/{queue}/{id}/{action}` · `POST …/reviews/batch` | moderate-content | talents+brands `verify` (go-live gate, one-way) / suspend / publish / unpublish / delete… · batch approve/reject |
 | Delete review + notice | `POST /admin/moderation/reviews/{review}/delete` | moderate-content | soft-delete a review; emails the recipient a reason notice (`email`, `subject`, `reason`) |
@@ -265,10 +284,18 @@ what the Phase-4 public-profile endpoint returns (and mirrors the web page's two
     "view_count": 3765, "projects_count": 2, "rating": 4.7,
     "pricing_rate": { "unit": "day", "amount": "8000.00", "currency": "EGP" },  // null when unset
     "primary_skill": "modeling",
-    "skills": [ { "id": 1, "slug": "modeling", "name": {…}, "category": "model", "is_primary": true }, … ]
+    "skills": [ { "id": 1, "slug": "modeling", "name": {…}, "category": "model", "is_primary": true,
+                  "specialities": [ /* SpecialityResource — the talent's claims under this skill */ ] }, … ],
+    "now": { "is_available": true, "will_travel": true, "availability_changed_at": "…" },  // ADR-Z
+    "worldview": {…},                                    // translatable; taste, not track record
+    "social": [ { "platform": "instagram", "handle": "…", "url": "…" }, … ]
   },
+  "recognitions": [ /* RecognitionResource — APPROVED peer vouches only (ADR-Z) */ ],
+  "interests": [ /* TalentInterestResource — willing to explore (ADR-Z) */ ],
   "universal_blocks": [ /* ProfileBlockResource — talent_type_id = null */ ],
-  "skills": [ { "id": 1, "slug": "modeling", "name": {…}, "blocks": [ /* that skill's blocks */ ] }, … ]
+  "skills": [ { "id": 1, "slug": "modeling", "name": {…},
+                "specialities": [ /* SpecialityResource (ADR-Y) */ ],
+                "blocks": [ /* that skill's blocks */ ] }, … ]
 }
 ```
 

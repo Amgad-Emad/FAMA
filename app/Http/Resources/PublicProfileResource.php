@@ -14,7 +14,7 @@ use Illuminate\Support\Collection;
  *
  * This is the contract the mobile API (Phase 4) will return; the web page renders
  * the same regions server-side + lazy tabs. Assumes the profile is eager-loaded
- * (talentTypes, visible profileBlocks, content) — no N+1.
+ * (talentTypes, specialities, visible profileBlocks, content) — no N+1.
  *
  * @mixin Talent
  */
@@ -33,6 +33,12 @@ class PublicProfileResource extends BaseResource
             ->values();
         $primary = $skills->firstWhere(fn (TalentType $t) => (bool) $t->pivot->is_primary) ?? $skills->first();
 
+        // Claimed specialities, bucketed by skill once (ADR-Y) so neither the
+        // identity block nor the skills list re-groups per row.
+        $specialities = $talent->relationLoaded('specialities')
+            ? $talent->specialities->groupBy('talent_type_id')
+            : collect();
+
         return [
             'identity' => [
                 'slug' => $talent->slug,
@@ -42,8 +48,24 @@ class PublicProfileResource extends BaseResource
                 'avatar_url' => $talent->avatar_url,
                 'base_city' => $talent->base_city,
                 'base_country' => $talent->base_country,
+                // NOW (ADR-Z). The stamp always rides with the flag: an
+                // availability toggle without a date looks current forever.
+                'now' => [
+                    'is_available' => (bool) $talent->is_available,
+                    'will_travel' => (bool) $talent->will_travel,
+                    'availability_changed_at' => $talent->availability_changed_at?->toIso8601String(),
+                ],
+                'worldview' => $talent->getTranslations('worldview'),
+                'social' => $talent->relationLoaded('socialHandles')
+                    ? $talent->socialHandles->map(fn ($h) => [
+                        'platform' => $h->platform, 'handle' => $h->handle, 'url' => $h->url,
+                    ])->values()->all()
+                    : [],
                 'view_count' => (int) $talent->view_count,
-                'projects_count' => $talent->projects->count(),
+                // Own projects + accepted credits, de-duplicated (ADR-AA).
+                'projects_count' => $talent->projects->pluck('id')
+                    ->merge($talent->relationLoaded('creditedProjects') ? $talent->creditedProjects->pluck('id') : [])
+                    ->unique()->count(),
                 'rating' => $talent->reviews->count() ? round((float) $talent->reviews->avg('rating'), 1) : null,
                 'pricing_rate' => $this->pricingRate($talent),
                 'primary_skill' => $primary?->slug,
@@ -53,13 +75,23 @@ class PublicProfileResource extends BaseResource
                     'name' => $s->getTranslations('name'),
                     'category' => $s->category,
                     'is_primary' => (bool) $s->pivot->is_primary,
+                    'specialities' => SpecialityResource::collection($specialities->get($s->id, collect())),
                 ])->all(),
             ],
+            // Peer vouches and stated directions are profile-level sections, so
+            // they sit beside the blocks rather than inside a skill (ADR-Z).
+            'recognitions' => $talent->relationLoaded('recognitions')
+                ? RecognitionResource::collection($talent->recognitions->where('is_approved', true)->values())
+                : [],
+            'interests' => $talent->relationLoaded('interests')
+                ? TalentInterestResource::collection($talent->interests)
+                : [],
             'universal_blocks' => ProfileBlockResource::collection($this->visibleBlocks($talent, null)),
             'skills' => $skills->map(fn (TalentType $s) => [
                 'id' => $s->id,
                 'slug' => $s->slug,
                 'name' => $s->getTranslations('name'),
+                'specialities' => SpecialityResource::collection($specialities->get($s->id, collect())),
                 'blocks' => ProfileBlockResource::collection($this->visibleBlocks($talent, $s->id)),
             ])->values()->all(),
         ];

@@ -115,13 +115,85 @@ ISO code, ADR-N.
 talent UI + validation messages (`UpdateCoreProfileRequest::attributes()`); "Professions" is shown as
 **"Skills"** everywhere (the `talent_types` table is unchanged — ADR-N).
 
-**Skill naming — disciplines, not people (ADR-S):** the six seeded skills are named for the
-**discipline/activity** — Modeling, Photography, Cinematography, Creative Direction, Styling, Graphic
-Design (slugs `modeling` / `photography` / `cinematography` / `creative-direction` / `styling` /
-`graphic-design`). The `category` **enum stays** `model | crew | creative` (it gates blocks) — only its
-**display labels** are Modeling / Crew / Creative, and a single-chip category group whose label would
-duplicate its lone chip (Modeling) **suppresses the redundant header**. Renaming kept the `talent_types`
-IDs, so every FK is intact; old `?skill=` deep links break (accepted pre-launch, no redirects).
+**Skill naming — disciplines, not people (ADR-S; catalog expanded by ADR-Y):** the **nine** seeded
+skills are named for the **discipline/activity** — Photography, Cinematography, Direction, Modelling,
+Styling, Hair & makeup, Creative direction, Graphic design, Retouching & post (slugs `photography` /
+`cinematography` / `direction` / `modeling` / `styling` / `hair-makeup` / `creative-direction` /
+`graphic-design` / `retouching-post`). The `category` **enum stays** `model | crew | creative` (it gates
+blocks) — only its **display labels** are Modelling / Crew / Creative, and a single-chip category group
+whose label would duplicate its lone chip (Modelling) **suppresses the redundant header**. Renaming kept
+the `talent_types` IDs, so every FK is intact; the ADR-S rename broke old `?skill=` deep links once
+(accepted pre-launch, no redirects) — which is exactly why ADR-Y's "Modeling" → "Modelling" pass changed
+the **display name only** and left the slug alone.
+
+**A project is six things (ADR-AA):** client · description · media · collaborators · skills &
+specialities · date.
+- **CLIENT is hidden when empty.** No "personal project" placeholder, no empty label — the absence says
+  it. Check `filled()`, never render a bare label.
+- **DATE is recorded, NOT displayed.** `projects.occurred_on` orders work by recency and answers "shot
+  recently"; it must never appear on a public page, because a date in the corner is how a strong project
+  from three years ago gets discounted. **`year` is a DERIVED PROJECTION** of it and is deliberately NOT
+  fillable — only the `occurred_on` mutator writes it. A projection anything can write is not a
+  projection (that is exactly how the demo seeder came to disagree with the factory).
+- **MEDIA: the order IS the edit.** The first frame is doing the most work, so it is chosen rather than
+  defaulted. Uploads APPEND — a new file must never displace the lead.
+- **COLLABORATORS: `person + skill + role`.** Skill = what they CAN do; role = what they did HERE.
+  - **On-platform credits REQUIRE the tagged person's confirmation** and are invisible everywhere until
+    accepted — public project page included. This is the whole safeguard: without it anyone could attach
+    a name to work they did not do.
+  - **Off-platform credits** (a typed name) are `listed` immediately: nobody to ask, nothing to claim,
+    and they never leave the project.
+  - **Declining and withdrawing are the SAME transition.** Being publicly associated with a project stays
+    the collaborator's call at any point, not only in the first minute.
+  - **Owning a project and being named on a credit are separate authorisation questions.** Owning never
+    lets you answer for someone else (403); being credited never lets you edit someone else's block.
+  - An accepted credit files the project under the **CREDIT's** skill, not the project's own.
+  - **Accepting must ensure a `projects` block exists in the target scope** — several skills seed a
+    gallery and no projects block, so otherwise the confirmation promise shows nothing. Any code path
+    that writes `accepted` straight to the column (a seeder, a fixture) skips that and produces data
+    where a confirmed credit renders nowhere: go through `ProjectCreditService::accept()`.
+  - A credit may name a skill the collaborator does not hold (the OWNER picks it); those fall back to the
+    universal region rather than vanishing into a tab that does not exist.
+
+**The six portfolio sections (ADR-Z):** Now · About · Skills · Reviews · Recognitions · Willing to
+explore. Sections that describe the *page* live in the header (Now, About); sections that are *content*
+are blocks (Reviews, Recognitions, Willing to explore) — the spec was mapped ONTO the block system, not
+in place of it.
+- **Availability is INFORMATION, never a gate.** ADR-L's removal of availability *gating* still stands:
+  `is_available` never blocks an enquiry and only narrows discovery when a brand asks for it.
+- **`availability_changed_at` is stamped ONLY when availability actually flips.** Re-saving the same
+  value must not refresh it — an undated toggle looks current forever. Never compare the incoming value
+  against the model attribute by hand: on an unhydrated model that reads `null`, `(bool) null` is
+  `false`, and flipping to "not available" silently saves nothing. Assign, then use `isDirty()`.
+- **`will_travel` is a yes/no, never a list of cities.** Which city and on whose budget is the
+  conversation the platform exists to start.
+- **`worldview` is not a second bio.** Bio = background and track record; worldview = taste and point of
+  view. The editor PROMPTS it with specific questions; an empty box next to Bio just gets a second bio.
+- **Reviews vs recognitions — the difference is who writes them.** Review = BRAND → talent, after a
+  booking completes here (so it cannot exist at launch). Recognition = TALENT → talent, invited, no
+  booking (so it works from day one). Both use the same admin moderation queue and identical state
+  machines; they must RENDER differently (recognitions have no stars, are quote-led, and lead with the
+  relationship) or the page becomes one wall of praise and neither gets read. A peer vouches ONCE —
+  re-submitting replaces the vouch and returns it to `pending`.
+- **"Willing to explore" is structured, and its skill is deliberately unconstrained.** A direction may
+  name a skill the talent does NOT hold — that is the point of the section. Only the speciality is
+  checked (it must belong to the chosen skill). As free text it would read as a mood and be unfilterable.
+- **Profile-level blocks are DATA:** `block_types.is_profile_default` flags blocks seeded ONCE at
+  `talent_type_id = NULL` instead of once per skill tab. Never hardcode that list in a seeding action.
+  Hand-rolled seeders must use `Database\Seeders\Concerns\SeedsProfileDefaultBlocks` — they read
+  `default_blocks`, which only covers skill blocks, so they would otherwise miss these entirely.
+
+**Specialities — the controlled second level (ADR-Y):** a skill nests into 4–7 **specialities** and the
+tree stops there. The list is a **picker, never a text field**: an invented entry would not match on the
+project side and the filter would silently stop working. Every entry answers one question — **what kind
+of subject**; output format (campaign, editorial, lookbook, e-commerce) belongs to the project. `slug` is
+unique **per skill, not globally** ("Fashion" lives under three skills, and that overlap is what lets one
+search assemble a whole crew). `is_regional` marks the entries added for this market specifically
+(Modest fashion, Arabic lettering). **Retiring is grandfathering, never a delete** — `is_active = false`
+leaves every picker while existing claims keep rendering; the **slug is locked** once created. Enforcement
+lives in exactly two places and must not be reimplemented: `SkillsService::setSpecialities()` (a talent's
+picks belong to a skill they hold) and `TalentProjectService::assertSkillSpecialities()` (a project's
+picks hang off one of its tagged skills).
 
 ## RTL / i18n in views
 - Set direction from the locale (`<html dir>` in the layouts). Prefer **logical** Tailwind utilities
@@ -213,6 +285,36 @@ logout. Toggle theme + locale on each page and confirm both render.
         (No hero/cover uploader — ADR-O; only the circular avatar.)
       - Core fields inline save; **Username** field (the `slug`); a taken username → "username" 422.
       - **Skills** section — add/remove/reorder, set primary; duplicate → 422; adding a skill seeds new blocks.
+      - **Projects → the work** (ADR-AA) — open an existing project: upload several files, confirm they
+        append in order, drag to change the lead (the first tile is badged "Lead"), remove one. The
+        public project page renders them in that order.
+      - **Projects → collaborators** (ADR-AA) — credit someone on Fama: it shows "Awaiting them" and
+        appears on NEITHER the public project page NOR their profile. Sign in as them, open
+        `/talent/credits`, confirm — it now appears on both, filed under the skill they were credited in.
+        Decline (or withdraw a confirmed one) and it disappears from both again. Credit a plain name and
+        it shows immediately with no confirmation step.
+      - **Projects → date and client** (ADR-AA) — set a date; it never appears on the public page. Leave
+        the client blank; no label or placeholder renders at all.
+      - **Now** (ADR-Z) — the two toggles save on flip (no Save button); flipping availability updates
+        the "Last changed" line, re-flipping it back updates it again, and saving an UNCHANGED value
+        leaves it alone. The public profile shows "Taking work / Not taking work · as of …" and a
+        "Will travel" chip only when travel is on.
+      - **Point of view** (ADR-Z) — saves with the core details and renders on the public profile in its
+        own accented block, separate from the bio.
+      - **Links** (ADR-Z) — add/remove rows, save as one list; two rows on the same platform → 422 shown
+        inline; saving an empty list clears them. They render as chips under the header.
+      - **Willing to explore** (ADR-Z) — pick any skill (including ones you do NOT have), optionally a
+        kind of work under it; the kind-of-work select follows the chosen skill. Duplicates and a 7th
+        entry → 422. Renders as its own profile section.
+      - **Recognitions** (ADR-Z) — a signed-in talent sees "Recognise" on a PEER's profile but not on
+        their own; a guest hitting `/{slug}/recognise` lands on the talent login and returns after
+        signing in. A submitted vouch is invisible until an admin approves it in
+        `/admin/moderation?queue=recognitions`; re-submitting replaces it and returns it to pending.
+      - **Specialities** (ADR-Y) — expanding a skill section shows its speciality pills; toggling one saves
+        immediately (optimistic) and a rejected pick rolls the pill back. Picks under one skill must survive
+        editing another. Removing the skill takes its picks with it. They appear on the public profile at the
+        top of that skill's tab (server-rendered active tab **and** the lazy tab), and on `/discover` via
+        `filter[speciality]`.
       - **Pricing rate** — set unit/amount/currency (all-or-nothing; partial → 422; blank clears); currency upper-cased.
       - Blocks — **organised by scope (ADR-Q)**: a Universal / profile-level section + one section per
         skill (primary first). Per scope: add from the scope-eligible picker, drag to reorder (persists,

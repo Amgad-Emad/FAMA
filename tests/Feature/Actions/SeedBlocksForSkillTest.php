@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\SeedBlocksForSkill;
+use App\Models\BlockType;
 use App\Models\Talent;
 use App\Models\TalentType;
 use Database\Seeders\BlockTypeSeeder;
@@ -22,8 +23,17 @@ it('seeds a skill’s default blocks into that skill’s scope and moves Created
 
     $created = app(SeedBlocksForSkill::class)($talent, $model);
 
-    // Every seeded block is stamped with the skill.
-    expect($created->every(fn ($b) => $b->talent_type_id === $model->id))->toBeTrue();
+    // Every block seeded INTO THE SKILL is stamped with it. The call also seeds
+    // the profile-level defaults (ADR-Z) — Recognitions and Willing to explore
+    // describe the person, not a discipline, so they carry a NULL scope and must
+    // not be repeated per tab.
+    $profileDefaults = BlockType::where('is_profile_default', true)->pluck('id');
+
+    [$universal, $scoped] = $created->partition(fn ($b) => $b->talent_type_id === null);
+
+    expect($scoped->every(fn ($b) => $b->talent_type_id === $model->id))->toBeTrue()
+        ->and($universal->pluck('block_type_id')->sort()->values()->all())
+        ->toBe($profileDefaults->sort()->values()->all());
     // model default_blocks: gallery, comp_card, look_types, digitals, brand_collabs, reviews
     $keys = $talent->profileBlocks()->where('talent_type_id', $model->id)->with('blockType')->get()->map(fn ($b) => $b->blockType->key);
     expect($keys->all())->toContain('gallery')->toContain('comp_card');
@@ -44,7 +54,11 @@ it('adding a second skill creates that skill’s OWN blocks — including a seco
     // A gallery block exists in BOTH tabs (different bodies of work).
     $galleries = $talent->profileBlocks()->whereRelation('blockType', 'key', 'gallery')->get();
     expect($galleries)->toHaveCount(2);
-    expect($galleries->pluck('talent_type_id')->sort()->values()->all())->toBe([$model->id, $photographer->id]);
+    // Sort BOTH sides: the assertion is "one gallery per skill", not "modeling
+    // has the lower id" — which is all that used to make the unsorted
+    // expectation line up.
+    expect($galleries->pluck('talent_type_id')->sort()->values()->all())
+        ->toBe(collect([$model->id, $photographer->id])->sort()->values()->all());
 
     // Within a single skill, no duplicate block_type.
     $modelTypeIds = $talent->profileBlocks()->where('talent_type_id', $model->id)->pluck('block_type_id');

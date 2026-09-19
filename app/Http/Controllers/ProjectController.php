@@ -19,7 +19,9 @@ class ProjectController extends Controller
 
         abort_unless((int) $project->talent_id === (int) $talent->getKey(), 404);
 
-        $project->load('media');
+        // Credits render on this page, so the collaborator + skill relations
+        // ride along — a credit block is the most N+1-prone thing here.
+        $project->load(['media', 'credits.talent.media', 'credits.talentType']);
 
         return view('public.project', ['talent' => $talent, 'project' => $project]);
     }

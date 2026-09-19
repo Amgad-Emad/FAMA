@@ -3,6 +3,7 @@
         'display_name' => $talent->display_name,
         'headline' => array_merge(['en' => '', 'ar' => ''], $talent->getTranslations('headline')),
         'bio' => array_merge(['en' => '', 'ar' => ''], $talent->getTranslations('bio')),
+        'worldview' => array_merge(['en' => '', 'ar' => ''], $talent->getTranslations('worldview')),
         'slug' => $talent->slug,
         'base_city' => $talent->base_city,
         'base_country' => $talent->base_country,
@@ -22,6 +23,11 @@
         universalPosition: {{ (int) ($talent->meta['universal_position'] ?? 0) }},
         skills: @js($skills),
         availableSkills: @js($availableSkills),
+        specialities: @js($specialities),
+        now: @js($now),
+        social: @js($social),
+        interests: @js($interests),
+        interestSkills: @js($interestSkills),
         contentKeys: @js($contentKeys),
         publish: @js($publish),
         rate: @js($rate),
@@ -123,6 +129,15 @@
                         <textarea x-model="core.bio.ar" rows="3" class="w-full rounded-md border-line bg-elevated text-ink shadow-sm focus:border-accent focus:ring-accent"></textarea>
                     </div>
                     --}}
+                    {{-- Worldview (ADR-Z). PROMPTED, not an empty box: an unprompted
+                         second textarea next to Bio just gets a second bio typed into it. --}}
+                    <div class="sm:col-span-2">
+                        <label for="pe-worldview" class="mb-1 block text-sm font-medium text-ink">{{ __('Point of view') }}</label>
+                        <textarea id="pe-worldview" x-model="core.worldview.en" rows="3"
+                                  placeholder="{{ __('What kind of work are you drawn to? What do you turn down? Who do you want to work with?') }}"
+                                  class="w-full rounded-md border-line bg-elevated text-ink shadow-sm focus:border-accent focus:ring-accent"></textarea>
+                        <p class="mt-1 text-xs text-subtle">{{ __('Your taste, not your track record — the bio above covers that.') }}</p>
+                    </div>
                     <div>
                         <label class="mb-1 block text-sm font-medium text-ink">{{ __('Base city') }}</label>
                         <input x-model="core.base_city" type="text" class="w-full rounded-md border-line bg-elevated text-ink shadow-sm focus:border-accent focus:ring-accent">
@@ -140,6 +155,168 @@
                     </x-ui.button>
                     <span x-show="coreSaved" x-cloak class="text-sm text-success">{{ __('Saved') }}</span>
                 </div>
+            </x-ui.card>
+        </x-ui.section>
+
+        {{-- ═══ NOW (ADR-Z) ═══ The time-sensitive strip. Both toggles save on
+             flip — there is no Save button, because a toggle you have to confirm
+             is one people forget to confirm, and this is the part of the page
+             that goes stale fastest. --}}
+        <x-ui.section :title="__('Now')" :eyebrow="__('What a brand checks first')">
+            <x-ui.card class="space-y-5">
+                <div class="flex flex-wrap items-start justify-between gap-4">
+                    <div class="min-w-0">
+                        <div class="text-sm font-medium text-ink">{{ __('Taking work') }}</div>
+                        <p class="mt-0.5 text-xs leading-relaxed text-muted">
+                            {{ __('Shown on your profile with the date you last changed it, so people know it is current.') }}
+                        </p>
+                        <p class="mt-1 font-mono text-[11px] text-subtle" x-show="now.availability_changed_for_humans" x-cloak>
+                            {{ __('Last changed') }} <span x-text="now.availability_changed_for_humans"></span>
+                        </p>
+                    </div>
+                    <button type="button" role="switch" @click="toggleAvailability()"
+                            :aria-checked="now.is_available ? 'true' : 'false'"
+                            :aria-label="now.is_available ? '{{ __('Taking work') }}' : '{{ __('Not taking work') }}'"
+                            class="relative inline-flex h-6 w-11 shrink-0 rounded-full transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+                            :class="now.is_available ? 'bg-accent' : 'bg-line-strong'">
+                        <span class="absolute top-0.5 h-5 w-5 rounded-full bg-surface transition-all"
+                              :class="now.is_available ? 'start-[1.375rem]' : 'start-0.5'"></span>
+                    </button>
+                </div>
+
+                <hr class="border-line">
+
+                <div class="flex flex-wrap items-start justify-between gap-4">
+                    <div class="min-w-0">
+                        <div class="text-sm font-medium text-ink">{{ __('Will travel') }}</div>
+                        <p class="mt-0.5 text-xs leading-relaxed text-muted">
+                            {{ __('Whether you will work outside your city at all. Which city and on whose budget is a conversation — this just says you are open to it.') }}
+                        </p>
+                    </div>
+                    <button type="button" role="switch" @click="toggleTravel()"
+                            :aria-checked="now.will_travel ? 'true' : 'false'"
+                            aria-label="{{ __('Will travel') }}"
+                            class="relative inline-flex h-6 w-11 shrink-0 rounded-full transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+                            :class="now.will_travel ? 'bg-accent' : 'bg-line-strong'">
+                        <span class="absolute top-0.5 h-5 w-5 rounded-full bg-surface transition-all"
+                              :class="now.will_travel ? 'start-[1.375rem]' : 'start-0.5'"></span>
+                    </button>
+                </div>
+            </x-ui.card>
+        </x-ui.section>
+
+        {{-- ═══ LINKS (ADR-Z, About) ═══ Instagram and anywhere else the work lives. --}}
+        <x-ui.section :title="__('Links')" :eyebrow="__('Where else your work lives')">
+            <x-ui.card class="space-y-4">
+                <template x-for="(link, index) in social" :key="index">
+                    <div class="flex flex-wrap items-end gap-2">
+                        <div class="w-36">
+                            <label class="mb-1 block text-xs font-medium text-muted">{{ __('Platform') }}</label>
+                            <select x-model="link.platform" class="w-full rounded-md border-line bg-elevated text-sm text-ink">
+                                @foreach (['instagram' => 'Instagram', 'tiktok' => 'TikTok', 'x' => 'X', 'linkedin' => 'LinkedIn', 'youtube' => 'YouTube', 'behance' => 'Behance', 'vimeo' => 'Vimeo', 'website' => __('Website'), 'other' => __('Other')] as $value => $label)
+                                    <option value="{{ $value }}">{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="min-w-[8rem] flex-1">
+                            <label class="mb-1 block text-xs font-medium text-muted">{{ __('Handle') }}</label>
+                            <input x-model="link.handle" type="text" maxlength="120"
+                                   class="w-full rounded-md border-line bg-elevated text-sm text-ink shadow-sm focus:border-accent focus:ring-accent">
+                        </div>
+                        <div class="min-w-[12rem] flex-1">
+                            <label class="mb-1 block text-xs font-medium text-muted">{{ __('URL') }}</label>
+                            <input x-model="link.url" type="url"
+                                   class="w-full rounded-md border-line bg-elevated text-sm text-ink shadow-sm focus:border-accent focus:ring-accent">
+                        </div>
+                        <button type="button" @click="removeSocial(index)"
+                                class="rounded-md px-2 py-2 text-subtle transition hover:text-danger focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                                aria-label="{{ __('Remove') }}">&times;</button>
+                    </div>
+                </template>
+
+                <p x-show="social.length === 0" x-cloak class="rounded-lg border border-dashed border-line p-4 text-center text-xs text-subtle">
+                    {{ __('No links yet.') }}
+                </p>
+                <p x-show="socialErrors._" x-cloak class="text-xs text-danger" x-text="socialErrors._?.[0]"></p>
+
+                <div class="flex items-center gap-3">
+                    <x-ui.button size="sm" x-on:click="addSocial()">{{ __('Add a link') }}</x-ui.button>
+                    <x-ui.button size="sm" variant="accent" x-on:click="saveSocial()" x-bind:disabled="savingSocial">
+                        <span x-show="!savingSocial">{{ __('Save links') }}</span>
+                        <span x-show="savingSocial" x-cloak>{{ __('Saving…') }}</span>
+                    </x-ui.button>
+                    <span x-show="socialSaved" x-cloak class="text-sm text-success">{{ __('Saved') }}</span>
+                </div>
+            </x-ui.card>
+        </x-ui.section>
+
+        {{-- ═══ WILLING TO EXPLORE (ADR-Z) ═══ The one section that asks for
+             something instead of proving something. Structured (skill + kind of
+             work) so brands can filter it; as free text nobody acts on it. --}}
+        <x-ui.section :title="__('Willing to explore')" :eyebrow="__('Where you want to go next')">
+            <x-ui.card class="space-y-4">
+                <p class="text-xs leading-relaxed text-muted">
+                    {{ __('Directions you want to move toward. These do not have to be skills you already list — that is the point.') }}
+                </p>
+
+                <ul class="space-y-2">
+                    <template x-for="interest in interests" :key="interest.id">
+                        <li class="flex flex-wrap items-center gap-3 rounded-lg border border-line bg-elevated p-3">
+                            <span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-accent" aria-hidden="true"></span>
+                            <div class="min-w-0 flex-1">
+                                <div class="text-sm text-ink">
+                                    <span x-text="interest.skill?.name"></span>
+                                    <template x-if="interest.speciality">
+                                        <span><span class="text-subtle">·</span> <span class="text-muted" x-text="interest.speciality.name"></span></span>
+                                    </template>
+                                </div>
+                                <p class="mt-0.5 text-xs text-subtle" x-show="interest.note" x-cloak x-text="interest.note"></p>
+                            </div>
+                            <button type="button"
+                                    @click="$confirm({ title: '{{ __('Remove this direction?') }}', message: '{{ __('It will no longer show on your profile.') }}', confirmLabel: '{{ __('Remove') }}', tone: 'danger' }).then(ok => ok && removeInterest(interest))"
+                                    class="rounded-md px-2 py-1 text-subtle transition hover:text-danger focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                                    aria-label="{{ __('Remove') }}">&times;</button>
+                        </li>
+                    </template>
+                </ul>
+
+                <p x-show="interests.length === 0" x-cloak class="rounded-lg border border-dashed border-line p-4 text-center text-xs text-subtle">
+                    {{ __('Nothing listed yet.') }}
+                </p>
+
+                <div class="flex flex-wrap items-end gap-2 border-t border-line pt-4">
+                    <div class="min-w-[10rem] flex-1">
+                        <label for="pe-interest-skill" class="mb-1 block text-xs font-medium text-muted">{{ __('Skill') }}</label>
+                        <select id="pe-interest-skill" x-model.number="newInterest.talent_type_id"
+                                @change="newInterest.speciality_id = ''"
+                                class="w-full rounded-md border-line bg-elevated text-sm text-ink">
+                            <option value="">{{ __('Pick a skill…') }}</option>
+                            <template x-for="skill in interestSkills" :key="skill.id">
+                                <option :value="skill.id" x-text="skill.name"></option>
+                            </template>
+                        </select>
+                    </div>
+                    <div class="min-w-[10rem] flex-1">
+                        <label for="pe-interest-spec" class="mb-1 block text-xs font-medium text-muted">{{ __('Kind of work') }} <span class="text-subtle">({{ __('optional') }})</span></label>
+                        <select id="pe-interest-spec" x-model="newInterest.speciality_id"
+                                :disabled="interestSpecialities().length === 0"
+                                class="w-full rounded-md border-line bg-elevated text-sm text-ink disabled:opacity-50">
+                            <option value="">{{ __('Any') }}</option>
+                            <template x-for="speciality in interestSpecialities()" :key="speciality.id">
+                                <option :value="speciality.id" x-text="speciality.name"></option>
+                            </template>
+                        </select>
+                    </div>
+                    <div class="min-w-[12rem] flex-1">
+                        <label for="pe-interest-note" class="mb-1 block text-xs font-medium text-muted">{{ __('Note') }} <span class="text-subtle">({{ __('optional') }})</span></label>
+                        <input id="pe-interest-note" x-model="newInterest.note" type="text" maxlength="160"
+                               class="w-full rounded-md border-line bg-elevated text-sm text-ink shadow-sm focus:border-accent focus:ring-accent">
+                    </div>
+                    <x-ui.button size="sm" variant="accent" x-on:click="addInterest()" x-bind:disabled="savingInterest || !newInterest.talent_type_id">
+                        {{ __('Add') }}
+                    </x-ui.button>
+                </div>
+                <p x-show="interestErrors._" x-cloak class="text-xs text-danger" x-text="interestErrors._?.[0]"></p>
             </x-ui.card>
         </x-ui.section>
 
@@ -298,6 +475,37 @@
                                                 </button>
                                             </div>
                                             <div x-show="expanded[entry.key]" x-cloak class="space-y-2 border-t border-line p-3">
+                                                {{--
+                                                    Specialities (ADR-Y) — the second and final level of the skills
+                                                    tree. A CONTROLLED list: these pills are the only options and
+                                                    there is deliberately no free-text field, because an invented
+                                                    entry would never match on the project side and the filter
+                                                    would stop working.
+                                                --}}
+                                                <template x-if="specialityOptions(entry.group.typeId).length > 0">
+                                                    <div class="rounded-lg border border-line bg-surface p-3">
+                                                        <div class="flex items-baseline justify-between gap-3">
+                                                            <div class="font-mono text-[10px] uppercase tracking-wider text-subtle">{{ __('Specialities') }}</div>
+                                                            <span class="text-[11px] text-subtle"
+                                                                  x-show="savingSpecialities === entry.group.typeId" x-cloak>{{ __('Saving…') }}</span>
+                                                        </div>
+                                                        <p class="mt-1 text-xs text-subtle">{{ __('What kind of subject you shoot. Pick as many as apply.') }}</p>
+                                                        <div class="mt-2.5 flex flex-wrap gap-2" role="group" aria-label="{{ __('Specialities') }}">
+                                                            <template x-for="speciality in specialityOptions(entry.group.typeId)" :key="speciality.id">
+                                                                <button type="button"
+                                                                        @click="toggleSpeciality(entry.group.typeId, speciality.id)"
+                                                                        :aria-pressed="specialityPicked(entry.group.typeId, speciality.id) ? 'true' : 'false'"
+                                                                        class="rounded-pill border px-3 py-1.5 text-xs font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                                                                        :class="specialityPicked(entry.group.typeId, speciality.id)
+                                                                            ? 'border-transparent bg-accent text-on-accent'
+                                                                            : 'border-line-strong text-muted hover:text-ink'">
+                                                                    <span x-text="speciality.name.en || speciality.slug"></span>
+                                                                </button>
+                                                            </template>
+                                                        </div>
+                                                    </div>
+                                                </template>
+
                                                 <template x-for="block in blocksInScope(entry.group.typeId)" :key="block.id">
                                                     @include('talent.partials.block-row')
                                                 </template>

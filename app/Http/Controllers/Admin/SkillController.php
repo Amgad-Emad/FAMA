@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Resources\SpecialityResource;
 use App\Models\BlockType;
+use App\Models\Speciality;
 use App\Models\TalentType;
 use App\Services\ProfileBlockService;
 use App\Services\SkillCatalogService;
@@ -37,7 +39,7 @@ class SkillController extends AdminController
     {
         $blockTypes = BlockType::query()->with(['categories', 'talentTypes:talent_types.id'])->orderBy('position')->orderBy('key')->get();
 
-        $types = TalentType::query()->orderBy('id')->get()->map(function (TalentType $t) use ($blocks, $blockTypes) {
+        $types = TalentType::query()->with('specialities')->orderBy('id')->get()->map(function (TalentType $t) use ($blocks, $blockTypes) {
             $eligible = $blockTypes
                 ->filter(fn (BlockType $b) => $b->is_active && $blocks->isEligibleForScope($b, $t))
                 ->values();
@@ -54,6 +56,9 @@ class SkillController extends AdminController
                     'name' => $b->getTranslation('name', app()->getLocale()),
                 ])->values(),
                 'invalid_blocks' => collect($t->default_blocks ?? [])->reject(fn (string $k) => $eligibleKeys->contains($k))->values(),
+                // The controlled vocabulary under this skill (ADR-Y), retired
+                // entries included — the admin governs both states from here.
+                'specialities' => SpecialityResource::collection($t->specialities),
             ];
         });
 
@@ -87,5 +92,76 @@ class SkillController extends AdminController
         $this->catalog->updateDefaultBlocks($this->admin(), $type, $data['default_blocks']);
 
         return response()->success(null, __('Default blocks updated.'));
+    }
+
+    /**
+     * Add an entry to the controlled vocabulary under one skill (ADR-Y).
+     */
+    public function storeSpeciality(Request $request, TalentType $type): JsonResponse
+    {
+        $data = $request->validate([
+            'name' => ['required', 'array'],
+            'name.en' => ['required', 'string', 'max:255'],
+            'name.ar' => ['nullable', 'string', 'max:255'],
+            'is_regional' => ['boolean'],
+            'description' => ['nullable', 'array'],
+        ]);
+
+        $speciality = $this->catalog->addSpeciality($this->admin(), $type, $data);
+
+        return response()->success(
+            ['speciality' => new SpecialityResource($speciality)],
+            __('Speciality added.'),
+            status: 201,
+        );
+    }
+
+    /**
+     * Edit an entry's copy or regional flag. The slug is locked (see the service).
+     */
+    public function updateSpeciality(Request $request, Speciality $speciality): JsonResponse
+    {
+        $data = $request->validate([
+            'name' => ['sometimes', 'array'],
+            'name.en' => ['required_with:name', 'string', 'max:255'],
+            'name.ar' => ['nullable', 'string', 'max:255'],
+            'is_regional' => ['sometimes', 'boolean'],
+            'description' => ['nullable', 'array'],
+        ]);
+
+        $speciality = $this->catalog->updateSpeciality($this->admin(), $speciality, $data);
+
+        return response()->success(['speciality' => new SpecialityResource($speciality)], __('Speciality updated.'));
+    }
+
+    /**
+     * Retire or reinstate an entry. Retiring hides it from every picker and
+     * leaves existing claims intact — it is never a delete.
+     */
+    public function toggleSpeciality(Request $request, Speciality $speciality): JsonResponse
+    {
+        $data = $request->validate(['is_active' => ['required', 'boolean']]);
+
+        $speciality = $this->catalog->setSpecialityActive($this->admin(), $speciality, $data['is_active']);
+
+        return response()->success(
+            ['speciality' => new SpecialityResource($speciality)],
+            $speciality->is_active ? __('Speciality reinstated.') : __('Speciality retired.'),
+        );
+    }
+
+    /**
+     * Persist the editorial order of a skill's specialities.
+     */
+    public function reorderSpecialities(Request $request, TalentType $type): JsonResponse
+    {
+        $data = $request->validate([
+            'ids' => ['required', 'array'],
+            'ids.*' => ['integer'],
+        ]);
+
+        $this->catalog->reorderSpecialities($this->admin(), $type, $data['ids']);
+
+        return response()->success(null, __('Order saved.'));
     }
 }

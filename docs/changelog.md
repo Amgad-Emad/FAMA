@@ -2,6 +2,99 @@
 
 Notable changes to the Fama project. Newest first.
 
+## 2026-08-22 — Projects get collaborators, ordered media and a hidden date (ADR-AA)
+Phase 3 of 3 of the client's structure specs — `project.html`. **The client spec is now fully
+implemented.**
+- **COLLABORATORS** (new). A credit is `person + skill + role`: skill says what someone can do, role
+  says what they did *here*. Crediting someone **on Fama** writes the project onto their portfolio, so
+  it **requires their confirmation** — it stays invisible everywhere, public project page included,
+  until they accept. Crediting someone **not on Fama** is a plain name: display-only, never leaves the
+  project, nothing to confirm. New `/talent/credits` page for confirming, declining and withdrawing;
+  notifications land in the existing inbox. Declining and withdrawing are the same transition, so being
+  publicly associated with a project stays the collaborator's call at any point.
+- **A credited project is filed under the CREDIT's skill**, not the project's — you can be credited as a
+  stylist on someone else's photography job. `Talent::portfolioProjects()` merges owned + accepted
+  credits, and the profile's project count now matches what the page shows.
+- **MEDIA** (new). A multi-file gallery of images and video beside the single cover. The **order is the
+  edit** — the first frame is doing the most work, so it is chosen rather than defaulted. Drag to
+  reorder in the composer; uploads append so a new file never displaces the lead.
+- **DATE is recorded, not displayed.** New `projects.occurred_on` orders work by recency; it appears
+  nowhere on the public page, so an older strong project is not discounted for its age. `year` is now a
+  **derived projection** of it.
+- **CLIENT is hidden when empty** — no "personal project" placeholder, no empty label.
+- **Two bugs fixed in the same pass.** (1) Confirming a credit could put work in a tab with no
+  `projects` block (photography seeds a gallery, not projects), so the confirmation showed nothing —
+  accepting now guarantees a block in the target scope, and a credit naming a skill the collaborator
+  does not hold falls back to the universal region instead of vanishing. (2) `year` was still
+  mass-assignable, so the demo seeder set it directly while the factory set `occurred_on` and the two
+  silently disagreed; `year` left `$fillable`, making divergence impossible.
+- Suite **711 green** (2573 assertions), build green, `migrate:fresh --seed` exits 0, both directions of
+  the credit loop verified live on seeded data.
+
+## 2026-08-22 — The portfolio becomes six sections (ADR-Z)
+Phase 2 of 3 of the client's structure specs — `profile.html` implemented onto the existing block system.
+- **NOW strip** (new). `will_travel` + `is_available` toggles on `talents`, with
+  `availability_changed_at` shown on the public profile as "as of …". The stamp moves **only when
+  availability actually flips**, so it never lies. `will_travel` is a yes/no, never a list of cities.
+  Both toggles save on flip in the editor — no Save button, because this is the part of the page that
+  goes stale fastest. **Supersedes the availability half of ADR-L** (new columns, simpler semantics —
+  not a revert); availability remains INFORMATION, never a gate on enquiries.
+- **ABOUT** gains `worldview` (translatable, prompted in the editor so it does not become a second bio)
+  and `talent_social_handles` (a reorderable list mirroring `brand_social_handles`, one row per platform).
+- **RECOGNITIONS** (new). Peer vouches, **talent → talent** — the sibling of reviews, which are
+  **brand → talent** and require a completed booking. Because a recognition needs no booking it works
+  from day one, when reviews cannot exist yet. Written from a peer's profile
+  (`GET|POST /{slug}/recognise`, talent guard — a guest is sent to the talent login), lands pending, and
+  goes through the **same admin moderation queue** as reviews (`/admin/moderation?queue=recognitions`).
+  Rendered deliberately unlike a review — no stars, quote-led, relationship prominent — so the two do
+  not blur into one wall of praise. A peer vouches once; re-submitting replaces and re-moderates.
+- **WILLING TO EXPLORE** (new). `talent_interests` — a direction tied to a skill and optionally a kind
+  of work, capped at six. Structured rather than free text so brands can filter it, and the skill is
+  deliberately **not** restricted to ones the talent already holds.
+- **Profile-level blocks are now data**: new `block_types.is_profile_default` marks blocks seeded ONCE
+  into the universal region instead of once per skill tab, so the catalog governs it (ADR-T's principle)
+  rather than a hardcoded list. Migration backfills existing profiles; shared seeder trait
+  `SeedsProfileDefaultBlocks` keeps the hand-rolled demo seeders in step.
+- **Discovery** gains `filter[available]`, `filter[will_travel]` and `filter[open_to]` — the last
+  surfaces talents who *want* a kind of work but have not done it yet.
+- **Bug fixed in the same pass:** the availability writer compared the new value against an attribute
+  that may never have been hydrated (fresh insert on a column default), so `(bool) null === false` made
+  "not available" silently save nothing. Now assigns first and lets `isDirty()` decide; `TalentFactory`
+  sets both toggles explicitly.
+- Suite **695 green** (2522 assertions), build green, `migrate:fresh --seed` exits 0, all six sections
+  verified rendering live. Two pre-existing tests encoded the old "every seeded block belongs to a skill"
+  invariant and were updated to the new one, deriving counts from the catalog rather than hardcoding.
+
+## 2026-08-22 — Skills nest into specialities; the catalog grows to nine (ADR-Y)
+Implements the client's structure specs (`profile.html` / `project.html` / `spcialist.html`), phase 1 of 3:
+the taxonomy everything else hangs off.
+- **Nine skills.** Added **Direction**, **Hair & makeup** and **Retouching & post** (migration
+  `2026_08_22_000200` + `TalentTypeSeeder`, idempotent). Applied the spec's orthography — "Modeling" →
+  **Modelling**, title-case → sentence-case. **Slugs are unchanged** so no deep link breaks.
+- **A second level: specialities.** New `specialities` table owned by one skill, with `speciality_talent`
+  and `project_speciality` pivots (migration `2026_08_22_000100`). 45 seeded entries across the nine
+  skills, four-to-seven each (`SpecialitySeeder`). The list is **controlled** — talents pick from it and
+  can never type into it — because an invented entry would never match on the project side.
+- **Regional entries are flagged.** `is_regional` marks **Modest fashion** and **Arabic lettering**: real
+  commercial categories here, not filters applied to a broader one.
+- **Two rules, one home each.** A talent's picks must belong to a skill they hold
+  (`SkillsService::setSpecialities`, 422); a project's must hang off one of its tagged skills
+  (`TalentProjectService::assertSkillSpecialities`, 422 — validated against the skill set the project will
+  *end up* with, so re-tagging skills and specialities together stays consistent). Re-tagging a project
+  without restating its picks prunes the ones that lost their skill.
+- **Surfaces.** Profile editor: a speciality pill picker inside each skill section (optimistic, per-skill,
+  `PUT /talent/profile/skills/{type}/specialities`). Public profile: the skill tab leads with its
+  specialities, linking into discovery where that flag is on. Projects composer: speciality groups revealed
+  *by* the skills tagged above, un-tagging a skill takes its picks with it. Admin `/admin/skills`: add,
+  retire and reinstate entries — the slug is locked once created, and retiring is grandfathering, never a
+  delete.
+- **Discovery** gains `filter[speciality]` (slug-matched; combine with `filter[type]` to narrow, since a
+  slug like `fashion` deliberately spans three skills).
+- Icons for the three new skills; demo + showcase seeders now claim specialities so the layer has real data.
+- Suite **677 green** (2464 assertions), build green, `migrate:fresh --seed` exits 0. Three pre-existing
+  test fragilities the new catalog exposed were fixed at the root: two assertions compared a sorted actual
+  against an unsorted expectation, and one compared a raw skill name against escaped HTML.
+
 ## 2026-08-18 — Projects get their own page, and at least one skill (ADR-X)
 - **New `/talent/projects` page** — the talent's portfolio of work, on its own premium surface instead of
   a row in the generic content-table editor: a sticky skill filter bar with live counts (All work · one

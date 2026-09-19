@@ -48,8 +48,9 @@ class Talent extends Authenticatable implements \App\Feed\Actor, HasMedia
      */
     protected $fillable = [
         'email', 'password', 'email_verified_at', 'phone', 'last_login_at', 'is_active',
-        'slug', 'display_name', 'headline', 'bio',
+        'slug', 'display_name', 'headline', 'bio', 'worldview',
         'status', 'base_city', 'base_country', 'booking_type', 'booking_value',
+        'will_travel', 'is_available', 'availability_changed_at',
         'rate_unit', 'rate_amount', 'rate_currency',
         'is_verified', 'is_published', 'published_at', 'view_count', 'meta',
     ];
@@ -68,7 +69,7 @@ class Talent extends Authenticatable implements \App\Feed\Actor, HasMedia
      *
      * @var array<int, string>
      */
-    public array $translatable = ['headline', 'bio'];
+    public array $translatable = ['headline', 'bio', 'worldview'];
 
     /**
      * Attribute casts.
@@ -85,6 +86,9 @@ class Talent extends Authenticatable implements \App\Feed\Actor, HasMedia
             'password' => 'hashed',
             'is_active' => 'boolean',
             'is_verified' => 'boolean',
+            'will_travel' => 'boolean',
+            'is_available' => 'boolean',
+            'availability_changed_at' => 'datetime',
             'is_published' => 'boolean',
             'meta' => 'array',
             'view_count' => 'integer',
@@ -149,6 +153,138 @@ class Talent extends Authenticatable implements \App\Feed\Actor, HasMedia
             ->withPivot('is_primary', 'position')
             ->withTimestamps()
             ->orderByPivot('position');
+    }
+
+    /**
+     * The specialities this talent claims (ADR-Y), across every skill they hold.
+     * Always a subset of the specialities belonging to those skills —
+     * SkillsService is what enforces that; nothing else may attach here.
+     *
+     * @return BelongsToMany<Speciality, $this>
+     */
+    public function specialities(): BelongsToMany
+    {
+        return $this->belongsToMany(Speciality::class, 'speciality_talent')
+            ->withPivot('position')
+            ->withTimestamps()
+            ->orderByPivot('position');
+    }
+
+    /**
+     * Social handles — "anywhere else the work lives" (ADR-Z, About).
+     *
+     * @return HasMany<TalentSocialHandle, $this>
+     */
+    public function socialHandles(): HasMany
+    {
+        return $this->hasMany(TalentSocialHandle::class)->orderBy('position')->orderBy('id');
+    }
+
+    /**
+     * Peer vouches written ABOUT this talent (ADR-Z). The sibling of reviews:
+     * a review is brand → talent after a booking; a recognition is talent →
+     * talent, invited, and therefore works from day one.
+     *
+     * @return HasMany<Recognition, $this>
+     */
+    public function recognitions(): HasMany
+    {
+        return $this->hasMany(Recognition::class)->latest('recognized_at');
+    }
+
+    /**
+     * Peer vouches this talent has written about OTHERS.
+     *
+     * @return HasMany<Recognition, $this>
+     */
+    public function recognitionsWritten(): HasMany
+    {
+        return $this->hasMany(Recognition::class, 'author_talent_id');
+    }
+
+    /**
+     * Credits naming this talent (ADR-AA) — every state, including the pending
+     * confirmations they still owe an answer to.
+     *
+     * @return HasMany<ProjectCredit, $this>
+     */
+    public function projectCredits(): HasMany
+    {
+        return $this->hasMany(ProjectCredit::class);
+    }
+
+    /**
+     * Projects this talent was CREDITED on and accepted — other people's
+     * projects that now belong on their portfolio (ADR-AA).
+     *
+     * The pivot carries `talent_type_id`, which is the skill they were credited
+     * in and therefore the tab the project lands in on their profile. It is
+     * deliberately the CREDIT's skill, not the project's: a project can be a
+     * photography job that you were credited on as a stylist.
+     *
+     * @return BelongsToMany<Project, $this>
+     */
+    public function creditedProjects(): BelongsToMany
+    {
+        return $this->belongsToMany(Project::class, 'project_credits')
+            ->wherePivot('status', 'accepted')
+            ->withPivot('talent_type_id', 'role', 'position')
+            ->orderByPivot('position');
+    }
+
+    /**
+     * THE portfolio view of projects for one skill tab (ADR-AA): the projects
+     * this talent OWNS in that scope, plus the ones they were CREDITED on and
+     * accepted.
+     *
+     * A credited project lands in the tab of the CREDIT's skill, not the
+     * project's own — you can be credited as a stylist on someone else's
+     * photography job, and it belongs under Styling on your page.
+     *
+     * Reads loaded relations only, so a profile render stays N+1-free; callers
+     * must eager-load `projects.talentTypes` and `creditedProjects`.
+     *
+     * @return \Illuminate\Support\Collection<int, Project>
+     */
+    public function portfolioProjects(?int $talentTypeId): \Illuminate\Support\Collection
+    {
+        $owned = $this->projects->filter(
+            fn (Project $project) => $project->belongsToScope($talentTypeId)
+        );
+
+        if (! $this->relationLoaded('creditedProjects')) {
+            return $owned->values();
+        }
+
+        $heldSkillIds = $this->talentTypes->pluck('id')->map('intval');
+
+        $credited = $this->creditedProjects->filter(function (Project $project) use ($talentTypeId, $heldSkillIds) {
+            $creditSkill = (int) $project->pivot->talent_type_id;
+
+            // Normally a credited project lands in the tab of the skill it was
+            // credited in. But the project owner picks that skill, and it need
+            // not be one this talent lists — in which case there is no tab for
+            // it, and the work would silently vanish after they confirmed it.
+            // Those fall back to the universal region so a confirmation always
+            // puts the work somewhere visible.
+            return $heldSkillIds->contains($creditSkill)
+                ? $creditSkill === (int) $talentTypeId
+                : $talentTypeId === null;
+        })
+            // A project you own AND are credited on must appear once.
+            ->reject(fn (Project $project) => $owned->contains('id', $project->id));
+
+        return $owned->concat($credited)->values();
+    }
+
+    /**
+     * "Willing to explore" — directions they want to move toward (ADR-Z).
+     *
+     * @return HasMany<TalentInterest, $this>
+     */
+    public function interests(): HasMany
+    {
+        return $this->hasMany(TalentInterest::class)->orderBy('position')->orderBy('id');
     }
 
     /**

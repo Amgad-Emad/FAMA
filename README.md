@@ -74,12 +74,57 @@ that walks a brand and a talent through booking, quoting, contracting, payment, 
 > **lazy-load** on click (`GET /{slug}/tab/{skill}`, no reload) and cache; the active tab is deep-linked
 > in the URL (`?skill=`, shareable + back button). A tab shows every project tagged with its skill.
 >
-> **Skills named as disciplines (ADR-S):** the six Skills read as the **discipline/activity** — Modeling,
-> Photography, Cinematography, Creative Direction, Styling, Graphic Design (slugs `modeling` /
-> `photography` / `cinematography` / `creative-direction` / `styling` / `graphic-design`), not person-nouns.
-> `talent_types` IDs are unchanged so all FKs are intact; the `category` enum (`model/crew/creative`) is
-> unchanged (only its display labels are Modeling/Crew/Creative). Old `?skill=` deep links break (no
-> redirects). **AR names are a first pass — to be confirmed.**
+> **Skills named as disciplines (ADR-S), nine of them (ADR-Y):** the Skills read as the
+> **discipline/activity** — Photography, Cinematography, Direction, Modelling, Styling, Hair & makeup,
+> Creative direction, Graphic design, Retouching & post (slugs `photography` / `cinematography` /
+> `direction` / `modeling` / `styling` / `hair-makeup` / `creative-direction` / `graphic-design` /
+> `retouching-post`), not person-nouns. `talent_types` IDs are unchanged so all FKs are intact; the
+> `category` enum (`model/crew/creative`) is unchanged (only its display labels are
+> Modelling/Crew/Creative). The ADR-S rename broke old `?skill=` deep links once (no redirects) — which is
+> why ADR-Y's "Modeling" → "Modelling" pass changed the **display name only** and left the slug alone.
+> **AR names are a first pass — to be confirmed.**
+
+> **A project is six things (ADR-AA):** client · description · media · collaborators · skills &
+> specialities · date. **Collaborators** is the substantial one: a credit is `person + skill + role`,
+> where skill says what someone *can* do and role says what they did *here*. Crediting someone who is on
+> Fama writes the project onto their portfolio, so it **requires their confirmation** and stays invisible
+> everywhere — the public project page included — until they accept; otherwise anyone could attach a
+> name to work they did not do. Crediting someone who is not on Fama is a plain name: display-only,
+> never leaves the project, nothing to confirm. Declining and withdrawing are the same action, so being
+> publicly associated with a project stays the collaborator's call. **Media** is the ordered work, and
+> the order is the edit — the first frame is chosen, not defaulted. The **date** is recorded and never
+> displayed, so work can be ordered by recency without an older strong project being discounted for its
+> age. The **client** is hidden when empty: no "personal project" placeholder, because the absence says
+> it.
+
+> **The portfolio is six sections (ADR-Z):** **Now** · **About** · **Skills** · **Reviews** ·
+> **Recognitions** · **Willing to explore**. Sections that describe the page live in the header; sections
+> that are content are blocks — the client spec was mapped ONTO the block system, not in place of it.
+> **Now** is the time-sensitive strip: `will_travel` (a yes/no, never a list of cities) and
+> `is_available`, whose `availability_changed_at` stamp moves only when the toggle actually flips, so the
+> public profile can honestly say "as of …". This supersedes the availability half of ADR-L with new,
+> simpler columns — but availability is still **information, never a gate**: it never blocks an enquiry.
+> **About** adds `worldview` (taste and point of view, deliberately not a second bio — the editor prompts
+> it with specific questions) and social links. **Recognitions** are peer vouches, and the distinction
+> from reviews is entirely *who writes them*: a review is **brand → talent** after a booking completes
+> here, so it cannot exist at launch; a recognition is **talent → talent**, needs no booking, and works
+> from day one. Both use the same admin moderation queue, and they must render differently — no stars,
+> quote-led, relationship first — or the page becomes one wall of praise. **Willing to explore** is
+> structured (a skill + optional kind of work, capped at six) so brands can filter it, and its skill is
+> deliberately *not* restricted to ones the talent already lists — naming a direction you have not worked
+> in yet is the point.
+
+> **Specialities — the second level of the vocabulary (ADR-Y):** each Skill nests into **4–7
+> specialities** and the tree stops there. The list is **controlled** — talents pick from it and can never
+> type into it, because an invented entry would not match on the project side and every filter that
+> depends on the same name appearing on both would silently stop working. Every entry answers one
+> question: **what kind of subject** (output format — campaign, editorial, lookbook — belongs to the
+> project). A speciality `slug` is unique **per skill, not globally**: "Fashion" lives under photography,
+> modelling *and* styling, and that overlap is what lets one search assemble a whole crew. `is_regional`
+> flags the entries added for this market specifically (**Modest fashion**, **Arabic lettering**).
+> Governance sits with the block catalog at `/admin/skills`: the slug is **locked** once created, and
+> retiring an entry (`is_active = false`) hides it from every picker while existing claims keep rendering
+> — it is never a delete. Discovery filters on it via `filter[speciality]`.
 
 > **Projects (brand side):** one project = **one role = one position** (`brand_projects.talent_type_id`).
 > `budget_is_public` defaults to **false** — a private budget is withheld from every non-owning viewer in

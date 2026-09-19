@@ -41,6 +41,50 @@
                     </div>
 
                     <x-ui.button size="sm" variant="primary" class="mt-4" x-on:click="saveBlocks(type)">{{ __('Save blocks') }}</x-ui.button>
+
+                    {{--
+                        The controlled speciality vocabulary (ADR-Y). Talents pick
+                        from this list and can never type into it, so every entry
+                        is born here. Retiring an entry hides it from every picker
+                        while the talents and projects already claiming it keep
+                        rendering — it is deliberately not a delete.
+                    --}}
+                    <div class="mt-6 border-t border-line pt-4">
+                        <p class="mb-1 text-xs font-medium uppercase tracking-wider text-subtle">{{ __('Specialities') }}</p>
+                        <p class="mb-3 text-xs text-muted">{{ __('Four to six is the target (seven where the range genuinely justifies it). Every entry answers one question: what kind of subject.') }}</p>
+
+                        <div class="mb-3 flex flex-wrap gap-2">
+                            <template x-for="speciality in type.specialities" :key="speciality.id">
+                                <span class="flex items-center gap-1.5 rounded-pill border px-3 py-1.5 text-xs"
+                                      :class="speciality.is_active
+                                          ? (speciality.is_regional ? 'border-accent bg-accent-weak text-accent-ink' : 'border-line text-ink')
+                                          : 'border-dashed border-line text-subtle line-through'">
+                                    <span x-text="speciality.name.en || speciality.slug"></span>
+                                    <template x-if="speciality.is_regional">
+                                        <span class="font-mono text-[9px] uppercase tracking-wider">{{ __('Regional') }}</span>
+                                    </template>
+                                    <button type="button" @click="toggleSpeciality(speciality)"
+                                            class="ms-0.5 opacity-70 hover:opacity-100"
+                                            :aria-label="speciality.is_active ? '{{ __('Retire') }}' : '{{ __('Reinstate') }}'"
+                                            x-text="speciality.is_active ? '×' : '↺'"></button>
+                                </span>
+                            </template>
+                            <template x-if="!type.specialities.length">
+                                <span class="text-xs text-muted">{{ __('No specialities yet.') }}</span>
+                            </template>
+                        </div>
+
+                        <div class="flex flex-wrap items-center gap-2">
+                            <x-text-input class="w-56" x-model="specialityDraft(type.id).name"
+                                          @keydown.enter.prevent="addSpeciality(type)"
+                                          placeholder="{{ __('Add a speciality…') }}" />
+                            <label class="flex items-center gap-1.5 text-xs text-muted">
+                                <input type="checkbox" class="rounded border-line" x-model="specialityDraft(type.id).is_regional">
+                                {{ __('Regional') }}
+                            </label>
+                            <x-ui.button size="sm" x-on:click="addSpeciality(type)">{{ __('Add') }}</x-ui.button>
+                        </div>
+                    </div>
                 </x-ui.card>
             </template>
         </div>

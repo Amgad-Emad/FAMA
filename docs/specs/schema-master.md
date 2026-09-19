@@ -1,7 +1,9 @@
 # Fama — Database Schema (Canonical)
 
-> Single source of truth for the Fama data model — **45 tables** (35 pre-feed + the 10 feed tables,
-> §7). Transcribed and lightly cleaned (typos fixed, ordering and formatting normalized) from the original design docs. Tables are grouped by domain for readability; grouping is presentational only.
+> Single source of truth for the Fama data model — **52 tables** (35 pre-feed + the 10 feed tables (§7)
+> + the 3 speciality tables added by ADR-Y (`specialities`, `speciality_talent`, `project_speciality`)
+> + the 3 portfolio-section tables added by ADR-Z (`talent_social_handles`, `recognitions`,
+> `talent_interests`) + `project_credits` (ADR-AA)). Transcribed and lightly cleaned (typos fixed, ordering and formatting normalized) from the original design docs. Tables are grouped by domain for readability; grouping is presentational only.
 >
 > **Implementation note:** per `docs/decisions.md`, all **uploaded** files go through `spatie/laravel-medialibrary` (collections + conversions). The `*_url` / `thumbnail_url` columns below for *uploaded* assets are replaced at implementation time by media-library accessors; plain URL columns are kept only for **external** links/embeds (YouTube/Vimeo, social, brand-collab, press). The schema is documented here as originally designed.
 >
@@ -36,6 +38,10 @@ The profile itself — the "living creative passport." Holds one-per-profile ide
 | ~~rate_tier~~ | ~~ENUM(emerging, established, premium, elite) NULL~~ — removed (ADR-L) |
 | ~~willing_to_travel~~ | ~~BOOLEAN~~ — removed (ADR-L) |
 | ~~travel_regions~~ | ~~JSON NULL~~ — removed (ADR-L) |
+| will_travel | BOOLEAN default false — ADR-Z; a yes/no, never a list of cities |
+| is_available | BOOLEAN default true, indexed — ADR-Z; INFORMATION, never a gate (ADR-L) |
+| availability_changed_at | TIMESTAMP NULL — ADR-Z; stamped ONLY when availability flips |
+| worldview | JSON NULL (translatable) — ADR-Z; taste + point of view, kept apart from `bio` |
 | booking_type | ENUM(email, calendar, form, external) |
 | booking_value | VARCHAR |
 | rate_unit | ENUM(project, day, hour) NULL — Pricing rate (ADR-N) |
@@ -51,8 +57,8 @@ The profile itself — the "living creative passport." Holds one-per-profile ide
 | meta | JSON NULL |
 | created_at / updated_at / deleted_at | timestamps + soft delete |
 
-### `talent_types` — the **Skills catalog** (ADR-N)
-`talent_types` is the **Skills catalog**: the six seeded skills, named as **disciplines/activities** — Modeling, Photography, Cinematography, Creative Direction, Styling, Graphic Design (slugs `modeling` / `photography` / `cinematography` / `creative-direction` / `styling` / `graphic-design`) — not person-nouns (ADR-S; IDs unchanged, so every FK is intact). "Skills" is the product term everywhere in the UI/routes; the physical table keeps the `talent_types` name (renaming it would cascade into brand creative-needs, projects, and API lookups — a deliberate future migration, ADR-N). Its real job is `default_blocks`: when a new talent picks "Photography," this is where the system reads which blocks to preload and in what order. Keeping it as a table (not hardcoded) means you can add a skill or change a default layout without touching code or migrations.
+### `talent_types` — the **Skills catalog** (ADR-N, expanded by ADR-Y)
+`talent_types` is the **Skills catalog**: the **nine** seeded skills, named as **disciplines/activities** — Photography, Cinematography, Direction, Modelling, Styling, Hair & makeup, Creative direction, Graphic design, Retouching & post — not person-nouns (ADR-S; IDs unchanged, so every FK is intact). ADR-Y added the last three (Direction, Hair & makeup, Retouching & post) and applied the client spec's orthography ("Modeling" → "Modelling", sentence-case); **slugs were deliberately NOT changed** (`modeling` / `photography` / `cinematography` / `direction` / `creative-direction` / `styling` / `hair-makeup` / `graphic-design` / `retouching-post`), because the slug is the public deep link and ADR-S already broke those once. "Skills" is the product term everywhere in the UI/routes; the physical table keeps the `talent_types` name (renaming it would cascade into brand creative-needs, projects, and API lookups — a deliberate future migration, ADR-N). Its real job is `default_blocks`: when a new talent picks "Photography," this is where the system reads which blocks to preload and in what order. Keeping it as a table (not hardcoded) means you can add a skill or change a default layout without touching code or migrations.
 
 | Column | Type / constraints |
 |---|---|
@@ -64,6 +70,123 @@ The profile itself — the "living creative passport." Holds one-per-profile ide
 | icon | VARCHAR |
 | description | VARCHAR |
 | created_at / updated_at | timestamps |
+
+### `specialities` — the **second level** of the vocabulary (ADR-Y)
+A skill nests into four-to-seven **specialities**, and the tree stops there — two levels is the whole thing. The list is **controlled**: a talent picks from it and can never type into it, because a free-text level would break every filter that depends on the same name appearing on a portfolio *and* on a project.
+
+Every entry answers **one question — what kind of subject**. Output format (campaign, editorial, lookbook, e-commerce) is a property of the project, not the person, and stays out of this tree. `slug` is unique **per skill, not globally**: "Fashion" legitimately lives under photography, modelling and styling, and that overlap is exactly what lets one search assemble a whole crew. `is_regional` flags the entries added for this market specifically (Modest fashion, Arabic lettering).
+
+Governance mirrors the block catalog (ADR-T): `/admin/skills` is the only way an entry is born, the slug is **locked** once created, and `is_active = false` **retires** it — it leaves every picker while existing claims keep rendering and keep being found. It is never a delete.
+
+| Column | Type / constraints |
+|---|---|
+| id | BIGINT UNSIGNED, PK |
+| talent_type_id | FK → talent_types, cascadeOnDelete — the owning skill |
+| name | JSON (translatable) |
+| slug | VARCHAR — UNIQUE **per skill**, not globally |
+| description | JSON NULL (translatable) |
+| is_regional | BOOLEAN — added for this market specifically |
+| is_active | BOOLEAN — false = retired (grandfathered, not deleted) |
+| position | UNSIGNED INT — editorial catalog order |
+| created_at / updated_at | timestamps |
+| — | UNIQUE(talent_type_id, slug); INDEX(talent_type_id, position) |
+
+### `speciality_talent` (pivot) — what a talent claims (ADR-Y)
+Always a subset of the specialities belonging to the skills the talent holds. `SkillsService::setSpecialities()` is the only writer and the only place that rule lives (422 otherwise); removing a skill detaches its claims — deliberately NOT preserved the way ADR-Q preserves content, because a claim carries none and an orphan would keep the talent in a discovery filter for a skill they no longer hold.
+
+| Column | Type / constraints |
+|---|---|
+| id | BIGINT UNSIGNED, PK |
+| talent_id | FK → talents, cascadeOnDelete |
+| speciality_id | FK → specialities, cascadeOnDelete |
+| position | UNSIGNED INT — render order |
+| created_at / updated_at | timestamps |
+| — | UNIQUE(talent_id, speciality_id); INDEX(speciality_id, talent_id) |
+
+### `project_speciality` (pivot) — what one project drew on (ADR-Y)
+Always a subset of the specialities belonging to the project's **tagged skills**. `TalentProjectService::assertSkillSpecialities()` is the only place that rule lives, validated against the skill set the project will *end up* with so re-tagging skills and specialities in one request stays consistent. This pivot is the searchable link between a piece of work and the people who can do that kind of work.
+
+| Column | Type / constraints |
+|---|---|
+| id | BIGINT UNSIGNED, PK |
+| project_id | FK → projects, cascadeOnDelete |
+| speciality_id | FK → specialities, cascadeOnDelete |
+| position | UNSIGNED INT — tag order |
+| created_at / updated_at | timestamps |
+| — | UNIQUE(project_id, speciality_id); INDEX(speciality_id, project_id) |
+
+### `project_credits` — COLLABORATORS (ADR-AA)
+"Everyone who worked on it, and what each of them did." The unit is **person + skill + role**: skill says what someone CAN do, role says what they did HERE — on a shoot with six people credited, only the role separates the director from the assistant.
+
+**Two kinds of credit, and the difference decides everything else:**
+- **ON-PLATFORM** (`talent_id` set). Tagging writes this credit onto the tagged person's portfolio, so it **requires their confirmation**. Lands `pending` and is invisible EVERYWHERE — the public project page included — until accepted. Without that, anyone could attach a name to work that person did not do.
+- **OFF-PLATFORM** (`talent_id` NULL, `name` set). A real credit for someone not on Fama. Nobody to ask, no portfolio to write to, and it never leaves this project — so it is `listed` from the start and never enters the pending flow.
+
+`accepted → declined` is allowed and is the same transition as refusing: someone who no longer wants to be publicly associated with a project must be able to say so at any point. An accepted credit files the project under the **CREDIT's** skill on the collaborator's profile, not the project's own.
+
+| Column | Type / constraints |
+|---|---|
+| id | BIGINT UNSIGNED, PK |
+| project_id | FK → projects, cascadeOnDelete |
+| talent_id | FK → talents NULL, cascadeOnDelete — NULL = an off-platform credit carried by `name` |
+| name | VARCHAR NULL — the off-platform collaborator's name |
+| talent_type_id | FK → talent_types, cascadeOnDelete — the skill credited; also the tab it lands in |
+| role | VARCHAR — what they did on THIS project |
+| status | VARCHAR — ProjectCreditState (pending / accepted / declined / listed) |
+| responded_at | TIMESTAMP NULL |
+| position | UNSIGNED INT — the owner's credit order |
+| created_at / updated_at | timestamps |
+| — | UNIQUE(project_id, talent_id); INDEX(project_id, position); INDEX(talent_id, status) |
+
+### `talent_social_handles` — ABOUT (ADR-Z)
+"Instagram and anywhere else the work lives." A reorderable list mirroring `brand_social_handles`, so both sides of the platform describe a social presence identically. `UNIQUE(talent_id, platform)` — two Instagram rows is a mistake, not a choice.
+
+| Column | Type / constraints |
+|---|---|
+| id | BIGINT UNSIGNED, PK |
+| talent_id | FK → talents, cascadeOnDelete |
+| platform | ENUM(instagram, tiktok, x, linkedin, youtube, behance, vimeo, website, other) |
+| handle | VARCHAR |
+| url | VARCHAR |
+| position | UNSIGNED INT |
+| created_at / updated_at | timestamps |
+| — | UNIQUE(talent_id, platform); INDEX(talent_id, position) |
+
+### `recognitions` — peer vouches (ADR-Z)
+The sibling of `reviews`, and the difference is entirely **who writes them**: a review is **BRAND → talent** and follows a completed booking (verified because the booking happened here — and therefore impossible at launch); a recognition is **TALENT → talent**, needs no booking, and so works from day one. The author is always a talent on the platform, so a recognition carries a real, clickable person rather than a name someone typed.
+
+`body` is **not** translatable, for the same reason a review's is not: testimony is kept in the language it was written. Both go through the same admin moderation queue, and `RecognitionState` is deliberately identical to `ReviewState` (pending → approved | rejected; approved → rejected). `is_approved` is a projection synced by `SyncStateProjections` — never set it directly.
+
+`UNIQUE(talent_id, author_talent_id)`: a peer vouches ONCE. Re-submitting replaces that vouch and returns it to `pending` — an approved vouch that is reworded must not stay public on the old decision.
+
+| Column | Type / constraints |
+|---|---|
+| id | BIGINT UNSIGNED, PK |
+| talent_id | FK → talents, cascadeOnDelete — the person being vouched for |
+| author_talent_id | FK → talents, cascadeOnDelete — the peer vouching |
+| relationship | VARCHAR — how they know each other; what makes a vouch readable as more than praise |
+| body | TEXT (not translatable) |
+| status | VARCHAR — RecognitionState (pending / approved / rejected) |
+| is_approved | BOOLEAN — projection of `status` |
+| recognized_at | TIMESTAMP NULL |
+| created_at / updated_at / deleted_at | timestamps + soft deletes |
+| — | UNIQUE(talent_id, author_talent_id); INDEX(talent_id, is_approved); INDEX(status) |
+
+### `talent_interests` — WILLING TO EXPLORE (ADR-Z)
+The one section that asks for something instead of proving something: a direction the talent wants to move toward, tied to a skill and (optionally) a kind of work. **Structured on purpose** — as free text it reads as a mood, nobody acts on it, and brands could not filter it.
+
+The skill is deliberately **NOT** constrained to one the talent already holds: naming a discipline you do not yet list is the entire point. The speciality, when given, must belong to the chosen skill — `TalentInterestService::assertShape()` enforces that. Capped at 6 per talent; more reads as a wish list.
+
+| Column | Type / constraints |
+|---|---|
+| id | BIGINT UNSIGNED, PK |
+| talent_id | FK → talents, cascadeOnDelete |
+| talent_type_id | FK → talent_types, cascadeOnDelete — the direction; NOT restricted to owned skills |
+| speciality_id | FK → specialities NULL, nullOnDelete — the kind of work; NULL = the whole skill |
+| note | VARCHAR NULL — colour only; never the thing being matched |
+| position | UNSIGNED INT |
+| created_at / updated_at | timestamps |
+| — | INDEX(talent_id, position); INDEX(talent_type_id); INDEX(speciality_id) |
 
 ### `talent_talent_type` (pivot)
 Makes talent ↔ skill many-to-many, so one talent can have more than one skill (e.g. Photography + Creative Direction, or Modeling + Photography). `is_primary` marks the skill that leads the profile and drives the headline; `position` orders the rest. On profile creation the system merges the `default_blocks` of every linked skill and dedupes before seeding `profile_blocks`, so a multi-skill talent gets no duplicate blocks. `UNIQUE(talent_id, talent_type_id)` stops the same skill being attached twice.
@@ -262,6 +385,8 @@ Long-form project write-ups for creatives. Each is a substantial content object 
 | id | BIGINT UNSIGNED, PK |
 | talent_id | FK → talents |
 | talent_type_id | FK → talent_types NULL, nullOnDelete — the project's skill/tab (ADR-Q); indexed |
+| occurred_on | DATE NULL, INDEX(talent_id, occurred_on) — ADR-AA; RECORDED, NOT DISPLAYED. Orders work by recency; never rendered, so an older project is not discounted for its age |
+| year | SMALLINT NULL — since ADR-AA a DERIVED PROJECTION of `occurred_on` (kept for the feed spreads + API resources). **Not fillable** — only the `occurred_on` mutator writes it |
 | title | VARCHAR |
 | client_name | VARCHAR |
 | role | VARCHAR |

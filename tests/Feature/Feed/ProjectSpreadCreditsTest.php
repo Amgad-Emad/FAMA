@@ -20,7 +20,7 @@ it('freezes the widened snapshot and renders a complete dead frame', function ()
         'talent_id' => $talent->id,
         'title' => ['en' => 'Desert Editorial'],
         'client_name' => 'Azza Fahmy',
-        'year' => 2026,
+        'occurred_on' => '2026-05-04',
     ]);
 
     $post = app(ShareProjectAsPost::class)($talent, $project, null, [$skill->id]);
@@ -98,9 +98,11 @@ it('renders skills as professional tags and puts collaborators beside the author
     $html = $this->getJson("/posts/{$post->id}/fragment")->assertOk()->json('data.html');
 
     // Skills render as professional tag pills carrying the skill names.
+    // Escape the expectation: a skill name may legitimately carry an ampersand
+    // ("Hair & makeup"), which Blade renders as `&amp;`.
     expect($html)->toContain('feed-tag')
-        ->toContain($skills[0]->name)
-        ->toContain($skills[1]->name);
+        ->toContain(e($skills[0]->name))
+        ->toContain(e($skills[1]->name));
 
     // The collaborator sits beside the author name in the header
     // (Facebook-style "with <display name>"), not in a credits WITH line.

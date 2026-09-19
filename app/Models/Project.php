@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
@@ -26,11 +27,17 @@ class Project extends Model implements HasMedia
     /**
      * Mass-assignable attributes.
      *
+     * `year` is deliberately ABSENT: since ADR-AA it is a derived projection of
+     * `occurred_on`, written only by that field's mutator. Leaving it fillable
+     * let a caller set the two independently and silently disagree — which is
+     * exactly what happened to the demo seeder. With `preventSilentlyDiscarding
+     * Attributes` on, an attempt to mass-assign it now throws instead.
+     *
      * @var list<string>
      */
     protected $fillable = [
         'talent_id', 'talent_type_id', 'title', 'client_name', 'role', 'summary', 'body',
-        'results', 'year', 'url', 'position',
+        'results', 'occurred_on', 'url', 'position',
     ];
 
     /**
@@ -50,16 +57,41 @@ class Project extends Model implements HasMedia
         return [
             'results' => 'array',
             'year' => 'integer',
+            'occurred_on' => 'date',
             'position' => 'integer',
         ];
     }
 
     /**
-     * Single uploaded cover image.
+     * Keep `year` as a derived projection of the date (ADR-AA).
+     *
+     * `occurred_on` is the field the editor writes, but `year` is still read by
+     * the feed's project spreads, the API resources and existing rows. Deriving
+     * it here — a MUTATOR, not a model event — means every write path stays in
+     * sync, including seeders muted by `WithoutModelEvents` and factories, which
+     * an observer would silently miss.
+     */
+    public function setOccurredOnAttribute(mixed $value): void
+    {
+        $date = $value === null || $value === '' ? null : \Illuminate\Support\Carbon::parse($value);
+
+        $this->attributes['occurred_on'] = $date?->toDateString();
+
+        if ($date !== null) {
+            $this->attributes['year'] = (int) $date->year;
+        }
+    }
+
+    /**
+     * `cover` is the single lead image; `media` is THE WORK — images and video,
+     * ordered by the person who logged the project (ADR-AA). The order is the
+     * point: the first frame is doing the most work, so it is chosen rather than
+     * defaulted, and medialibrary's `order_column` is what carries that choice.
      */
     public function registerMediaCollections(): void
     {
         $this->addMediaCollection('cover')->singleFile();
+        $this->addMediaCollection('media');
     }
 
     /**
@@ -68,6 +100,35 @@ class Project extends Model implements HasMedia
     public function registerMediaConversions(?Media $media = null): void
     {
         $this->addMediaConversion('thumb')->width(800)->height(450)->nonQueued();
+    }
+
+    /**
+     * The ordered work, newest-first-by-choice rather than by upload time.
+     *
+     * Reads the loaded `media` relation so a listing stays N+1-free. WATCH OUT:
+     * medialibrary accessors call getFirstMediaUrl(), which uses loadMissing()
+     * internally and therefore slips past preventLazyLoading — any list touching
+     * these must eager-load `media` itself.
+     *
+     * @return \Illuminate\Support\Collection<int, Media>
+     */
+    public function orderedMedia(): \Illuminate\Support\Collection
+    {
+        $this->loadMissing('media');
+
+        return $this->media
+            ->where('collection_name', 'media')
+            ->sortBy('order_column')
+            ->values();
+    }
+
+    /**
+     * The lead image: the explicit cover, else the FIRST item of the ordered
+     * media — which is the same "chosen, not defaulted" rule, one step down.
+     */
+    public function getLeadImageUrlAttribute(): ?string
+    {
+        return $this->cover_image_url ?? $this->orderedMedia()->first()?->getUrl();
     }
 
     /**
@@ -114,6 +175,31 @@ class Project extends Model implements HasMedia
         return $this->belongsToMany(TalentType::class, 'project_talent_type')
             ->withPivot('position')
             ->orderBy('project_talent_type.position');
+    }
+
+    /**
+     * Everyone credited on this project (ADR-AA), in the owner's order.
+     *
+     * @return HasMany<ProjectCredit, $this>
+     */
+    public function credits(): HasMany
+    {
+        return $this->hasMany(ProjectCredit::class)->orderBy('position')->orderBy('id');
+    }
+
+    /**
+     * The specialities this project drew on (ADR-Y) — always a subset of the
+     * specialities belonging to the project's tagged skills. This is the link
+     * that lets a brand searching for fashion photography in Riyadh find the
+     * people who have actually shot it.
+     *
+     * @return BelongsToMany<Speciality, $this>
+     */
+    public function specialities(): BelongsToMany
+    {
+        return $this->belongsToMany(Speciality::class, 'project_speciality')
+            ->withPivot('position')
+            ->orderBy('project_speciality.position');
     }
 
     /**

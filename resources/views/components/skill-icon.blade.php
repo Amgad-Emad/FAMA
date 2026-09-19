@@ -13,6 +13,10 @@
         'lucide-creative-direction' => '<path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/>',
         'lucide-styling' => '<path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z"/>',
         'lucide-graphic-design' => '<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+        // Added with the nine-skill catalog (ADR-Y).
+        'lucide-direction' => '<path d="M3 3v18h18"/><path d="m7 14 3-3 3 3 5-6"/><circle cx="7" cy="14" r="1"/>',
+        'lucide-hair-makeup' => '<path d="M12 2a7 7 0 0 0-7 7c0 3 1.5 4.5 1.5 7a2.5 2.5 0 0 0 5 0"/><path d="M12 2a7 7 0 0 1 7 7c0 3-1.5 4.5-1.5 7a2.5 2.5 0 0 1-5 0"/><path d="M12 16v6"/>',
+        'lucide-retouching-post' => '<path d="M4 20 20 4"/><path d="M14 4h6v6"/><circle cx="7.5" cy="16.5" r="3.5"/>',
     ];
     $inner = $paths[$icon] ?? '<path d="m12 3 1.9 5.8a2 2 0 0 0 1.3 1.3L21 12l-5.8 1.9a2 2 0 0 0-1.3 1.3L12 21l-1.9-5.8a2 2 0 0 0-1.3-1.3L3 12l5.8-1.9a2 2 0 0 0 1.3-1.3z"/>';
 @endphp

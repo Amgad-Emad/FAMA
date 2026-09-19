@@ -92,6 +92,45 @@
                     </div>
                     <p x-show="errors.skill_ids || errors['skill_ids.0']" x-cloak class="mt-2 text-xs text-danger"
                        x-text="(errors.skill_ids || errors['skill_ids.0'])?.[0]"></p>
+
+                    {{--
+                        Specialities (ADR-Y) — revealed BY the skills tagged above,
+                        because a speciality only exists under a skill. Un-tagging a
+                        skill takes its picks with it (pruneSpecialities in the
+                        composer mirrors what the service does server-side).
+                        Optional: a project that does not fit a named speciality
+                        should not be blocked from being logged.
+                    --}}
+                    <template x-if="specialityGroups().length > 0">
+                        <div class="mt-5 border-t border-line pt-4">
+                            <div class="mb-1 flex flex-wrap items-center gap-2">
+                                <span class="font-mono text-[11px] uppercase tracking-wider text-subtle">{{ __('Specialities') }}</span>
+                                <span class="rounded-pill border border-line px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider text-subtle">{{ __('Optional') }}</span>
+                                <span class="ms-auto font-mono text-[10px] text-subtle" x-text="`${form.speciality_ids.length} {{ __('selected') }}`"></span>
+                            </div>
+                            <p class="mb-3 text-xs leading-relaxed text-muted">
+                                {{ __('What kind of subject this work was. This is what lets a brand searching for it find you.') }}
+                            </p>
+
+                            <template x-for="group in specialityGroups()" :key="group.id">
+                                <div class="mb-3">
+                                    <div class="mb-1.5 font-mono text-[10px] uppercase tracking-wider text-subtle" x-text="group.name"></div>
+                                    <div class="flex flex-wrap gap-2" role="group" :aria-label="group.name">
+                                        <template x-for="speciality in group.options" :key="speciality.id">
+                                            <button type="button" x-on:click="toggleSpeciality(speciality.id)"
+                                                    :aria-pressed="hasSpeciality(speciality.id) ? 'true' : 'false'"
+                                                    class="rounded-pill border px-3 py-1.5 text-xs font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                                                    :class="hasSpeciality(speciality.id)
+                                                        ? 'border-transparent bg-accent text-on-accent'
+                                                        : 'border-line bg-elevated text-muted hover:text-ink'">
+                                                <span x-text="speciality.name"></span>
+                                            </button>
+                                        </template>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
                 </section>
 
                 <hr class="border-line">
@@ -120,6 +159,7 @@
                     <div>
                         <label for="pc-client" class="mb-1.5 block text-sm font-medium text-ink">{{ __('Client') }}</label>
                         <input id="pc-client" x-model="form.client_name" @input="touch()" maxlength="255"
+                               placeholder="{{ __('Leave blank for self-initiated work') }}"
                                placeholder="{{ __('Who it was for') }}"
                                class="w-full rounded-md border-line bg-elevated text-ink shadow-sm focus:border-accent focus:ring-accent">
                     </div>
@@ -131,12 +171,18 @@
                                class="w-full rounded-md border-line bg-elevated text-ink shadow-sm focus:border-accent focus:ring-accent">
                     </div>
 
+                    {{-- DATE (ADR-AA) — recorded, NOT displayed. It orders your
+                         work by recency and makes "shot recently" answerable; it
+                         never appears on the project page, so an older project is
+                         not discounted for its age. The label says so, because a
+                         date field people assume is public gets left blank. --}}
                     <div>
-                        <label for="pc-year" class="mb-1.5 block text-sm font-medium text-ink">{{ __('Year') }}</label>
-                        <input id="pc-year" type="number" x-model="form.year" @input="touch()"
-                               min="1900" max="{{ date('Y') + 1 }}" placeholder="{{ date('Y') }}"
+                        <label for="pc-date" class="mb-1.5 block text-sm font-medium text-ink">{{ __('When was it made?') }}</label>
+                        <input id="pc-date" type="date" x-model="form.occurred_on" @input="touch()"
+                               max="{{ now()->addYear()->toDateString() }}"
                                class="w-full rounded-md border-line bg-elevated text-ink shadow-sm focus:border-accent focus:ring-accent">
-                        <p x-show="errors.year" x-cloak class="mt-1 text-xs text-danger" x-text="errors.year?.[0]"></p>
+                        <p class="mt-1 text-xs text-subtle">{{ __('Not shown on your profile — it only orders your work.') }}</p>
+                        <p x-show="errors.occurred_on" x-cloak class="mt-1 text-xs text-danger" x-text="errors.occurred_on?.[0]"></p>
                     </div>
 
                     <div>
@@ -192,6 +238,120 @@
                         <p x-show="form.results.length === 0" x-cloak class="text-xs text-subtle">{{ __('No metrics on this project.') }}</p>
                     </div>
                 </section>
+
+                {{-- THE WORK + COLLABORATORS (ADR-AA) — only on a project that
+                     already exists: both attach to a project id, and a composer
+                     that pretended otherwise would have to stage uploads and
+                     credit invitations against nothing. --}}
+                <template x-if="editing">
+                    <div class="space-y-8">
+                        <hr class="border-line">
+
+                        {{-- Media gallery. The ORDER is the edit. --}}
+                        <section>
+                            <div class="mb-1 flex flex-wrap items-center gap-2">
+                                <span class="font-mono text-[11px] uppercase tracking-wider text-subtle">{{ __('The work') }}</span>
+                                <span class="ms-auto font-mono text-[10px] text-subtle" x-text="`${media.length} {{ __('files') }}`"></span>
+                            </div>
+                            <p class="mb-3 text-xs leading-relaxed text-muted">
+                                {{ __('Images and video, in the order people will see them. Drag to reorder — the first one is doing the most work, so choose it.') }}
+                            </p>
+
+                            <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                                <template x-for="(item, index) in media" :key="item.id">
+                                    <div draggable="true"
+                                         @dragstart="mediaDragId = item.id"
+                                         @dragover.prevent
+                                         @drop.prevent="dropMedia(item)"
+                                         @dragend="mediaDragId = null"
+                                         class="group relative aspect-square cursor-move overflow-hidden rounded-lg border border-line bg-elevated transition"
+                                         :class="mediaDragId === item.id ? 'opacity-40' : ''">
+                                        <template x-if="item.is_video">
+                                            <video :src="item.url" muted class="h-full w-full object-cover"></video>
+                                        </template>
+                                        <template x-if="!item.is_video">
+                                            <img :src="item.url" alt="" class="h-full w-full object-cover">
+                                        </template>
+                                        <span x-show="index === 0" x-cloak
+                                              class="absolute start-1.5 top-1.5 rounded-pill bg-accent px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider text-on-accent">{{ __('Lead') }}</span>
+                                        <button type="button" @click="removeMedia(item)"
+                                                class="absolute end-1.5 top-1.5 grid h-6 w-6 place-items-center rounded-full bg-ink/70 text-xs text-bg opacity-0 transition group-hover:opacity-100 focus:opacity-100"
+                                                aria-label="{{ __('Remove') }}">&times;</button>
+                                    </div>
+                                </template>
+
+                                <label class="flex aspect-square cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-line text-center text-xs text-subtle transition hover:border-accent hover:text-accent">
+                                    <span class="text-lg" aria-hidden="true">+</span>
+                                    <span x-show="!uploadingMedia">{{ __('Add files') }}</span>
+                                    <span x-show="uploadingMedia" x-cloak>{{ __('Uploading…') }}</span>
+                                    <input type="file" multiple accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm"
+                                           class="sr-only" @change="uploadMedia($event.target.files); $event.target.value = ''">
+                                </label>
+                            </div>
+                            <p x-show="mediaError" x-cloak class="mt-2 text-xs text-danger" x-text="mediaError"></p>
+                        </section>
+
+                        <hr class="border-line">
+
+                        {{-- Collaborators. person + skill + role = one credit. --}}
+                        <section>
+                            <div class="mb-1 flex flex-wrap items-center gap-2">
+                                <span class="font-mono text-[11px] uppercase tracking-wider text-subtle">{{ __('Collaborators') }}</span>
+                            </div>
+                            <p class="mb-3 text-xs leading-relaxed text-muted">
+                                {{ __('Everyone who worked on it, and what each of them did. Crediting someone on Fama adds this project to their profile too — so it waits for them to confirm it.') }}
+                            </p>
+
+                            <ul class="mb-3 space-y-2">
+                                <template x-for="credit in credits" :key="credit.id">
+                                    <li class="flex flex-wrap items-center gap-3 rounded-lg border border-line bg-elevated p-3">
+                                        <div class="min-w-0 flex-1">
+                                            <div class="flex flex-wrap items-center gap-2 text-sm text-ink">
+                                                <span x-text="credit.name"></span>
+                                                <span class="font-mono text-[11px] uppercase tracking-wider text-subtle" x-text="credit.role"></span>
+                                            </div>
+                                            <div class="mt-0.5 flex flex-wrap items-center gap-2">
+                                                <span class="font-mono text-[10px] uppercase tracking-wider text-subtle" x-text="credit.skill?.name"></span>
+                                                {{-- The confirmation state, said plainly. --}}
+                                                <span x-show="credit.status === 'pending'" x-cloak
+                                                      class="rounded-pill bg-gold-weak px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider text-gold">{{ __('Awaiting them') }}</span>
+                                                <span x-show="credit.status === 'accepted'" x-cloak
+                                                      class="rounded-pill bg-success-weak px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider text-success">{{ __('Confirmed') }}</span>
+                                                <span x-show="credit.status === 'declined'" x-cloak
+                                                      class="rounded-pill border border-line px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider text-subtle">{{ __('Declined') }}</span>
+                                            </div>
+                                        </div>
+                                        <button type="button" @click="removeCredit(credit)"
+                                                class="rounded-md px-2 py-1 text-subtle transition hover:text-danger focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                                                aria-label="{{ __('Remove') }}">&times;</button>
+                                    </li>
+                                </template>
+                            </ul>
+
+                            <div class="grid gap-2 sm:grid-cols-4">
+                                <input x-model="newCredit.name" type="text" maxlength="120"
+                                       placeholder="{{ __('Name') }}"
+                                       class="rounded-md border-line bg-elevated text-sm text-ink shadow-sm focus:border-accent focus:ring-accent">
+                                <select x-model.number="newCredit.talent_type_id"
+                                        class="rounded-md border-line bg-elevated text-sm text-ink">
+                                    <option value="">{{ __('Skill…') }}</option>
+                                    @foreach ($allSkills as $skill)
+                                        <option value="{{ $skill['id'] }}">{{ $skill['name'] }}</option>
+                                    @endforeach
+                                </select>
+                                <input x-model="newCredit.role" type="text" maxlength="80"
+                                       placeholder="{{ __('What they did') }}"
+                                       class="rounded-md border-line bg-elevated text-sm text-ink shadow-sm focus:border-accent focus:ring-accent">
+                                <x-ui.button size="sm" x-on:click="addCredit()"
+                                             x-bind:disabled="savingCredit || !newCredit.name || !newCredit.talent_type_id || !newCredit.role">
+                                    {{ __('Add credit') }}
+                                </x-ui.button>
+                            </div>
+                            <p class="mt-1.5 text-xs text-subtle">{{ __('Type a name to credit someone who is not on Fama — that credit is display-only and stays on this project.') }}</p>
+                            <p x-show="creditError" x-cloak class="mt-2 text-xs text-danger" x-text="creditError"></p>
+                        </section>
+                    </div>
+                </template>
             </div>
 
             {{-- Pinned footer --}}

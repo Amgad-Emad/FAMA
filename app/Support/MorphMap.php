@@ -52,18 +52,23 @@ class MorphMap
 
             // Talent domain
             'talent_type' => Models\TalentType::class,
+            'speciality' => Models\Speciality::class,
             'block_type' => Models\BlockType::class,
             'block_type_category' => Models\BlockTypeCategory::class,
             'profile_block' => Models\ProfileBlock::class,
             'portfolio_item' => Models\PortfolioItem::class,
             'brand_collab' => Models\BrandCollab::class,
             'review' => Models\Review::class,
+            'recognition' => Models\Recognition::class,
+            'talent_social_handle' => Models\TalentSocialHandle::class,
+            'talent_interest' => Models\TalentInterest::class,
             'comp_card' => Models\CompCard::class,
             'look_type' => Models\LookType::class,
             'digital' => Models\Digital::class,
             'showreel' => Models\Showreel::class,
             'equipment' => Models\Equipment::class,
             'project' => Models\Project::class,
+            'project_credit' => Models\ProjectCredit::class,
             'software_stack' => Models\SoftwareStack::class,
 
             // Contract engine

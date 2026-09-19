@@ -11,10 +11,13 @@
             'deleteTitle' => __('Remove this project?'),
             'deleteMessage' => __('":title" and its cover will be permanently removed from your profile.'),
             'deleteConfirm' => __('Remove'),
+            'removeMediaTitle' => __('Remove this file?'),
+            'removeMediaMessage' => __('It is deleted from this project for good.'),
+            'removeConfirm' => __('Remove'),
         ];
     @endphp
 
-    <div x-data="talentProjects({ skills: @js($skills), total: @js($total), strings: @js($strings) })">
+    <div x-data="talentProjects({ skills: @js($skills), specialities: @js($specialities), allSkills: @js($allSkills), total: @js($total), strings: @js($strings) })">
 
         {{-- Page header — the promise of the page, then the one primary action. --}}
         <div class="mb-8 flex flex-wrap items-end justify-between gap-5">

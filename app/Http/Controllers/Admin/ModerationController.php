@@ -5,10 +5,12 @@ namespace App\Http\Controllers\Admin;
 use App\Models\Brand;
 use App\Models\BrandReview;
 use App\Models\BrandProject;
+use App\Models\Recognition;
 use App\Models\Review;
 use App\Models\Talent;
 use App\Services\BrandModerationService;
 use App\Services\ProjectOversightService;
+use App\Services\RecognitionService;
 use App\Services\ReviewModerationService;
 use App\Services\TalentModerationService;
 use Illuminate\Http\JsonResponse;
@@ -29,6 +31,7 @@ class ModerationController extends AdminController
         private readonly BrandModerationService $brandMod,
         private readonly ReviewModerationService $reviewMod,
         private readonly ProjectOversightService $projectMod,
+        private readonly RecognitionService $recognitions,
     ) {}
 
     /**
@@ -37,7 +40,7 @@ class ModerationController extends AdminController
      */
     public function index(Request $request): View
     {
-        $queues = ['talents', 'all-reviews', 'reviews'];
+        $queues = ['talents', 'all-reviews', 'reviews', 'recognitions'];
         // Brand-owned queues only exist when the brands feature is enabled (V1 off).
         if (\App\Support\Features::brands()) {
             $queues = [...$queues, 'brands', 'brand-reviews', 'projects'];
@@ -211,6 +214,68 @@ class ModerationController extends AdminController
             : $this->reviewMod->rejectBatch($this->admin(), $data['ids']);
 
         return response()->success(['count' => $count], __(':n reviews moderated.', ['n' => $count]));
+    }
+
+    // --- Recognitions (peer vouches, ADR-Z) ---------------------------------
+
+    /**
+     * Pending peer vouches. Both sides are talents, so the search covers the
+     * author as well as the recipient — a moderator chasing a bad actor is
+     * usually looking for who WROTE it.
+     */
+    public function recognitions(Request $request): JsonResponse
+    {
+        $paginator = Recognition::query()->where('status', 'pending')
+            ->with(['talent', 'author'])
+            ->when($request->query('q'), fn ($query, $q) => $query->where(fn ($w) => $w
+                ->where('body', 'like', "%{$q}%")
+                ->orWhere('relationship', 'like', "%{$q}%")
+                ->orWhereHas('talent', fn ($t) => $t->where('display_name', 'like', "%{$q}%"))
+                ->orWhereHas('author', fn ($a) => $a->where('display_name', 'like', "%{$q}%"))))
+            ->latest()->paginate(20);
+
+        return response()->paginated($paginator, $paginator->getCollection()->map(fn (Recognition $r) => [
+            'id' => $r->id,
+            'body' => $r->body,
+            'relationship' => $r->relationship,
+            'talent' => $r->talent?->display_name,
+            'author' => $r->author?->display_name,
+            'status' => $r->status->getValue(),
+        ]));
+    }
+
+    /**
+     * Full detail for one recognition: the complete vouch, who wrote it, about
+     * whom, and the stated relationship — which is the field a moderator
+     * actually judges, since a vague one is the tell for generic praise.
+     */
+    public function showRecognition(Recognition $recognition): JsonResponse
+    {
+        $recognition->load(['talent', 'author']);
+
+        return response()->success([
+            'id' => $recognition->id,
+            'kind' => 'recognition',
+            'body' => $recognition->body,
+            'relationship' => $recognition->relationship,
+            'talent' => $recognition->talent?->display_name,
+            'talent_slug' => $recognition->talent?->slug,
+            'author' => $recognition->author?->display_name,
+            'author_slug' => $recognition->author?->slug,
+            'status' => $recognition->status->getValue(),
+            'created_at' => $recognition->created_at?->toDayDateTimeString(),
+        ]);
+    }
+
+    public function moderateRecognition(Recognition $recognition, string $action): JsonResponse
+    {
+        match ($action) {
+            'approve' => $this->recognitions->approve($recognition),
+            'reject' => $this->recognitions->reject($recognition),
+            default => abort(404),
+        };
+
+        return response()->success(null, __('Recognition moderated.'));
     }
 
     // --- Brands -------------------------------------------------------------

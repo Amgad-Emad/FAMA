@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\Talent;
 
 use App\Http\Requests\Talent\ReorderRequest;
+use App\Http\Requests\Talent\StoreProjectMediaRequest;
 use App\Http\Requests\Talent\StoreProjectRequest;
 use App\Http\Requests\Talent\UpdateProjectCoverRequest;
 use App\Http\Requests\Talent\UpdateProjectRequest;
 use App\Http\Resources\TalentProjectResource;
 use App\Models\Project;
+use App\Models\Speciality;
 use App\Models\Talent;
 use App\Models\TalentType;
 use App\Services\TalentProjectService;
@@ -40,6 +42,15 @@ class ProjectController extends TalentController
         $talent = $this->talent()->load('talentTypes');
         $skills = $this->orderedSkills($talent);
 
+        // The controlled speciality vocabulary for the talent's skills (ADR-Y),
+        // in ONE query — the composer reveals a skill's specialities as it is
+        // tagged, so it needs the whole set up front rather than per selection.
+        $specialities = Speciality::query()
+            ->selectable()
+            ->whereIn('talent_type_id', $skills->pluck('id'))
+            ->orderBy('position')->orderBy('id')
+            ->get();
+
         return view('talent.projects', [
             'talent' => $talent,
             'skills' => $skills->map(fn (TalentType $type) => [
@@ -50,6 +61,22 @@ class ProjectController extends TalentController
                 'is_primary' => (bool) $type->pivot->is_primary,
             ])->all(),
             'total' => $talent->projects()->count(),
+            // EVERY skill, not just the talent's own: a photographer crediting a
+            // stylist needs Styling in the picker even though they do not do it.
+            'allSkills' => TalentType::query()->orderBy('id')->get()->map(fn (TalentType $type) => [
+                'id' => (int) $type->id,
+                'name' => $type->getTranslation('name', app()->getLocale(), false) ?: $type->getTranslation('name', 'en', false),
+            ])->values()->all(),
+            // Keyed by skill id — the composer reads its own slice per tag.
+            'specialities' => $specialities->groupBy('talent_type_id')->map(
+                fn (Collection $group) => $group->map(fn (Speciality $speciality) => [
+                    'id' => (int) $speciality->id,
+                    'slug' => $speciality->slug,
+                    'name' => $speciality->getTranslation('name', app()->getLocale(), false)
+                        ?: $speciality->getTranslation('name', 'en', false),
+                    'is_regional' => (bool) $speciality->is_regional,
+                ])->values()
+            ),
         ]);
     }
 
@@ -63,7 +90,7 @@ class ProjectController extends TalentController
         $skill = (string) $request->query('skill', '');
 
         $query = $this->talent()->projects()
-            ->with(['media', 'talentTypes'])
+            ->with(['media', 'talentTypes', 'specialities', 'credits.talent', 'credits.talentType'])
             ->orderBy('position')
             ->orderBy('id');
 
@@ -87,8 +114,9 @@ class ProjectController extends TalentController
         $data = $request->validated();
         $project = $this->projects->create(
             $this->talent(),
-            collect($data)->except('skill_ids')->all(),
+            collect($data)->except(['skill_ids', 'speciality_ids'])->all(),
             array_map('intval', $data['skill_ids']),
+            array_map('intval', $data['speciality_ids'] ?? []),
         );
 
         return response()->success(
@@ -106,8 +134,10 @@ class ProjectController extends TalentController
         $data = $request->validated();
         $project = $this->projects->update(
             $project,
-            collect($data)->except('skill_ids')->all(),
+            collect($data)->except(['skill_ids', 'speciality_ids'])->all(),
             array_map('intval', $data['skill_ids']),
+            // Absent means "leave the picks alone"; present-but-empty clears them.
+            array_key_exists('speciality_ids', $data) ? array_map('intval', $data['speciality_ids']) : null,
         );
 
         return response()->success(
@@ -155,9 +185,45 @@ class ProjectController extends TalentController
      *
      * @return array<string, mixed>
      */
+    /**
+     * Upload work into the project's media gallery (ADR-AA).
+     */
+    public function storeMedia(StoreProjectMediaRequest $request, Project $project): JsonResponse
+    {
+        $this->ensureOwns($project);
+
+        $project = $this->projects->addMedia($project, $request->file('files', []));
+
+        return response()->success($this->present($project), __('Work added.'));
+    }
+
+    /**
+     * Reorder the work. The order IS the edit: the first frame is doing the most
+     * work, so it is chosen rather than defaulted.
+     */
+    public function reorderMedia(ReorderRequest $request, Project $project): JsonResponse
+    {
+        $this->ensureOwns($project);
+
+        $project = $this->projects->reorderMedia($project, $request->orderedIds());
+
+        return response()->success($this->present($project), __('Order saved.'));
+    }
+
+    public function destroyMedia(Project $project, int $media): JsonResponse
+    {
+        $this->ensureOwns($project);
+
+        $project = $this->projects->removeMedia($project, $media);
+
+        return response()->success($this->present($project), __('Removed.'));
+    }
+
     private function present(Project $project): array
     {
-        return (new TalentProjectResource($project->load(['media', 'talentTypes'])))->resolve();
+        return (new TalentProjectResource($project->load([
+            'media', 'talentTypes', 'specialities', 'credits.talent', 'credits.talentType',
+        ])))->resolve();
     }
 
     /**

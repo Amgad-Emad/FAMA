@@ -3,7 +3,7 @@
         <p class="text-sm text-muted">{{ __('Review and act on everything users publish — open a row for full details.') }}</p>
         {{-- Tabs --}}
         <div class="flex flex-wrap items-center gap-2">
-            @foreach (['talents' => __('Talents'), 'brands' => __('Brands'), 'projects' => __('Projects'), 'reviews' => __('Talent reviews'), 'brand-reviews' => __('Brand reviews'), 'all-reviews' => __('All reviews')] as $key => $label)
+            @foreach (['talents' => __('Talents'), 'brands' => __('Brands'), 'projects' => __('Projects'), 'reviews' => __('Talent reviews'), 'brand-reviews' => __('Brand reviews'), 'all-reviews' => __('All reviews'), 'recognitions' => __('Recognitions')] as $key => $label)
                 <button @click="openTab('{{ $key }}')" :class="tab === '{{ $key }}' ? 'bg-accent text-on-primary' : 'border border-line text-muted hover:text-ink'" class="rounded-pill px-3 py-1.5 text-xs">{{ $label }}</button>
             @endforeach
         </div>
@@ -52,6 +52,11 @@
                     <template x-if="row.status"><span :class="$pill(row.status)" x-text="$statusLabel(row.status)"></span></template>
                     <template x-if="row.is_verified"><span class="rounded-pill bg-accent-weak px-2 py-0.5 text-xs text-accent-ink">{{ __('verified') }}</span></template>
                     {{-- Global queue: tag each row with its kind + the reviewer --}}
+                    <template x-if="tab === 'recognitions'">
+                        <span class="text-xs text-subtle">
+                            <span x-text="row.author"></span> → <span x-text="row.talent"></span>
+                        </span>
+                    </template>
                     <template x-if="tab === 'all-reviews'">
                         <span class="rounded-pill px-2 py-0.5 text-xs font-medium"
                               :class="row.kind === 'brand' ? 'bg-accent-weak text-accent-ink' : 'bg-elevated text-muted'"
@@ -93,6 +98,15 @@
                             <span class="flex gap-1.5">
                                 <button @click="$confirm({ title: '{{ __('Approve this review?') }}', message: '{{ __('The review becomes publicly visible.') }}', confirmLabel: '{{ __('Approve') }}', tone: 'accent' }).then(ok => ok && action(row,'approve'))" class="rounded-pill border border-line px-2.5 py-1 text-xs text-success hover:border-success">{{ __('Approve') }}</button>
                                 <button @click="$confirm({ title: '{{ __('Reject this review?') }}', message: '{{ __('The review is hidden and will not be published.') }}', confirmLabel: '{{ __('Reject') }}' }).then(ok => ok && action(row,'reject'))" class="rounded-pill border border-line px-2.5 py-1 text-xs text-danger hover:border-danger">{{ __('Reject') }}</button>
+                            </span>
+                        </template>
+                        {{-- Recognitions (ADR-Z). Peer vouches, so the copy says
+                             "vouch", not "review" — a moderator judging one is
+                             weighing whether the stated relationship is real. --}}
+                        <template x-if="tab === 'recognitions'">
+                            <span class="flex gap-1.5">
+                                <button @click="$confirm({ title: '{{ __('Approve this recognition?') }}', message: '{{ __('The vouch becomes publicly visible on their profile.') }}', confirmLabel: '{{ __('Approve') }}', tone: 'accent' }).then(ok => ok && action(row,'approve'))" class="rounded-pill border border-line px-2.5 py-1 text-xs text-success hover:border-success">{{ __('Approve') }}</button>
+                                <button @click="$confirm({ title: '{{ __('Reject this recognition?') }}', message: '{{ __('The vouch is hidden and will not be published.') }}', confirmLabel: '{{ __('Reject') }}' }).then(ok => ok && action(row,'reject'))" class="rounded-pill border border-line px-2.5 py-1 text-xs text-danger hover:border-danger">{{ __('Reject') }}</button>
                             </span>
                         </template>
                         {{-- Brands --}}
@@ -315,6 +329,12 @@
                             <button @click="$confirm({ title: '{{ __('Reject this review?') }}', message: '{{ __('The review is hidden and will not be published.') }}', confirmLabel: '{{ __('Reject') }}' }).then(ok => ok && action(detail,'reject'))" class="rounded-pill border border-line px-2.5 py-1 text-xs text-danger hover:border-danger">{{ __('Reject') }}</button>
                             {{-- Delete a talent review with a notice email (compose + live preview). --}}
                             <button x-show="detailKind === 'reviews'" @click="openDeleteReview(detail)" class="rounded-pill bg-danger px-2.5 py-1 text-xs text-white hover:opacity-90">{{ __('Delete…') }}</button>
+                        </span>
+                    </template>
+                    <template x-if="detailKind === 'recognitions'">
+                        <span class="flex gap-1.5">
+                            <button @click="$confirm({ title: '{{ __('Approve this recognition?') }}', message: '{{ __('The vouch becomes publicly visible on their profile.') }}', confirmLabel: '{{ __('Approve') }}', tone: 'accent' }).then(ok => ok && action(detail,'approve'))" class="rounded-pill border border-line px-2.5 py-1 text-xs text-success hover:border-success">{{ __('Approve') }}</button>
+                            <button @click="$confirm({ title: '{{ __('Reject this recognition?') }}', message: '{{ __('The vouch is hidden and will not be published.') }}', confirmLabel: '{{ __('Reject') }}' }).then(ok => ok && action(detail,'reject'))" class="rounded-pill border border-line px-2.5 py-1 text-xs text-danger hover:border-danger">{{ __('Reject') }}</button>
                         </span>
                     </template>
                     <template x-if="detailKind === 'brands'">

@@ -65,6 +65,12 @@ Route::middleware('can:manage-flows')->group(function () {
     Route::get('/skills/data', [SkillController::class, 'data'])->name('skills.data');
     Route::post('/skills', [SkillController::class, 'store'])->name('skills.store');
     Route::patch('/skills/{type}/blocks', [SkillController::class, 'updateBlocks'])->name('skills.blocks');
+    // The controlled speciality vocabulary (ADR-Y) — talents pick from it and
+    // can never type into it, so every entry is born here.
+    Route::post('/skills/{type}/specialities', [SkillController::class, 'storeSpeciality'])->name('skills.specialities.store');
+    Route::patch('/skills/{type}/specialities/reorder', [SkillController::class, 'reorderSpecialities'])->name('skills.specialities.reorder');
+    Route::patch('/specialities/{speciality}', [SkillController::class, 'updateSpeciality'])->name('specialities.update');
+    Route::patch('/specialities/{speciality}/active', [SkillController::class, 'toggleSpeciality'])->name('specialities.active');
 });
 
 // --- Block catalog (manage-blocks) -------------------------------------------
@@ -96,6 +102,14 @@ Route::middleware('can:moderate-content')->prefix('moderation')->name('moderatio
     Route::post('/reviews/{review}/delete', [ModerationController::class, 'deleteReview'])->name('reviews.delete');
     Route::patch('/reviews/{review}/{action}', [ModerationController::class, 'moderateReview'])->name('reviews.action');
     Route::post('/reviews/batch', [ModerationController::class, 'batchReviews'])->name('reviews.batch');
+
+    // Peer recognitions (ADR-Z) — talent → talent vouches, moderated exactly
+    // like reviews. `{action}` is constrained so the match arm's 404 is never
+    // the thing rejecting a typo'd verb.
+    Route::get('/recognitions', [ModerationController::class, 'recognitions'])->name('recognitions');
+    Route::get('/recognitions/{recognition}', [ModerationController::class, 'showRecognition'])->name('recognitions.show');
+    Route::patch('/recognitions/{recognition}/{action}', [ModerationController::class, 'moderateRecognition'])
+        ->whereIn('action', ['approve', 'reject'])->name('recognitions.action');
 
     // Brand + brand-review + project (brand-owned) moderation queues — gated behind
     // the `brands` feature flag for the V1 release.

@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\BlockType;
 use App\Models\Talent;
 use App\Models\TalentType;
 use App\Services\SkillsService;
@@ -17,10 +18,16 @@ it('adds a skill, seeds its OWN tab’s blocks and makes the first one primary',
 
     expect($talent->talentTypes)->toHaveCount(1);
     expect((bool) $talent->talentTypes->first()->pivot->is_primary)->toBeTrue();
-    // All seeded blocks are stamped with the skill (its tab).
+    // The skill's own blocks land in its tab; the profile-level defaults
+    // (ADR-Z) land in the universal region, exactly once each. Derived from the
+    // catalog rather than hardcoded, so flagging another block cannot silently
+    // break this test's meaning.
+    $profileDefaults = BlockType::where('is_profile_default', true)->count();
+
     expect($talent->profileBlocks()->count())->toBeGreaterThan(0);
-    expect($talent->profileBlocks()->whereNull('talent_type_id')->count())->toBe(0);
-    expect($talent->profileBlocks()->where('talent_type_id', $model->id)->count())->toBe($talent->profileBlocks()->count());
+    expect($talent->profileBlocks()->whereNull('talent_type_id')->count())->toBe($profileDefaults);
+    expect($talent->profileBlocks()->where('talent_type_id', $model->id)->count())
+        ->toBe($talent->profileBlocks()->count() - $profileDefaults);
     expect($talent->status->getValue())->toBe('draft'); // Created → Draft after seeding
 });
 

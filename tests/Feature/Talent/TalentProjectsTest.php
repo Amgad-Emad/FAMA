@@ -49,7 +49,7 @@ it('creates a project with several skills, mirroring the first onto the home-tab
         'title' => ['en' => 'Ramadan film', 'ar' => 'فيلم رمضان'],
         'role' => ['en' => 'Director of photography'],
         'client_name' => 'Almarai',
-        'year' => 2026,
+        'occurred_on' => '2026-05-04',
         'url' => 'https://example.com/film',
         'summary' => ['en' => '<p>A <b>short</b> film.</p><script>alert(1)</script>'],
         'results' => [['label' => 'Reach', 'value' => '2.4M'], ['label' => '', 'value' => 'dropped']],

@@ -3,7 +3,7 @@
  * http.js wrapper (JSON envelope), so pages never reload; validation errors are
  * surfaced inline from `envelope.errors`, and list edits are optimistic.
  */
-import { del, get, patch, post, ApiError } from './http';
+import { del, get, patch, post, put, ApiError } from './http';
 
 /** Resolve a translation map ({en, ar}) to the current locale. */
 function t(map) {
@@ -306,6 +306,22 @@ document.addEventListener('alpine:init', () => {
         // Skills — each is a tab; blocks are scoped per skill (ADR-Q).
         skills: initial.skills,
         availableSkills: initial.availableSkills,
+        // Speciality picker (ADR-Y), keyed by skill id:
+        //   { [typeId]: { options: [...], selected: [ids] } }
+        specialities: initial.specialities || {},
+        savingSpecialities: null,
+
+        // ----- ADR-Z sections -------------------------------------------
+        now: initial.now || { will_travel: false, is_available: true, availability_changed_for_humans: null },
+        social: initial.social || [],
+        savingSocial: false,
+        socialSaved: false,
+        socialErrors: {},
+        interests: initial.interests || [],
+        interestSkills: initial.interestSkills || [],
+        newInterest: { talent_type_id: '', speciality_id: '', note: '' },
+        savingInterest: false,
+        interestErrors: {},
         addSkillId: '',
         skillDragId: null,
         confirmRemoveSkillId: null,
@@ -662,6 +678,45 @@ document.addEventListener('alpine:init', () => {
         applySkills(payload) {
             this.skills = payload.linked;
             this.availableSkills = payload.available;
+            if (payload.specialities) this.specialities = payload.specialities;
+        },
+
+        // ----- Specialities (the second level of the skills tree) -------
+        // The vocabulary is CONTROLLED: these are the only options, and the
+        // server re-checks that every pick belongs to the skill being edited.
+        specialityOptions(typeId) {
+            return this.specialities[String(typeId)]?.options || [];
+        },
+
+        specialityPicked(typeId, id) {
+            return (this.specialities[String(typeId)]?.selected || []).includes(id);
+        },
+
+        // Optimistic toggle — the pill flips immediately and the PUT reconciles.
+        // A rejected pick (retired entry, wrong skill) restores the previous set
+        // from the server payload rather than guessing.
+        async toggleSpeciality(typeId, id) {
+            const key = String(typeId);
+            const bucket = this.specialities[key];
+            if (!bucket) return;
+
+            const previous = [...bucket.selected];
+            bucket.selected = previous.includes(id)
+                ? previous.filter((x) => x !== id)
+                : [...previous, id];
+
+            this.savingSpecialities = typeId;
+            try {
+                const { data } = await put(`/talent/profile/skills/${typeId}/specialities`, {
+                    speciality_ids: bucket.selected,
+                });
+                this.applySkills(data);
+            } catch (e) {
+                bucket.selected = previous;
+                if (e instanceof ApiError) window.alert(e.message);
+            } finally {
+                this.savingSpecialities = null;
+            }
         },
 
         async addSkill() {
@@ -708,6 +763,100 @@ document.addEventListener('alpine:init', () => {
             this.skills.splice(to, 0, moved);
             this.skillDragId = null;
             patch('/talent/profile/skills/reorder', { order: this.skills.map((x) => x.id) }).catch(() => {});
+        },
+
+        // ----- Now (the time-sensitive strip) ---------------------------
+        // Both toggles save on flip: this is the part of the page that goes
+        // stale fastest, and a toggle you have to remember to confirm is one
+        // people do not confirm. The server owns the "last changed" stamp and
+        // only moves it when availability ACTUALLY flips, so the response is
+        // what updates it here — never a locally guessed timestamp.
+        async toggleAvailability() {
+            const previous = this.now.is_available;
+            this.now.is_available = !previous;
+            try {
+                const { data } = await patch('/talent/profile/now', { is_available: this.now.is_available });
+                this.now = data;
+            } catch (e) {
+                this.now.is_available = previous;
+                if (e instanceof ApiError) window.alert(e.message);
+            }
+        },
+
+        async toggleTravel() {
+            const previous = this.now.will_travel;
+            this.now.will_travel = !previous;
+            try {
+                const { data } = await patch('/talent/profile/now', { will_travel: this.now.will_travel });
+                this.now = data;
+            } catch (e) {
+                this.now.will_travel = previous;
+                if (e instanceof ApiError) window.alert(e.message);
+            }
+        },
+
+        // ----- Links (social handles) -----------------------------------
+        addSocial() {
+            this.social.push({ platform: 'instagram', handle: '', url: '' });
+        },
+
+        removeSocial(index) {
+            this.social.splice(index, 1);
+        },
+
+        // A whole-list replace, matching the service: the (talent, platform)
+        // unique index makes incremental writes a reconciliation problem.
+        async saveSocial() {
+            this.savingSocial = true;
+            this.socialSaved = false;
+            this.socialErrors = {};
+            try {
+                const { data } = await put('/talent/profile/social', { handles: this.social });
+                this.social = data.handles;
+                this.socialSaved = true;
+                setTimeout(() => { this.socialSaved = false; }, 2000);
+            } catch (e) {
+                if (e instanceof ApiError) this.socialErrors = e.errors || { _: [e.message] };
+            } finally {
+                this.savingSocial = false;
+            }
+        },
+
+        // ----- Willing to explore ---------------------------------------
+        // The speciality list follows the chosen SKILL, and the skill list is
+        // every skill on the platform — not the talent's own. Naming a
+        // direction you do not yet work in is the point of the section.
+        interestSpecialities() {
+            const skill = this.interestSkills.find((s) => s.id === Number(this.newInterest.talent_type_id));
+            return skill?.specialities || [];
+        },
+
+        async addInterest() {
+            if (!this.newInterest.talent_type_id) return;
+            this.savingInterest = true;
+            this.interestErrors = {};
+            try {
+                const { data } = await post('/talent/profile/interests', {
+                    talent_type_id: Number(this.newInterest.talent_type_id),
+                    speciality_id: this.newInterest.speciality_id ? Number(this.newInterest.speciality_id) : null,
+                    note: this.newInterest.note || null,
+                });
+                this.interests = data.interests;
+                this.newInterest = { talent_type_id: '', speciality_id: '', note: '' };
+            } catch (e) {
+                if (e instanceof ApiError) this.interestErrors = e.errors || { _: [e.message] };
+            } finally {
+                this.savingInterest = false;
+            }
+        },
+
+        async removeInterest(interest) {
+            try {
+                const { data } = await del(`/talent/profile/interests/${interest.id}`);
+                this.interests = data.interests;
+            } catch (e) {
+                if (e instanceof ApiError) window.alert(e.message);
+            }
         },
     }));
 
@@ -1476,16 +1625,85 @@ document.addEventListener('alpine:init', () => {
         },
     }));
 
+    // --- Credits (ADR-AA) ---------------------------------------------------
+    // The CONFIRMATION side: credits other people gave you. A pending credit
+    // appears nowhere until you answer, so this page is the only way it becomes
+    // real. Runtime strings come from Blade — the dashboard has no famaLang.
+    Alpine.data('talentCredits', ({ strings = {} } = {}) => ({
+        credits: [],
+        loading: true,
+        strings,
+
+        async init() {
+            await this.load();
+        },
+
+        async load() {
+            this.loading = true;
+            try {
+                const { data } = await get('/talent/credits/data');
+                this.credits = data.credits;
+            } catch (e) {
+                if (e instanceof ApiError) window.alert(e.message);
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        get pending() {
+            return this.credits.filter((c) => c.status === 'pending');
+        },
+
+        get accepted() {
+            return this.credits.filter((c) => c.status === 'accepted');
+        },
+
+        async respond(credit, action) {
+            try {
+                await patch(`/talent/credits/${credit.id}/${action}`);
+                await this.load();
+            } catch (e) {
+                if (e instanceof ApiError) window.alert(e.message);
+            }
+        },
+
+        // Declining and withdrawing are the SAME transition, but they read very
+        // differently to the person doing them, so they ask differently.
+        confirmDecline(credit) {
+            Alpine.store('confirm').ask({
+                title: this.strings.declineTitle,
+                message: this.strings.declineMessage,
+                confirmLabel: this.strings.declineConfirm,
+                tone: 'danger',
+            }).then((ok) => ok && this.respond(credit, 'decline'));
+        },
+
+        confirmWithdraw(credit) {
+            Alpine.store('confirm').ask({
+                title: this.strings.withdrawTitle,
+                message: this.strings.withdrawMessage,
+                confirmLabel: this.strings.withdrawConfirm,
+                tone: 'danger',
+            }).then((ok) => ok && this.respond(credit, 'decline'));
+        },
+    }));
+
     // --- Projects (the talent's own portfolio of work) ----------------------
     // One page owns projects (ADR-X): a skill filter bar, a reorderable card
     // grid, and a portalled composer modal. EVERY project needs at least one
     // skill, so the composer's Save is disabled until one is picked and the
     // server re-checks it. Runtime strings come from Blade (this page uses
     // design-head, so window.famaLang is undefined here).
-    Alpine.data('talentProjects', ({ skills = [], total = 0, strings = {} } = {}) => ({
+    Alpine.data('talentProjects', ({ skills = [], specialities = {}, allSkills = [], total = 0, strings = {} } = {}) => ({
         ...filterModal(),
 
         skills,
+        // The controlled speciality vocabulary (ADR-Y), keyed by skill id. Only
+        // the tagged skills' entries are ever offered.
+        specialities,
+        // EVERY skill (ADR-AA) — a collaborator's skill need not be one of the
+        // project owner's.
+        allSkills,
         strings,
         t,
         items: [],
@@ -1513,8 +1731,21 @@ document.addEventListener('alpine:init', () => {
             year: '',
             url: '',
             skill_ids: [],
+            speciality_ids: [],
+            occurred_on: '',
             results: [],
         },
+        // ADR-AA: the work + the credit block. Both belong to a project that
+        // already exists, so they are loaded when the composer opens on one and
+        // written straight through — never staged with the form.
+        media: [],
+        mediaDragId: null,
+        uploadingMedia: false,
+        mediaError: '',
+        credits: [],
+        newCredit: { name: '', talent_type_id: '', role: '' },
+        savingCredit: false,
+        creditError: '',
         dirty: false,
         coverFile: null,       // staged cover for a project that does not exist yet
         coverPreview: null,
@@ -1536,6 +1767,8 @@ document.addEventListener('alpine:init', () => {
                 year: '',
                 url: '',
                 skill_ids: [],
+                speciality_ids: [],
+                occurred_on: '',
                 results: [],
             };
         },
@@ -1596,15 +1829,25 @@ document.addEventListener('alpine:init', () => {
                     year: project.year || '',
                     url: project.url || '',
                     skill_ids: [...(project.skill_ids || [])],
+                    speciality_ids: [...(project.speciality_ids || [])],
+                    occurred_on: project.occurred_on || '',
                     results: (project.results || []).map((r) => ({ ...r })),
                 };
                 this.coverPreview = project.cover_image_url || null;
+                this.media = [...(project.media || [])];
+                this.credits = [...(project.credits || [])];
             } else {
                 this.form = this.blank();
                 // A single-skill talent never has to think about it.
                 if (this.skills.length === 1) this.form.skill_ids = [this.skills[0].id];
                 this.coverPreview = null;
+                this.media = [];
+                this.credits = [];
             }
+
+            this.newCredit = { name: '', talent_type_id: '', role: '' };
+            this.mediaError = '';
+            this.creditError = '';
 
             this.openFilters();
         },
@@ -1635,7 +1878,147 @@ document.addEventListener('alpine:init', () => {
             const at = this.form.skill_ids.indexOf(id);
             if (at === -1) this.form.skill_ids.push(id);
             else this.form.skill_ids.splice(at, 1);
+            // Un-tagging a skill takes its specialities with it — the server
+            // rejects a pick that no longer hangs off a tagged skill, so leaving
+            // them staged would only produce a 422 at save.
+            this.pruneSpecialities();
             this.touch();
+        },
+
+        // --- The work (ADR-AA) -----------------------------------------------
+        // Uploads land at the END of the order — a new file must never displace
+        // the lead frame the talent chose.
+        async uploadMedia(fileList) {
+            const files = Array.from(fileList || []);
+            if (!files.length || !this.editing) return;
+
+            this.uploadingMedia = true;
+            this.mediaError = '';
+            try {
+                const body = new FormData();
+                files.forEach((file) => body.append('files[]', file));
+                const { data } = await post(`/talent/projects/${this.editing.id}/media`, body);
+                this.media = data.media || [];
+                this.syncEditing(data);
+            } catch (e) {
+                if (e instanceof ApiError) this.mediaError = e.errors?.['files.0']?.[0] || e.message;
+            } finally {
+                this.uploadingMedia = false;
+            }
+        },
+
+        // Reorder optimistically, then persist. The ORDER is the edit, so the
+        // grid must respond immediately or dragging feels broken.
+        async dropMedia(target) {
+            if (this.mediaDragId === null || this.mediaDragId === target.id) return;
+
+            const previous = [...this.media];
+            const from = this.media.findIndex((m) => m.id === this.mediaDragId);
+            const to = this.media.findIndex((m) => m.id === target.id);
+            const [moved] = this.media.splice(from, 1);
+            this.media.splice(to, 0, moved);
+            this.mediaDragId = null;
+
+            try {
+                await patch(`/talent/projects/${this.editing.id}/media/reorder`, {
+                    order: this.media.map((m) => m.id),
+                });
+            } catch (e) {
+                this.media = previous;
+                if (e instanceof ApiError) this.mediaError = e.message;
+            }
+        },
+
+        async removeMedia(item) {
+            if (!(await Alpine.store('confirm').ask({
+                title: this.strings.removeMediaTitle,
+                message: this.strings.removeMediaMessage,
+                confirmLabel: this.strings.removeConfirm,
+                tone: 'danger',
+            }))) return;
+
+            try {
+                const { data } = await del(`/talent/projects/${this.editing.id}/media/${item.id}`);
+                this.media = data.media || [];
+                this.syncEditing(data);
+            } catch (e) {
+                if (e instanceof ApiError) this.mediaError = e.message;
+            }
+        },
+
+        // --- Collaborators (ADR-AA) -------------------------------------------
+        // A credit on someone who is on Fama waits for THEIR confirmation; a
+        // typed name is display-only. The server decides which, from whether a
+        // talent_id came with it — the composer just sends the name.
+        async addCredit() {
+            if (!this.editing) return;
+            this.savingCredit = true;
+            this.creditError = '';
+            try {
+                const { data } = await post(`/talent/projects/${this.editing.id}/credits`, {
+                    name: this.newCredit.name,
+                    talent_type_id: Number(this.newCredit.talent_type_id),
+                    role: this.newCredit.role,
+                });
+                this.credits = data.credits || [];
+                this.newCredit = { name: '', talent_type_id: '', role: '' };
+            } catch (e) {
+                if (e instanceof ApiError) {
+                    this.creditError = e.errors ? Object.values(e.errors)[0][0] : e.message;
+                }
+            } finally {
+                this.savingCredit = false;
+            }
+        },
+
+        async removeCredit(credit) {
+            try {
+                const { data } = await del(`/talent/projects/${this.editing.id}/credits/${credit.id}`);
+                this.credits = data.credits || [];
+            } catch (e) {
+                if (e instanceof ApiError) this.creditError = e.message;
+            }
+        },
+
+        // Keep the row behind the composer in step with what the server returned,
+        // so closing without saving does not show stale media counts.
+        syncEditing(data) {
+            if (!this.editing) return;
+            const row = this.items.find((p) => p.id === this.editing.id);
+            if (row) Object.assign(row, data);
+        },
+
+        // --- Specialities (revealed by the tagged skills) ---------------------
+
+        // One group per tagged skill, in tag order, skipping skills whose
+        // vocabulary is empty.
+        specialityGroups() {
+            return this.form.skill_ids
+                .map((id) => {
+                    const skill = this.skills.find((s) => s.id === id);
+                    const options = this.specialities[String(id)] || [];
+                    return skill && options.length ? { id, name: skill.name, options } : null;
+                })
+                .filter(Boolean);
+        },
+
+        hasSpeciality(id) {
+            return this.form.speciality_ids.includes(id);
+        },
+
+        toggleSpeciality(id) {
+            const at = this.form.speciality_ids.indexOf(id);
+            if (at === -1) this.form.speciality_ids.push(id);
+            else this.form.speciality_ids.splice(at, 1);
+            this.touch();
+        },
+
+        // Drop every staged pick that no longer belongs to a tagged skill.
+        pruneSpecialities() {
+            const allowed = new Set(
+                this.form.skill_ids.flatMap((id) => (this.specialities[String(id)] || []).map((s) => s.id)),
+            );
+            this.form.speciality_ids = this.form.speciality_ids.filter((id) => allowed.has(id));
         },
 
         // The first pick is the project's home tab on the public profile.

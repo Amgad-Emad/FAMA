@@ -2,8 +2,10 @@
 
 use App\Http\Controllers\Talent\ApplicationController;
 use App\Http\Controllers\Talent\BlockContentController;
-use App\Http\Controllers\Talent\DashboardController;
 use App\Http\Controllers\Talent\ContractController;
+use App\Http\Controllers\Talent\CreditController;
+use App\Http\Controllers\Talent\DashboardController;
+use App\Http\Controllers\Talent\InterestController;
 use App\Http\Controllers\Talent\ProfileEditorController;
 use App\Http\Controllers\Talent\ProjectController;
 use App\Http\Controllers\Talent\ReviewController;
@@ -50,7 +52,19 @@ Route::get('/profile/skills', [SkillController::class, 'data'])->name('profile.s
 Route::post('/profile/skills', [SkillController::class, 'store'])->name('profile.skills.store');
 Route::patch('/profile/skills/reorder', [SkillController::class, 'reorder'])->name('profile.skills.reorder');
 Route::patch('/profile/skills/{type}/primary', [SkillController::class, 'primary'])->name('profile.skills.primary');
+Route::put('/profile/skills/{type}/specialities', [SkillController::class, 'specialities'])->name('profile.skills.specialities');
 Route::delete('/profile/skills/{type}', [SkillController::class, 'destroy'])->name('profile.skills.destroy');
+
+// --- Now + About (ADR-Z: the two time-sensitive toggles, and social links) ----
+Route::patch('/profile/now', [ProfileEditorController::class, 'updateNow'])->name('profile.now');
+Route::put('/profile/social', [ProfileEditorController::class, 'updateSocial'])->name('profile.social');
+
+// --- Willing to explore (a section inside the Profile editor) ----------------
+Route::get('/profile/interests', [InterestController::class, 'data'])->name('profile.interests.data');
+Route::post('/profile/interests', [InterestController::class, 'store'])->name('profile.interests.store');
+Route::patch('/profile/interests/reorder', [InterestController::class, 'reorder'])->name('profile.interests.reorder');
+Route::patch('/profile/interests/{interest}', [InterestController::class, 'update'])->name('profile.interests.update');
+Route::delete('/profile/interests/{interest}', [InterestController::class, 'destroy'])->name('profile.interests.destroy');
 
 // --- Projects (the talent's own portfolio of work) ---------------------------
 // A project carries at least one skill (ADR-X) — the tags decide which skill
@@ -63,6 +77,24 @@ Route::patch('/projects/{project}', [ProjectController::class, 'update'])->name(
 Route::delete('/projects/{project}', [ProjectController::class, 'destroy'])->name('projects.destroy');
 Route::post('/projects/{project}/cover', [ProjectController::class, 'uploadCover'])->name('projects.cover.store');
 Route::delete('/projects/{project}/cover', [ProjectController::class, 'destroyCover'])->name('projects.cover.destroy');
+
+// The work itself — an ordered media gallery (ADR-AA). The ORDER is the edit.
+Route::post('/projects/{project}/media', [ProjectController::class, 'storeMedia'])->name('projects.media.store');
+Route::patch('/projects/{project}/media/reorder', [ProjectController::class, 'reorderMedia'])->name('projects.media.reorder');
+Route::delete('/projects/{project}/media/{media}', [ProjectController::class, 'destroyMedia'])
+    ->whereNumber('media')->name('projects.media.destroy');
+
+// Collaborator credits (ADR-AA) — the OWNER's side: add, reorder, remove.
+Route::post('/projects/{project}/credits', [CreditController::class, 'store'])->name('projects.credits.store');
+Route::patch('/projects/{project}/credits/reorder', [CreditController::class, 'reorder'])->name('projects.credits.reorder');
+Route::delete('/projects/{project}/credits/{credit}', [CreditController::class, 'destroy'])->name('projects.credits.destroy');
+
+// … and the CREDITED PERSON's side: confirm or refuse a credit naming you.
+// Separate authorisation — owning a project never lets you answer for someone else.
+Route::get('/credits', [CreditController::class, 'index'])->name('credits');
+Route::get('/credits/data', [CreditController::class, 'data'])->name('credits.data');
+Route::patch('/credits/{credit}/{action}', [CreditController::class, 'respond'])
+    ->whereIn('action', ['accept', 'decline'])->name('credits.respond');
 
 // --- Reviews moderation -----------------------------------------------------
 // Consolidated "Activity" page — Saved · Liked · Following in one tabbed surface.

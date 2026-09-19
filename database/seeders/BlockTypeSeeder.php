@@ -23,6 +23,12 @@ class BlockTypeSeeder extends Seeder
             ['key' => 'gallery', 'en' => 'Gallery', 'ar' => 'المعرض', 'availability' => 'universal', 'content_source' => 'table', 'layout' => 'masonry', 'repeatable' => true, 'categories' => []],
             ['key' => 'brand_collabs', 'en' => 'Brand Collaborations', 'ar' => 'تعاونات العلامات', 'availability' => 'universal', 'content_source' => 'table', 'layout' => 'grid', 'repeatable' => false, 'categories' => []],
             ['key' => 'reviews', 'en' => 'Reviews', 'ar' => 'التقييمات', 'availability' => 'universal', 'content_source' => 'table', 'layout' => 'list', 'repeatable' => false, 'categories' => []],
+            // ADR-Z. Recognitions are peer vouches (talent → talent) and sit
+            // BESIDE reviews (brand → talent), never merged with them: if both
+            // render as one wall of praise, neither gets read.
+            ['key' => 'recognitions', 'en' => 'Recognitions', 'ar' => 'تزكيات الزملاء', 'availability' => 'universal', 'content_source' => 'table', 'layout' => 'list', 'repeatable' => false, 'categories' => [], 'profile_default' => true],
+            // ADR-Z. The one section that asks for something instead of proving something.
+            ['key' => 'interests', 'en' => 'Willing to explore', 'ar' => 'منفتح على', 'availability' => 'universal', 'content_source' => 'table', 'layout' => 'list', 'repeatable' => false, 'categories' => [], 'profile_default' => true],
             ['key' => 'comp_card', 'en' => 'Comp Card', 'ar' => 'بطاقة القياسات', 'availability' => 'by_category', 'content_source' => 'table', 'layout' => null, 'repeatable' => false, 'categories' => ['model']],
             ['key' => 'look_types', 'en' => 'Looks', 'ar' => 'الإطلالات', 'availability' => 'by_category', 'content_source' => 'table', 'layout' => 'list', 'repeatable' => false, 'categories' => ['model']],
             ['key' => 'digitals', 'en' => 'Digitals', 'ar' => 'الصور الأولية', 'availability' => 'by_category', 'content_source' => 'table', 'layout' => 'grid', 'repeatable' => false, 'categories' => ['model']],
@@ -43,6 +49,8 @@ class BlockTypeSeeder extends Seeder
                     'default_layout' => $entry['layout'],
                     'is_active' => $entry['active'] ?? true,
                     'is_repeatable' => $entry['repeatable'],
+                    // Seeded ONCE at profile level rather than per skill tab (ADR-Z).
+                    'is_profile_default' => $entry['profile_default'] ?? false,
                     'position' => $position,
                 ],
             );

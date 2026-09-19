@@ -33,6 +33,7 @@ final class Navigation
             ['route' => 'talent.profile.edit', 'label' => __('Profile structure'), 'description' => __('Identity, skills, publishing and the sections of your profile'), 'icon' => 'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z'],
             ['route' => 'talent.content', 'label' => __('Profile content'), 'description' => __('Galleries, looks and reviews — the content inside each block'), 'icon' => 'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14M4 6h16a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2z'],
             ['route' => 'talent.projects', 'label' => __('Projects'), 'description' => __('Your selected work — each project tagged with the skills behind it'), 'icon' => 'M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2M3 7h18v12a2 2 0 01-2 2H5a2 2 0 01-2-2V7zm0 5h18'],
+            ['route' => 'talent.credits', 'label' => __('Credits'), 'description' => __('Work other people credited you on — confirm it to add it to your profile'), 'icon' => 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'],
             // Reviews are NOT a nav item: they render as a block panel inside
             // Profile content (the standalone /talent/reviews page still exists
             // and still serves the list's data endpoint).

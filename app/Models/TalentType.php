@@ -6,6 +6,7 @@ use Database\Factories\TalentTypeFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\Translatable\HasTranslations;
 
 /**
@@ -56,6 +57,18 @@ class TalentType extends Model
         return $this->belongsToMany(Talent::class, 'talent_talent_type')
             ->withPivot('is_primary', 'position')
             ->withTimestamps();
+    }
+
+    /**
+     * The specialities nesting under this skill (ADR-Y) — the controlled list a
+     * talent picks from once they hold the skill. Ordered as the catalog orders
+     * them, not alphabetically: the admin's order is editorial.
+     *
+     * @return HasMany<Speciality, $this>
+     */
+    public function specialities(): HasMany
+    {
+        return $this->hasMany(Speciality::class)->orderBy('position')->orderBy('id');
     }
 
     /**

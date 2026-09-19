@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Actions\SeedBlocksForSkill;
 use App\Models\PortfolioItem;
+use App\Models\Speciality;
 use App\Models\Talent;
 use App\Models\TalentType;
 use Illuminate\Support\Facades\Log;
@@ -71,6 +72,19 @@ class SkillsService extends Service
                 $talent->profileBlocks()->whereKey($blockIds)->delete();
             }
 
+            // A speciality only exists under a skill, so claims to this skill's
+            // specialities go with it. Nothing is preserved here on purpose: a
+            // speciality claim carries no content, and leaving orphaned claims
+            // behind would put a talent in a discovery filter for a skill they
+            // no longer hold.
+            $specialities = $talent->specialities()
+                ->where('specialities.talent_type_id', $type->id)
+                ->pluck('specialities.id');
+
+            if ($specialities->isNotEmpty()) {
+                $talent->specialities()->detach($specialities);
+            }
+
             $talent->talentTypes()->detach($type->id);
 
             Log::channel('app')->info('Talent removed a skill (content preserved).', [
@@ -78,6 +92,7 @@ class SkillsService extends Service
                 'talent_type_id' => $type->id,
                 'skill' => $type->slug,
                 'blocks_deleted' => $blockIds->count(),
+                'specialities_detached' => $specialities->count(),
             ]);
         }, ['talent_id' => $talent->id, 'type' => $type->slug]);
     }
@@ -117,6 +132,61 @@ class SkillsService extends Service
                 $talent->talentTypes()->updateExistingPivot($id, ['position' => $index]);
             }
         }, ['talent_id' => $talent->id]);
+    }
+
+    /**
+     * Replace the talent's speciality claims UNDER ONE SKILL with the given set
+     * (ADR-Y). Scoped to a single skill so the picker for one skill can never
+     * silently wipe the claims made under another.
+     *
+     * Two rules are enforced here and nowhere else: the talent must hold the
+     * skill, and every speciality must belong to THAT skill and still be
+     * selectable. That second rule is what keeps the vocabulary controlled — a
+     * client that posts an arbitrary id gets a 422, not a cross-skill claim.
+     *
+     * Passing an empty list is a legitimate "I do all of it / none in
+     * particular" and clears the skill's claims.
+     *
+     * @param  list<int>  $specialityIds  ordered; the order is what the profile renders
+     */
+    public function setSpecialities(Talent $talent, TalentType $type, array $specialityIds): void
+    {
+        $this->runInTransaction(function () use ($talent, $type, $specialityIds): void {
+            if (! $talent->talentTypes()->whereKey($type->id)->exists()) {
+                throw new InvalidArgumentException("Talent does not work as [{$type->slug}].");
+            }
+
+            $ids = collect($specialityIds)->map('intval')->unique()->values();
+
+            $valid = Speciality::query()
+                ->selectable()
+                ->where('talent_type_id', $type->id)
+                ->whereIn('id', $ids)
+                ->pluck('id');
+
+            $rejected = $ids->diff($valid);
+            if ($rejected->isNotEmpty()) {
+                throw new InvalidArgumentException(
+                    __('These specialities do not belong to :skill: :ids', [
+                        'skill' => $type->slug,
+                        'ids' => $rejected->implode(', '),
+                    ])
+                );
+            }
+
+            // Detach only THIS skill's claims, then re-attach in the given order.
+            $existing = $talent->specialities()
+                ->where('specialities.talent_type_id', $type->id)
+                ->pluck('specialities.id');
+
+            if ($existing->isNotEmpty()) {
+                $talent->specialities()->detach($existing);
+            }
+
+            foreach ($ids as $position => $id) {
+                $talent->specialities()->attach($id, ['position' => $position]);
+            }
+        }, ['talent_id' => $talent->id, 'type' => $type->slug]);
     }
 
     /**

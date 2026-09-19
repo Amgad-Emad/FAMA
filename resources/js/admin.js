@@ -437,6 +437,9 @@ document.addEventListener('alpine:init', () => {
         loading: true,
         dragKey: null,
         newType: { name: { en: '', ar: '' }, category: 'model', default_blocks: [], icon: '' },
+        // New-speciality drafts, keyed by skill id — each skill's row has its own
+        // input, so one shared field would leak text between rows.
+        newSpeciality: {},
         errors: {},
 
         async init() { await this.load(); },
@@ -472,6 +475,40 @@ document.addEventListener('alpine:init', () => {
                 if (e instanceof ApiError) window.alert(e.message);
             }
         },
+        // --- Specialities (the controlled vocabulary, ADR-Y) ------------------
+
+        specialityDraft(typeId) {
+            if (!this.newSpeciality[typeId]) this.newSpeciality[typeId] = { name: '', is_regional: false };
+            return this.newSpeciality[typeId];
+        },
+
+        async addSpeciality(type) {
+            const draft = this.specialityDraft(type.id);
+            if (!draft.name.trim()) return;
+            this.errors = {};
+            try {
+                await post(`/admin/skills/${type.id}/specialities`, {
+                    name: { en: draft.name.trim() },
+                    is_regional: draft.is_regional,
+                });
+                this.newSpeciality[type.id] = { name: '', is_regional: false };
+                await this.load();
+            } catch (e) {
+                if (e instanceof ApiError) window.alert(e.message);
+            }
+        },
+
+        // Retiring is grandfathering, never a delete: the entry leaves every
+        // picker while existing claims keep rendering and keep being found.
+        async toggleSpeciality(speciality) {
+            try {
+                await patch(`/admin/specialities/${speciality.id}/active`, { is_active: !speciality.is_active });
+                await this.load();
+            } catch (e) {
+                if (e instanceof ApiError) window.alert(e.message);
+            }
+        },
+
         async addType() {
             this.errors = {};
             try {
