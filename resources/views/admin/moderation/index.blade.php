@@ -394,28 +394,37 @@
                             </div>
                         </div>
 
-                        {{-- Live preview — mirrors emails/review-removed.blade.php --}}
+                        {{-- Live preview — mirrors emails/review-removed.blade.php on the shared
+                             components/email/layout (cream ground, logo, yellow→orchid band, card). --}}
                         <div class="min-h-0 overflow-y-auto bg-bg p-6">
                             <p class="mb-3 font-mono text-[10px] uppercase tracking-wider text-subtle">{{ __('Live preview') }}</p>
-                            <div class="rounded-xl border border-line bg-surface p-5 text-sm">
-                                <div class="font-display text-lg text-ink">Fama<span class="text-accent">.</span></div>
-                                <div class="mt-3 rounded-xl border border-line bg-bg p-4">
-                                    <p class="text-[13px] text-subtle">{{ __('Subject') }}: <span class="text-ink" x-text="del.subject || '—'"></span></p>
-                                    <h3 class="mt-3 font-display text-lg text-ink">{{ __('A review was removed') }}</h3>
-                                    <p class="mt-2 text-[13px] leading-relaxed text-muted">{{ __('Our team removed a review on Fama. Here is why:') }}</p>
-                                    <div class="mt-3 whitespace-pre-wrap rounded-lg border-s-[3px] border-accent bg-accent-weak p-3 text-[13px] leading-relaxed text-accent-ink" x-text="del.reason || '{{ __('Your reason will appear here…') }}'"></div>
-                                    <template x-if="del.review?.body">
-                                        <div>
-                                            <p class="mt-4 font-mono text-[10px] uppercase tracking-wider text-subtle">{{ __('The removed review') }}</p>
-                                            <div class="mt-1 rounded-lg border border-line p-3 text-[13px]">
-                                                <div class="tracking-widest text-gold" x-text="'★'.repeat(del.review?.rating || 0) + '☆'.repeat(5 - (del.review?.rating || 0))"></div>
-                                                <p class="mt-1 text-ink" x-text="'&quot;' + (del.review?.body || '') + '&quot;'"></p>
-                                                <p class="mt-1 text-xs text-subtle" x-text="'— ' + (del.review?.reviewer_name || '') + (del.review?.talent ? ' · {{ __('on') }} ' + del.review.talent : '')"></p>
-                                            </div>
+                            <p class="mb-3 text-[13px] text-subtle">{{ __('Subject') }}: <span class="text-ink" x-text="del.subject || '—'"></span></p>
+                            <div class="rounded-2xl bg-[#FAF6E0] p-5 text-sm text-[#231A25]">
+                                <img src="{{ asset('images/email/fama-logo.png') }}" alt="{{ config('app.name') }}" class="h-10 w-auto">
+                                <div class="mt-4 overflow-hidden rounded-[20px] border border-[#EDE6CB] bg-white">
+                                    <div class="flex h-1.5"><span class="w-16 bg-[#FFE72F]"></span><span class="flex-1 bg-[#AD50D3]"></span></div>
+                                    <div class="p-6">
+                                        <p class="font-mono text-[10px] uppercase tracking-[0.14em] text-[#8B2FA8]">{{ __('Moderation notice') }}</p>
+                                        <h3 class="mt-2 font-display text-xl font-bold tracking-tight">{{ __('A review was removed') }}</h3>
+                                        <p class="mt-2 text-[13px] leading-relaxed text-[#695E6D]">{{ __('Our team removed a review on Fama. Here is why:') }}</p>
+                                        <div class="mt-4 rounded-xl border-s-4 border-[#AD50D3] bg-[#F7E0FF] px-4 py-3 text-[13px] leading-relaxed text-[#8B2FA8]">
+                                            <p class="font-mono text-[9px] font-semibold uppercase tracking-[0.14em]">{{ __('Reason') }}</p>
+                                            <p class="mt-1 whitespace-pre-wrap" dir="auto" x-text="del.reason || '{{ __('Your reason will appear here…') }}'"></p>
                                         </div>
-                                    </template>
-                                    <p class="mt-4 text-[13px] leading-relaxed text-muted">{{ __('If you believe this was a mistake, reply to this email and our team will take another look.') }}</p>
+                                        <template x-if="del.review?.body">
+                                            <div>
+                                                <p class="mt-5 font-mono text-[9px] uppercase tracking-[0.14em] text-[#98909D]">{{ __('The removed review') }}</p>
+                                                <div class="mt-2 rounded-[14px] border border-[#EDE6CB] bg-[#FDFBEF] p-4 text-[13px]">
+                                                    <div class="tracking-[3px]"><span class="text-[#7E6600]" x-text="'★'.repeat(del.review?.rating || 0)"></span><span class="text-[#D8CEAC]" x-text="'★'.repeat(5 - (del.review?.rating || 0))"></span></div>
+                                                    <p class="mt-1" dir="auto" x-text="'“' + (del.review?.body || '') + '”'"></p>
+                                                    <p class="mt-2 text-xs text-[#98909D]" x-text="'— ' + (del.review?.reviewer_name || '') + (del.review?.talent ? ' · {{ __('on') }} ' + del.review.talent : '')"></p>
+                                                </div>
+                                            </div>
+                                        </template>
+                                        <p class="mt-5 text-[13px] leading-relaxed text-[#695E6D]">{{ __('If you believe this was a mistake, reply to this email and our team will take another look.') }}</p>
+                                    </div>
                                 </div>
+                                <p class="mt-4 text-[11px] text-[#98909D]">{{ __('You are receiving this because a review on your Fama profile was moderated.') }}</p>
                             </div>
                         </div>
                     </div>

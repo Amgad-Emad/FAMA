@@ -2,6 +2,19 @@
 
 Notable changes to the Fama project. Newest first.
 
+## 2026-09-22 — Branded email design
+- One Fama email shell for ALL mail (`components/email/{layout,button,callout,panel}` + `App\Mail\EmailTheme`):
+  cream ground, official logo (PNG), yellow→orchid band, plum ink, preheader, support footer, dark mode, RTL.
+- Framework markdown notifications (password reset) now use it via `resources/views/vendor/mail` + the `fama`
+  theme (`config/mail.php` `markdown`); warmer notification copy ("Hi there," / "— The Fama team").
+- `review-removed` and `mail:test` emails rebuilt on the shell; admin live preview matches; AR copy added.
+
+## 2026-09-22 — Outgoing mail via ZeptoMail
+- `config/mail.php` gains env-driven **sender profiles** (`system`/`support`/`info`/`contact`) resolved by
+  `App\Mail\MailSender` (From + Reply-To per Mailable/Notification); `.env.example` documents ZeptoMail SMTP.
+- New `php artisan mail:test {to} [--sender=] [--queue]` diagnostic command (`App\Mail\TestMail`).
+- `ReviewRemovedNotice` is now queued (`ShouldQueue`, after commit) and sends as `system`.
+
 ## 2026-08-22 — Projects get collaborators, ordered media and a hidden date (ADR-AA)
 Phase 3 of 3 of the client's structure specs — `project.html`. **The client spec is now fully
 implemented.**

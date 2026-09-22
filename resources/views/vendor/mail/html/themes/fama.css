@@ -1,0 +1,102 @@
+/*
+ * Fama markdown-mail theme. Inlined into framework notification emails at
+ * send time (CssToInlineStyles). Scoped to .fm-md — the shared layout
+ * (components/email/layout) styles everything else inline. Hex values mirror
+ * App\Mail\EmailTheme; change them together.
+ */
+
+.fm-md h1 {
+    margin: 0 0 16px;
+    font-family: 'Bricolage Grotesque', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    color: #231A25;
+}
+
+.fm-md h2,
+.fm-md h3 {
+    margin: 24px 0 8px;
+    font-family: 'Bricolage Grotesque', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.3;
+    color: #231A25;
+}
+
+.fm-md p,
+.fm-md li {
+    margin: 0 0 14px;
+    font-family: 'Sora', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
+    color: #695E6D;
+}
+
+.fm-md ul,
+.fm-md ol {
+    margin: 0 0 14px;
+    padding-left: 20px;
+}
+
+.fm-md a {
+    color: #8B2FA8;
+    text-decoration: underline;
+}
+
+.fm-md strong {
+    color: #231A25;
+}
+
+.fm-md blockquote {
+    margin: 20px 0;
+    padding: 14px 18px;
+    border-left: 4px solid #AD50D3;
+    border-radius: 12px;
+    background-color: #F7E0FF;
+    color: #8B2FA8;
+}
+
+.fm-md code {
+    padding: 2px 6px;
+    border-radius: 6px;
+    background-color: #FDFBEF;
+    font-family: 'IBM Plex Mono', SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 13px;
+    color: #231A25;
+}
+
+.fm-md hr {
+    margin: 24px 0;
+    border: 0;
+    border-top: 1px solid #EDE6CB;
+}
+
+.fm-subcopy p {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.6;
+    color: #98909D;
+}
+
+.fm-subcopy a {
+    color: #8B2FA8;
+}
+
+/* RTL (Arabic): the card body carries dir="rtl"; mirror the physical sides. */
+[dir="rtl"] .fm-md ul,
+[dir="rtl"] .fm-md ol {
+    padding-left: 0;
+    padding-right: 20px;
+}
+
+[dir="rtl"] .fm-md blockquote {
+    border-left: 0;
+    border-right: 4px solid #AD50D3;
+}
+
+
+.break-all {
+    word-break: break-all;
+}

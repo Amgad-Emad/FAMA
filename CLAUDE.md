@@ -1014,3 +1014,19 @@ credit loop verified live in both directions). **The client's three structure sp
   notifications in `App\Notifications\Credits\*` reusing the FEED payload shape so they land in the ONE
   inbox, MorphMap alias `project_credit`, `ProjectCreditState` (pending/accepted/declined + terminal
   `listed`).
+
+OUTGOING MAIL (2026-09-22, suite 717 green): ZeptoMail SMTP, fully env-driven (Laravel 13 — `MAIL_SCHEME`
+null on 587 = auto-STARTTLS; there is no MAIL_ENCRYPTION). From/Reply-To go through named SENDER PROFILES
+(`config/mail.php` `senders`: system/support/info/contact) via `App\Mail\MailSender::envelope()` /
+`::apply()` — never hardcode an address, never add a global `mail.reply_to` (Laravel appends it, doubling
+Reply-To). Mailables are `ShouldQueue` + `afterCommit()` (assert with `Mail::assertQueued`); `TestMail` is
+the deliberate sync exception behind `php artisan mail:test {to} [--sender=] [--queue]`.
+EMAIL DESIGN (2026-09-22, suite 721 green): ONE branded shell for ALL mail — `<x-email.layout>` (+ button/
+callout/panel in components/email), brand hexes/fonts ONLY in `App\Mail\EmailTheme` (mirrored by
+vendor/mail/html/themes/fama.css for markdown mail). Framework notifications reach it through the published
+`resources/views/vendor/mail/html/*` overrides — `config('mail.markdown.paths')` MUST list that dir or they fall
+back to stock Laravel. WATCH OUTS: tables with a radius need `border-collapse:separate`; never put `align` on
+the button's own table (it floats); dark-mode button rules must stay AFTER the generic `a` rule; the logo is a
+PNG (public/images/email/fama-logo.png — no SVG in Gmail/Outlook); new email copy → lang/ar.json; the admin
+review-delete live preview hand-mirrors emails/review-removed.
+

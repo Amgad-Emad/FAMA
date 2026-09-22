@@ -204,6 +204,27 @@ npm run dev
 php artisan test               # Pest suite — runs on MySQL (fama_test, per phpunit.xml)
 ```
 
+## Outgoing mail (ZeptoMail)
+
+Mail goes out over SMTP through ZeptoMail (`smtp.zeptomail.com:587`, username `emailapikey`, password = a
+send-mail token). Everything is env-driven (`MAIL_*` in `.env.example`) — switching provider is an `.env`
+change only. Laravel 13: leave `MAIL_SCHEME` null on 587 (STARTTLS is automatic); `smtps` only for 465.
+
+- **Sender profiles** (`config/mail.php` → `senders`: `system` · `support` · `info` · `contact`) set From +
+  Reply-To per message via `App\Mail\MailSender` — `MailSender::envelope($subject, 'system')` in a Mailable,
+  `MailSender::apply($mailMessage, 'support')` in a Notification's `toMail()`. `system` = no-reply From with
+  Reply-To `MAIL_SUPPORT_ADDRESS`.
+- **Design:** all mail (incl. password reset) renders in one branded shell — `<x-email.layout>` + button/
+  callout/panel components; brand values in `App\Mail\EmailTheme`. `php artisan mail:test` doubles as a preview.
+- **Queued:** Mailables implement `ShouldQueue` + `afterCommit()`; a worker must run (`composer dev` starts one).
+
+```bash
+php artisan mail:test you@example.com            # send now, print success or the exception
+php artisan mail:test you@example.com --queue    # through the queue
+php artisan mail:test you@example.com --sender=support
+php artisan queue:work --tries=3                 # deliver queued mail
+```
+
 ## Release feature flags (V1 scoping)
 
 `config/features.php` gates whole product areas so a release can ship a subset while the rest stays in the

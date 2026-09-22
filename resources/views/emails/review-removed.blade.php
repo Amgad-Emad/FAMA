@@ -1,44 +1,40 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ __('A review was removed') }}</title>
-</head>
-<body style="margin:0;background:#EDEFF3;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#1A1A1C;">
-    <div style="max-width:560px;margin:0 auto;padding:32px 20px;">
-        <div style="font-size:20px;font-weight:700;letter-spacing:-.01em;">Fama<span style="color:#AD50D3;">.</span></div>
+{{--
+    Sent by ReviewRemovedNotice when an admin removes a review. The admin
+    composer's live preview (admin/moderation/index.blade.php) mirrors this
+    template — keep the two in step.
+--}}
+@php
+    use App\Mail\EmailTheme as T;
 
-        <div style="margin-top:20px;background:#F8FAFC;border:1px solid #E2E6EC;border-radius:14px;padding:28px;">
-            <h1 style="margin:0 0 12px;font-size:20px;line-height:1.3;">{{ __('A review was removed') }}</h1>
+    $rating = (int) ($review['rating'] ?? 0);
+@endphp
+<x-email.layout
+    :title="__('A review was removed')"
+    :eyebrow="__('Moderation notice')"
+    :preheader="__('Our team removed a review from your Fama profile — here is why.')"
+    :footnote="__('You are receiving this because a review on your Fama profile was moderated.')">
 
-            <p style="margin:0 0 16px;font-size:14px;line-height:1.7;color:#5E5E63;">
-                {{ __('Our team removed a review on Fama. Here is why:') }}
-            </p>
+    <p class="fm-muted" style="margin:0;color:{{ T::color('muted') }};">
+        {{ __('Our team removed a review on Fama. Here is why:') }}
+    </p>
 
-            <div style="margin:0 0 20px;padding:14px 16px;border-inline-start:3px solid #AD50D3;background:#F7E0FF;border-radius:8px;font-size:14px;line-height:1.6;color:#8B2FA8;white-space:pre-wrap;">{{ $reason }}</div>
+    <x-email.callout :label="__('Reason')" preserve>{{ $reason }}</x-email.callout>
 
-            @if (!empty($review['body']) || !empty($review['reviewer_name']))
-                <p style="margin:20px 0 8px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#93939A;">{{ __('The removed review') }}</p>
-                <div style="border:1px solid #E2E6EC;border-radius:10px;padding:14px 16px;font-size:14px;line-height:1.6;">
-                    @if (!empty($review['rating']))
-                        <div style="color:#B0862F;letter-spacing:2px;font-size:13px;">{!! str_repeat('★', (int) $review['rating']) . str_repeat('☆', 5 - (int) $review['rating']) !!}</div>
-                    @endif
-                    @if (!empty($review['body']))
-                        <p style="margin:6px 0;color:#1A1A1C;">"{{ $review['body'] }}"</p>
-                    @endif
-                    @if (!empty($review['reviewer_name']))
-                        <p style="margin:6px 0 0;font-size:12px;color:#93939A;">— {{ $review['reviewer_name'] }}@if(!empty($review['talent'])) · {{ __('on') }} {{ $review['talent'] }}@endif</p>
-                    @endif
-                </div>
+    @if (!empty($review['body']) || !empty($review['reviewer_name']))
+        <x-email.panel :label="__('The removed review')">
+            @if ($rating > 0)
+                <div class="fm-star" style="margin:0 0 8px;font-size:15px;letter-spacing:3px;color:{{ T::color('gold') }};" aria-label="{{ $rating }}/5">{{ str_repeat('★', $rating) }}<span class="fm-star-off" style="color:{{ T::color('line_strong') }};">{{ str_repeat('★', max(0, 5 - $rating)) }}</span></div>
             @endif
+            @if (!empty($review['body']))
+                <p class="fm-ink" dir="auto" style="margin:0;font-size:15px;line-height:1.65;color:{{ T::color('ink') }};">“{{ $review['body'] }}”</p>
+            @endif
+            @if (!empty($review['reviewer_name']))
+                <p class="fm-subtle" style="margin:10px 0 0;font-size:12px;color:{{ T::color('subtle') }};">— {{ $review['reviewer_name'] }}@if (!empty($review['talent'])) · {{ __('on') }} {{ $review['talent'] }}@endif</p>
+            @endif
+        </x-email.panel>
+    @endif
 
-            <p style="margin:24px 0 0;font-size:13px;line-height:1.7;color:#5E5E63;">
-                {{ __('If you believe this was a mistake, reply to this email and our team will take another look.') }}
-            </p>
-        </div>
-
-        <p style="margin:18px 4px 0;font-size:11px;color:#93939A;">{{ __('Fama · Creative talent · Egypt-first · MENA-wide') }}</p>
-    </div>
-</body>
-</html>
+    <p class="fm-muted" style="margin:24px 0 0;color:{{ T::color('muted') }};">
+        {{ __('If you believe this was a mistake, reply to this email and our team will take another look.') }}
+    </p>
+</x-email.layout>

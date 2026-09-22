@@ -45,6 +45,25 @@ try {
 Any operation that writes to more than one table/row is wrapped in a transaction (via
 `Service::runInTransaction()` or `DB::transaction()`).
 
+## Mail
+- Transport is env-only (`config/mail.php`, ZeptoMail SMTP in production); never hardcode addresses.
+- Every Mailable sets its identity through a **sender profile**: `MailSender::envelope($subject, '<profile>')`
+  (Notifications: `MailSender::apply($message, '<profile>')` in `toMail()`). Profiles live in
+  `config/mail.php` `senders`. Do NOT add a global `mail.reply_to` — Laravel appends it to a message's own
+  Reply-To instead of replacing it.
+- Mailables `implements ShouldQueue` and call `$this->afterCommit()` in the constructor; tests assert with
+  `Mail::assertQueued`. `App\Mail\TestMail` is the one deliberate sync exception (`mail:test` diagnostics).
+- **Design:** every email renders inside `<x-email.layout>` (title/eyebrow/preheader/footnote props) with
+  `<x-email.button>`, `<x-email.callout>`, `<x-email.panel>` — never hand-roll an email shell. Brand hexes +
+  font stacks live ONLY in `App\Mail\EmailTheme` (emails can't read CSS tokens); `vendor/mail/html/themes/
+  fama.css` mirrors them for markdown mail. Framework notifications (password reset) reach the same shell via
+  the published `resources/views/vendor/mail/html/*` overrides (`config('mail.markdown.paths')` must list that
+  dir). Email rules: tables + inline styles, physical sides from `EmailTheme::start()/end()` (RTL-aware), PNG
+  logo `public/images/email/fama-logo.png` (no SVG in Gmail/Outlook), `border-collapse:separate` on any table
+  carrying a radius, never `align` on a button's own table (it floats). Dark mode = `.fm-*` classes in the
+  layout's `<style>` (Apple Mail/iOS). New copy → add the key to `lang/ar.json`. The admin review-delete
+  composer's live preview hand-mirrors `emails/review-removed` — keep them in step.
+
 ## Models
 - `preventLazyLoading` and `preventSilentlyDiscardingAttributes` are on in non-production — **eager
   load** relations (`with(...)`) and only mass-assign declared attributes.

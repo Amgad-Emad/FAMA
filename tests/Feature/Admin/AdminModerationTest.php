@@ -199,7 +199,7 @@ it('soft-deletes a review and emails the reviewed talent a notice (audited)', fu
     expect(Review::find($review->id))->toBeNull();
     expect(Review::withTrashed()->find($review->id)->trashed())->toBeTrue();
 
-    Illuminate\Support\Facades\Mail::assertSent(App\Mail\ReviewRemovedNotice::class, function ($mail) {
+    Illuminate\Support\Facades\Mail::assertQueued(App\Mail\ReviewRemovedNotice::class, function ($mail) {
         return $mail->hasTo('star@example.com')
             && $mail->reason === 'It violated our guidelines.'
             && $mail->review['reviewer_name'] === 'Jo';

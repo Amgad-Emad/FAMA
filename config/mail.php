@@ -115,4 +115,89 @@ return [
         'name' => env('MAIL_FROM_NAME', env('APP_NAME', 'Laravel')),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Markdown Mail Settings
+    |--------------------------------------------------------------------------
+    |
+    | Framework notifications (password reset, …) render through the published
+    | components in resources/views/vendor/mail, which wrap the shared Fama
+    | email layout (resources/views/components/email). "fama" is the theme CSS
+    | in resources/views/vendor/mail/html/themes/fama.css.
+    |
+    */
+
+    'markdown' => [
+        'theme' => env('MAIL_MARKDOWN_THEME', 'fama'),
+
+        'paths' => [
+            resource_path('views/vendor/mail'),
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Sender Profiles
+    |--------------------------------------------------------------------------
+    |
+    | Named From / Reply-To pairs applied per Mailable or Notification through
+    | App\Mail\MailSender (e.g. MailSender::envelope($subject, 'system')).
+    | Outgoing mail leaves from any address on the verified sending domain;
+    | human replies land in the real mailboxes via Reply-To. There is
+    | deliberately no global "reply_to" here: Laravel ADDS a global Reply-To
+    | to a message's own instead of replacing it, so it would double up.
+    | Every address comes from the environment — switching provider or
+    | mailbox is an .env change only.
+    |
+    */
+
+    'senders' => [
+
+        // Automated system mail: no-reply From, replies routed to support.
+        'system' => [
+            'from' => [
+                'address' => env('MAIL_FROM_ADDRESS', 'hello@example.com'),
+                'name' => env('MAIL_FROM_NAME', env('APP_NAME', 'Laravel')),
+            ],
+            'reply_to' => [
+                'address' => env('MAIL_SUPPORT_ADDRESS'),
+                'name' => env('MAIL_SUPPORT_NAME', env('APP_NAME', 'Laravel')),
+            ],
+        ],
+
+        'support' => [
+            'from' => [
+                'address' => env('MAIL_SUPPORT_ADDRESS'),
+                'name' => env('MAIL_SUPPORT_NAME', env('APP_NAME', 'Laravel')),
+            ],
+            'reply_to' => [
+                'address' => env('MAIL_SUPPORT_ADDRESS'),
+                'name' => env('MAIL_SUPPORT_NAME', env('APP_NAME', 'Laravel')),
+            ],
+        ],
+
+        'info' => [
+            'from' => [
+                'address' => env('MAIL_INFO_ADDRESS'),
+                'name' => env('MAIL_INFO_NAME', env('APP_NAME', 'Laravel')),
+            ],
+            'reply_to' => [
+                'address' => env('MAIL_INFO_ADDRESS'),
+                'name' => env('MAIL_INFO_NAME', env('APP_NAME', 'Laravel')),
+            ],
+        ],
+
+        'contact' => [
+            'from' => [
+                'address' => env('MAIL_CONTACT_ADDRESS'),
+                'name' => env('MAIL_CONTACT_NAME', env('APP_NAME', 'Laravel')),
+            ],
+            'reply_to' => [
+                'address' => env('MAIL_CONTACT_ADDRESS'),
+                'name' => env('MAIL_CONTACT_NAME', env('APP_NAME', 'Laravel')),
+            ],
+        ],
+
+    ],
+
 ];
