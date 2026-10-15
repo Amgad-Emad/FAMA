@@ -4,13 +4,13 @@ namespace App\Services;
 
 use App\Models\Project;
 use App\Models\ProjectCredit;
-use App\States\ProjectCredit\Declined;
 use App\Models\Speciality;
 use App\Models\Talent;
+use App\States\ProjectCredit\Declined;
 use App\Support\Html\BriefSanitizer;
 use Illuminate\Http\UploadedFile;
-use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use InvalidArgumentException;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 /**
  * Projects manager (talent-spec §"Selected work") — the talent's own portfolio
@@ -54,6 +54,11 @@ class TalentProjectService extends Service
 
             $this->syncSkills($project, $skillIds);
             $this->syncSpecialities($project, $specialityIds);
+
+            // A first project becomes the featured one (a talent with projects
+            // always has exactly one featured).
+            $this->featured()->ensure($talent);
+            app(ProfileCompletionService::class)->notifyIfComplete($talent);
 
             return $project->load(['talentTypes', 'specialities']);
         }, ['talent_id' => $talent->id, 'skills' => $skillIds]);
@@ -121,7 +126,13 @@ class TalentProjectService extends Service
         }
 
         $this->runInTransaction(function () use ($project): void {
+            $owner = $project->talent;
             $project->delete();
+
+            // Deleting the featured project hands the cover to the next one.
+            if ($owner !== null) {
+                $this->featured()->ensure($owner->refresh());
+            }
         }, ['project_id' => $project->id]);
     }
 
@@ -216,8 +227,18 @@ class TalentProjectService extends Service
                     $credit->forceFill(['responded_at' => now()])->save();
                 });
 
+            // The project left the creator's portfolio: both featured picks are re-checked.
+            $this->featured()->ensure(Talent::findOrFail($from));
+            $this->featured()->ensure($heir);
+
             return $project->fresh(['talentTypes', 'specialities']);
         }, ['project_id' => $project->id, 'from' => $from, 'to' => $heir->getKey()]);
+    }
+
+    /** The featured-project rules (one home: FeaturedProjectService). */
+    private function featured(): FeaturedProjectService
+    {
+        return app(FeaturedProjectService::class);
     }
 
     /**

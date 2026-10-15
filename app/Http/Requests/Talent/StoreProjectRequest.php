@@ -58,6 +58,10 @@ class StoreProjectRequest extends FormRequest
 
             // Up to four results, each {label, value, compare} — the value's
             // shape decides how it renders (number / percent bar / rise-fall).
+            // Put this project on the profile cover (true only; "un-featuring"
+            // happens by featuring another — FeaturedProjectService).
+            'featured' => ['sometimes', 'boolean'],
+
             'results' => ['nullable', 'array', 'max:4'],
             'results.*.label' => ['nullable', 'string', 'max:60'],
             'results.*.value' => ['nullable', 'string', 'max:60'],

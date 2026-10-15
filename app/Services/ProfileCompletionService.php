@@ -2,7 +2,9 @@
 
 namespace App\Services;
 
+use App\Mail\ProfileStepsCompleted;
 use App\Models\Talent;
+use Illuminate\Support\Facades\Mail;
 
 /**
  * The steps between a new profile and a complete one — the checklist the
@@ -40,5 +42,40 @@ class ProfileCompletionService extends Service
             'skill' => $talent->specialities->isNotEmpty(),
             'project' => $talent->projects()->exists(),
         ];
+    }
+
+    /** Every step done. */
+    public function isComplete(Talent $talent): bool
+    {
+        return ! in_array(false, $this->steps($talent), true);
+    }
+
+    /**
+     * Call after any write that can finish a step. The FIRST time all six are
+     * done — while Fama has not checked the profile yet — stamp
+     * `steps_completed_at` and email "you're done, we're checking it". The
+     * stamp is set with a conditional UPDATE, so two racing requests can't
+     * both send. Verified or Live profiles get nothing (nothing is pending).
+     */
+    public function notifyIfComplete(Talent $talent): void
+    {
+        if ($talent->steps_completed_at !== null || $talent->is_verified || $talent->is_published) {
+            return;
+        }
+
+        $talent->unsetRelation('media')->unsetRelation('specialities');
+        if (! $this->isComplete($talent)) {
+            return;
+        }
+
+        $won = Talent::whereKey($talent->getKey())->whereNull('steps_completed_at')->update(['steps_completed_at' => now()]);
+        $talent->steps_completed_at = now();
+
+        if ($won === 1 && filled($talent->email)) {
+            Mail::to($talent->email)->queue(new ProfileStepsCompleted(
+                (string) ($talent->display_name ?: $talent->slug),
+                route('talent.profile.edit'),
+            ));
+        }
     }
 }

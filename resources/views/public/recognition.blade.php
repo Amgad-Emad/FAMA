@@ -15,7 +15,7 @@
 @endphp
 <x-fama.layout :title="__('Recognise a peer')">
     <x-slot:styles>
-        <link rel="stylesheet" href="{{ asset('fama-ui/css/pages/recognise.css') }}">
+        <link rel="stylesheet" href="{{ \App\Support\FamaAsset::url('fama-ui/css/pages/recognise.css') }}">
         <style>.target .av img{width:100%;height:100%;border-radius:inherit;object-fit:cover;display:block}</style>
     </x-slot:styles>
 

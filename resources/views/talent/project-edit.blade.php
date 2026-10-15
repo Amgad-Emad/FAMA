@@ -34,6 +34,14 @@
         'saveFailed' => __('Couldn’t save — :m'),
         'needTitle' => __('Add a title first.'),
         'needSkill' => __('Pick at least one skill.'),
+        'featOnly' => __('Your only project is always featured — it’s the cover of your profile.'),
+        'featOnNew' => __('It becomes the cover of your profile when you publish.'),
+        'featOnSaved' => __('This is the cover of your profile. Feature another project to change it.'),
+        'featOff' => __('Put this project on the cover of your profile.'),
+        'featDone' => __('Featured on your profile.'),
+        'badUrl' => __('Enter a full link, like https://studio.com/work.'),
+        'fixFields' => __('Check the highlighted fields.'),
+        'notSavedFix' => __('Not saved — check the highlighted fields'),
         'published1' => __('Published to your profile.'),
         'publishedAsked1' => __('Published. :n is asked to confirm their credit.'),
         'publishedAskedN' => __('Published. :n people are asked to confirm their credit.'),
@@ -72,7 +80,7 @@
 @endphp
 <x-fama.layout :title="$project ? __('Edit project') : __('New project')">
     <x-slot:styles>
-        <link rel="stylesheet" href="{{ asset('fama-ui/css/pages/project-edit.css') }}">
+        <link rel="stylesheet" href="{{ \App\Support\FamaAsset::url('fama-ui/css/pages/project-edit.css') }}">
         <style>
             /* App additions on top of the prototype sheet. */
             .grid3 .tile{cursor:grab;overflow:hidden}
@@ -85,6 +93,19 @@
             .person .menu{top:100%;inset-inline-start:40px}
             .av img{width:100%;height:100%;border-radius:inherit;object-fit:cover;display:block}
             .txt a{color:var(--purple-dk);text-decoration:underline}
+            .feat-v{gap:var(--s3)}
+            .switch.locked{cursor:not-allowed;opacity:.65}
+            /* Inline field errors */
+            .ferr{color:var(--rose-fg);font-size:var(--t-meta);font-weight:500;margin:0}
+            .prop .ferr{grid-column:2;padding:0 var(--s2) var(--s2)}
+            .prop.bad{background:var(--rose-bg)}
+            .prop.bad .k{color:var(--rose-fg)}
+            .prop.bad input.v:focus{box-shadow:inset 0 0 0 1px var(--rose-fg)}
+            .prop .req{color:var(--rose-fg);margin-inline-start:2px}
+            .title.bad{box-shadow:inset 0 -2px 0 var(--rose-fg);border-radius:0}
+            .title.bad:empty::before{color:var(--rose-fg);opacity:.55}
+            .ferr-title{margin-top:var(--s2)}
+            .blk .ferr{margin-top:var(--s2)}
             @media (max-width:760px){.person{grid-template-columns:32px minmax(0,1fr) 28px}.person input+input,.person select{grid-column:2}}
         </style>
     </x-slot:styles>
@@ -98,6 +119,7 @@
             live: @js((bool) $homeOwner->is_published),
             editUrl: @js($editUrlTemplate),
             strings: @js($strings),
+            projectCount: @js($projectCount),
          })"
          @keydown.escape.window="closeMenu()"
          @beforeunload.window="onBeforeUnload($event)">
@@ -130,24 +152,26 @@
             {{-- Title --}}
             <h1 class="title" contenteditable="true" id="title" data-ph="{{ __('Untitled project') }}" role="textbox" aria-label="{{ __('Project title') }}"
                 x-init="$el.textContent = form.title.en || ''; if (!id) $nextTick(() => $el.focus())"
+                :class="{ bad: errors.title }" :aria-invalid="(!!errors.title).toString()"
                 @input="onTitle($el)" @keydown.enter.prevent="focusFirstBlock()"></h1>
+            <p class="ferr ferr-title" role="alert" x-show="errors.title" x-text="errors.title" x-cloak></p>
 
             {{-- Properties --}}
             <div class="props">
-                <div class="prop"><span class="k"><svg class="icon" aria-hidden="true"><use href="#e-brief"/></svg>{{ __('Client') }}</span>
-                    <input class="v" maxlength="255" x-model="form.client_name" @input="changed()" placeholder="{{ __('Add a client, or leave empty') }}" aria-label="{{ __('Client') }}"></div>
-                <div class="prop"><span class="k"><svg class="icon" aria-hidden="true"><use href="#e-user"/></svg>{{ __('Your role') }}</span>
-                    <input class="v" maxlength="255" x-model="form.role.en" @input="changed()" placeholder="{{ __('What did you do on it?') }}" aria-label="{{ __('Your role') }}"></div>
-                <div class="prop"><span class="k"><svg class="icon" aria-hidden="true"><use href="#e-cal"/></svg>{{ __('Date') }}</span>
-                    <span class="v"><input class="vin" type="month" :value="monthValue" @input="onMonth($event.target.value)" max="{{ now()->addYear()->format('Y-m') }}" aria-label="{{ __('Date') }}"><span class="hint">{{ __('Only for sorting, never shown') }}</span></span></div>
-                <div class="prop"><span class="k"><svg class="icon" aria-hidden="true"><use href="#e-tag"/></svg>{{ __('Skills') }}</span>
-                    <div class="v" role="group" aria-label="{{ __('Skills') }}">
+                <div class="prop" data-f="client" :class="{ bad: errors.client }"><span class="k"><svg class="icon" aria-hidden="true"><use href="#e-brief"/></svg>{{ __('Client') }}</span>
+                    <input class="v" maxlength="255" x-model="form.client_name" @input="changed('client')" placeholder="{{ __('Add a client, or leave empty') }}" aria-label="{{ __('Client') }}"><p class="ferr" role="alert" x-show="errors.client" x-text="errors.client" x-cloak></p></div>
+                <div class="prop" data-f="role" :class="{ bad: errors.role }"><span class="k"><svg class="icon" aria-hidden="true"><use href="#e-user"/></svg>{{ __('Your role') }}</span>
+                    <input class="v" maxlength="255" x-model="form.role.en" @input="changed('role')" placeholder="{{ __('What did you do on it?') }}" aria-label="{{ __('Your role') }}"><p class="ferr" role="alert" x-show="errors.role" x-text="errors.role" x-cloak></p></div>
+                <div class="prop" data-f="date" :class="{ bad: errors.date }"><span class="k"><svg class="icon" aria-hidden="true"><use href="#e-cal"/></svg>{{ __('Date') }}</span>
+                    <span class="v"><input class="vin" type="month" :value="monthValue" @input="onMonth($event.target.value)" max="{{ now()->addYear()->format('Y-m') }}" aria-label="{{ __('Date') }}"><span class="hint">{{ __('Only for sorting, never shown') }}</span></span><p class="ferr" role="alert" x-show="errors.date" x-text="errors.date" x-cloak></p></div>
+                <div class="prop" data-f="skills" :class="{ bad: errors.skills }"><span class="k"><svg class="icon" aria-hidden="true"><use href="#e-tag"/></svg>{{ __('Skills') }}<span class="req" aria-hidden="true">*</span></span>
+                    <div class="v" role="group" aria-label="{{ __('Skills') }}" :aria-invalid="(!!errors.skills).toString()">
                         @foreach ($skills as $skill)
                             <button class="sel-chip" type="button" @click="toggleSkill({{ $skill['id'] }})" :aria-pressed="hasSkill({{ $skill['id'] }}).toString()" aria-pressed="false"
                                     :title="homeSkillId === {{ $skill['id'] }} ? @js(__('Home tab on your profile')) : ''"><span class="pin" aria-hidden="true" x-show="homeSkillId === {{ $skill['id'] }}" x-cloak></span>{{ $skill['name'] }}</button>
                         @endforeach
-                    </div></div>
-                <div class="prop"><span class="k"><svg class="icon" aria-hidden="true"><use href="#e-tag"/></svg>{{ __('Specialities') }}</span>
+                    </div><p class="ferr" role="alert" x-show="errors.skills" x-text="errors.skills" x-cloak></p></div>
+                <div class="prop" data-f="specialities" :class="{ bad: errors.specialities }"><span class="k"><svg class="icon" aria-hidden="true"><use href="#e-tag"/></svg>{{ __('Specialities') }}</span>
                     <div class="v" role="group" aria-label="{{ __('Specialities') }}">
                         <template x-if="form.skill_ids.length">
                             <span style="display:contents">
@@ -158,9 +182,15 @@
                             </span>
                         </template>
                         <template x-if="!form.skill_ids.length"><span class="hint">{{ __('Pick a skill first') }}</span></template>
-                    </div></div>
-                <div class="prop"><span class="k"><svg class="icon" aria-hidden="true"><use href="#e-link"/></svg>{{ __('Link') }}</span>
-                    <input class="v" type="url" dir="ltr" maxlength="2048" x-model="form.url" @input="changed()" placeholder="{{ __('Add a link to the live work') }}" aria-label="{{ __('Link') }}"></div>
+                    </div><p class="ferr" role="alert" x-show="errors.specialities" x-text="errors.specialities" x-cloak></p></div>
+                <div class="prop" data-f="featured" x-show="canFeature"><span class="k"><svg class="icon" viewBox="10 80 760 690" aria-hidden="true" style="fill:none;stroke:currentColor;stroke-width:46;stroke-linejoin:round"><polygon points="314.63 635.59 16.74 747.68 217.29 533.15 86.97 370.29 403.26 356.02 701.63 87.21 636.51 355.76 760 356.91 574.68 534.04 422.33 756.79 314.63 635.59"/></svg><span id="lFeat">{{ __('Featured') }}</span></span>
+                    <span class="v feat-v">
+                        <button type="button" class="switch" role="switch" :aria-checked="featured.toString()" aria-labelledby="lFeat" aria-describedby="dFeat"
+                                :aria-disabled="(featuredLocked || (featured && !!id)).toString()" :class="{ locked: featuredLocked || (featured && !!id) }" @click="toggleFeatured()"><i></i></button>
+                        <span class="hint" id="dFeat" x-text="featuredNote"></span>
+                    </span></div>
+                <div class="prop" data-f="url" :class="{ bad: errors.url }"><span class="k"><svg class="icon" aria-hidden="true"><use href="#e-link"/></svg>{{ __('Link') }}</span>
+                    <input class="v" type="url" dir="ltr" maxlength="2048" x-model="form.url" @input="changed('url')" placeholder="{{ __('Add a link to the live work') }}" aria-label="{{ __('Link') }}"><p class="ferr" role="alert" x-show="errors.url" x-text="errors.url" x-cloak></p></div>
             </div>
 
             <hr class="divider">
@@ -172,6 +202,7 @@
                     <div class="txt" contenteditable="true" role="textbox" aria-multiline="true" aria-label="{{ __('Text') }}"
                          data-ph="{{ __('Write about the project, or type / to add a block') }}"
                          x-init="$el.innerHTML = form.summary.en || ''" @input="onRich($el, 'summary')"></div>
+                    <p class="ferr" role="alert" x-show="errors.summary" x-text="errors.summary" x-cloak></p>
                 </div>
 
                 {{-- The full story (body) --}}
@@ -181,6 +212,7 @@
                         <div class="txt" contenteditable="true" role="textbox" aria-multiline="true" aria-label="{{ __('The full story') }}"
                              data-ph="{{ __('Tell the story: the brief, what you did, how it landed') }}"
                              x-init="$el.innerHTML = form.body.en || ''" @input="onRich($el, 'body')"></div>
+                        <p class="ferr" role="alert" x-show="errors.story" x-text="errors.story" x-cloak></p>
                     </div>
                 </template>
 
@@ -214,14 +246,15 @@
                             <template x-for="(r, k) in form.results" :key="k">
                                 <div class="metric" :class="metricClass(r.value)">
                                     <div class="nrow"><span class="ar" aria-hidden="true"><svg class="icon"><use href="#e-trend"/></svg></span>
-                                        <div class="n" contenteditable="true" data-ph="1.2M" aria-label="{{ __('Number') }}" x-init="$el.textContent = r.value || ''" @input="r.value = $el.textContent; changed()"></div></div>
-                                    <div class="l" contenteditable="true" data-ph="{{ __('Reach') }}" aria-label="{{ __('What it measures') }}" x-init="$el.textContent = r.label || ''" @input="r.label = $el.textContent; changed()"></div>
+                                        <div class="n" contenteditable="true" data-ph="1.2M" aria-label="{{ __('Number') }}" x-init="$el.textContent = r.value || ''" @input="r.value = $el.textContent; changed('results')"></div></div>
+                                    <div class="l" contenteditable="true" data-ph="{{ __('Reach') }}" aria-label="{{ __('What it measures') }}" x-init="$el.textContent = r.label || ''" @input="r.label = $el.textContent; changed('results')"></div>
                                     <span class="bar" aria-hidden="true"><i :style="{ width: pctOf(r.value) + '%' }"></i></span>
-                                    <div class="cmp" contenteditable="true" data-ph="{{ __('Compared with, e.g. last season') }}" aria-label="{{ __('Compared with') }}" x-init="$el.textContent = r.compare || ''" @input="r.compare = $el.textContent; changed()"></div>
+                                    <div class="cmp" contenteditable="true" data-ph="{{ __('Compared with, e.g. last season') }}" aria-label="{{ __('Compared with') }}" x-init="$el.textContent = r.compare || ''" @input="r.compare = $el.textContent; changed('results')"></div>
                                 </div>
                             </template>
                             <button class="metric add" type="button" x-show="form.results.length < 4" @click="addResult()"><svg class="icon" aria-hidden="true"><use href="#e-plus"/></svg> {{ __('Add a number') }}</button>
                         </div>
+                        <p class="ferr" role="alert" x-show="errors.results" x-text="errors.results" x-cloak></p>
                         <p class="rhint">{{ __('Up to four. Type the number the way it reads: 1.2M, 68%, +40%. A percent gets a bar; a + or − shows a rise or a fall, with what it’s compared to.') }}</p>
                     </div>
                 </template>

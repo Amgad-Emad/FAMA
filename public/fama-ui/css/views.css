@@ -40,6 +40,7 @@
 .vw-link .icon{width:16px;height:16px}
 .vw-todo{list-style:none;margin:var(--s5) 0 0;padding:0;border-top:var(--border)}
 .vw-todo li{display:flex;align-items:center;gap:var(--s4);padding:var(--s3) 0;border-bottom:var(--border)}
+.vw-todo li:last-child{border-bottom:0}
 .vw-todo .tick{width:28px;height:28px;border-radius:var(--radius-pill);border:2px solid var(--line);display:flex;align-items:center;justify-content:center;flex:none}
 .vw-todo .ok .tick{background:var(--purple);border-color:var(--purple);color:var(--white)}
 .vw-todo .tick .icon{width:16px;height:16px;stroke-width:2.5}
@@ -55,3 +56,17 @@
   .vw-yax,.vw-area{height:160px}
   .vw-xax span:nth-child(2),.vw-xax span:nth-child(4){display:none}
 }
+
+/* All steps done: one card about Fama's check (replaces the step rows). */
+.vw-check{margin:var(--s5) 0;display:flex;gap:var(--s5);align-items:flex-start;padding:var(--s6) var(--s5);border-radius:var(--radius);background:linear-gradient(135deg,#F6EEFB 0%,var(--white) 70%);border:1px solid #E7D6F2}
+.vw-check-ic{width:64px;height:64px;flex:none;border-radius:var(--radius-pill);background:var(--white);border:2px solid var(--purple);color:var(--purple-dk);display:flex;align-items:center;justify-content:center;animation:vw-pulse 2.4s var(--ease) infinite}
+.vw-check-ic .icon{width:28px;height:28px}
+.vw-check.ok .vw-check-ic{background:var(--purple);color:var(--white);animation:none}
+.vw-check-txt{flex:1;min-width:0}
+.vw-check-k{display:block;font-size:var(--t-meta);font-weight:600;color:var(--purple-dk);text-transform:uppercase;letter-spacing:.06em}
+.vw-check h3{font-family:var(--font-display);font-size:clamp(24px,3vw,30px);line-height:1.15;margin:var(--s1) 0 var(--s2)}
+.vw-check p{color:var(--grey);margin:0;max-width:52ch}
+.vw-check .vw-link{margin-top:var(--s3)}
+@keyframes vw-pulse{0%,100%{box-shadow:0 0 0 0 rgba(173,80,211,.28)}50%{box-shadow:0 0 0 10px rgba(173,80,211,0)}}
+@media (prefers-reduced-motion:reduce){.vw-check-ic{animation:none}}
+@media (max-width:760px){.vw-check{flex-direction:column;gap:var(--s4);padding:var(--s5) var(--s4)}}

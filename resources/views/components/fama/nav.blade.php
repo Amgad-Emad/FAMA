@@ -109,14 +109,37 @@
             </nav>
         </div>
         @unless ($isLive)
-            <div class="fx-notice" role="region" aria-label="{{ __('Profile status') }}">
+            @php
+                // Three states: steps left (Private) → all six done, Fama checking (Under review) → checked (Ready).
+                $gateComplete = app(\App\Services\ProfileCompletionService::class)->isComplete($talent);
+                $gateVerified = (bool) $talent->is_verified;
+            @endphp
+            {{-- Profile structure keeps it live: it dispatches `fama-gate` as steps are finished. --}}
+            <div class="fx-notice" role="region" aria-label="{{ __('Profile status') }}"
+                 x-data="{ complete: @js($gateComplete), verified: @js($gateVerified) }"
+                 @fama-gate.window="complete = $event.detail.complete; verified = $event.detail.verified"
+                 :class="{ 'is-review': complete && !verified, 'is-ready': complete && verified }">
                 <div class="fx-wrap fx-in">
-                    <svg class="fx-icon" aria-hidden="true"><use href="#fx-i-lock"/></svg>
-                    <p>
-                        <span class="fx-long">{{ __('Your profile is Private: only you can see it. Complete it to go Live and share your link.') }}</span>
-                        <span class="fx-short">{{ __('Your profile is Private.') }}</span>
+                    <svg class="fx-icon" aria-hidden="true" x-show="!complete" @if ($gateComplete) style="display:none" @endif><use href="#fx-i-lock"/></svg>
+                    <svg class="fx-icon" aria-hidden="true" x-show="complete && !verified" x-cloak @if (! $gateComplete || $gateVerified) style="display:none" @endif><use href="#fx-i-eye"/></svg>
+                    <svg class="fx-icon" aria-hidden="true" x-show="complete && verified" x-cloak @if (! ($gateComplete && $gateVerified)) style="display:none" @endif><use href="#fx-i-check"/></svg>
+                    <p role="status">
+                        <template x-if="!complete"><span>
+                            <span class="fx-long">{{ __('Your profile is Private: only you can see it. Complete it to go Live and share your link.') }}</span>
+                            <span class="fx-short">{{ __('Your profile is Private.') }}</span>
+                        </span></template>
+                        <template x-if="complete && !verified"><span>
+                            <span class="fx-long">{{ __('Your profile is under review: our team is checking it. You can keep editing meanwhile.') }}</span>
+                            <span class="fx-short">{{ __('Your profile is under review.') }}</span>
+                        </span></template>
+                        <template x-if="complete && verified"><span>
+                            <span class="fx-long">{{ __('Your profile has been checked. Go Live whenever you’re ready.') }}</span>
+                            <span class="fx-short">{{ __('Ready to go Live.') }}</span>
+                        </span></template>
+                        <noscript>{{ $gateComplete ? ($gateVerified ? __('Your profile has been checked. Go Live whenever you’re ready.') : __('Your profile is under review: our team is checking it. You can keep editing meanwhile.')) : __('Your profile is Private: only you can see it. Complete it to go Live and share your link.') }}</noscript>
                     </p>
-                    <a class="fx-ncta" href="{{ route('talent.profile.edit') }}#gate">{{ __('Complete your profile') }}
+                    <a class="fx-ncta" href="{{ route('talent.profile.edit') }}#gate">
+                        <span x-text="!complete ? @js(__('Complete your profile')) : (verified ? @js(__('Go Live')) : @js(__('See status')))">{{ $gateComplete ? ($gateVerified ? __('Go Live') : __('See status')) : __('Complete your profile') }}</span>
                         <svg class="fx-icon fx-flip" aria-hidden="true"><use href="#fx-i-arrow"/></svg></a>
                 </div>
             </div>

@@ -31,9 +31,9 @@
         ->unique()->count();
     $recognitionsCount = $talent->recognitions->where('is_approved', true)->count();
 
-    // The featured project on the cover: the first one with a picture, else the first.
+    // The featured project on the cover: the talent's pick (FeaturedProjectService).
     $owned = $talent->projects->sortBy('position')->values();
-    $featured = $owned->first(fn ($p) => filled($p->lead_image_url)) ?? $owned->first();
+    $featured = app(\App\Services\FeaturedProjectService::class)->resolve($talent, $owned);
 
     // Reviews are off on the public page for now (features.reviews) —
     // Recognitions replace them. Their block + CTA come back with the flag.
@@ -83,12 +83,17 @@
     $blockVars = ['talent' => $talent, 'isOwner' => $isOwner];
 @endphp
 
-<x-fama.layout :title="$name" :css="['fields', 'exp']">
+{{-- Staff preview (moderation's View panel): no visitor nav — no Log in / Feed chrome inside the admin. --}}
+<x-fama.layout :title="$name" :css="['fields', 'exp']" :mode="! empty($staffPreview) ? 'bare' : null">
     <x-slot:styles>
-        <link rel="stylesheet" href="{{ asset('fama-ui/css/pages/preview.css') }}?v=1">
+        <link rel="stylesheet" href="{{ \App\Support\FamaAsset::url('fama-ui/css/pages/preview.css') }}">
     </x-slot:styles>
 
-    @if ($isOwner)
+    @if (! empty($staffPreview))
+        <x-slot:hero>
+            <div class="pv-strip" id="strip"><div class="wrap"><span>{{ $isLive ? __('Staff preview — this is the Live profile, as visitors see it.') : __('Staff preview — this profile is private. Visitors can’t see it yet.') }}</span></div></div>
+        </x-slot:hero>
+    @elseif ($isOwner)
         <x-slot:hero>
             <div class="pv-strip" id="strip"><div class="wrap"><span>{{ $isLive ? __('This is how everyone sees your profile.') : __("Your profile is private. This is how people will see it once it's public.") }}</span><a href="{{ route('talent.profile.edit') }}">{{ __('Edit profile') }}</a></div></div>
         </x-slot:hero>

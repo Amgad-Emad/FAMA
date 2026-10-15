@@ -21,6 +21,8 @@ class ActivityResource extends BaseResource
             'description' => $this->description,
             'subject_type' => class_basename($this->subject_type ?? ''),
             'subject_id' => $this->subject_id,
+            // A readable name for the subject when it still exists (talent, brand, flow…).
+            'subject_name' => $this->subjectName(),
             'causer' => $this->causer_id !== null ? [
                 'type' => class_basename($this->causer_type ?? ''),
                 'id' => $this->causer_id,
@@ -30,5 +32,24 @@ class ActivityResource extends BaseResource
             'properties' => $this->properties,
             'created_at' => $this->created_at?->toIso8601String(),
         ];
+    }
+
+    /** The subject's display name, when it still exists (translatable names resolve to the current locale). */
+    private function subjectName(): ?string
+    {
+        if (! $this->subject) {
+            return null;
+        }
+        foreach (['display_name', 'name', 'title', 'reviewer_name'] as $attr) {
+            $value = $this->subject->getAttribute($attr);
+            if (is_array($value)) {
+                $value = $value[app()->getLocale()] ?? $value['en'] ?? reset($value);
+            }
+            if (filled($value) && is_string($value)) {
+                return $value;
+            }
+        }
+
+        return null;
     }
 }

@@ -25,6 +25,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+Route::get('/dashboard/insights', [DashboardController::class, 'insights'])->name('dashboard.insights');
 
 // --- Contract-flow builder (manage-flows) ---------------------------------------
 Route::middleware('can:manage-flows')->group(function () {
@@ -88,7 +89,15 @@ Route::middleware('can:manage-blocks')->group(function () {
 Route::middleware('can:moderate-content')->prefix('moderation')->name('moderation.')->group(function () {
     Route::get('/', [ModerationController::class, 'index'])->name('index');
 
+    // Bulk: delete many / export CSV (selection or the current filters).
+    Route::post('/bulk/{queue}/delete', [ModerationController::class, 'bulkDelete'])->name('bulk.delete');
+    Route::get('/export/{queue}', [ModerationController::class, 'export'])->name('export');
+
     Route::get('/talents', [ModerationController::class, 'talents'])->name('talents');
+    // The editable email that goes with Verify / Suspend: defaults + live preview (sends nothing).
+    Route::post('/{kind}/{id}/notice/{type}', [ModerationController::class, 'notice'])
+        ->whereIn('kind', ['talents', 'brands'])->whereNumber('id')
+        ->whereIn('type', \App\Services\AccountNoticeService::TYPES)->name('notice');
     Route::get('/talents/{talent}', [ModerationController::class, 'showTalent'])->withTrashed()->name('talents.show');
     Route::patch('/talents/{talent}/{action}', [ModerationController::class, 'moderateTalent'])
         ->withTrashed()->name('talents.action');
@@ -130,14 +139,17 @@ Route::middleware('can:moderate-content')->prefix('moderation')->name('moderatio
     // --- Feed moderation console (Phase 5Q) ---------------------------------
     Route::get('/feed', [\App\Http\Controllers\Admin\FeedModerationController::class, 'index'])->name('feed');
     Route::get('/feed/reports', [\App\Http\Controllers\Admin\FeedModerationController::class, 'reports'])->name('feed.reports');
+    Route::post('/feed/bulk', [\App\Http\Controllers\Admin\FeedModerationController::class, 'bulk'])->name('feed.bulk');
+    Route::post('/feed/{kind}/{id}/notice', [\App\Http\Controllers\Admin\FeedModerationController::class, 'removalNotice'])
+        ->whereIn('kind', ['posts', 'comments'])->whereNumber('id')->name('feed.notice');
     Route::get('/feed/posts', [\App\Http\Controllers\Admin\FeedModerationController::class, 'posts'])->name('feed.posts');
     Route::get('/feed/comments', [\App\Http\Controllers\Admin\FeedModerationController::class, 'comments'])->name('feed.comments');
     Route::get('/feed/talents/{talent}', [\App\Http\Controllers\Admin\FeedModerationController::class, 'talentActivity'])
         ->withTrashed()->name('feed.talent');
     Route::patch('/feed/posts/{post}/{action}', [\App\Http\Controllers\Admin\FeedModerationController::class, 'moderatePost'])
-        ->withTrashed()->whereIn('action', ['hide', 'remove', 'restore'])->name('feed.posts.action');
+        ->withTrashed()->whereIn('action', ['hide', 'remove', 'restore', 'delete'])->name('feed.posts.action');
     Route::patch('/feed/comments/{comment}/{action}', [\App\Http\Controllers\Admin\FeedModerationController::class, 'moderateComment'])
-        ->withTrashed()->whereIn('action', ['hide', 'remove', 'restore'])->name('feed.comments.action');
+        ->withTrashed()->whereIn('action', ['hide', 'remove', 'restore', 'delete'])->name('feed.comments.action');
     Route::patch('/feed/reports/{report}/{resolution}', [\App\Http\Controllers\Admin\FeedModerationController::class, 'resolveReport'])
         ->whereIn('resolution', ['actioned', 'dismissed'])->name('feed.reports.action');
 });

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Talent;
 
+use App\Support\Locations;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -33,8 +34,25 @@ class UpdateCoreProfileRequest extends FormRequest
             'worldview.ar' => ['nullable', 'string', 'max:2000'],
             'slug' => ['nullable', 'string', 'max:255', 'alpha_dash', Rule::unique('talents', 'slug')->ignore($talentId)],
             'base_city' => ['nullable', 'string', 'max:255'],
-            'base_country' => ['nullable', 'string', 'max:255'],
+            // A country from the drop list. A legacy free-text value the talent
+            // already has may ride along unchanged (it is canonicalised on save).
+            'base_country' => ['nullable', 'string', 'max:255', function (string $attribute, mixed $value, \Closure $fail): void {
+                if (Locations::codeFor($value) === null && $value !== $this->user('talent')?->base_country) {
+                    $fail(__('Choose a country from the list.'));
+                }
+            }],
         ];
+    }
+
+    /**
+     * Store the canonical country name ("UAE" → "United Arab Emirates") so
+     * discovery filters match one spelling.
+     */
+    protected function prepareForValidation(): void
+    {
+        if (is_string($this->input('base_country')) && $this->input('base_country') !== '') {
+            $this->merge(['base_country' => Locations::canonicalName($this->input('base_country'))]);
+        }
     }
 
     /**

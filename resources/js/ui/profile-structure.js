@@ -39,6 +39,13 @@ document.addEventListener('alpine:init', () => {
         platforms: PLATFORMS,
         reviewsOn: !!initial.reviewsOn,
 
+        // ----- location drop lists -----------------------------------------
+        countries: initial.countries || [],
+        cityCache: {},
+        cityLoads: {},
+        // Gate card: the folded "Checked by Fama" card can be expanded back into the steps.
+        showSteps: false,
+
         // ----- the draft ----------------------------------------------------
         core: clone(initial.core),
         links: initial.social.map((l, i) => ({ platform: l.platform, handle: isWeb(l.platform) ? l.handle : String(l.handle || '').replace(/^@/, ''), _k: 'l' + i })),
@@ -87,6 +94,9 @@ document.addEventListener('alpine:init', () => {
         dropDeny: null,
         saving: false,
         savedAt: null,
+        // The bar stays up for a moment after a save ("Saved just now"), then slides away.
+        savedFlash: false,
+        flashTimer: null,
         badField: null,
         badNote: '',
         _k: 1000,
@@ -112,6 +122,10 @@ document.addEventListener('alpine:init', () => {
                 if (this.platOpen !== null && !e.target.closest('.platmenu,.platbtn')) this.platOpen = null;
             });
             if (window.location.hash === '#display') this.focusField('fDisplay');
+            // Keep the nav's status bar in step (Private → Under review → Ready) as steps are finished.
+            this.$watch(() => [this.allStepsDone, this.isVerified].join(), () => {
+                window.dispatchEvent(new CustomEvent('fama-gate', { detail: { complete: this.allStepsDone, verified: this.isVerified } }));
+            });
         },
 
         // ================= draft bookkeeping ================================
@@ -172,6 +186,14 @@ document.addEventListener('alpine:init', () => {
                 pricing: this.hasPricing && j(this.rate) !== j(B.rate),
             };
         },
+        /** Keep the clean "Saved just now" bar up for 2.5s, then let it slide away. */
+        flashSaved() {
+            this.savedFlash = true;
+            clearTimeout(this.flashTimer);
+            this.flashTimer = setTimeout(() => { this.savedFlash = false; }, 2500);
+        },
+        /** The save bar shows only with unsaved changes, or briefly after a save. */
+        get barShown() { return this.dirtyCount > 0 || this.savedFlash; },
         /** How many parts have unsaved changes. */
         get dirtyCount() { return Object.values(this.dirty).filter(Boolean).length; },
         /** The save bar's first line. */
@@ -271,6 +293,7 @@ document.addEventListener('alpine:init', () => {
                 }
                 if (d.explore) await this.saveInterests();
                 this.savedAt = Date.now();
+                this.flashSaved();
                 toast(this.S.tSaved);
             } catch (e) {
                 this.fail('server', e instanceof ApiError ? e : { message: this.S.saveFailed });
@@ -369,6 +392,46 @@ document.addEventListener('alpine:init', () => {
             this.badField = null;
             this.newSkillId = null;
             toast(this.S.tDiscarded, () => this.applyState(draft));
+        },
+        // ================= location ==========================================
+        /** Country items for the drop list (value = the stored English name). */
+        get countryOptions() { return this.countries.map((c) => ({ value: c.name, label: c.name, code: c.code })); },
+        /** ISO code of the drafted country ('' when none / unknown). */
+        get countryCode() {
+            const v = String(this.core.base_country || '').toLowerCase();
+            return (this.countries.find((c) => c.name.toLowerCase() === v || c.code.toLowerCase() === v) || {}).code || '';
+        },
+        /** City items for the drafted country; a stored city not in the list still shows. */
+        get cityOptions() {
+            const list = (this.cityCache[this.countryCode] || []).map((n) => ({ value: n, label: n }));
+            const cur = this.core.base_city;
+            return cur && !list.some((o) => o.value === cur) ? [{ value: cur, label: cur }, ...list] : list;
+        },
+        /** Fetch a country's cities once (cached for the page; concurrent calls share one request). */
+        loadCities(code) {
+            if (!code) return Promise.resolve();
+            if (this.cityCache[code]) return Promise.resolve();
+            this.cityLoads ??= {};
+            this.cityLoads[code] ??= get(`/locations/${code}/cities`)
+                .then(({ data }) => { this.cityCache = { ...this.cityCache, [code]: data || [] }; })
+                .catch(() => {})
+                .finally(() => { delete this.cityLoads[code]; });
+            return this.cityLoads[code];
+        },
+        /** A country chosen by the talent: keep the city only if it is in that country. */
+        async onCountryPicked(item) {
+            if (this.errors) this.errors.base_country = null;
+            const city = this.core.base_city;
+            if (!city) return;
+            await this.loadCities(item.code);
+            if (this.countryCode === item.code && !(this.cityCache[item.code] || []).includes(city)) this.core.base_city = '';
+        },
+        /** Gate step link: glide to the field on this page; other pages navigate. */
+        goStep(e, step) {
+            if (!String(step.href || '').startsWith('#')) return;
+            e.preventDefault();
+            if (step.focus) this.focusField(step.focus);
+            else document.querySelector(step.href)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         },
         /** Scroll to and focus a field by id. */
         focusField(id) {
@@ -489,7 +552,9 @@ document.addEventListener('alpine:init', () => {
             return (this.S.steps || []).map((s) => ({ ...s, done: done[s.key] }));
         },
         /** Steps still to do, the verification included. */
-        get stepsLeft() { return this.gateSteps.filter((s) => !s.done).length + (this.isVerified ? 0 : 1); },
+        /** Every profile step is done (only Fama's check can remain). */
+        get allStepsDone() { const g = this.gateSteps; return g.length > 0 && g.every((s) => s.done); },
+                get stepsLeft() { return this.gateSteps.filter((s) => !s.done).length + (this.isVerified ? 0 : 1); },
 
         // ================= availability ====================================
         /** Flip one availability switch (draft). */

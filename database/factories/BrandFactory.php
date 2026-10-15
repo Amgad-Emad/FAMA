@@ -28,8 +28,8 @@ class BrandFactory extends Factory
             'description' => ['en' => fake()->catchPhrase(), 'ar' => 'علامة تجارية إبداعية'],
             'industry' => fake()->randomElement(['fashion', 'beauty', 'food_beverage', 'lifestyle', 'tech', 'other']),
             'brand_stage' => fake()->randomElement(['new', 'growing', 'established']),
-            'base_city' => fake()->randomElement(['Cairo', 'Alexandria', 'Giza', 'Dubai']),
-            'base_country' => fake()->randomElement(['Egypt', 'Egypt', 'UAE']),
+            // A real city/country pair (both are drop lists in the editor).
+            ...(fn (array $place): array => ['base_city' => $place[0], 'base_country' => $place[1]])(fake()->randomElement([['Cairo', 'Egypt'], ['Alexandria', 'Egypt'], ['Giza', 'Egypt'], ['Dubai', 'United Arab Emirates']])),
             'geographic_reach' => fake()->randomElement(['same_city', 'mena', 'international']),
             'founded_year' => fake()->optional()->numberBetween(2005, 2024),
             'company_size' => fake()->randomElement(['solo', 'small', 'medium', 'large', 'enterprise']),

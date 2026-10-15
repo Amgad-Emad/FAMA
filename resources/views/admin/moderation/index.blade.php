@@ -1,56 +1,134 @@
 <x-admin-layout :title="__('Moderation')">
-    <div x-data="adminModeration(@js($queue))" data-queue="{{ $queue }}" class="space-y-5">
-        <p class="text-sm text-muted">{{ __('Review and act on everything users publish — open a row for full details.') }}</p>
-        {{-- Tabs --}}
-        <div class="flex flex-wrap items-center gap-2">
-            @foreach (['talents' => __('Talents'), 'brands' => __('Brands'), 'projects' => __('Projects'), 'reviews' => __('Talent reviews'), 'brand-reviews' => __('Brand reviews'), 'all-reviews' => __('All reviews'), 'recognitions' => __('Recognitions')] as $key => $label)
-                <button @click="openTab('{{ $key }}')" :class="tab === '{{ $key }}' ? 'bg-accent text-on-primary' : 'border border-line text-muted hover:text-ink'" class="rounded-pill px-3 py-1.5 text-xs">{{ $label }}</button>
-            @endforeach
-        </div>
-
-        {{-- Search + status filter --}}
-        <div class="flex flex-wrap items-center gap-2">
-            <div class="relative flex-1 sm:max-w-xs">
-                <svg class="pointer-events-none absolute inset-y-0 start-3 my-auto h-4 w-4 text-subtle" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z"/></svg>
-                <input type="search" x-model="q" @input="onSearch()" @search="load()"
-                       class="w-full rounded-pill border-line bg-bg py-1.5 ps-9 pe-3 text-xs text-ink placeholder:text-subtle focus:border-accent focus:ring-accent/40"
-                       :placeholder="tab.includes('review') ? '{{ __('Search reviews…') }}' : (tab === 'projects' ? '{{ __('Search projects…') }}' : '{{ __('Search by name, email or username…') }}')"
-                       aria-label="{{ __('Search') }}">
+    <div x-data="adminModeration(@js($queue))" data-queue="{{ $queue }}" class="space-y-5"
+         data-del-one="{{ __('Delete this item?') }}" data-del-many="{{ __('Delete :n items?') }}"
+         data-del-body="{{ __('They are soft-deleted: hidden everywhere and restorable for 30 days, after which their photos and files are removed for good.') }}"
+         data-del-ok="{{ __('Delete') }}">
+        @php
+            // Tabs: brand-owned queues only exist with the brands feature (V1 off).
+            $tabs = ['talents' => __('Talents'), 'recognitions' => __('Recognitions'), 'reviews' => __('Talent reviews')];
+            if (\App\Support\Features::brands()) {
+                $tabs += ['brands' => __('Brands'), 'brand-reviews' => __('Brand reviews'), 'projects' => __('Projects')];
+            }
+            $tabs['all-reviews'] = __('All reviews');
+            $tabHints = ['talents' => __('waiting for verification'), 'recognitions' => __('pending'), 'reviews' => __('pending'), 'brands' => __('unverified'), 'brand-reviews' => __('pending'), 'all-reviews' => __('pending')];
+        @endphp
+        {{-- Queue switcher + filters, one card --}}
+        <div class="rounded-[20px] border border-line bg-surface p-2 sm:p-2.5">
+            <div class="flex gap-1 overflow-x-auto" role="tablist" aria-label="{{ __('Queues') }}">
+                @foreach ($tabs as $key => $label)
+                    @php $n = $waiting[$key] ?? null; @endphp
+                    <button type="button" role="tab" @click="openTab('{{ $key }}')" :aria-selected="(tab === '{{ $key }}').toString()"
+                            :class="tab === '{{ $key }}' ? 'bg-primary text-on-primary' : 'text-muted hover:bg-elevated hover:text-ink'"
+                            class="inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-pill px-4 py-2.5 text-sm font-semibold transition"
+                            @if ($n) title="{{ $n }} {{ $tabHints[$key] ?? '' }}" @endif>
+                        {{ $label }}
+                        @if ($n)
+                            <span class="min-w-6 rounded-pill px-1.5 py-0.5 text-center text-[11px] font-bold leading-none"
+                                  :class="tab === '{{ $key }}' ? 'bg-white/20 text-on-primary' : 'bg-gold-weak text-gold'">{{ $n > 99 ? '99+' : $n }}</span>
+                        @endif
+                    </button>
+                @endforeach
             </div>
-            {{-- Status filter — options depend on the active queue --}}
-            <select x-show="statusOptions().length" x-cloak @change="setStatusFilter($event.target.value)"
-                    class="rounded-pill border-line bg-bg py-1.5 text-xs text-muted focus:border-accent focus:ring-accent/40" aria-label="{{ __('Filter by status') }}">
-                <option value="">{{ __('All statuses') }}</option>
-                <template x-for="s in statusOptions()" :key="s">
-                    <option :value="s" x-text="$statusLabel(s)" :selected="s === statusFilter"></option>
-                </template>
-            </select>
-            {{-- Active-filter clear --}}
-            <button x-show="q || statusFilter" x-cloak @click="q=''; statusFilter=''; load()"
-                    class="rounded-pill border border-line px-3 py-1.5 text-xs text-muted hover:text-ink">{{ __('Clear') }}</button>
+
+            <div class="mt-2 flex flex-wrap items-center gap-2 border-t border-line px-1 pt-3 sm:px-2">
+                <div class="relative min-w-[220px] flex-1">
+                    <svg class="pointer-events-none absolute inset-y-0 start-4 my-auto h-[18px] w-[18px] text-subtle" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z"/></svg>
+                    <input type="search" x-model="q" @input="onSearch()" @search="load()"
+                           class="h-11 w-full rounded-pill border-line bg-bg ps-11 pe-4 text-[15px] text-ink placeholder:text-subtle"
+                           :placeholder="tab.includes('review') ? '{{ __('Search reviews…') }}' : (tab === 'projects' ? '{{ __('Search projects…') }}' : '{{ __('Search by name, email or username…') }}')"
+                           aria-label="{{ __('Search') }}">
+                </div>
+                {{-- Status filter — options depend on the active queue --}}
+                <select x-show="statusOptions().length" x-cloak @change="setStatusFilter($event.target.value)"
+                        class="h-11 rounded-pill border-line bg-bg ps-4 text-[15px] text-ink" aria-label="{{ __('Filter by status') }}">
+                    <option value="">{{ __('All statuses') }}</option>
+                    <template x-for="s in statusOptions()" :key="s">
+                        <option :value="s" x-text="$statusLabel(s)" :selected="s === statusFilter"></option>
+                    </template>
+                </select>
+                <span class="ms-auto hidden text-sm text-muted sm:inline" x-show="!loading && meta?.pagination" x-cloak
+                      x-text="(meta?.pagination?.total ?? 0) + ' {{ __('results') }}'"></span>
+                {{-- Active-filter clear --}}
+                <button x-show="q || statusFilter" x-cloak @click="q=''; statusFilter=''; load()"
+                        class="inline-flex h-11 items-center gap-1.5 rounded-pill border border-line px-4 text-sm font-semibold text-ink hover:border-ink">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 6l12 12M18 6 6 18"/></svg>{{ __('Clear') }}</button>
+            </div>
         </div>
+        <p class="px-1 text-sm text-muted">{{ __('Review and act on everything users publish — open a row for full details.') }}</p>
 
         <template x-if="loading"><div><x-admin.skeleton :rows="5" /></div></template>
 
-        {{-- Batch bar (reviews) --}}
-        <div x-show="tab === 'reviews' && selected.length" x-cloak class="flex items-center gap-3 rounded-md border border-line bg-surface px-4 py-2 text-sm">
-            <span><span x-text="selected.length"></span> {{ __('selected') }}</span>
-            <button @click="batch('approve')" class="rounded-pill bg-success px-3 py-1 text-xs text-white">{{ __('Approve') }}</button>
-            <button @click="batch('reject')" class="rounded-pill bg-danger px-3 py-1 text-xs text-white">{{ __('Reject') }}</button>
+        {{-- Bulk bar: select-all + actions on the selection; export all (filters) any time --}}
+        <div x-show="canBulk && !loading && rows.length" x-cloak
+             class="sticky top-24 z-10 flex flex-wrap items-center gap-2 rounded-[16px] border px-4 py-2.5 transition"
+             :class="selected.length ? 'border-ink bg-primary text-on-primary' : 'border-line bg-surface text-ink'">
+            <label class="inline-flex cursor-pointer items-center gap-2.5 pe-2 text-sm font-semibold">
+                <input type="checkbox" :checked="allSelected" x-effect="$el.indeterminate = selected.length > 0 && !allSelected" @change="toggleAll()" class="h-[18px] w-[18px] rounded">
+                <span x-text="selected.length ? selected.length + ' {{ __('selected') }}' : '{{ __('Select all on this page') }}'"></span>
+            </label>
+            <template x-if="selected.length">
+                <span class="flex flex-wrap items-center gap-2">
+                    <template x-if="tab === 'reviews'">
+                        <span class="flex gap-2">
+                            <button type="button" @click="batch('approve')" class="inline-flex h-9 items-center gap-1.5 rounded-pill bg-success px-4 text-[13px] font-semibold text-white hover:opacity-90">{{ __('Approve') }}</button>
+                            <button type="button" @click="batch('reject')" class="inline-flex h-9 items-center gap-1.5 rounded-pill bg-white/15 px-4 text-[13px] font-semibold text-on-primary hover:bg-white/25">{{ __('Reject') }}</button>
+                        </span>
+                    </template>
+                    <a :href="exportUrl(true)" class="inline-flex h-9 items-center gap-1.5 rounded-pill bg-white/15 px-4 text-[13px] font-semibold text-on-primary hover:bg-white/25">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v11m0 0-4-4m4 4 4-4M5 19h14"/></svg>{{ __('Export selected') }}</a>
+                    <button type="button" @click="bulkDelete()" class="inline-flex h-9 items-center gap-1.5 rounded-pill bg-danger px-4 text-[13px] font-semibold text-white hover:opacity-90">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M10 11v6m4-6v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>{{ __('Delete') }}</button>
+                    <button type="button" @click="selected = []" class="h-9 px-2 text-[13px] font-semibold underline-offset-2 hover:underline">{{ __('Clear selection') }}</button>
+                </span>
+            </template>
+            <a :href="exportUrl(false)" x-show="!selected.length" class="ms-auto inline-flex h-9 items-center gap-1.5 rounded-pill border border-line px-4 text-[13px] font-semibold text-ink hover:border-ink">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v11m0 0-4-4m4 4 4-4M5 19h14"/></svg>
+                <span x-text="(q || statusFilter) ? '{{ __('Export filtered (CSV)') }}' : '{{ __('Export all (CSV)') }}'"></span></a>
         </div>
 
         {{-- Rows --}}
         <div x-show="!loading" class="space-y-2">
             <template x-for="row in rows" :key="row.id">
                 <div @click="openDetail(row)" role="button" tabindex="0" @keydown.enter="openDetail(row)"
-                     class="flex cursor-pointer flex-wrap items-center gap-3 rounded-lg border border-line bg-surface px-4 py-3 text-sm transition hover:border-line-strong hover:bg-elevated/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent">
-                    <template x-if="tab === 'reviews'"><input type="checkbox" @click.stop @change="toggle(row.id)" class="rounded border-line"></template>
+                     class="flex cursor-pointer flex-wrap items-center gap-3 rounded-[16px] border border-line bg-surface px-4 py-3 text-sm transition hover:border-line-strong hover:shadow-e2 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:px-5"
+                     :class="{ 'border-gold-weak ring-1 ring-gold-weak': (tab === 'talents' || tab === 'brands') && !row.is_verified && row.steps_completed && !row.trashed }">
+                    <template x-if="canBulk"><input type="checkbox" @click.stop @change="toggle(row.id)" :checked="selected.includes(row.id)" class="h-[18px] w-[18px] shrink-0 rounded" aria-label="{{ __('Select') }}"></template>
                     {{-- Row title. On the global queue it names the entity BEING reviewed
                          (brand for a brand review, talent for a talent review). --}}
-                    <span class="font-medium text-ink"
-                          x-text="tab === 'all-reviews' ? ((row.kind === 'brand' ? row.brand : row.talent) || ('#'+row.id)) : (row.display_name || row.name || row.title || row.talent || ('#'+row.id))"></span>
-                    <template x-if="row.status"><span :class="$pill(row.status)" x-text="$statusLabel(row.status)"></span></template>
-                    <template x-if="row.is_verified"><span class="rounded-pill bg-accent-weak px-2 py-0.5 text-xs text-accent-ink">{{ __('verified') }}</span></template>
+                    {{-- Accounts (talents / brands): avatar + name + who-they-are line + state pills --}}
+                    <template x-if="tab === 'talents' || tab === 'brands'">
+                        <div class="flex min-w-0 flex-1 items-center gap-3.5">
+                            <span class="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-pill bg-accent-weak text-sm font-semibold text-accent-ink"
+                                  :class="{ 'rounded-[12px]': tab === 'brands' }">
+                                <template x-if="row.avatar_url"><img :src="row.avatar_url" alt="" class="h-full w-full object-cover"></template>
+                                <template x-if="!row.avatar_url"><span x-text="(row.display_name || row.name || row.email || '?').split(/[\s@.]+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('')"></span></template>
+                            </span>
+                            <span class="min-w-0">
+                                <span class="flex flex-wrap items-center gap-2">
+                                    <span class="truncate text-[15px] font-semibold text-ink" x-text="row.display_name || row.name || row.email || ('#' + row.id)"></span>
+                                    <template x-if="row.status"><span :class="$pill(row.status)" x-text="$statusLabel(row.status)"></span></template>
+                                    <template x-if="row.is_verified">
+                                        <span class="inline-flex items-center gap-1 rounded-pill bg-accent-weak px-2 py-0.5 text-xs font-semibold text-accent-ink">
+                                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>{{ __('Verified') }}</span>
+                                    </template>
+                                    <template x-if="!row.is_verified && row.steps_completed && !row.trashed">
+                                        <span class="inline-flex items-center gap-1.5 rounded-pill bg-gold-weak px-2 py-0.5 text-xs font-semibold text-gold">
+                                            <span class="h-1.5 w-1.5 animate-pulse rounded-pill bg-gold"></span>{{ __('Ready for review') }}</span>
+                                    </template>
+                                    <template x-if="row.trashed"><span class="rounded-pill bg-danger-weak px-2 py-0.5 text-xs font-semibold text-danger">{{ __('Deleted') }}</span></template>
+                                </span>
+                                <span class="mt-0.5 block truncate text-[13px] text-muted"
+                                      x-text="[row.slug ? '@' + row.slug : null, row.email && row.email !== (row.display_name || row.name) ? row.email : null, [row.city, row.country].filter(Boolean).join(', ') || null, row.joined ? '{{ __('joined') }} ' + row.joined : null].filter(Boolean).join('  ·  ')"></span>
+                            </span>
+                        </div>
+                    </template>
+                    <template x-if="tab !== 'talents' && tab !== 'brands'">
+                        <span class="flex flex-wrap items-center gap-3">
+                            <span class="font-medium text-ink"
+                                  x-text="tab === 'all-reviews' ? ((row.kind === 'brand' ? row.brand : row.talent) || ('#'+row.id)) : (row.display_name || row.name || row.title || row.talent || ('#'+row.id))"></span>
+                            <template x-if="row.status"><span :class="$pill(row.status)" x-text="$statusLabel(row.status)"></span></template>
+                        </span>
+                    </template>
                     {{-- Global queue: tag each row with its kind + the reviewer --}}
                     <template x-if="tab === 'recognitions'">
                         <span class="text-xs text-subtle">
@@ -84,34 +162,35 @@
                               x-text="row.is_public ? '{{ __('public') }}' : '{{ __('private') }}'"></span>
                     </template>
 
-                    <div class="ms-auto flex flex-wrap gap-1.5" @click.stop>
+                    <div class="ms-auto flex flex-wrap items-center gap-2" @click.stop>
                         {{-- Every queue: open the detail drawer (the whole row is also clickable) --}}
-                        <button @click="openDetail(row)" class="rounded-pill border border-line px-2.5 py-1 text-xs text-accent-ink hover:border-accent">{{ __('View') }}</button>
+                        <button @click="tab === 'talents' && row.slug && !row.trashed ? openPreview(row) : openDetail(row)" class="inline-flex h-9 items-center gap-1.5 rounded-pill border border-line bg-surface px-3.5 text-[13px] font-semibold text-ink transition hover:border-ink">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.5 12s3.5-7 9.5-7 9.5 7 9.5 7-3.5 7-9.5 7-9.5-7-9.5-7Z"/><circle cx="12" cy="12" r="2.8"/></svg>{{ __('View') }}</button>
                         {{-- Talents --}}
                         <template x-if="tab === 'talents'">
-                            <span class="flex flex-wrap gap-1.5">
+                            <span class="flex flex-wrap items-center gap-2">
                                 @include('admin.moderation.partials.account-actions', ['obj' => 'row', 'kind' => 'talents'])
                             </span>
                         </template>
                         {{-- Reviews / brand reviews / the global queue --}}
                         <template x-if="tab === 'reviews' || tab === 'brand-reviews' || tab === 'all-reviews'">
-                            <span class="flex gap-1.5">
-                                <button @click="$confirm({ title: '{{ __('Approve this review?') }}', message: '{{ __('The review becomes publicly visible.') }}', confirmLabel: '{{ __('Approve') }}', tone: 'accent' }).then(ok => ok && action(row,'approve'))" class="rounded-pill border border-line px-2.5 py-1 text-xs text-success hover:border-success">{{ __('Approve') }}</button>
-                                <button @click="$confirm({ title: '{{ __('Reject this review?') }}', message: '{{ __('The review is hidden and will not be published.') }}', confirmLabel: '{{ __('Reject') }}' }).then(ok => ok && action(row,'reject'))" class="rounded-pill border border-line px-2.5 py-1 text-xs text-danger hover:border-danger">{{ __('Reject') }}</button>
+                            <span class="flex items-center gap-2">
+                                <button @click="$confirm({ title: '{{ __('Approve this review?') }}', message: '{{ __('The review becomes publicly visible.') }}', confirmLabel: '{{ __('Approve') }}', tone: 'accent' }).then(ok => ok && action(row,'approve'))" class="inline-flex h-9 items-center gap-1.5 rounded-pill bg-success px-4 text-[13px] font-semibold text-white transition hover:opacity-90"><svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>{{ __('Approve') }}</button>
+                                <button @click="$confirm({ title: '{{ __('Reject this review?') }}', message: '{{ __('The review is hidden and will not be published.') }}', confirmLabel: '{{ __('Reject') }}' }).then(ok => ok && action(row,'reject'))" class="inline-flex h-9 items-center gap-1.5 rounded-pill border border-line bg-surface px-4 text-[13px] font-semibold text-danger transition hover:border-danger hover:bg-danger-weak"><svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 6l12 12M18 6 6 18"/></svg>{{ __('Reject') }}</button>
                             </span>
                         </template>
                         {{-- Recognitions (ADR-Z). Peer vouches, so the copy says
                              "vouch", not "review" — a moderator judging one is
                              weighing whether the stated relationship is real. --}}
                         <template x-if="tab === 'recognitions'">
-                            <span class="flex gap-1.5">
-                                <button @click="$confirm({ title: '{{ __('Approve this recognition?') }}', message: '{{ __('The vouch becomes publicly visible on their profile.') }}', confirmLabel: '{{ __('Approve') }}', tone: 'accent' }).then(ok => ok && action(row,'approve'))" class="rounded-pill border border-line px-2.5 py-1 text-xs text-success hover:border-success">{{ __('Approve') }}</button>
-                                <button @click="$confirm({ title: '{{ __('Reject this recognition?') }}', message: '{{ __('The vouch is hidden and will not be published.') }}', confirmLabel: '{{ __('Reject') }}' }).then(ok => ok && action(row,'reject'))" class="rounded-pill border border-line px-2.5 py-1 text-xs text-danger hover:border-danger">{{ __('Reject') }}</button>
+                            <span class="flex items-center gap-2">
+                                <button @click="$confirm({ title: '{{ __('Approve this recognition?') }}', message: '{{ __('The vouch becomes publicly visible on their profile.') }}', confirmLabel: '{{ __('Approve') }}', tone: 'accent' }).then(ok => ok && action(row,'approve'))" class="inline-flex h-9 items-center gap-1.5 rounded-pill bg-success px-4 text-[13px] font-semibold text-white transition hover:opacity-90"><svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>{{ __('Approve') }}</button>
+                                <button @click="$confirm({ title: '{{ __('Reject this recognition?') }}', message: '{{ __('The vouch is hidden and will not be published.') }}', confirmLabel: '{{ __('Reject') }}' }).then(ok => ok && action(row,'reject'))" class="inline-flex h-9 items-center gap-1.5 rounded-pill border border-line bg-surface px-4 text-[13px] font-semibold text-danger transition hover:border-danger hover:bg-danger-weak"><svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 6l12 12M18 6 6 18"/></svg>{{ __('Reject') }}</button>
                             </span>
                         </template>
                         {{-- Brands --}}
                         <template x-if="tab === 'brands'">
-                            <span class="flex flex-wrap gap-1.5">
+                            <span class="flex flex-wrap items-center gap-2">
                                 @include('admin.moderation.partials.account-actions', ['obj' => 'row', 'kind' => 'brands'])
                             </span>
                         </template>
@@ -154,7 +233,10 @@
         @php
             $drawerStagger = 'transition-[opacity,translate] motion-reduce:transition-none motion-reduce:translate-x-0';
         @endphp
-        <div x-show="detail" x-cloak @keydown.escape.window="closeDetail()"
+        {{-- Teleported to <body>: inside the page an ancestor became the fixed
+             containing block and left an uncovered strip at the bottom. --}}
+        <template x-teleport="body">
+        <div x-show="detail" x-cloak @keydown.escape.window="closeDetail()" data-surface="fama-admin"
              class="fixed inset-0 z-50" :class="drawerOpen ? '' : 'pointer-events-none'">
             <div @click="closeDetail()"
                  class="absolute inset-0 bg-black/40 backdrop-blur-[2px] transition-opacity ease-out motion-reduce:transition-none"
@@ -302,7 +384,7 @@
                                             'created_at' => __('Created'),
                                         ] as $key => $label)
                                             <template x-if="detail['{{ $key }}'] !== null && detail['{{ $key }}'] !== undefined && detail['{{ $key }}'] !== ''">
-                                                <div class="bg-surface p-3">
+                                                <div class="bg-surface p-3 {{ $key === 'created_at' ? 'col-span-2' : '' }}">
                                                     <dt class="font-mono text-[10px] uppercase tracking-wider text-subtle">{{ $label }}</dt>
                                                     <dd class="mt-0.5 break-words text-ink" x-text="detail['{{ $key }}']"></dd>
                                                 </div>
@@ -325,16 +407,16 @@
                     </template>
                     <template x-if="detailKind === 'reviews' || detailKind === 'brand-reviews'">
                         <span class="flex gap-1.5">
-                            <button @click="$confirm({ title: '{{ __('Approve this review?') }}', message: '{{ __('The review becomes publicly visible.') }}', confirmLabel: '{{ __('Approve') }}', tone: 'accent' }).then(ok => ok && action(detail,'approve'))" class="rounded-pill border border-line px-2.5 py-1 text-xs text-success hover:border-success">{{ __('Approve') }}</button>
-                            <button @click="$confirm({ title: '{{ __('Reject this review?') }}', message: '{{ __('The review is hidden and will not be published.') }}', confirmLabel: '{{ __('Reject') }}' }).then(ok => ok && action(detail,'reject'))" class="rounded-pill border border-line px-2.5 py-1 text-xs text-danger hover:border-danger">{{ __('Reject') }}</button>
+                            <button @click="$confirm({ title: '{{ __('Approve this review?') }}', message: '{{ __('The review becomes publicly visible.') }}', confirmLabel: '{{ __('Approve') }}', tone: 'accent' }).then(ok => ok && action(detail,'approve'))" class="inline-flex h-9 items-center gap-1.5 rounded-pill bg-success px-4 text-[13px] font-semibold text-white transition hover:opacity-90"><svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>{{ __('Approve') }}</button>
+                            <button @click="$confirm({ title: '{{ __('Reject this review?') }}', message: '{{ __('The review is hidden and will not be published.') }}', confirmLabel: '{{ __('Reject') }}' }).then(ok => ok && action(detail,'reject'))" class="inline-flex h-9 items-center gap-1.5 rounded-pill border border-line bg-surface px-4 text-[13px] font-semibold text-danger transition hover:border-danger hover:bg-danger-weak"><svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 6l12 12M18 6 6 18"/></svg>{{ __('Reject') }}</button>
                             {{-- Delete a talent review with a notice email (compose + live preview). --}}
                             <button x-show="detailKind === 'reviews'" @click="openDeleteReview(detail)" class="rounded-pill bg-danger px-2.5 py-1 text-xs text-white hover:opacity-90">{{ __('Delete…') }}</button>
                         </span>
                     </template>
                     <template x-if="detailKind === 'recognitions'">
                         <span class="flex gap-1.5">
-                            <button @click="$confirm({ title: '{{ __('Approve this recognition?') }}', message: '{{ __('The vouch becomes publicly visible on their profile.') }}', confirmLabel: '{{ __('Approve') }}', tone: 'accent' }).then(ok => ok && action(detail,'approve'))" class="rounded-pill border border-line px-2.5 py-1 text-xs text-success hover:border-success">{{ __('Approve') }}</button>
-                            <button @click="$confirm({ title: '{{ __('Reject this recognition?') }}', message: '{{ __('The vouch is hidden and will not be published.') }}', confirmLabel: '{{ __('Reject') }}' }).then(ok => ok && action(detail,'reject'))" class="rounded-pill border border-line px-2.5 py-1 text-xs text-danger hover:border-danger">{{ __('Reject') }}</button>
+                            <button @click="$confirm({ title: '{{ __('Approve this recognition?') }}', message: '{{ __('The vouch becomes publicly visible on their profile.') }}', confirmLabel: '{{ __('Approve') }}', tone: 'accent' }).then(ok => ok && action(detail,'approve'))" class="inline-flex h-9 items-center gap-1.5 rounded-pill bg-success px-4 text-[13px] font-semibold text-white transition hover:opacity-90"><svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>{{ __('Approve') }}</button>
+                            <button @click="$confirm({ title: '{{ __('Reject this recognition?') }}', message: '{{ __('The vouch is hidden and will not be published.') }}', confirmLabel: '{{ __('Reject') }}' }).then(ok => ok && action(detail,'reject'))" class="inline-flex h-9 items-center gap-1.5 rounded-pill border border-line bg-surface px-4 text-[13px] font-semibold text-danger transition hover:border-danger hover:bg-danger-weak"><svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 6l12 12M18 6 6 18"/></svg>{{ __('Reject') }}</button>
                         </span>
                     </template>
                     <template x-if="detailKind === 'brands'">
@@ -358,6 +440,139 @@
                 </footer>
             </aside>
         </div>
+        </template>
+
+        {{-- ── Profile preview panel: the public profile as a visitor sees it ── --}}
+        <template x-teleport="body">
+            <div x-show="preview.row" x-cloak class="fixed inset-0 z-[60]" data-surface="fama-admin" role="dialog" aria-modal="true" aria-labelledby="pv-title"
+                 @keydown.escape.window="preview.row && !notice.open && closePreview()">
+                <div class="absolute inset-0 transition-opacity duration-300" style="background: var(--scrim);" :class="preview.shown ? 'opacity-100' : 'opacity-0'" @click="closePreview()"></div>
+                <aside class="absolute inset-y-0 end-0 flex w-full max-w-[1180px] flex-col bg-bg shadow-e3 transition-transform duration-300 ease-out sm:w-[88vw]"
+                       :class="preview.shown ? 'translate-x-0' : 'translate-x-full rtl:-translate-x-full'">
+                    <header class="flex flex-wrap items-center gap-3 border-b border-line bg-surface px-5 py-4 sm:px-7">
+                        <span class="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-pill bg-accent-weak text-sm font-semibold text-accent-ink">
+                            <template x-if="preview.row?.avatar_url"><img :src="preview.row.avatar_url" alt="" class="h-full w-full object-cover"></template>
+                            <template x-if="!preview.row?.avatar_url"><span x-text="(preview.row?.display_name || preview.row?.email || '?').split(/[\s@.]+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('')"></span></template>
+                        </span>
+                        <div class="min-w-0 flex-1">
+                            <p class="text-[12px] font-semibold uppercase tracking-[0.14em] text-accent-ink">{{ __('Profile preview') }}</p>
+                            <h2 id="pv-title" class="flex flex-wrap items-center gap-2 truncate font-display text-2xl text-ink">
+                                <span x-text="preview.row?.display_name || preview.row?.email"></span>
+                                <template x-if="preview.row?.status"><span :class="$pill(preview.row.status)" class="font-sans text-xs" x-text="$statusLabel(preview.row.status)"></span></template>
+                                <template x-if="preview.row?.is_verified"><span class="rounded-pill bg-accent-weak px-2 py-0.5 font-sans text-xs font-semibold text-accent-ink">{{ __('Verified') }}</span></template>
+                            </h2>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <template x-if="preview.row">
+                                <span class="flex flex-wrap items-center gap-2">
+                                    @include('admin.moderation.partials.account-actions', ['obj' => 'preview.row', 'kind' => 'talents'])
+                                </span>
+                            </template>
+                            <a :href="previewUrl(preview.row)" target="_blank" rel="noopener" class="inline-flex h-9 items-center gap-1.5 rounded-pill border border-line bg-surface px-3.5 text-[13px] font-semibold text-ink hover:border-ink">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>{{ __('New tab') }}</a>
+                            <button type="button" @click="const r = preview.row; closePreview(); openDetail(r)" class="inline-flex h-9 items-center rounded-pill border border-line bg-surface px-3.5 text-[13px] font-semibold text-ink hover:border-ink">{{ __('Details') }}</button>
+                            <button type="button" @click="closePreview()" aria-label="{{ __('Close') }}" class="grid h-9 w-9 place-items-center rounded-pill border border-line bg-surface text-ink hover:border-ink">✕</button>
+                        </div>
+                    </header>
+                    <div class="relative min-h-0 flex-1">
+                        <div x-show="!preview.loaded" class="absolute inset-0 grid place-items-center text-sm text-muted">{{ __('Loading the profile…') }}</div>
+                        <template x-if="preview.row">
+                            <iframe :src="previewUrl(preview.row)" title="{{ __('Profile preview') }}" class="h-full w-full border-0 bg-bg transition-opacity duration-300" :class="preview.loaded ? 'opacity-100' : 'opacity-0'" @load="preview.loaded = true"></iframe>
+                        </template>
+                    </div>
+                </aside>
+            </div>
+        </template>
+
+        {{-- ── Verify / Suspend composer: the decision + the email the account gets ── --}}
+        <template x-teleport="body">
+            <div x-show="notice.open" x-cloak class="fixed inset-0 z-[70] flex items-center justify-center p-4 sm:p-6" data-surface="fama-admin"
+                 role="dialog" aria-modal="true" aria-labelledby="notice-title" @keydown.escape.window="notice.open && closeNotice()">
+                <div class="absolute inset-0" style="background: var(--scrim);" @click="closeNotice()"></div>
+
+                <div class="relative flex max-h-[94vh] w-full max-w-6xl flex-col overflow-hidden rounded-[20px] border border-line bg-surface shadow-e3">
+                    <div class="flex items-start justify-between gap-4 border-b border-line px-7 py-5">
+                        <div>
+                            <p class="text-[12px] font-semibold uppercase tracking-[0.14em]" :class="notice.type === 'verify' ? 'text-accent-ink' : 'text-warn'"
+                               x-text="notice.type === 'verify' ? '{{ __('Verify account') }}' : '{{ __('Suspend account') }}'"></p>
+                            <h2 id="notice-title" class="mt-1 font-display text-2xl text-ink" x-text="(notice.row?.display_name || notice.row?.name || notice.row?.email || '')"></h2>
+                            <p class="mt-1 max-w-2xl text-sm text-muted" x-show="notice.type === 'verify'">{{ __('Verification approves the account to go public. It is one-way — hide the account later with Suspend or Unpublish.') }}</p>
+                            <p class="mt-1 max-w-2xl text-sm text-muted" x-show="notice.type === 'suspend'" x-cloak>{{ __('The account is hidden from the public until it is reinstated.') }}</p>
+                        </div>
+                        <button type="button" @click="closeNotice()" aria-label="{{ __('Close') }}" class="grid h-10 w-10 shrink-0 place-items-center rounded-pill border border-line text-lg text-ink transition hover:border-ink">✕</button>
+                    </div>
+
+                    <div class="grid min-h-0 flex-1 overflow-hidden md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+                        {{-- Compose --}}
+                        <div class="space-y-5 overflow-y-auto border-b border-line p-7 md:border-b-0 md:border-e">
+                            <label class="flex cursor-pointer items-center justify-between gap-4 rounded-[14px] border border-line bg-bg px-4 py-3">
+                                <span>
+                                    <span class="block text-[15px] font-semibold text-ink">{{ __('Send an email') }}</span>
+                                    <span class="block text-sm text-muted">{{ __('Untick to take the decision without emailing them.') }}</span>
+                                </span>
+                                <input type="checkbox" x-model="notice.send" class="h-5 w-5 rounded border-line-strong text-accent focus:ring-accent">
+                            </label>
+                            <fieldset class="space-y-4" :disabled="!notice.send" :class="{ 'opacity-50': !notice.send }">
+                                <div>
+                                    <label class="mb-1.5 block text-sm font-semibold text-ink" for="nt-email">{{ __('To') }}</label>
+                                    <input id="nt-email" type="email" x-model="notice.email" class="w-full text-ink" dir="ltr">
+                                    <p x-show="notice.errors['notify.email']" x-cloak class="mt-1 text-sm text-danger" x-text="notice.errors['notify.email']?.[0]"></p>
+                                </div>
+                                <div>
+                                    <label class="mb-1.5 block text-sm font-semibold text-ink" for="nt-subject">{{ __('Subject') }}</label>
+                                    <input id="nt-subject" type="text" maxlength="150" x-model="notice.subject" @input="noticeEdited()" class="w-full text-ink">
+                                    <p x-show="notice.errors['notify.subject']" x-cloak class="mt-1 text-sm text-danger" x-text="notice.errors['notify.subject']?.[0]"></p>
+                                </div>
+                                <div>
+                                    <label class="mb-1.5 block text-sm font-semibold text-ink" for="nt-heading">{{ __('Heading') }}</label>
+                                    <input id="nt-heading" type="text" maxlength="120" x-model="notice.heading" @input="noticeEdited()" class="w-full text-ink">
+                                    <p x-show="notice.errors['notify.heading']" x-cloak class="mt-1 text-sm text-danger" x-text="notice.errors['notify.heading']?.[0]"></p>
+                                </div>
+                                <div>
+                                    <label class="mb-1.5 flex items-center justify-between text-sm font-semibold text-ink" for="nt-message"><span>{{ __('Message') }}</span><span class="text-xs font-normal text-subtle" x-text="(notice.message || '').length + ' / 3000'"></span></label>
+                                    <textarea id="nt-message" rows="9" maxlength="3000" x-model="notice.message" @input="noticeEdited()" class="w-full text-ink" dir="auto"></textarea>
+                                    <p class="mt-1 text-xs text-subtle">{{ __('Leave a blank line between paragraphs.') }}</p>
+                                    <p x-show="notice.errors['notify.message']" x-cloak class="mt-1 text-sm text-danger" x-text="notice.errors['notify.message']?.[0]"></p>
+                                </div>
+                            </fieldset>
+                        </div>
+
+                        {{-- Preview: the real email view, rendered by the server --}}
+                        <div class="flex min-h-[420px] flex-col bg-bg">
+                            <div class="flex items-center justify-between gap-3 border-b border-line px-6 py-3">
+                                <p class="text-[12px] font-semibold uppercase tracking-[0.14em] text-subtle">{{ __('Email preview') }}</p>
+                                <p class="min-w-0 flex-1 truncate text-sm text-muted"><span class="text-subtle">{{ __('Subject') }}:</span> <span class="text-ink" x-text="notice.subject || '—'"></span></p>
+                                {{-- The email has a dark theme for dark-mode mail apps; preview light by default
+                                     (noticeDoc rewrites the email's dark-mode media query to off / always on). --}}
+                                <div class="inline-flex shrink-0 rounded-pill border border-line bg-surface p-0.5 text-xs font-semibold" role="group" aria-label="{{ __('Preview theme') }}">
+                                    <button type="button" @click="notice.scheme = 'light'" :class="notice.scheme !== 'dark' ? 'bg-primary text-on-primary' : 'text-muted'" class="rounded-pill px-2.5 py-1">{{ __('Light') }}</button>
+                                    <button type="button" @click="notice.scheme = 'dark'" :class="notice.scheme === 'dark' ? 'bg-primary text-on-primary' : 'text-muted'" class="rounded-pill px-2.5 py-1">{{ __('Dark mail app') }}</button>
+                                </div>
+                            </div>
+                            <div class="relative min-h-0 flex-1">
+                                <div x-show="notice.loading" class="absolute inset-0 grid place-items-center text-sm text-muted">{{ __('Loading preview…') }}</div>
+                                <iframe x-show="!notice.loading" :srcdoc="noticeDoc" title="{{ __('Email preview') }}" class="h-full min-h-[420px] w-full border-0 bg-white" sandbox="allow-same-origin"
+                                        :class="{ 'opacity-40 grayscale': !notice.send }"></iframe>
+                                <p x-show="!notice.send" x-cloak class="absolute inset-x-0 top-4 mx-auto w-max rounded-pill bg-primary px-4 py-1.5 text-sm font-semibold text-on-primary">{{ __('No email will be sent') }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap items-center justify-end gap-3 border-t border-line px-7 py-4">
+                        <p x-show="notice.errors._" x-cloak class="me-auto text-sm text-danger" x-text="notice.errors._?.[0]"></p>
+                        <button type="button" @click="closeNotice()" class="min-h-11 rounded-pill border border-line px-5 text-sm font-semibold text-ink hover:border-ink">{{ __('Cancel') }}</button>
+                        <button type="button" @click="submitNotice()" :disabled="notice.sending || notice.loading"
+                                class="inline-flex min-h-11 items-center gap-2 rounded-pill px-5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
+                                :class="notice.type === 'verify' ? 'bg-primary' : 'bg-danger'">
+                            <span x-show="notice.sending" class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white"></span>
+                            <span x-text="notice.type === 'verify'
+                                ? (notice.send ? '{{ __('Verify & send email') }}' : '{{ __('Verify without email') }}')
+                                : (notice.send ? '{{ __('Suspend & send email') }}' : '{{ __('Suspend without email') }}')"></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </template>
 
         {{-- ── Delete-review composer (email + reason + LIVE PREVIEW) ──────── --}}
         <template x-teleport="body">

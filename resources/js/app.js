@@ -32,6 +32,7 @@ import './topbar';
 
 // fama-ui design (2026-10-12): shell (nav, bell, toast) + per-area page components.
 import './ui/shell';
+import './ui/combo';
 import './ui/feed';
 import './ui/profile';
 import './ui/projects';

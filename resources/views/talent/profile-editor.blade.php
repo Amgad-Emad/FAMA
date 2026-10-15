@@ -36,10 +36,11 @@
         : ($weekly['current_week'] > 0 ? '▲ '.number_format($weekly['current_week']) : '–');
 
     $steps = [
-        ['key' => 'photo', 'label' => __('Profile photo'), 'help' => __('A clear photo of you. Brands are looking for a person.'), 'href' => '#core'],
-        ['key' => 'name', 'label' => __('Display name'), 'help' => __('The name brands see in search results.'), 'href' => '#core'],
-        ['key' => 'place', 'label' => __('City and country'), 'help' => __('Brands filter by where you are.'), 'href' => '#core'],
-        ['key' => 'bio', 'label' => __('A short bio'), 'help' => __('A line or two about your work.'), 'href' => '#core'],
+        // `focus` = the field an Edit/Add link glides to on this page.
+        ['key' => 'photo', 'label' => __('Profile photo'), 'help' => __('A clear photo of you. Brands are looking for a person.'), 'href' => '#core', 'focus' => 'fPhoto'],
+        ['key' => 'name', 'label' => __('Display name'), 'help' => __('The name brands see in search results.'), 'href' => '#core', 'focus' => 'fDisplay'],
+        ['key' => 'place', 'label' => __('City and country'), 'help' => __('Brands filter by where you are.'), 'href' => '#core', 'focus' => 'fCountry'],
+        ['key' => 'bio', 'label' => __('A short bio'), 'help' => __('A line or two about your work.'), 'href' => '#core', 'focus' => 'fBio'],
         ['key' => 'skill', 'label' => __('A skill and a speciality'), 'help' => __('What brands search for.'), 'href' => '#skills'],
         ['key' => 'project', 'label' => __('One project'), 'help' => __('At least one project, with its photos or video.'), 'href' => route('talent.projects')],
     ];
@@ -73,7 +74,7 @@
 
 <x-fama.layout :title="__('Profile structure')" mode="talent" :css="['fields', 'views', 'exp']">
     <x-slot:styles>
-        <link rel="stylesheet" href="{{ asset('fama-ui/css/pages/profile-structure.css') }}?v=1">
+        <link rel="stylesheet" href="{{ \App\Support\FamaAsset::url('fama-ui/css/pages/profile-structure.css') }}">
     </x-slot:styles>
 
 <div x-data="profileStructure({
@@ -92,6 +93,7 @@
         blocks: @js($blocks),
         catalog: @js($catalog),
         contentKeys: @js($contentKeys),
+        countries: @js(\App\Support\Locations::countries()),
         universalPosition: {{ (int) ($talent->meta['universal_position'] ?? 0) }},
         interests: @js($interests),
         collabs: @js($collabs),
@@ -142,12 +144,25 @@
     </div>
     <span class="vw-only"><svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg>{{ __('Only you see this') }}</span>
   </div>
-  <ul class="vw-todo">
+  {{-- Every step done: the six rows fold into one card about the last step — Fama's check. --}}
+  <div class="vw-check" :class="{ ok: isVerified }" x-show="allStepsDone && !showSteps" x-cloak>
+    <span class="vw-check-ic" aria-hidden="true">
+      <svg class="icon" x-show="!isVerified"><use href="#i-award"/></svg>
+      <svg class="icon" x-show="isVerified" x-cloak><use href="#i-check"/></svg>
+    </span>
+    <div class="vw-check-txt">
+      <span class="vw-check-k" x-text="@js(__('All :n steps done')).replace(':n', gateSteps.length)"></span>
+      <h3>{{ __('Checked by Fama') }}</h3>
+      <p x-text="isVerified ? @js(__('Your profile has been checked. Go Live whenever you’re ready.')) : @js(__('Our team reviews every new profile once. You can keep editing meanwhile.'))"></p>
+      <button type="button" class="vw-link" @click="showSteps = true">{{ __('Review your steps') }}<svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></button>
+    </div>
+  </div>
+  <ul class="vw-todo" x-show="!allStepsDone || showSteps">
     <template x-for="s in gateSteps" :key="s.key">
       <li :class="{ ok: s.done }">
         <span class="tick"><svg class="icon" aria-hidden="true" x-show="s.done"><use href="#i-check"/></svg></span>
         <span class="txt"><b x-text="s.label"></b><p x-show="!s.done" x-text="s.help"></p></span>
-        <a class="vw-link" :href="s.href"><span x-text="s.done ? @js(__('Edit')) : @js(__('Add'))"></span><span class="vh" x-text="' ' + s.label"></span><svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+        <a class="vw-link" :href="s.href" @click="goStep($event, s)"><span x-text="s.done ? @js(__('Edit')) : @js(__('Add'))"></span><span class="vh" x-text="' ' + s.label"></span><svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
       </li>
     </template>
     {{-- App step (not in the prototype): Fama verifies every profile once before it can go Live (ADR-U). --}}
@@ -213,7 +228,7 @@
             <span class="ph" :class="{ has: avatarUrl }" :style="avatarUrl ? `background-image:url(${avatarUrl})` : ''" aria-hidden="true" x-text="avatarUrl ? '' : initials"></span>
             <div>
               <div class="acts">
-                <button class="btn btn-2" type="button" @click="$refs.avatarInput.click()" :disabled="uploadingAvatar">
+                <button class="btn btn-2" type="button" id="fPhoto" @click="$refs.avatarInput.click()" :disabled="uploadingAvatar">
                   <svg class="icon" aria-hidden="true"><use href="#i-upload"/></svg>
                   <span x-text="uploadingAvatar ? @js(__('Uploading…')) : (avatarUrl ? @js(__('Change photo')) : @js(__('Upload photo')))">{{ __('Upload photo') }}</span>
                 </button>
@@ -249,8 +264,18 @@
           </div>
         </div>
         <div class="two f">
-          <label class="f"><span>{{ __('City') }}</span><input class="in" id="fCity" maxlength="255" autocomplete="address-level2" x-model="core.base_city"></label>
-          <label class="f"><span>{{ __('Country') }}</span><input class="in" id="fCountry" maxlength="255" autocomplete="country-name" x-model="core.base_country"></label>
+          {{-- Country first: it decides the City list. --}}
+          <div class="f" :class="{ bad: errors.base_country }"><span id="lCountry">{{ __('Country') }}</span>
+            <x-fama.combo id="fCountry" model="core.base_country" items="countryOptions" :flags="true" icon="globe" aria-labelledby="lCountry"
+                          :label="__('Country')" :placeholder="__('Choose a country')" :search-placeholder="__('Search countries')"
+                          @combo-pick="onCountryPicked($event.detail)" />
+            <p class="help err" x-show="errors.base_country" x-cloak x-text="errors.base_country?.[0]"></p></div>
+          <div class="f" :class="{ bad: errors.base_city }"><span id="lCity">{{ __('City') }}</span>
+            <x-fama.combo id="fCity" model="core.base_city" items="cityOptions" :allow-custom="true" icon="pin"
+                          :label="__('City')" :placeholder="__('Choose a city')" :search-placeholder="__('Search cities')"
+                          disabled="!countryCode" x-effect="loadCities(countryCode)" />
+            <p class="help" x-show="!countryCode" x-cloak>{{ __('Choose a country first.') }}</p>
+            <p class="help err" x-show="errors.base_city" x-cloak x-text="errors.base_city?.[0]"></p></div>
         </div>
       </div>
     </div>
@@ -519,7 +544,7 @@
 </div>
 </main>
 
-<div class="savebar" id="savebar" :class="{ dirty: dirtyCount > 0, bad: dirtyCount > 0 && badField }">
+<div class="savebar off" id="savebar" :class="{ dirty: dirtyCount > 0, bad: dirtyCount > 0 && badField, off: !barShown }" :aria-hidden="(!barShown).toString()">
   <div class="in-bar">
     <p class="msg" role="status" aria-live="polite"><span class="dot" aria-hidden="true"></span><span><span x-text="sbTitle">{{ __('All changes saved') }}</span><small x-text="sbNote">{{ __('Your profile is up to date.') }}</small></span></p>
     <div class="acts" x-show="dirtyCount > 0" x-cloak>

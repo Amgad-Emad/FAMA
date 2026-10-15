@@ -48,7 +48,7 @@
 @endphp
 <x-fama.layout :title="$project->title">
     <x-slot:styles>
-        <link rel="stylesheet" href="{{ asset('fama-ui/css/pages/project.css') }}">
+        <link rel="stylesheet" href="{{ \App\Support\FamaAsset::url('fama-ui/css/pages/project.css') }}">
         <style>
             /* App additions: real media inside the prototype's frames. */
             .st-img video.m{display:block;object-fit:cover;background:#14110F}

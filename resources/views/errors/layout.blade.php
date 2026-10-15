@@ -23,8 +23,8 @@
     <meta name="robots" content="noindex">
     <title>@yield('title') · Fama</title>
     <link rel="icon" href="{{ asset('fama-ui/img/fama-emblem.svg') }}" type="image/svg+xml">
-    <link rel="stylesheet" href="{{ asset('fama-ui/css/shell.css') }}">
-    <link rel="stylesheet" href="{{ asset('fama-ui/css/ds.css') }}">
+    <link rel="stylesheet" href="{{ \App\Support\FamaAsset::url('fama-ui/css/shell.css') }}">
+    <link rel="stylesheet" href="{{ \App\Support\FamaAsset::url('fama-ui/css/ds.css') }}">
     <style>
     /* One clear way out (UX audit #22): back to the profile for talents, the feed for guests. */
     .nf{max-width:640px;margin:var(--s9) auto 0;text-align:center}

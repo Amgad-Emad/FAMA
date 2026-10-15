@@ -38,8 +38,8 @@ class TalentFactory extends Factory
                 'en' => fake()->paragraph(),
                 'ar' => 'نبذة تعريفية عن الموهبة وخبراتها.',
             ],
-            'base_city' => fake()->randomElement(['Cairo', 'Alexandria', 'Giza', 'Dubai', 'Riyadh']),
-            'base_country' => fake()->randomElement(['Egypt', 'UAE', 'Saudi Arabia']),
+            // A real city/country pair (both are drop lists in the editor).
+            ...(fn (array $place): array => ['base_city' => $place[0], 'base_country' => $place[1]])(fake()->randomElement([['Cairo', 'Egypt'], ['Alexandria', 'Egypt'], ['Giza', 'Egypt'], ['Dubai', 'United Arab Emirates'], ['Riyadh', 'Saudi Arabia']])),
             'booking_type' => 'email',
             'booking_value' => fake()->safeEmail(),
             'is_verified' => true,

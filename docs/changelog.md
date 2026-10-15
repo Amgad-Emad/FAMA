@@ -11,6 +11,100 @@ Notable changes to the Fama project. Newest first.
   (`profileViews.grown`/`delay()`; reduced-motion snaps).
 - Drop lists on fama-ui pages draw one chevron (app-bridge.css) instead of the browser arrow: 16px from the end,
   vertically centred, RTL-aware, text never runs under it.
+- Project editor shows validation errors ON the fields (title, skills, link client-side; every server 422 field —
+  client, role, date, specialities, text, results — mapped by `famaProjectEdit.fieldOf()`), scrolls to the first,
+  clears each as it is edited; autosave failures land on the fields too.
+- Profile structure save bar hides when there is nothing to save; slides up for unsaved changes and stays 2.5s after
+  a save ("Saved just now"), then slides away.
+- Country + City are searchable drop lists (`<x-fama.combo>`, `ui/combo.js`): Country shows flags (flag-icons SVGs),
+  City lists that country's 15k+ cities largest first (`GET /locations/{code}/cities`, GeoNames data) and accepts a
+  typed town. `base_country` must be a listed country (a legacy value may ride along unchanged); aliases (UAE, KSA,
+  UK, USA) save as the canonical name; migration `2026_10_15_000100` canonicalised existing rows. Factories now pick
+  real city/country pairs.
+- Go-Live steps: Edit/Add glide smoothly to the exact field and focus it (City and country → Country); same-page
+  anchors scroll smoothly site-wide. When all six steps are done they fold into one large "Checked by Fama" card
+  (pending: pulsing award; verified: tick + "Go Live whenever you're ready"), with "Review your steps".
+- Featured project = the talent's pick (`talents.featured_project_id`, migration `2026_10_15_000200` backfills today's
+  cover). `FeaturedProjectService` holds the rule: a talent with projects always has exactly ONE featured; it changes
+  by featuring another (no un-feature), so an only project is featured + locked. Set from the project editor
+  ("Featured" switch; `featured` on store/update, home owner only) and the Projects list (star →
+  `POST /talent/projects/{project}/feature`); create/delete/leave re-check it. Rows carry `is_featured`,
+  `can_feature`, `featured_locked`. Public profile cover reads the pick.
+- "Steps done" email: the first time all six profile steps are done while Fama's check is pending,
+  `ProfileCompletionService::notifyIfComplete()` stamps `talents.steps_completed_at` (atomic, migration
+  `2026_10_15_000300`) and queues `App\Mail\ProfileStepsCompleted` (emails/profile-steps-completed). Called from
+  updateCore, updateAvatar, setSpecialities and project create.
+- Profile structure hero avatar: a real photo now fills the circle (a higher-specificity background shorthand reset
+  its size). fama-ui CSS/JS links are versioned by file mtime (`App\Support\FamaAsset::url`) instead of a fixed
+  `?v=1`, so style edits reach browsers without a hard refresh.
+- Nav status bar has three states: Private (steps left, ink) → "Your profile is under review" (all six done, Fama
+  checking, purple, CTA See status) → "checked — Go Live whenever you're ready" (green, CTA Go Live). Server-rendered
+  from `ProfileCompletionService::isComplete()` + `is_verified`; Profile structure keeps it live via a `fama-gate`
+  window event.
+- Admin console wears the fama-ui language: `resources/css/fama-admin.css` (imported by app.css) re-reads the core
+  tokens under `<body data-surface="fama-admin">` — cream ground, white cards, ink, Orchid, Oswald + Sofia Sans, 20px
+  cards, pill controls, light only — so every admin page restyles token-only. The admin layout chrome is rebuilt
+  (fama-ui logo + ADMIN badge, pill sidebar with an ink active item, "Operations console" header, initials chip).
+  The staff login is the fama-ui split screen (auth.css) with an INK showcase (distinct from the purple public one).
+- Verify / Suspend open an email composer: suggested copy (`AccountNoticeService::defaults`) + a live preview of the
+  REAL email view in an iframe (`POST /admin/moderation/{talents|brands}/{id}/notice/{verify|suspend}`), editable
+  subject/heading/message, "Send an email" toggle. The decision carries `notify` (validated BEFORE it runs) and
+  queues `App\Mail\AccountStatusNotice` (emails/account-status) after commit; no `notify` = the old silent action.
+- Admin moderation: account rows show avatar, @username · email · city · joined, Verified / "Ready for review"
+  (steps done, unverified) pills; actions = filled primary (Verify → Publish → Reinstate/Restore) + outlined Suspend +
+  "⋯" menu (Unpublish, Delete). Queue tabs sit in one card with waiting-count badges (brand tabs only with the
+  feature), a larger search, status filter and result count. Sidebar icons are one consistent 24px stroke set in tiles.
+- Admin dashboard rebuilt: "Needs a decision" queue cards; Platform insights over 7d/30d/90d/12m
+  (`AdminInsightsService`, `GET /admin/dashboard/insights?range=`) — KPI tiles (new talents, verified, posts, profile
+  views) with change vs the previous period + sparklines, a large animated column chart for the picked metric, and
+  likes/comments/follows totals; "Road to Live" funnel (signed up → six steps → checked → Live); skills mix;
+  governance links + recent activity.
+- Dashboard detail boxes follow the picked KPI (`details` in the insights payload): new talents → finished steps /
+  went Live / per day; verified → verified-and-Live / awaiting / ready (right now); posts → likes / comments /
+  active posters; views → talents viewed / views per talent / follows. The Marketplace row is not rendered when
+  brands + contracts are off (it left an empty section gap).
+- Verify/Suspend email preview is pinned to the LIGHT email (the email's dark-mode block followed the admin's OS in
+  the iframe); a "Dark mail app" toggle previews the dark version (`noticeDoc` rewrites the media query).
+- Every dashboard figure has an "i" (`<x-admin.info :text>` / `bind=`) explaining how it is calculated: the four KPI
+  tiles, the chart (+ its day/week/month bucketing), each detail box, Road to Live, Skills mix and the queue cards.
+  KPI tiles are `div role=button` so the info button can nest; clicking it never switches the metric.
+- Moderation View (talents) opens a wide side panel with the PUBLIC profile in an iframe, as a visitor sees it, with
+  Verify / Suspend / ⋯ in its header. Staff with moderate-content may open private profiles
+  (`TalentProfileController::isStaff`; not counted as views); `?staff_preview=1` shows a "Staff preview" strip and
+  drops the visitor nav. The details drawer is teleported to <body> (an ancestor clipped its bottom).
+- Bulk actions on the talents / brands / reviews / recognitions queues (`ModerationBulkService`): row checkboxes,
+  select-all, a sticky bar with Export selected / Delete (and Approve / Reject on reviews), and Export all/filtered
+  (CSV, UTF-8 BOM, formula-injection safe). `POST /admin/moderation/bulk/{queue}/delete` (≤200, each row via its
+  audited single path), `GET /admin/moderation/export/{queue}?ids=|q=|status=`.
+- Media retention: hard deletes already remove files (medialibrary hook, test-proven for projects, gallery items,
+  content items). NEW `media:purge-trashed` (daily 03:50) deletes files of soft-deleted owners past
+  `media-library.trash_retention_days` (30, env MEDIA_TRASH_RETENTION_DAYS) and orphaned media whose owner row is
+  gone (DB cascades fire no model events). `--dry-run` reports.
+- Activity log is a day-grouped timeline: readable sentences ("Admin Demo verified a talent · Nadia Samir"), category
+  chips, relative times, expandable old → new diff + reason; period filter (24h/7d/30d); subject names resolved.
+- Approve / Reject buttons restyled (filled green / outlined red with icons).
+- Posts module (sidebar "Posts", was Feed moderation; opens on All posts): rich post/comment rows (author, excerpt,
+  photo thumb, likes/comments, open reports, state), Reported tab (reason, note, reporter, target; hide / remove with a
+  reason sent to the author / mark actioned / dismiss), single + bulk hide / unhide / delete
+  (`FeedModerationService::deletePost|deleteComment|bulk`, audited; impossible moves skipped, not failed;
+  `POST /admin/moderation/feed/bulk`, `delete` added to the per-row action routes). The reason dialog replaces
+  window.prompt. Sidebar active state fixed (only the moderation index marks a queue item).
+- V1 admin shows nothing brand-related while `features.brands` is off: Follows tooltip, Accounts hint, Settings brand
+  switches, the Brand account type, brand activity entries (Activity log + dashboard), and the verify email copy.
+- "Remove & tell the author" is an email composer: required reason (in-app notice + audit + highlighted in the
+  email), "Send an email" toggle, editable To / Subject / Message, live preview of the REAL `emails/content-removed`
+  view (`App\Mail\ContentRemovedNotice`, quotes the removed post/comment; Light / Dark-mail-app toggle).
+  `POST /admin/moderation/feed/{posts|comments}/{id}/notice` (defaults + preview, sends nothing); remove accepts
+  `notify` (validated BEFORE removing).
+- Deleting a post now deletes its comments with it (soft, same moment — PostObserver → `App\Feed\PostPurger`;
+  migration `2026_10_15_000400` back-fills comments of posts deleted earlier). After the 30-day restore window
+  `media:purge-trashed` PURGES the post for good: likes / saves / mentions / link chips of the post and its comments
+  (polymorphic rows no cascade reaches), then a force delete (medialibrary removes files; FKs cascade comments, skill
+  tags, seen-marks). Reports stay as moderation history.
+- All reviews no longer lists brand reviews while brands are off (their View 404'd → "Request failed").
+- Test flake fixed: GeneratesCoverImages wrote a seed-only temp path that parallel processes raced on.
+- Block catalog as cards: summary (active / retired / placements), search + All / Profile-wide / Skill-specific /
+  Retired filters, per-block icon, "Available to / Holds" facts, usage chip, an Active switch, and the editor in a modal.
 
 ## 2026-10-12 — Guest feed + login landing polish
 - Guest feed identical to the prototype: the link-chip glyph sprite no longer renders as a 300×150 box (it used

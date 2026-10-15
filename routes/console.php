@@ -12,3 +12,4 @@ Artisan::command('inspire', function () {
 // and prune stale bookkeeping rows while traffic is lowest.
 Schedule::command('feed:reconcile-counters')->dailyAt('03:10');
 Schedule::command('feed:prune')->dailyAt('03:40');
+Schedule::command('media:purge-trashed')->dailyAt('03:50');

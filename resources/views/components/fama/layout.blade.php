@@ -20,7 +20,6 @@
 
 @php
     $mode = $mode ?? (auth('talent')->check() ? 'talent' : 'public');
-    $v = '1';
 @endphp
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}"
@@ -33,12 +32,12 @@
     <link rel="icon" href="{{ asset('fama-ui/img/fama-emblem.svg') }}" type="image/svg+xml">
     {{ $head ?? '' }}
     @include('partials.fama-head')
-    <link rel="stylesheet" href="{{ asset('fama-ui/css/shell.css') }}?v={{ $v }}">
-    <link rel="stylesheet" href="{{ asset('fama-ui/css/ds.css') }}?v={{ $v }}">
+    <link rel="stylesheet" href="{{ \App\Support\FamaAsset::url('fama-ui/css/shell.css') }}">
+    <link rel="stylesheet" href="{{ \App\Support\FamaAsset::url('fama-ui/css/ds.css') }}">
     @foreach ((array) $css as $sheet)
-        <link rel="stylesheet" href="{{ asset('fama-ui/css/'.$sheet.'.css') }}?v={{ $v }}">
+        <link rel="stylesheet" href="{{ \App\Support\FamaAsset::url('fama-ui/css/'.$sheet.'.css') }}">
     @endforeach
-    <link rel="stylesheet" href="{{ asset('fama-ui/css/app-bridge.css') }}?v={{ $v }}">
+    <link rel="stylesheet" href="{{ \App\Support\FamaAsset::url('fama-ui/css/app-bridge.css') }}">
     {{ $styles ?? '' }}
     @vite(['resources/js/app.js'])
 </head>
@@ -59,7 +58,7 @@
 
     <x-fama.confirm-dialog />
     <x-fama.toast />
-    <script src="{{ asset('fama-ui/js/hero.js') }}?v={{ $v }}" defer></script>
+    <script src="{{ \App\Support\FamaAsset::url('fama-ui/js/hero.js') }}" defer></script>
     {{ $scripts ?? '' }}
 </body>
 </html>

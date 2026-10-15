@@ -167,7 +167,7 @@ it('allows edits inside the window and locks after 15 minutes', function () {
         ->assertStatus(403);
 });
 
-it('soft-deletes a post, uncounting it while comments survive as rows', function () {
+it('soft-deletes a post, uncounting it and soft-deleting its comments with it', function () {
     [$talent] = publishedTalentWithSkill();
     $post = Post::factory()->byAuthor($talent)->create();
     Comment::factory()->count(2)->create(['post_id' => $post->id]);
@@ -179,7 +179,8 @@ it('soft-deletes a post, uncounting it while comments survive as rows', function
         ->assertOk();
 
     expect(Post::withTrashed()->find($post->id)->deleted_at)->not->toBeNull()
-        ->and(Comment::query()->where('post_id', $post->id)->count())->toBe(2)
+        ->and(Comment::query()->where('post_id', $post->id)->count())->toBe(0)
+        ->and(Comment::onlyTrashed()->where('post_id', $post->id)->count())->toBe(2)
         ->and($talent->refresh()->posts_count)->toBe(0);
 });
 

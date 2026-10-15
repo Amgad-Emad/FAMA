@@ -2,6 +2,7 @@
 
 namespace App\Observers;
 
+use App\Feed\PostPurger;
 use App\Models\Post;
 use App\Services\CounterService;
 use App\States\Post\Published;
@@ -14,9 +15,7 @@ use App\States\Post\Published;
  */
 class PostObserver
 {
-    public function __construct(private readonly CounterService $counters)
-    {
-    }
+    public function __construct(private readonly CounterService $counters) {}
 
     /**
      * A post row landed already-published (seeders, direct creates).
@@ -55,6 +54,11 @@ class PostObserver
     {
         if ($this->isPublished($post)) {
             $this->counters->applyPostPublishDelta($post, -1);
+        }
+
+        // A soft-deleted post takes its comments with it (PostPurger).
+        if (! $post->isForceDeleting()) {
+            app(PostPurger::class)->softDeleteComments($post);
         }
     }
 

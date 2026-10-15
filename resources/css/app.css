@@ -14,6 +14,9 @@
 /* Daylight — the feed's second, scoped design system (Prompt 5L). */
 @import './daylight.css';
 
+/* The admin console in the fama-ui language (scoped, token re-read). */
+@import './fama-admin.css';
+
 /* Content sources scanned for utility classes. */
 @source '../**/*.blade.php';
 @source '../**/*.js';

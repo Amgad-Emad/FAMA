@@ -45,7 +45,7 @@
 
 <x-fama.layout :title="__('Profile content')" mode="talent">
     <x-slot:styles>
-        <link rel="stylesheet" href="{{ asset('fama-ui/css/pages/profile-content.css') }}?v=1">
+        <link rel="stylesheet" href="{{ \App\Support\FamaAsset::url('fama-ui/css/pages/profile-content.css') }}">
     </x-slot:styles>
 
     <x-slot:hero>

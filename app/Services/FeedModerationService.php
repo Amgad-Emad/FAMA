@@ -11,6 +11,9 @@ use App\Notifications\Feed\ContentRemoved;
 use App\States\Comment as CommentStates;
 use App\States\Post as PostStates;
 use Illuminate\Database\Eloquent\Model;
+use Spatie\Activitylog\Models\Activity;
+use Spatie\ModelStates\Exceptions\CouldNotPerformTransition;
+use Spatie\ModelStates\Exceptions\TransitionNotAllowed;
 
 /**
  * Feed moderation (Prompt 5Q, feed-spec §10). Every action runs through the
@@ -56,6 +59,71 @@ class FeedModerationService extends Service
             $post->state->transitionTo(PostStates\Published::class);
             $this->audit('post.restored', $post, $admin);
         }, ['post' => $post->id, 'action' => 'restore']);
+    }
+
+    /**
+     * Delete a post as staff (soft delete: hidden everywhere, files kept for the
+     * restore window, then media:purge-trashed removes them). Audited.
+     */
+    public function deletePost(Post $post, User $admin, ?string $reason = null): void
+    {
+        $this->runInTransaction(function () use ($post, $admin, $reason): void {
+            $this->audit('post.deleted', $post, $admin, $reason);
+            $post->delete();
+        }, ['post' => $post->id, 'action' => 'delete']);
+    }
+
+    /** Delete a comment as staff (soft delete). Audited. */
+    public function deleteComment(Comment $comment, User $admin, ?string $reason = null): void
+    {
+        $this->runInTransaction(function () use ($comment, $admin, $reason): void {
+            $this->audit('comment.deleted', $comment, $admin, $reason);
+            $comment->delete();
+        }, ['comment' => $comment->id, 'action' => 'delete']);
+    }
+
+    /**
+     * One action on many posts or comments (hide / restore / delete). Rows whose
+     * state does not allow the move (e.g. hiding an already hidden post) are
+     * skipped, not failed. Returns [done, skipped].
+     *
+     * @param  'post'|'comment'  $kind
+     * @param  list<int>  $ids
+     * @return array{0: int, 1: int}
+     */
+    public function bulk(User $admin, string $kind, string $action, array $ids): array
+    {
+        $model = $kind === 'post' ? Post::class : Comment::class;
+        $done = 0;
+        $skipped = 0;
+
+        $hidden = $kind === 'post' ? PostStates\Hidden::class : CommentStates\Hidden::class;
+        $published = $kind === 'post' ? PostStates\Published::class : CommentStates\Published::class;
+
+        foreach ($model::query()->whereKey(array_slice($ids, 0, 200))->get() as $row) {
+            // Pre-check the move so an impossible one is a quiet skip, not a logged failure.
+            if (($action === 'hide' && ! $row->state->canTransitionTo($hidden))
+                || ($action === 'restore' && ! $row->state->canTransitionTo($published))) {
+                $skipped++;
+
+                continue;
+            }
+            try {
+                match ("{$kind}.{$action}") {
+                    'post.hide' => $this->hidePost($row, $admin, __('Bulk action')),
+                    'post.restore' => $this->restorePost($row, $admin),
+                    'post.delete' => $this->deletePost($row, $admin, __('Bulk action')),
+                    'comment.hide' => $this->hideComment($row, $admin, __('Bulk action')),
+                    'comment.restore' => $this->restoreComment($row, $admin),
+                    'comment.delete' => $this->deleteComment($row, $admin, __('Bulk action')),
+                };
+                $done++;
+            } catch (CouldNotPerformTransition|\Spatie\ModelStates\Exceptions\TransitionNotFound|TransitionNotAllowed $e) {
+                $skipped++;
+            }
+        }
+
+        return [$done, $skipped];
     }
 
     /**
@@ -159,7 +227,7 @@ class FeedModerationService extends Service
      */
     public function wasAutoHidden(Post|Comment $reportable): bool
     {
-        return \Spatie\Activitylog\Models\Activity::query()
+        return Activity::query()
             ->where('log_name', 'feed_moderation')
             ->where('subject_type', $reportable->getMorphClass())
             ->where('subject_id', $reportable->getKey())

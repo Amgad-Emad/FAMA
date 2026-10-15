@@ -2,8 +2,8 @@
     'talentTypes' => $talentTypes,
     'locale' => app()->getLocale(),
     't' => [
-        'universal' => __('Universal'),
-        'byCategory' => __('By category'),
+        'universal' => __('Every profile'),
+        'byCategory' => __('Only'),
         'bySkill' => __('By skill'),
         'inline' => __('inline'),
         'table' => __('table'),
@@ -13,47 +13,80 @@
 
 <x-admin-layout :title="__('Block catalog')">
     <div x-data="adminBlocks(@js($initial))" class="space-y-5">
-        <p class="text-sm text-muted">{{ __('The building blocks talent profiles are assembled from. This page owns which blocks exist and who may use them; per-skill preselection and order live on the Skills page.') }}</p>
+        {{-- Summary + add --}}
+        <div class="flex flex-wrap items-end justify-between gap-4">
+            <p class="max-w-3xl text-sm text-muted">{{ __('The building blocks talent profiles are made of. This page decides which blocks exist and who may use them; which ones each skill starts with, and in what order, lives on Skills templates.') }}</p>
+            <button type="button" @click="openNew()" class="inline-flex h-11 items-center gap-2 rounded-pill bg-primary px-5 text-sm font-semibold text-on-primary hover:opacity-90">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M12 5v14M5 12h14"/></svg>{{ __('Add block type') }}</button>
+        </div>
+        <div class="grid gap-3 sm:grid-cols-3" x-show="!loading">
+            <div class="rounded-[16px] border border-line bg-surface px-5 py-4"><p class="text-sm font-semibold text-muted">{{ __('Active blocks') }}</p><p class="mt-1 font-display text-3xl text-ink" x-text="rows.filter(r => r.is_active).length"></p></div>
+            <div class="rounded-[16px] border border-line bg-surface px-5 py-4"><p class="text-sm font-semibold text-muted">{{ __('Retired') }}</p><p class="mt-1 font-display text-3xl text-ink" x-text="rows.filter(r => !r.is_active).length"></p></div>
+            <div class="rounded-[16px] border border-line bg-surface px-5 py-4"><p class="text-sm font-semibold text-muted">{{ __('Placed on profiles') }}</p><p class="mt-1 font-display text-3xl text-ink" x-text="rows.reduce((n, r) => n + (r.in_use_count || 0), 0)"></p></div>
+        </div>
+
+        {{-- Filters --}}
+        <div class="flex flex-wrap items-center gap-2 rounded-[20px] border border-line bg-surface p-2.5">
+            <div class="relative min-w-[200px] flex-1">
+                <svg class="pointer-events-none absolute inset-y-0 start-4 my-auto h-[18px] w-[18px] text-subtle" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z"/></svg>
+                <input type="search" x-model="search" placeholder="{{ __('Search blocks…') }}" class="h-11 w-full rounded-pill border-line bg-bg ps-11 pe-4 text-[15px] text-ink" aria-label="{{ __('Search') }}">
+            </div>
+            <div class="inline-flex flex-wrap rounded-pill border border-line bg-bg p-1" role="group">
+                @foreach (['all' => __('All'), 'universal' => __('Profile-wide'), 'scoped' => __('Skill-specific'), 'inactive' => __('Retired')] as $f => $label)
+                    <button type="button" @click="filter = '{{ $f }}'" :class="filter === '{{ $f }}' ? 'bg-primary text-on-primary' : 'text-muted hover:text-ink'" class="rounded-pill px-3.5 py-1.5 text-sm font-semibold transition">{{ $label }}</button>
+                @endforeach
+            </div>
+        </div>
 
         <template x-if="loading"><div><x-admin.skeleton :rows="5" /></div></template>
 
-        {{-- Catalog rows --}}
-        <div x-show="!loading" class="space-y-2">
-            <template x-for="row in rows" :key="row.id">
-                <div class="rounded-lg border border-line bg-surface">
-                    <div class="flex flex-wrap items-center gap-3 px-4 py-3 text-sm">
-                        <span class="font-medium text-ink" x-text="blockName(row)"></span>
-                        <span class="rounded-pill bg-elevated px-2 py-0.5 font-mono text-[10px] text-muted" x-text="row.key"></span>
-                        <span class="rounded-pill bg-elevated px-2 py-0.5 text-xs text-muted" x-text="availabilityLabel(row)"></span>
-                        <span class="rounded-pill bg-elevated px-2 py-0.5 text-xs text-muted" x-text="sourceLabel(row.content_source)"></span>
-                        <template x-if="row.is_repeatable"><span class="rounded-pill bg-elevated px-2 py-0.5 text-xs text-muted">{{ __('once per scope') }}</span></template>
-                        <template x-if="row.in_use_count"><span class="rounded-pill bg-elevated px-2 py-0.5 text-xs text-muted"><span x-text="row.in_use_count"></span> {{ __('in use') }}</span></template>
-                        <template x-if="!row.is_active"><span class="rounded-pill bg-danger/10 px-2 py-0.5 text-xs text-danger">{{ __('inactive') }}</span></template>
-
-                        <div class="ms-auto flex gap-1.5">
-                            <button @click="edit(row)" class="rounded-pill border border-line px-2.5 py-1 text-xs text-muted hover:text-ink">{{ __('Edit') }}</button>
-                            <button @click="toggle(row)"
-                                    :class="row.is_active ? 'text-muted' : 'text-accent-ink'"
-                                    class="rounded-pill border border-line px-2.5 py-1 text-xs"
-                                    x-text="row.is_active ? '{{ __('Deactivate') }}' : '{{ __('Activate') }}'"></button>
+        {{-- Catalog cards --}}
+        <div x-show="!loading" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <template x-for="row in shown" :key="row.id">
+                <article class="flex flex-col rounded-[20px] border bg-surface p-5 transition hover:shadow-e2" :class="row.is_active ? 'border-line' : 'border-dashed border-line-strong bg-bg'">
+                    <div class="flex items-start gap-3.5">
+                        <span class="grid h-11 w-11 shrink-0 place-items-center rounded-[12px]" :class="row.is_active ? 'bg-accent-weak text-accent-ink' : 'bg-elevated text-subtle'">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true" x-html="icon(row.key)"></svg>
+                        </span>
+                        <div class="min-w-0 flex-1">
+                            <h3 class="truncate text-[17px] font-semibold text-ink" x-text="blockName(row)"></h3>
+                            <p class="truncate font-mono text-xs text-subtle" x-text="row.key"></p>
                         </div>
+                        <button type="button" role="switch" class="relative mt-1 inline-flex h-6 w-11 shrink-0 rounded-pill transition" :class="row.is_active ? 'bg-accent' : 'bg-line-strong'"
+                                :aria-checked="row.is_active.toString()" :aria-label="(row.is_active ? '{{ __('Retire') }} ' : '{{ __('Activate') }} ') + blockName(row)" @click="toggle(row)">
+                            <span class="absolute top-0.5 h-5 w-5 rounded-pill bg-white shadow transition-all" :class="row.is_active ? 'start-[22px]' : 'start-0.5'"></span>
+                        </button>
                     </div>
-                    {{-- Grandfathering note when retired but in use --}}
-                    <template x-if="!row.is_active && row.in_use_count">
-                        <p class="border-t border-line px-4 py-2 text-xs text-muted">{{ __('Existing profiles keep rendering this block; it is no longer offered for new placements.') }}</p>
-                    </template>
-                </div>
+                    <dl class="mt-4 grid grid-cols-2 gap-2 text-sm">
+                        <div class="rounded-[12px] bg-bg px-3 py-2"><dt class="text-xs font-semibold text-subtle">{{ __('Available to') }}</dt><dd class="mt-0.5 font-medium text-ink" x-text="availabilityLabel(row)"></dd></div>
+                        <div class="rounded-[12px] bg-bg px-3 py-2"><dt class="text-xs font-semibold text-subtle">{{ __('Holds') }}</dt><dd class="mt-0.5 font-medium text-ink" x-text="row.content_source === 'table' ? '{{ __('Its own content') }}' : '{{ __('Settings only') }}'"></dd></div>
+                    </dl>
+                    <div class="mt-3 flex flex-wrap items-center gap-2 text-xs">
+                        <span class="rounded-pill bg-elevated px-2.5 py-1 font-semibold text-muted" x-text="(row.in_use_count || 0) + ' {{ __('profiles') }}'"></span>
+                        <template x-if="row.is_repeatable"><span class="rounded-pill bg-elevated px-2.5 py-1 font-semibold text-muted">{{ __('Once per tab') }}</span></template>
+                        <template x-if="!row.is_active"><span class="rounded-pill bg-danger-weak px-2.5 py-1 font-semibold text-danger">{{ __('Retired') }}</span></template>
+                    </div>
+                    <p x-show="!row.is_active && row.in_use_count" x-cloak class="mt-3 text-xs text-muted">{{ __('Profiles that have it keep showing it; it is no longer offered for new placements.') }}</p>
+                    <div class="mt-auto flex justify-end pt-4">
+                        <button type="button" @click="edit(row)" class="inline-flex h-9 items-center gap-1.5 rounded-pill border border-line px-4 text-[13px] font-semibold text-ink hover:border-ink">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 20h4L19 9l-4-4L4 16v4Z"/></svg>{{ __('Edit') }}</button>
+                    </div>
+                </article>
             </template>
-            <template x-if="!rows.length"><p class="rounded-lg border border-dashed border-line py-10 text-center text-sm text-muted">{{ __('The block catalog is empty.') }}</p></template>
         </div>
+        <template x-if="!loading && !shown.length"><p class="rounded-[20px] border border-dashed border-line py-10 text-center text-sm text-muted">{{ __('No blocks match.') }}</p></template>
 
         <x-admin.pagination />
 
-        {{-- Editor (create / edit) --}}
+        {{-- Editor (create / edit) — a modal --}}
+        <template x-teleport="body">
+        <div x-show="editorOpen" x-cloak class="fixed inset-0 z-[70] grid place-items-center overflow-y-auto p-4" data-surface="fama-admin" role="dialog" aria-modal="true" @keydown.escape.window="editorOpen && reset()">
+        <div class="absolute inset-0" style="background: var(--scrim)" @click="reset()"></div>
+        <div class="relative w-full max-w-3xl">
         <x-ui.card>
             <div class="mb-3 flex items-center justify-between">
                 <h3 class="font-display text-lg" x-text="form.id ? '{{ __('Edit block type') }}' : '{{ __('Add block type') }}'"></h3>
-                <button x-show="form.id" @click="reset()" class="text-xs text-muted hover:text-ink">{{ __('Cancel edit') }}</button>
+                <button @click="reset()" class="grid h-9 w-9 place-items-center rounded-pill border border-line text-ink hover:border-ink" aria-label="{{ __('Close') }}">✕</button>
             </div>
 
             {{-- Structural guard-rail notice --}}
@@ -148,5 +181,8 @@
             <template x-if="errors['_']"><p class="mt-2 text-xs text-danger" x-text="errors['_'][0]"></p></template>
             <x-ui.button variant="accent" class="mt-4" x-on:click="save()" x-text="form.id ? '{{ __('Save changes') }}' : '{{ __('Create block type') }}'"></x-ui.button>
         </x-ui.card>
+        </div>
+        </div>
+        </template>
     </div>
 </x-admin-layout>

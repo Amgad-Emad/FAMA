@@ -54,3 +54,50 @@ select:not([multiple]):not([size]){
 select:not([multiple]):not([size]):disabled{cursor:not-allowed;opacity:.6}
 .fx-lv select.sel{background-position:right 12px center;padding-inline-end:36px}
 [dir=rtl] .fx-lv select.sel{background-position:left 12px center}
+
+/* Profile structure save bar: away while there is nothing to save; slides up
+   for unsaved changes and stays a moment after a save. */
+.savebar{transition:transform .35s cubic-bezier(.22,1,.36,1),opacity .25s var(--ease),visibility 0s}
+.savebar.off{transform:translateY(calc(100% + 32px));opacity:0;visibility:hidden;transition:transform .35s cubic-bezier(.22,1,.36,1),opacity .25s var(--ease),visibility 0s .35s}
+.savebar.off .in-bar{pointer-events:none}
+@media (prefers-reduced-motion:reduce){.savebar,.savebar.off{transition:none}}
+
+/* Searchable drop list (components/fama/combo) */
+.combo{position:relative}
+.combo-btn{display:flex;align-items:center;gap:var(--s3);text-align:start;cursor:pointer}
+.combo-btn:disabled{cursor:not-allowed;background:var(--cream);border-style:dashed}
+.combo-btn:disabled .combo-val,.combo-btn:disabled .combo-ic,.combo-btn:disabled .combo-chev{opacity:.55}
+.combo-btn:not(:disabled):hover{border-color:var(--grey)}
+.combo-ic{width:18px;height:18px;flex:none;fill:none;stroke:var(--grey);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.combo-val{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.combo-val.is-empty{color:var(--grey);font-weight:400}
+.combo-chev{width:16px;height:16px;flex:none;fill:none;stroke:var(--grey);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:transform .2s var(--ease)}
+.combo.open .combo-chev{transform:rotate(180deg)}
+.combo.open .combo-btn{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink)}
+.combo .flag{width:20px;height:15px;border-radius:2px;object-fit:cover;flex:none;box-shadow:0 0 0 1px rgba(20,17,15,.08)}
+.combo-pop{position:absolute;z-index:30;inset-inline:0;top:calc(100% + 6px);background:var(--white);border:var(--border);border-radius:var(--s3);box-shadow:0 12px 32px rgba(20,17,15,.12);padding:var(--s2);display:flex;flex-direction:column;gap:var(--s2)}
+.combo-q{width:100%;min-height:40px;border:1px solid var(--line);border-radius:var(--s2);padding:0 var(--s3);font:inherit;font-size:15px;background:var(--cream,#FAF8F3);outline:none}
+.combo-q:focus{border-color:var(--ink)}
+.combo-list{list-style:none;margin:0;padding:0;max-height:264px;overflow-y:auto;overscroll-behavior:contain}
+.combo-list li{display:flex;align-items:center;gap:var(--s3);min-height:40px;padding:0 var(--s3);border-radius:var(--s2);cursor:pointer}
+.combo-list li[data-active=true]{background:var(--line)}
+.combo-list li[aria-selected=true]{font-weight:600}
+.combo-list li span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.combo-tick{width:16px;height:16px;flex:none;fill:none;stroke:var(--purple-dk);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.combo-custom{color:var(--purple-dk);font-weight:600}
+.combo-empty{color:var(--grey);cursor:default!important;font-size:var(--t-meta)}
+
+/* Same-page links glide; anchored sections clear the sticky nav. */
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+.sec[id],section[id]{scroll-margin-top:110px}
+
+/* Profile structure hero avatar: `.hero.soft .ph{background:…}` (a shorthand,
+   higher specificity) reset .ph.has's size, so a real photo rendered at full
+   size and showed only its top-left corner. Fill + centre it. */
+.hero .ph.has,.hero.soft .ph.has{background-size:cover;background-position:center;background-repeat:no-repeat;color:transparent}
+
+/* Nav status bar: Private (ink) → Under review (purple) → Ready to go Live (green). */
+.fx-notice{transition:background .4s var(--ease)}
+.fx-notice.is-review{background:var(--purple-dk)}
+.fx-notice.is-ready{background:var(--mint-fg,#0B7059)}

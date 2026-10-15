@@ -39,7 +39,7 @@
 @endphp
 <x-fama.layout :title="__('Credits & recognitions')">
     <x-slot:styles>
-        <link rel="stylesheet" href="{{ asset('fama-ui/css/pages/credits.css') }}">
+        <link rel="stylesheet" href="{{ \App\Support\FamaAsset::url('fama-ui/css/pages/credits.css') }}">
         <style>
             /* App additions: the real cover inside the prototype's grey frame. */
             .cr .ph{background-size:cover;background-position:center}

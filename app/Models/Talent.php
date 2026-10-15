@@ -89,6 +89,7 @@ class Talent extends Authenticatable implements \App\Feed\Actor, HasMedia
             'will_travel' => 'boolean',
             'is_available' => 'boolean',
             'availability_changed_at' => 'datetime',
+            'steps_completed_at' => 'datetime',
             'is_published' => 'boolean',
             'meta' => 'array',
             'view_count' => 'integer',

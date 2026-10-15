@@ -235,6 +235,8 @@ class SkillsService extends Service
                 $talent->specialities()->attach($id, ['position' => $position]);
             }
         }, ['talent_id' => $talent->id, 'type' => $type->slug]);
+
+        app(ProfileCompletionService::class)->notifyIfComplete($talent);
     }
 
     /**

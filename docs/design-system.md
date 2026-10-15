@@ -170,3 +170,7 @@ browser performance panel (with the RTL/dark pass).
 
 **Selects (fama-ui pages):** `app-bridge.css` replaces the native arrow on every single-choice `<select>` with a drawn
 chevron (16px from the end, centred, flips in RTL, 44px end padding). Don't add per-page arrow styles.
+
+**Admin console (2026-10-15):** the admin is NOT on the fama-ui static sheets; it keeps Tailwind but re-reads the core tokens
+from the fama-ui palette inside `[data-surface='fama-admin']` (`resources/css/fama-admin.css`). Restyle the admin by editing
+that file's tokens, never per-page classes. Light only (the layout forces `data-theme="light"`; no theme toggle).

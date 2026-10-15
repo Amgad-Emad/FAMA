@@ -1,0 +1,47 @@
+/*
+  The admin console in the fama-ui language (2026-10-15). Scoped to
+  <body data-surface="fama-admin"> (components/admin-layout): it RE-READS the core
+  tokens every admin page already uses (bg-bg, bg-surface, text-ink, border-line,
+  bg-accent, rounded-lg, font-display …) from the fama-ui palette in
+  public/fama-ui/css/ds.css — cream ground, white cards, ink text, Orchid purple,
+  Oswald headings + Sofia Sans body, 20px cards and pill controls. Restyling the
+  admin is token-only from here; light only.
+*/
+[data-surface='fama-admin'] {
+    --bg: #FBFAF2; --surface: #FFFFFF; --elevated: #F5F2E9;
+    --line: #E6E2D8; --line-strong: #D3CDC1;
+    --ink: #14110F; --muted: #6B6560; --subtle: #8C857D;
+    --accent: #AD50D3; --accent-weak: #F3EAF8; --accent-ink: #8A2FA8; --on-accent: #FFFFFF;
+    --focus: rgba(173, 80, 211, .4);
+    --primary: #14110F; --on-primary: #FBFAF2;
+    --gold: #7E6600; --gold-weak: #FFF6C2;
+    --success: #1B6B52; --success-weak: #E2F9F0;
+    --warn: #8A5A12; --warn-weak: #FBEFD5;
+    --danger: #9B4526; --danger-weak: #FCE8E2;
+    --r-sm: 8px; --r-md: 12px; --r-lg: 20px;
+    --e1: none;
+    --e2: 0 10px 30px rgba(20, 17, 15, .08);
+    --e3: 0 18px 40px rgba(20, 17, 15, .12);
+    --font-display: "Oswald", "IBM Plex Sans Arabic", sans-serif;
+    --font-ui: "Sofia Sans", "IBM Plex Sans Arabic", system-ui, sans-serif;
+    --font-head: var(--font-display);
+    /* fama-ui has no monospace voice: small caps labels use the body face. */
+    --font-mono: "Sofia Sans", "IBM Plex Sans Arabic", system-ui, sans-serif;
+    font-family: var(--font-ui);
+    font-size: 16px;
+}
+[data-surface='fama-admin'] .font-display { font-weight: 600; letter-spacing: 0; }
+[dir='rtl'] [data-surface='fama-admin'], [data-surface='fama-admin'][dir='rtl'] { --font-display: "IBM Plex Sans Arabic", sans-serif; }
+/* Cards: hairline + no shadow, like ds.css .card. */
+[data-surface='fama-admin'] .shadow-e1, [data-surface='fama-admin'] .shadow-sm { box-shadow: none; }
+/* Inputs and selects: the fama-ui field (white, 12px radius, ink focus). */
+[data-surface='fama-admin'] :is(input:not([type]), input[type='text'], input[type='email'], input[type='search'], input[type='number'], input[type='url'], input[type='password'], input[type='date'], select, textarea) {
+    border-radius: 12px; border-color: var(--line); background-color: #FFFFFF;
+}
+[data-surface='fama-admin'] :is(input, select, textarea):focus { border-color: var(--ink); box-shadow: 0 0 0 1px var(--ink); outline: none; }
+/* Buttons that use the primary/accent fills read as fama-ui pills. */
+[data-surface='fama-admin'] button.bg-primary, [data-surface='fama-admin'] a.bg-primary { border-radius: 999px; }
+[data-surface='fama-admin'] .font-mono.uppercase { font-weight: 600; letter-spacing: .12em; }
+/* Checkboxes / radios: Orchid, not the forms plugin's default blue. */
+[data-surface='fama-admin'] :is(input[type='checkbox'], input[type='radio']) { color: #AD50D3; border-color: var(--line-strong); }
+[data-surface='fama-admin'] :is(input[type='checkbox'], input[type='radio']):focus { box-shadow: 0 0 0 2px #FFFFFF, 0 0 0 4px rgba(173, 80, 211, .4); }

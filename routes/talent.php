@@ -81,6 +81,7 @@ Route::patch('/projects/{project}', [ProjectController::class, 'update'])->name(
 Route::delete('/projects/{project}', [ProjectController::class, 'destroy'])->name('projects.destroy');
 // Co-ownership: any owner may leave (a co-owner withdraws; the creator hands it on).
 Route::post('/projects/{project}/leave', [ProjectController::class, 'leave'])->name('projects.leave');
+Route::post('/projects/{project}/feature', [ProjectController::class, 'feature'])->name('projects.feature');
 Route::post('/projects/{project}/cover', [ProjectController::class, 'uploadCover'])->name('projects.cover.store');
 Route::delete('/projects/{project}/cover', [ProjectController::class, 'destroyCover'])->name('projects.cover.destroy');
 

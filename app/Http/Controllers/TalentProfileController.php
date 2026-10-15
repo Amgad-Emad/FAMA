@@ -33,7 +33,7 @@ class TalentProfileController extends Controller
 
         // The owner previewing their own profile is not a view (and an
         // unpublished profile is only ever seen by its owner).
-        if (! $this->isOwner($talent)) {
+        if (! $this->isOwner($talent) && ! $this->isStaff()) {
             TalentProfileViewed::dispatch($talent);
         }
 
@@ -49,6 +49,8 @@ class TalentProfileController extends Controller
             'talent' => $talent,
             'canFollow' => ! $isSelf,
             'following' => $following,
+            // Moderation's View panel embeds this page (?staff_preview=1): a strip says so.
+            'staffPreview' => $this->isStaff() && request()->boolean('staff_preview'),
         ]);
     }
 
@@ -89,9 +91,20 @@ class TalentProfileController extends Controller
         // Unpublished profiles 404 for everyone except their owner, who gets
         // the Preview (fama-ui preview.html: "Your profile is private. This is
         // how people will see it once it's public.").
-        abort_unless($talent->is_published || $this->isOwner($talent), 404);
+        // Staff with moderate-content see it too — moderation previews a profile
+        // BEFORE verifying it, i.e. exactly while it is still private.
+        abort_unless($talent->is_published || $this->isOwner($talent) || $this->isStaff(), 404);
 
         return $talent;
+    }
+
+    /**
+     * A signed-in admin who may moderate content (the moderation View panel).
+     * Their visits are not profile views.
+     */
+    private function isStaff(): bool
+    {
+        return (bool) auth('admin')->user()?->can('moderate-content');
     }
 
     /**

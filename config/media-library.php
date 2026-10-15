@@ -53,6 +53,13 @@ return [
     'max_file_size' => 1024 * 1024 * 10, // 10MB
 
     /*
+     * Days a soft-deleted owner (post, talent, brand, review…) keeps its files so
+     * a restore still brings them back. After that, media:purge-trashed (daily)
+     * deletes the files. Hard deletes remove files immediately.
+     */
+    'trash_retention_days' => (int) env('MEDIA_TRASH_RETENTION_DAYS', 30),
+
+    /*
      * Uploads whose file name contains any of these extensions will be rejected.
      * The check looks at every extension in the file name, so a file named
      * `malicious.php.jpg` is blocked as well. Matching is case-insensitive

@@ -12,6 +12,7 @@ use App\Models\Project;
 use App\Models\Speciality;
 use App\Models\Talent;
 use App\Models\TalentType;
+use App\Services\FeaturedProjectService;
 use App\Services\TalentProjectService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -31,7 +32,10 @@ use Illuminate\View\View;
  */
 class ProjectController extends TalentController
 {
-    public function __construct(private readonly TalentProjectService $projects) {}
+    public function __construct(
+        private readonly TalentProjectService $projects,
+        private readonly FeaturedProjectService $featured,
+    ) {}
 
     /**
      * The Projects page shell (fama-ui `projects.html`): the talent's skills for
@@ -94,7 +98,7 @@ class ProjectController extends TalentController
 
         return response()->paginated(
             $paginator,
-            TalentProjectResource::collection($paginator->getCollection())->resolve(),
+            $this->withFeatured(TalentProjectResource::collection($paginator->getCollection())->resolve()),
             meta: ['counts' => $this->counts()],
         );
     }
@@ -108,10 +112,14 @@ class ProjectController extends TalentController
         $data = $request->validated();
         $project = $this->projects->create(
             $this->talent(),
-            collect($data)->except(['skill_ids', 'speciality_ids'])->all(),
+            collect($data)->except(['skill_ids', 'speciality_ids', 'featured'])->all(),
             array_map('intval', $data['skill_ids']),
             array_map('intval', $data['speciality_ids'] ?? []),
         );
+
+        if ($data['featured'] ?? false) {
+            $this->featured->feature($this->talent(), $project);
+        }
 
         return response()->success(
             $this->present($project),
@@ -132,11 +140,16 @@ class ProjectController extends TalentController
         $data = $request->validated();
         $project = $this->projects->update(
             $project,
-            collect($data)->except(['skill_ids', 'speciality_ids'])->all(),
+            collect($data)->except(['skill_ids', 'speciality_ids', 'featured'])->all(),
             array_map('intval', $data['skill_ids']),
             // Absent means "leave the picks alone"; present-but-empty clears them.
             array_key_exists('speciality_ids', $data) ? array_map('intval', $data['speciality_ids']) : null,
         );
+
+        // Only the HOME owner features (it is their cover); a co-owner's flag is ignored.
+        if (($data['featured'] ?? false) && (int) $project->talent_id === (int) $this->talent()->getKey()) {
+            $this->featured->feature($this->talent(), $project);
+        }
 
         return response()->success(
             $this->present($project),
@@ -154,6 +167,21 @@ class ProjectController extends TalentController
         $this->projects->delete($project);
 
         return response()->success(null, __('Project removed.'), meta: ['counts' => $this->counts()]);
+    }
+
+    /**
+     * Put one of the talent's own projects on their profile cover. There is no
+     * "unfeature": a talent with projects always has one featured, and the
+     * pick changes by featuring another.
+     */
+    public function feature(Project $project): JsonResponse
+    {
+        $this->featured->feature($this->talent(), $project);
+
+        return response()->success(
+            ['featured_id' => (int) $project->getKey()],
+            __('Featured on your profile.'),
+        );
     }
 
     /**
@@ -256,9 +284,31 @@ class ProjectController extends TalentController
      */
     private function present(Project $project): array
     {
-        return (new TalentProjectResource($project->load([
+        return $this->withFeatured([(new TalentProjectResource($project->load([
             'media', 'talentTypes', 'specialities', 'credits.talent', 'credits.talentType', 'ownerCredits',
-        ])))->resolve();
+        ])))->resolve()])[0];
+    }
+
+    /**
+     * Stamp project rows with the featured state for the signed-in talent:
+     * `is_featured` (it is their cover), `can_feature` (they HOME-own it — only
+     * their own projects can be their cover) and `featured_locked` (it is their
+     * ONLY project, so it is featured and stays featured).
+     *
+     * @param  list<array<string, mixed>>  $rows
+     * @return list<array<string, mixed>>
+     */
+    private function withFeatured(array $rows): array
+    {
+        $talent = $this->talent();
+        $featuredId = $this->featured->featuredId($talent);
+        $only = $talent->projects()->count() === 1;
+
+        return array_map(fn (array $row) => $row + [
+            'is_featured' => (int) $row['id'] === $featuredId,
+            'can_feature' => (int) $row['home_owner_id'] === (int) $talent->getKey(),
+            'featured_locked' => $only && (int) $row['id'] === $featuredId,
+        ], $rows);
     }
 
     /**
@@ -337,6 +387,8 @@ class ProjectController extends TalentController
             'homeOwner' => $homeOwner,
             'project' => $project,
             'payload' => $project ? $this->present($project) : null,
+            // A new project for a talent with none becomes the featured one, locked on.
+            'projectCount' => $talent->projects()->count(),
             'skills' => $this->presentSkills($skills),
             'allSkills' => TalentType::query()->orderBy('id')->get()->map(fn (TalentType $type) => [
                 'id' => (int) $type->id,

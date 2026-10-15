@@ -2,7 +2,7 @@
      profile-content styles — the same list the Reviews block shows there. --}}
 <x-fama.layout :title="__('Reviews')" mode="talent">
     <x-slot:styles>
-        <link rel="stylesheet" href="{{ asset('fama-ui/css/pages/profile-content.css') }}?v=1">
+        <link rel="stylesheet" href="{{ \App\Support\FamaAsset::url('fama-ui/css/pages/profile-content.css') }}">
     </x-slot:styles>
     <x-slot:hero>
         <x-fama.hero :label="__('Fill in your profile')" :title="__('Reviews')" :lead="__('Written by clients. Our team approves each one before it shows on your profile.')" />

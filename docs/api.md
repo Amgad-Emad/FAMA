@@ -64,6 +64,7 @@ once after login. Rate limits (per actor, else IP): posts 10/h, comments 10/min,
 | Method | Path | Notes |
 |---|---|---|
 | GET | `/` | redirect: `/feed` when it has posts, else login (signed-in → dashboard) |
+| GET | `/locations/{code}/cities` | `{data: [city names]}` for an ISO country code, largest first (public, cached 1 day; unknown → 404) |
 | GET | `/feed` | page shell |
 | GET | `/feed/items?cursor=` | ranked stream — `{items, casting_positions, next_cursor, total}` (ADR-F5) |
 | GET | `/feed/casting` | 12 discovery talents + `followed_by_viewer` |
@@ -181,6 +182,15 @@ Contracts). The old standalone Professions + Account tabs are folded into it (AD
 | Projects | `POST /talent/projects` · `PATCH /talent/projects/{project}` · `DELETE /talent/projects/{project}` | create/update/remove — **`skill_ids` is required, min 1**, each one of the talent's own skills (ADR-X); tag 0 becomes the home tab. `occurred_on` is the date — **recorded, never rendered** (ADR-AA); `year` is a derived projection of it and is no longer accepted from a client. `speciality_ids` is optional and each id must hang off one of the tagged skills (ADR-Y) — on update, omitting it leaves the picks alone while changing `skill_ids` prunes the ones that lost their skill. `title.en` required; `summary`/`body` are rich text sanitized server-side; `results` is an ordered `[{label,value,compare}]` list (**max 4**, ADR-AB) |
 | Projects | `GET /talent/projects/new` · `GET /talent/projects/{project}/edit` | the project editor PAGE (any owner; 403 otherwise) |
 | Projects | `POST /talent/projects/{project}/leave` | leave a project you own (co-owner → credit declined; creator → transfer to the earliest-confirmed co-owner; sole owner → 422). `DELETE` is refused (422) while co-owners exist (ADR-AB) |
+| POST | `/talent/projects/{project}/feature` | make it the featured project (profile cover); 422 if not home-owned |
+| POST | `/admin/moderation/{talents\|brands}/{id}/notice/{verify\|suspend}` | suggested email copy + rendered preview (optional subject/heading/message override); sends nothing |
+| GET | `/admin/dashboard/insights?range=7d\|30d\|90d\|12m` | series (signups, verified, posts, views) + totals with previous-period change; 422 on an unknown range |
+| POST | `/admin/moderation/bulk/{queue}/delete` | soft-delete `ids[]` (≤200) on talents\|brands\|reviews\|recognitions, each via its audited path |
+| GET | `/admin/moderation/export/{queue}` | CSV of `?ids=` or of every row matching `q`/`status` |
+| GET | `/admin/activity/data?range=24h\|7d\|30d` | activity rows now carry `subject_name` |
+| POST | `/admin/moderation/feed/bulk` | `{kind: post\|comment, action: hide\|restore\|delete, ids[]}` → `{done, skipped}` |
+| PATCH | `/admin/moderation/feed/{posts\|comments}/{id}/delete` | staff soft delete (audited) |
+| POST | `/admin/moderation/feed/{posts\|comments}/{id}/notice` | removal email defaults + rendered preview (subject/message/reason overrides); remove accepts `notify` |
 | Projects | `PATCH /talent/projects/reorder` (`{order: [id,…]}`) | the talent's own display order (drives the public profile); a foreign id → 422 |
 | Projects | `POST /talent/projects/{project}/cover` (`cover` file) · `DELETE /talent/projects/{project}/cover` | single-file `cover` collection via medialibrary (jpg/png/webp, ≤10 MB) |
 | Reviews | `GET /talent/reviews` (+ `/data?status=`, `PATCH {review}/approve`, `PATCH {review}/reject`) | moderation queue |

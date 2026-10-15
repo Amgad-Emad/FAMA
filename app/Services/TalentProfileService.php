@@ -36,6 +36,7 @@ class TalentProfileService extends Service
                 'base_city', 'base_country',
             ]));
             $talent->save();
+            $this->completion()->notifyIfComplete($talent);
 
             return $talent;
         }, ['talent_id' => $talent->id]);
@@ -79,8 +80,10 @@ class TalentProfileService extends Service
     {
         return $this->runInTransaction(function () use ($talent, $file): Talent {
             $talent->addMedia($file)->toMediaCollection('avatar');
+            $talent->refresh();
+            $this->completion()->notifyIfComplete($talent);
 
-            return $talent->refresh();
+            return $talent;
         }, ['talent_id' => $talent->id], channel: 'media');
     }
 
@@ -256,5 +259,11 @@ class TalentProfileService extends Service
 
             return $model->refresh();
         }, $context);
+    }
+
+    /** The profile-steps checker (sends the "steps done" email once). */
+    private function completion(): ProfileCompletionService
+    {
+        return app(ProfileCompletionService::class);
     }
 }

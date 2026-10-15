@@ -1056,6 +1056,37 @@ public profile, auth and error pages. SUPERSEDES the Orchid/Daylight styling not
   `FeedController::home` (2026-10-15, suite 789 green).
 - VIEWS CHART: no table toggle; bars grow in via a CSS height transition (`grown` flips after rAF + setTimeout
   fallback, per-bar `transition-delay` capped at 350ms) on load and every range switch.
+- LOCATION DROP LISTS (2026-10-15, suite 798 green): Country/City are `<x-fama.combo>` (searchable; behaviour
+  `ui/combo.js` `famaCombo`). It binds via `get`/`set` closures on the PARENT model — NOT x-modelable (its entangle
+  dropped updates when two combos changed in one tick, e.g. Discard). `App\Support\Locations` = THE country/city
+  source (resources/data/locations, GeoNames CC BY; flags public/fama-ui/img/flags, flag-icons MIT); `base_country`
+  stores the canonical English name (aliases canonicalised in UpdateCoreProfileRequest::prepareForValidation; a
+  legacy unknown value may ride along unchanged); City accepts free text. Don't name a class `.ph` on fama-ui pages
+  (ds.css `.ph` is a grey placeholder pill). Profile structure save bar is hidden when clean (`barShown`).
+- FEATURED PROJECT (2026-10-15, suite 809 green): `talents.featured_project_id` via `FeaturedProjectService` (THE
+  home — feature/ensure/resolve): always exactly one featured when the talent has projects, never un-featured, an
+  only project is locked; only HOME-owned projects can be featured. Any new path that creates/deletes/transfers a
+  project must call `ensure()`.
+- STEPS-DONE EMAIL: `ProfileCompletionService::notifyIfComplete()` after any write that can finish a step (sends
+  once, guarded by an atomic `steps_completed_at` UPDATE; skipped for verified/Live). A new step-completing write
+  path must call it.
+- ASSET VERSIONS: link fama-ui CSS/JS with `\App\Support\FamaAsset::url('fama-ui/…')` (mtime version) — never a
+  hardcoded `?v=`. CSS load order: page sheets load AFTER app-bridge.css, so a bridge override of a page rule needs
+  higher specificity.
+- ADMIN UI (2026-10-15, suite 818 green): admin = Tailwind + `[data-surface="fama-admin"]` token re-read
+  (`resources/css/fama-admin.css`) — SUPERSEDES the Orchid/cloud admin look; light only, no theme toggle, no
+  locale switcher in the admin header. Staff login = x-fama.layout mode="bare" + auth.css, ink showcase.
+  Verify/Suspend → `openNotice()` composer; email copy/preview/send live in `AccountNoticeService` (preview renders
+  the real `emails/account-status` view). New decision emails: extend `AccountNoticeService::TYPES` + defaults().
+  Dashboard insights = `AdminInsightsService` (one grouped query per series, zero-filled; day/week/month buckets).
+  'Verified' over time reads the activity log (`talent.verified`) — talents have no verified_at column.
+- MEDIA RETENTION (2026-10-15): hard deletes remove files at once (medialibrary deleting hook — always delete
+  media-holding models through Eloquent `->delete()`, never a query-builder delete or a DB cascade, or files orphan);
+  soft deletes keep files for `media-library.trash_retention_days` (30) then `media:purge-trashed` (daily) removes
+  them and sweeps orphans. Posts: a soft delete cascades to comments (PostPurger via PostObserver); past the window
+  the post is purged for good (`PostPurger::purge` — polymorphic likes/mentions/links/bookmarks first, then forceDelete).
+- ADMIN BULK: `ModerationBulkService` (delete via each row's audited path; CSV export with formula-injection guard).
+  Staff profile preview: `TalentProfileController::isStaff()` lets moderate-content admins open private profiles.
 - LOGIN LANDING: a talent login (and talent registration) ALWAYS lands on `talent.profile.edit` — the visitor's
   pending feed action is still replayed by the Login event, but `feed.return_to` is discarded (copy says "we'll
   finish it as soon as you're in", never "bring you back"). Brand/admin keep route('dashboard').

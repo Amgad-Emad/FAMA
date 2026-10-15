@@ -2,7 +2,7 @@
 
 <x-admin-layout :title="__('Accounts')">
     <div x-data="adminUsers(@js($initial))" class="space-y-6">
-        <p class="text-sm text-muted">{{ __('Create accounts and manage staff. Admins are listed below; talent and brand accounts appear in the moderation queues.') }}</p>
+        <p class="text-sm text-muted">{{ \App\Support\Features::brands() ? __('Create accounts and manage staff. Admins are listed below; talent and brand accounts appear in the moderation queues.') : __('Create accounts and manage staff. Admins are listed below; talent accounts appear in the moderation queue.') }}</p>
         {{-- Create --}}
         <x-ui.card>
             <div class="mb-3 flex items-center justify-between">
@@ -13,8 +13,9 @@
             {{-- Account type: admin / brand / talent --}}
             <div class="mb-4">
                 <x-input-label :value="__('Account type')" />
-                <div class="mt-1.5 grid max-w-md grid-cols-3 gap-1 rounded-pill border border-line bg-elevated p-1">
-                    @foreach (['admin' => __('Admin'), 'brand' => __('Brand'), 'talent' => __('Talent')] as $value => $label)
+                @php $accountTypes = \App\Support\Features::brands() ? ['admin' => __('Admin'), 'brand' => __('Brand'), 'talent' => __('Talent')] : ['admin' => __('Admin'), 'talent' => __('Talent')]; @endphp
+                <div class="mt-1.5 grid max-w-md gap-1 rounded-pill border border-line bg-elevated p-1 {{ count($accountTypes) === 3 ? 'grid-cols-3' : 'grid-cols-2' }}">
+                    @foreach ($accountTypes as $value => $label)
                         <button type="button" @click="form.account_type = '{{ $value }}'"
                                 :class="form.account_type === '{{ $value }}' ? 'bg-surface text-ink shadow-e1' : 'text-muted hover:text-ink'"
                                 class="rounded-pill px-3 py-2 text-sm font-medium transition">{{ $label }}</button>

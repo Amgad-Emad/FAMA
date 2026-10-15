@@ -25,7 +25,8 @@
 
         <x-ui.card class="space-y-3">
             <h3 class="font-display text-lg">{{ __('Feature flags') }}</h3>
-            @foreach (['brand_initiated_contracts' => 'Brand-initiated contracts', 'public_brand_pages' => 'Public brand pages', 'talent_discovery' => 'Talent discovery'] as $flag => $label)
+            {{-- Brand switches only exist while the brands feature is on (V1: off). --}}
+            @foreach (array_filter(['brand_initiated_contracts' => 'Brand-initiated contracts', 'public_brand_pages' => 'Public brand pages', 'talent_discovery' => 'Talent discovery'], fn ($label, $flag) => \App\Support\Features::brands() || ! str_contains($flag, 'brand'), ARRAY_FILTER_USE_BOTH) as $flag => $label)
                 <label class="flex items-center justify-between text-sm">
                     <span>{{ __($label) }}</span>
                     <input type="checkbox" x-model="form.feature_flags['{{ $flag }}']" class="rounded border-line">

@@ -389,7 +389,7 @@ class TalentShowcaseSeeder extends Seeder
             ],
             [
                 'name' => 'Hana Fahmy', 'email' => 'hana@fama.test', 'slug' => 'hana-fahmy',
-                'types' => ['creative-direction'], 'category' => 'creative', 'city' => 'Dubai', 'country' => 'UAE',
+                'types' => ['creative-direction'], 'category' => 'creative', 'city' => 'Dubai', 'country' => 'United Arab Emirates',
                 'depth' => 'rich',
                 'headline' => ['en' => 'Creative director — Dubai', 'ar' => 'مديرة إبداعية — دبي'],
                 'bio' => ['en' => 'Brand and campaign creative direction for regional launches.', 'ar' => 'إدارة إبداعية للعلامات والحملات لإطلاقات إقليمية.'],

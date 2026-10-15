@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Resources\ActivityResource;
+use App\Support\Features;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -21,7 +22,25 @@ class ActivityLogController extends AdminController
 
     public function data(Request $request): JsonResponse
     {
-        $query = Activity::query()->with('causer')->latest();
+        $query = Activity::query()->with(['causer', 'subject'])->latest('id');
+
+        // Brands are a dormant feature in V1: their audit entries stay in the
+        // table but are not shown while the feature is off.
+        if (! Features::brands()) {
+            $query->where(fn ($q) => $q->whereNull('subject_type')->orWhereNotIn('subject_type', ['brand', 'brand_review', 'brand_project']))
+                ->where('description', 'not like', 'brand.%');
+        }
+
+        // Period filter (24h / 7d / 30d; anything else = all time).
+        $since = match ($request->query('range')) {
+            '24h' => now()->subDay(),
+            '7d' => now()->subDays(7),
+            '30d' => now()->subDays(30),
+            default => null,
+        };
+        if ($since) {
+            $query->where('created_at', '>=', $since);
+        }
 
         if ($log = $request->query('log')) {
             $query->where('log_name', $log);

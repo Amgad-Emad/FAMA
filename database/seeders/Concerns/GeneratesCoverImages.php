@@ -54,7 +54,9 @@ trait GeneratesCoverImages
             imagefilledellipse($img, $cx, $cy, $d, $d, $c);
         }
 
-        $path = sys_get_temp_dir().'/fama_'.md5($seed).'.jpg';
+        // Unique per call: medialibrary MOVES the file, so a seed-only name raced
+        // between parallel test processes ("file does not exist").
+        $path = sys_get_temp_dir().'/fama_'.md5($seed).'_'.getmypid().'_'.bin2hex(random_bytes(4)).'.jpg';
         imagejpeg($img, $path, 84);
         imagedestroy($img);
 

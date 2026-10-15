@@ -7,9 +7,10 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * Author-side post deletion (D12): a soft delete inside a transaction —
- * PostObserver uncounts it (ADR-F6); comments stay in place (hidden with the
- * post, preserved for a restore); media and mention/link rows remain attached
- * to the soft-deleted row.
+ * PostObserver uncounts it (ADR-F6) and soft-deletes its comments with it
+ * (App\Feed\PostPurger). Files stay for the restore window; after it,
+ * media:purge-trashed removes the post for good with its comments, likes,
+ * saves, mentions, links and files.
  */
 class DeletePost
 {

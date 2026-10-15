@@ -14,7 +14,7 @@ that walks a brand and a talent through booking, quoting, contracting, payment, 
 **UI: the fama-ui design (2026-10-12, ADR-AB).** Talent, feed, public profile, auth and error pages use the
 client's fama-ui kit (`public/fama-ui/`, `<x-fama.layout>`). Talent nav: **Feed · Activity · Profile structure ·
 Projects · Credits** + Preview profile + notifications bell. Profile structure is the talent home (the dashboard
-redirects there). Full Pest suite **789/789 green**.
+redirects there). Full Pest suite **848/848 green**.
 
 Demo logins (password `password`): `talent-demo@fama.test` (every screen populated), `talent-new@fama.test`
 (Private, unverified — the go-Live steps), `brand-demo@fama.test`, `admin-demo@fama.test` (at `/admin/login`).
@@ -303,6 +303,14 @@ docs/
   specs/                           # ← canonical: schema-master, talent-spec, brand-spec
   architecture · schema · api · conventions · decisions · changelog
 ```
+
+## Third-party data
+
+- **Countries and cities** (`resources/data/locations`) — built from [GeoNames](https://www.geonames.org/)
+  (`countryInfo.txt` + `cities15000`: every city of 15,000+ people, largest first), licensed **CC BY 4.0**.
+  Country names are PHP intl's English names; `App\Support\Locations` reads them.
+- **Country flags** (`public/fama-ui/img/flags`) — [flag-icons](https://github.com/lipis/flag-icons) 7.5.0, MIT
+  (licence copied beside the SVGs).
 
 ## Response envelope
 

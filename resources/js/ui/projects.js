@@ -187,6 +187,27 @@ document.addEventListener('alpine:init', () => {
                 : fmt(this.strings.ownMany, { n: others.length });
         },
 
+        /** The feature star's label: why it can't be switched off, or what it does. */
+        featureTitle(p) {
+            if (p.featured_locked) return this.strings.featuredOnly;
+            if (p.is_featured) return this.strings.featuredA;
+            return fmt(this.strings.featureA, { p: this.titleOf(p) });
+        },
+
+        /** Put a project on the profile cover (optimistic; the old pick steps down). */
+        async feature(p) {
+            if (p.is_featured) return;
+            const before = this.items.map((x) => [x.id, x.is_featured, x.featured_locked]);
+            this.items.forEach((x) => { x.is_featured = x.id === p.id; x.featured_locked = false; });
+            try {
+                await post(`/talent/projects/${p.id}/feature`);
+                toast(fmt(this.strings.featuredT, { p: this.titleOf(p) }));
+            } catch (e) {
+                before.forEach(([id, f, l]) => { const x = this.items.find((i) => i.id === id); if (x) { x.is_featured = f; x.featured_locked = l; } });
+                toast(firstError(e, this.strings.failed));
+            }
+        },
+
         /** Delete one of the talent's own projects (confirmed). */
         async remove(p) {
             const ok = await ask({
@@ -300,8 +321,14 @@ document.addEventListener('alpine:init', () => {
     let draftKey = 0;
 
     Alpine.data('famaProjectEdit', ({
-        project = null, skills = [], specialities = {}, allSkills = [], slug = '', live = false, editUrl = '', strings = {},
+        project = null, skills = [], specialities = {}, allSkills = [], slug = '', live = false, editUrl = '', strings = {}, projectCount = 0,
     } = {}) => ({
+        // Featured = the profile cover. A talent's only project is featured and
+        // stays featured; otherwise it changes by featuring another project.
+        featured: project ? !!project.is_featured : projectCount === 0,
+        featuredLocked: project ? !!project.featured_locked : projectCount === 0,
+        canFeature: project ? !!project.can_feature : true,
+        featuring: false,
         skills,
         specialities,
         allSkills,
@@ -352,6 +379,9 @@ document.addEventListener('alpine:init', () => {
         saving: false,
         resave: false,
         publishing: false,
+        // Inline field errors, keyed by field: title, skills, specialities,
+        // client, role, date, url, summary, story, results.
+        errors: {},
         saveTimer: null,
         savedText: project ? strings.saved : strings.notSaved,
         menu: { open: false, items: [], top: 0, left: 0, firstIndex: 0, onPick: null, anchor: null },
@@ -410,7 +440,7 @@ document.addEventListener('alpine:init', () => {
         onTitle(el) {
             if (el.textContent === '' && el.innerHTML !== '') el.innerHTML = '';
             this.form.title.en = el.textContent.replace(/\s+/g, ' ').trim() === '' ? '' : el.textContent;
-            this.changed();
+            this.changed('title');
         },
 
         /** A rich text block; "/" in an empty summary opens the block menu. */
@@ -422,7 +452,7 @@ document.addEventListener('alpine:init', () => {
                 return;
             }
             this.form[field].en = cleanHtml(el);
-            this.changed();
+            this.changed(field === 'body' ? 'story' : field);
         },
 
         /** Month picker → occurred_on; an unchanged month keeps the stored day. */
@@ -430,7 +460,7 @@ document.addEventListener('alpine:init', () => {
             if (!value) this.form.occurred_on = '';
             else if (this.originalDate.slice(0, 7) === value) this.form.occurred_on = this.originalDate;
             else this.form.occurred_on = `${value}-01`;
-            this.changed();
+            this.changed('date');
         },
 
         focusFirstBlock() {
@@ -448,14 +478,14 @@ document.addEventListener('alpine:init', () => {
             else this.form.skill_ids.splice(at, 1);
             const allowed = new Set(this.form.skill_ids.flatMap((s) => (this.specialities[String(s)] || []).map((x) => x.id)));
             this.form.speciality_ids = this.form.speciality_ids.filter((x) => allowed.has(x));
-            this.changed();
+            this.changed('skills');
         },
 
         toggleSpeciality(id) {
             const at = this.form.speciality_ids.indexOf(id);
             if (at === -1) this.form.speciality_ids.push(id);
             else this.form.speciality_ids.splice(at, 1);
-            this.changed();
+            this.changed('specialities');
         },
 
         /** Result tile class by what was typed (number / percent / change). */
@@ -480,19 +510,77 @@ document.addEventListener('alpine:init', () => {
 
         // --- Saving (publish, then autosave) ------------------------------
 
-        /** Any edit: mark dirty, and autosave once the project exists. */
-        changed() {
+        /** Any edit: clear that field's error, mark dirty, autosave once the project exists. */
+        changed(field = null) {
+            if (field && this.errors[field]) delete this.errors[field];
             this.dirty = true;
             if (!this.id) return;
             clearTimeout(this.saveTimer);
             this.saveTimer = setTimeout(() => this.save(), 700);
         },
 
-        /** Why the project cannot be saved yet ('' when it can). */
-        invalidReason() {
-            if ((this.form.title.en || '').trim() === '') return this.strings.needTitle;
-            if (!this.form.skill_ids.length) return this.strings.needSkill;
-            return '';
+        /** Client-side checks, as field → message ({} when it can be saved). */
+        validate() {
+            const errors = {};
+            if ((this.form.title.en || '').trim() === '') errors.title = this.strings.needTitle;
+            if (!this.form.skill_ids.length) errors.skills = this.strings.needSkill;
+            const url = (this.form.url || '').trim();
+            if (url && !/^https?:\/\/[^\s.]+\.[^\s]+$/i.test(url)) errors.url = this.strings.badUrl;
+            return errors;
+        },
+
+        /** Which editor field a server error key belongs to ('' when none). */
+        fieldOf(key) {
+            const map = [
+                [/^title/, 'title'], [/^skill_ids/, 'skills'], [/^speciality_ids/, 'specialities'],
+                [/^client_name/, 'client'], [/^role/, 'role'], [/^occurred_on/, 'date'], [/^url/, 'url'],
+                [/^summary/, 'summary'], [/^body/, 'story'], [/^results/, 'results'],
+            ];
+            return (map.find(([re]) => re.test(key)) || [null, ''])[1];
+        },
+
+        /**
+         * Put errors on their fields and bring the first into view. Server
+         * messages with no field on this page come back for a toast.
+         */
+        showErrors(errors) {
+            const rest = [];
+            const mapped = {};
+            for (const [key, msg] of Object.entries(errors)) {
+                const text = Array.isArray(msg) ? msg[0] : msg;
+                const field = this.fieldOf(key) || (key in this.fieldTargets() ? key : '');
+                if (field) mapped[field] ??= text;
+                else rest.push(text);
+            }
+            if (mapped.story) this.shown.story = true;
+            if (mapped.results) this.shown.results = true;
+            this.errors = mapped;
+            this.$nextTick(() => {
+                const first = Object.keys(this.fieldTargets()).find((f) => mapped[f]);
+                const el = first && this.$root.querySelector(this.fieldTargets()[first]);
+                if (el) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    if (el.matches('input, [contenteditable]')) el.focus({ preventScroll: true });
+                }
+            });
+            return rest;
+        },
+
+        /** Field → the element to scroll to, in page order. */
+        fieldTargets() {
+            return {
+                title: '#title', client: '[data-f="client"] input', role: '[data-f="role"] input',
+                date: '[data-f="date"] input', skills: '[data-f="skills"]', specialities: '[data-f="specialities"]',
+                url: '[data-f="url"] input', summary: '[data-b="summary"] .txt', story: '[data-b="story"] .txt',
+                results: '[data-b="results"]',
+            };
+        },
+
+        /** Show a failed request: field errors inline, anything else as a toast. */
+        showFailure(e) {
+            const rest = e instanceof ApiError && e.errors ? this.showErrors(e.errors) : [firstError(e, this.strings.failed)];
+            if (rest.length) toast(rest[0]);
+            else if (Object.keys(this.errors).length) toast(this.strings.fixFields);
         },
 
         /** The PATCH/POST body — the whole project (it is edited whole). */
@@ -508,6 +596,7 @@ document.addEventListener('alpine:init', () => {
                 occurred_on: f.occurred_on || null,
                 skill_ids: f.skill_ids,
                 speciality_ids: f.speciality_ids,
+                ...(this.id ? {} : { featured: this.featured }),
                 results: f.results
                     .map((r) => ({ label: (r.label || '').trim(), value: (r.value || '').trim(), compare: (r.compare || '').trim() }))
                     .filter((r) => r.label && r.value)
@@ -515,12 +604,42 @@ document.addEventListener('alpine:init', () => {
             };
         },
 
+        /** The Featured switch's note: why it is locked, or what it does. */
+        get featuredNote() {
+            if (this.featuredLocked) return this.strings.featOnly;
+            if (this.featured) return this.id ? this.strings.featOnSaved : this.strings.featOnNew;
+            return this.strings.featOff;
+        },
+
+        /**
+         * Flip the Featured switch. A new project carries the choice to Publish;
+         * an existing one is featured right away. Switching OFF is not a thing —
+         * featuring another project replaces this one.
+         */
+        async toggleFeatured() {
+            if (this.featuredLocked || !this.canFeature || this.featuring) return;
+            if (!this.id) { this.featured = !this.featured; return; }
+            if (this.featured) return;
+            this.featuring = true;
+            this.featured = true;
+            try {
+                await post(`/talent/projects/${this.id}/feature`);
+                toast(this.strings.featDone);
+            } catch (e) {
+                this.featured = false;
+                toast(firstError(e, this.strings.failed));
+            } finally {
+                this.featuring = false;
+            }
+        },
+
         /** Autosave the existing project (queued while a save is in flight). */
         async save() {
             if (!this.id) return false;
-            const reason = this.invalidReason();
-            if (reason) {
-                this.savedText = reason;
+            const invalid = this.validate();
+            if (Object.keys(invalid).length) {
+                this.errors = invalid;
+                this.savedText = this.strings.notSavedFix;
                 return false;
             }
             if (this.saving) {
@@ -534,10 +653,16 @@ document.addEventListener('alpine:init', () => {
                 const { data } = await patch(`/talent/projects/${this.id}`, this.payload());
                 this.originalDate = data?.occurred_on || '';
                 this.dirty = false;
+                this.errors = {};
                 this.savedText = this.strings.saved;
                 return true;
             } catch (e) {
-                this.savedText = fmt(this.strings.saveFailed, { m: firstError(e, this.strings.failed) });
+                if (e instanceof ApiError && e.errors) {
+                    this.showErrors(e.errors);
+                    this.savedText = this.strings.notSavedFix;
+                } else {
+                    this.savedText = fmt(this.strings.saveFailed, { m: firstError(e, this.strings.failed) });
+                }
                 return false;
             } finally {
                 this.saving = false;
@@ -550,15 +675,17 @@ document.addEventListener('alpine:init', () => {
 
         /** Publish a new project (create + send staged work), or save now. */
         async publish() {
-            const reason = this.invalidReason();
-            if (reason) {
-                toast(reason);
+            const invalid = this.validate();
+            if (Object.keys(invalid).length) {
+                this.showErrors(invalid);
+                toast(this.strings.fixFields);
                 return;
             }
 
             if (this.id) {
                 clearTimeout(this.saveTimer);
                 if (await this.save()) toast(this.strings.live);
+                else if (Object.keys(this.errors).length) toast(this.strings.fixFields);
                 return;
             }
 
@@ -570,6 +697,9 @@ document.addEventListener('alpine:init', () => {
                 this.originalDate = data.occurred_on || '';
                 this.media = data.media || [];
                 this.dirty = false;
+                this.errors = {};
+                this.featured = !!data.is_featured;
+                this.featuredLocked = !!data.featured_locked;
                 window.history.replaceState(null, '', this.editUrlTemplate.replace('__ID__', data.id));
 
                 if (this.coverFile) await this.sendCover(this.coverFile);
@@ -587,7 +717,7 @@ document.addEventListener('alpine:init', () => {
                 else toast(this.strings.published1);
             } catch (e) {
                 this.savedText = this.id ? this.strings.saved : this.strings.notSaved;
-                toast(firstError(e, this.strings.failed));
+                this.showFailure(e);
             } finally {
                 this.publishing = false;
             }

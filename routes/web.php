@@ -92,6 +92,10 @@ Route::group([
     //     before the /{slug} talent catch-all so /feed and /posts resolve. ---
     require __DIR__.'/feed.php';
 
+    // --- Location drop lists (City options per country; static, public) ---
+    Route::get('/locations/{country}/cities', [\App\Http\Controllers\LocationController::class, 'cities'])
+        ->where('country', '[A-Za-z]{2}')->middleware('throttle:120,1')->name('locations.cities');
+
     // --- Public discovery + talent sub-pages (before the {slug} catch-all) ---
     // Hidden in V1 (feature `discover` — the routes stay registered and 404 when off).
     Route::middleware('feature:discover')->group(function () {

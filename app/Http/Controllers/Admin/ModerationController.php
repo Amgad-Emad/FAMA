@@ -8,7 +8,9 @@ use App\Models\BrandReview;
 use App\Models\Recognition;
 use App\Models\Review;
 use App\Models\Talent;
+use App\Services\AccountNoticeService;
 use App\Services\BrandModerationService;
+use App\Services\ModerationBulkService;
 use App\Services\ProjectOversightService;
 use App\Services\RecognitionService;
 use App\Services\ReviewModerationService;
@@ -18,6 +20,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Admin moderation queues (Phase 3B UI). One shell with tabbed queues; each
@@ -33,6 +36,7 @@ class ModerationController extends AdminController
         private readonly ReviewModerationService $reviewMod,
         private readonly ProjectOversightService $projectMod,
         private readonly RecognitionService $recognitions,
+        private readonly AccountNoticeService $notices,
     ) {}
 
     /**
@@ -48,8 +52,21 @@ class ModerationController extends AdminController
         }
         $queue = $request->query('queue');
 
+        // What is waiting in each queue (one aggregate query each) — the tab badges.
+        $waiting = [
+            'talents' => Talent::where('is_verified', false)->where('status', '!=', 'suspended')->count(),
+            'reviews' => Review::where('status', 'pending')->count(),
+            'recognitions' => Recognition::where('status', 'pending')->count(),
+        ];
+        if (Features::brands()) {
+            $waiting['brands'] = Brand::where('is_verified', false)->count();
+            $waiting['brand-reviews'] = BrandReview::where('status', 'pending')->count();
+        }
+        $waiting['all-reviews'] = $waiting['reviews'] + ($waiting['brand-reviews'] ?? 0);
+
         return view('admin.moderation.index', [
             'queue' => in_array($queue, $queues, true) ? $queue : 'talents',
+            'waiting' => $waiting,
         ]);
     }
 
@@ -57,7 +74,7 @@ class ModerationController extends AdminController
 
     public function talents(Request $request): JsonResponse
     {
-        $paginator = Talent::query()->withTrashed()
+        $paginator = Talent::query()->withTrashed()->with('media')
             ->when($request->query('q'), fn ($query, $q) => $query->where(fn ($w) => $w
                 ->where('display_name', 'like', "%{$q}%")->orWhere('email', 'like', "%{$q}%")->orWhere('slug', 'like', "%{$q}%")))
             ->when($request->query('status'), fn ($query, $status) => $query->where('status', $status))
@@ -72,6 +89,12 @@ class ModerationController extends AdminController
             'is_published' => (bool) $t->is_published,
             'trashed' => $t->trashed(),
             'city' => $t->base_city,
+            'country' => $t->base_country,
+            'email' => $t->email,
+            'avatar_url' => $t->avatar_url,
+            // All six profile steps done (ProfileCompletionService) — flags "ready for review".
+            'steps_completed' => $t->steps_completed_at !== null,
+            'joined' => $t->created_at?->diffForHumans(),
         ]));
     }
 
@@ -114,6 +137,7 @@ class ModerationController extends AdminController
     {
         $admin = $this->admin();
         $reason = $request->input('reason');
+        $notice = $this->noticeFrom($request, $action); // validated BEFORE the decision runs
 
         match ($action) {
             'verify' => $this->talentMod->verify($admin, $talent),
@@ -126,7 +150,99 @@ class ModerationController extends AdminController
             default => abort(404),
         };
 
+        if ($notice !== null) {
+            $this->notices->send($action, $notice);
+        }
+
         return response()->success(null, __('Talent moderated.'));
+    }
+
+    /**
+     * The email that goes with a Verify / Suspend decision: suggested copy for
+     * this account, and the rendered preview of the copy sent (or of the
+     * defaults when none is sent). The modal calls it on open and as the admin
+     * types; nothing is sent here.
+     */
+    public function notice(Request $request, string $kind, int $id, string $type): JsonResponse
+    {
+        $account = match ($kind) {
+            'talents' => Talent::withTrashed()->findOrFail($id),
+            'brands' => Features::brands() ? Brand::withTrashed()->findOrFail($id) : abort(404),
+            default => abort(404),
+        };
+
+        $defaults = $this->notices->defaults($account, $type);
+        $copy = $request->validate([
+            'subject' => ['sometimes', 'nullable', 'string', 'max:150'],
+            'heading' => ['sometimes', 'nullable', 'string', 'max:120'],
+            'message' => ['sometimes', 'nullable', 'string', 'max:3000'],
+        ]);
+        $copy = array_merge($defaults, array_filter($copy, fn ($v) => $v !== null));
+
+        return response()->success([
+            'defaults' => $defaults,
+            'html' => $this->notices->render($type, $copy),
+        ]);
+    }
+
+    /**
+     * Verify / Suspend may carry `notify` = the email the admin composed in the
+     * modal. Returns the validated copy when `send` is true (null otherwise).
+     * Called BEFORE the decision runs, so a bad address fails the request
+     * without half-applying it; the caller queues it after the decision.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function noticeFrom(Request $request, string $action): ?array
+    {
+        if (! in_array($action, AccountNoticeService::TYPES, true) || ! $request->boolean('notify.send')) {
+            return null;
+        }
+
+        return $request->validate([
+            'notify.email' => ['required', 'email', 'max:255'],
+            'notify.subject' => ['required', 'string', 'max:150'],
+            'notify.heading' => ['required', 'string', 'max:120'],
+            'notify.message' => ['required', 'string', 'max:3000'],
+            'notify.cta_label' => ['nullable', 'string', 'max:40'],
+            'notify.cta_url' => ['nullable', 'url', 'max:2048'],
+        ])['notify'];
+    }
+
+    /**
+     * Bulk delete on a queue (`ids[]`, max 200). Each row goes through the same
+     * audited path as its single Delete; soft deletes (restorable).
+     */
+    public function bulkDelete(Request $request, ModerationBulkService $bulk, string $queue): JsonResponse
+    {
+        $this->assertBulkQueue($queue);
+        $ids = $request->validate([
+            'ids' => ['required', 'array', 'min:1', 'max:'.ModerationBulkService::MAX],
+            'ids.*' => ['integer'],
+        ])['ids'];
+
+        $done = $bulk->delete($this->admin(), $queue, $ids);
+
+        return response()->success(['deleted' => $done], trans_choice(':count item deleted.|:count items deleted.', $done, ['count' => $done]));
+    }
+
+    /**
+     * CSV export of a queue: `?ids=1,2,3` for a selection, otherwise every row
+     * matching the queue's own `q` / `status` filters.
+     */
+    public function export(Request $request, ModerationBulkService $bulk, string $queue): StreamedResponse
+    {
+        $this->assertBulkQueue($queue);
+        $ids = array_values(array_filter(array_map('intval', explode(',', (string) $request->query('ids', '')))));
+
+        return $bulk->export($queue, $ids, $request);
+    }
+
+    /** Bulk works on the talent/review queues, and on brands only with the feature. */
+    private function assertBulkQueue(string $queue): void
+    {
+        abort_unless(in_array($queue, ModerationBulkService::QUEUES, true), 404);
+        abort_if($queue === 'brands' && ! Features::brands(), 404);
     }
 
     // --- Talent reviews -----------------------------------------------------
@@ -283,7 +399,7 @@ class ModerationController extends AdminController
 
     public function brands(Request $request): JsonResponse
     {
-        $paginator = Brand::query()->withTrashed()
+        $paginator = Brand::query()->withTrashed()->with('media')
             ->when($request->query('q'), fn ($query, $q) => $query->where(fn ($w) => $w
                 ->where('name', 'like', "%{$q}%")->orWhere('email', 'like', "%{$q}%")->orWhere('slug', 'like', "%{$q}%")))
             ->when($request->query('status'), fn ($query, $status) => $query->where('status', $status))
@@ -297,6 +413,10 @@ class ModerationController extends AdminController
             'is_verified' => (bool) $b->is_verified,
             'is_published' => (bool) $b->is_published,
             'trashed' => $b->trashed(),
+            'email' => $b->email,
+            'city' => $b->base_city,
+            'avatar_url' => $b->logo_url ?? null,
+            'joined' => $b->created_at?->diffForHumans(),
         ]));
     }
 
@@ -340,6 +460,7 @@ class ModerationController extends AdminController
     {
         $admin = $this->admin();
         $reason = $request->input('reason');
+        $notice = $this->noticeFrom($request, $action); // validated BEFORE the decision runs
 
         match ($action) {
             'verify' => $this->brandMod->verify($admin, $brand),
@@ -350,6 +471,10 @@ class ModerationController extends AdminController
             'delete' => $this->brandMod->softDelete($admin, $brand, $reason),
             default => abort(404),
         };
+
+        if ($notice !== null) {
+            $this->notices->send($action, $notice);
+        }
 
         return response()->success(null, __('Brand moderated.'));
     }
@@ -424,11 +549,16 @@ class ModerationController extends AdminController
         $union = DB::table('reviews')
             ->select('id', DB::raw("'talent' as kind"), 'created_at')
             ->where('status', 'pending')
-            ->unionAll(
+            ->whereNull('deleted_at');
+        // Brand reviews only while the brands feature is on (V1: off — their
+        // endpoints 404, so listing them would offer rows that cannot open).
+        if (Features::brands()) {
+            $union->unionAll(
                 DB::table('brand_reviews')
                     ->select('id', DB::raw("'brand' as kind"), 'created_at')
                     ->where('status', 'pending')
             );
+        }
 
         $paginator = DB::query()->fromSub($union, 'pending_reviews')
             ->orderByDesc('created_at')->orderByDesc('id')
