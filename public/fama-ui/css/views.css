@@ -24,19 +24,20 @@
 .vw-grid i:last-child{border-top-color:var(--grey)}
 .vw-bars{position:absolute;inset:0;display:flex;align-items:flex-end;gap:2px}
 .vw-bars button{flex:1;height:100%;border:0;padding:0;background:none;display:flex;align-items:flex-end;cursor:default}
-.vw-bars button span{display:block;width:100%;background:var(--purple);border-radius:4px 4px 0 0;min-height:2px;transition:background var(--fast) var(--ease)}
+.vw-bars button span{display:block;width:100%;background:var(--purple);border-radius:4px 4px 0 0;min-height:2px;transition:height .7s cubic-bezier(.22,1,.36,1),background var(--fast) var(--ease)}
 .vw-bars button:hover span,.vw-bars button:focus-visible span{background:var(--purple-dk)}
 .vw-bars button:focus-visible{outline:none}
 .vw-bars button:focus-visible span{outline:2px solid var(--ink);outline-offset:2px}
 .vw-xax{grid-column:2;display:flex;justify-content:space-between;margin-top:var(--s2);font-size:13px;color:var(--grey)}
 .vw-xax span{white-space:nowrap}
+.vw-plot{transition:opacity .25s var(--ease)}
+.vw-plot.is-loading{opacity:.55}
+.vw-yax span{transition:opacity .3s var(--ease)}
+@media (prefers-reduced-motion:reduce){.vw-bars button span{transition:background var(--fast) var(--ease);transition-delay:0s!important}}
 .vw-tip{position:absolute;z-index:2;pointer-events:none;background:var(--ink);color:var(--cream);border-radius:var(--s3);padding:6px var(--s3);font-size:13px;white-space:nowrap;transform:translate(-50%,calc(-100% - 8px));opacity:0;transition:opacity var(--fast)}
 .vw-tip b{font-weight:600}
 .vw-link{display:inline-flex;align-items:center;gap:var(--s1);border:0;background:none;padding:0;min-height:44px;color:var(--purple-dk);font:inherit;font-weight:600;text-decoration:none;cursor:pointer;margin-top:var(--s3)}
 .vw-link .icon{width:16px;height:16px}
-.vw-table{width:100%;border-collapse:collapse;margin-top:var(--s3);font-size:var(--t-meta)}
-.vw-table th,.vw-table td{text-align:start;padding:var(--s2) 0;border-bottom:var(--border)}
-.vw-table th{font-weight:600}
 .vw-todo{list-style:none;margin:var(--s5) 0 0;padding:0;border-top:var(--border)}
 .vw-todo li{display:flex;align-items:center;gap:var(--s4);padding:var(--s3) 0;border-bottom:var(--border)}
 .vw-todo .tick{width:28px;height:28px;border-radius:var(--radius-pill);border:2px solid var(--line);display:flex;align-items:center;justify-content:center;flex:none}

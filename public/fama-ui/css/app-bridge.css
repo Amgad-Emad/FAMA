@@ -41,3 +41,16 @@ template:first-child+.pc{border-top:0}
 template:first-child+.rc{border-top:0;padding-top:0}
 template:first-child+.row{border-top:0}
 template:first-child+.xp-g{border-top:0;padding-top:0}
+
+/* Drop lists: one drawn chevron instead of the browser's (which hugs the edge
+   and sits differently per browser) — 16px from the end, centred, RTL-aware. */
+select:not([multiple]):not([size]){
+  -webkit-appearance:none;appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236B6560' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-size:16px 16px;background-position:right 16px center;
+  padding-inline-end:44px;text-overflow:ellipsis;cursor:pointer
+}
+[dir=rtl] select:not([multiple]):not([size]){background-position:left 16px center}
+select:not([multiple]):not([size]):disabled{cursor:not-allowed;opacity:.6}
+.fx-lv select.sel{background-position:right 12px center;padding-inline-end:36px}
+[dir=rtl] .fx-lv select.sel{background-position:left 12px center}

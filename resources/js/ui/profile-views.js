@@ -16,7 +16,7 @@ document.addEventListener('alpine:init', () => {
         loading: false,
         error: false,
         cache: {},
-        showTable: false,
+        grown: false,
 
         /** Load the default range. */
         init() { this.load('30d'); },
@@ -36,8 +36,24 @@ document.addEventListener('alpine:init', () => {
                 this.loading = false;
             }
         },
-        /** Take a series payload. */
-        apply(d) { this.series = d.series || []; this.total = d.total || 0; },
+        /**
+         * Take a series payload and replay the grow-in: the bars render at 0
+         * height, then rise to their value on the next frame (CSS transition).
+         * setTimeout backs up rAF, which never fires in a hidden tab.
+         */
+        apply(d) {
+            this.grown = false;
+            this.series = d.series || [];
+            this.total = d.total || 0;
+            this.$nextTick(() => {
+                let done = false;
+                const grow = () => { if (!done) { done = true; this.grown = true; } };
+                requestAnimationFrame(() => requestAnimationFrame(grow));
+                setTimeout(grow, 80);
+            });
+        },
+        /** Stagger: bars rise left to right, the whole sweep capped at ~350ms. */
+        delay(i) { return this.series.length > 1 ? Math.round((i / (this.series.length - 1)) * 350) : 0; },
         /** The axis step: the smallest nice number so 3 steps reach the max. */
         get step() {
             const max = Math.max(0, ...this.series.map((x) => x.views));

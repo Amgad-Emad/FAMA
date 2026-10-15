@@ -167,3 +167,6 @@ browser performance panel (with the RTL/dark pass).
 
 `GET /design/feed-tokens` renders every token, type role, frame variant and interactive state in
 **both themes × both directions** on one page.
+
+**Selects (fama-ui pages):** `app-bridge.css` replaces the native arrow on every single-choice `<select>` with a drawn
+chevron (16px from the end, centred, flips in RTL, 44px end padding). Don't add per-page arrow styles.

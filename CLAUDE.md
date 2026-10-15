@@ -1054,6 +1054,8 @@ public profile, auth and error pages. SUPERSEDES the Orchid/Daylight styling not
   page `notifications.page`). `talent.dashboard` REDIRECTS to `talent.profile.edit` (dashboard view deleted).
 - SITE ROOT: `/` → `/feed` when the viewer's candidate list is non-empty, else login (signed-in → dashboard);
   `FeedController::home` (2026-10-15, suite 789 green).
+- VIEWS CHART: no table toggle; bars grow in via a CSS height transition (`grown` flips after rAF + setTimeout
+  fallback, per-bar `transition-delay` capped at 350ms) on load and every range switch.
 - LOGIN LANDING: a talent login (and talent registration) ALWAYS lands on `talent.profile.edit` — the visitor's
   pending feed action is still replayed by the Login event, but `feed.return_to` is discarded (copy says "we'll
   finish it as soon as you're in", never "bring you back"). Brand/admin keep route('dashboard').

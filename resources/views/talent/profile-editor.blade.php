@@ -180,14 +180,14 @@
       @endforeach
     </div>
   </div>
-  <div class="vw-plot" :style="loading ? 'opacity:.55' : ''">
+  <div class="vw-plot" :class="{ 'is-loading': loading }">
     <div class="vw-yax" aria-hidden="true"><template x-for="(tk, i) in yTicks" :key="i"><span x-text="tk"></span></template></div>
     <div class="vw-area" x-ref="area">
       <div class="vw-grid"><i></i><i></i><i></i><i></i></div>
       <div class="vw-bars">
         <template x-for="(b, i) in series" :key="b.date">
           <button type="button" :aria-label="b.label + ': ' + b.views.toLocaleString('en-GB') + ' ' + @js(__('views'))"
-                  @mouseenter="tip($event, i)" @focus="tip($event, i)" @mouseleave="untip()" @blur="untip()"><span :style="'height:' + height(b.views) + '%'"></span></button>
+                  @mouseenter="tip($event, i)" @focus="tip($event, i)" @mouseleave="untip()" @blur="untip()"><span :style="'height:' + (grown ? height(b.views) : 0) + '%;transition-delay:' + delay(i) + 'ms'"></span></button>
         </template>
       </div>
       <div class="vw-tip" x-ref="tip" role="status"></div>
@@ -195,12 +195,6 @@
     <div class="vw-xax" aria-hidden="true"><template x-for="i in xPicks" :key="i"><span x-text="series[i] ? series[i].label : ''"></span></template></div>
   </div>
   <p class="vw-err" x-show="error" x-cloak>{{ __('Couldn’t load your views. Try again in a moment.') }}</p>
-  <button type="button" class="vw-link" @click="showTable = !showTable" :aria-expanded="showTable.toString()" x-text="showTable ? @js(__('Hide table')) : @js(__('Show as a table'))">{{ __('Show as a table') }}</button>
-  <div x-show="showTable" x-cloak>
-    <table class="vw-table"><thead><tr><th>{{ __('Date') }}</th><th>{{ __('Views') }}</th></tr></thead>
-      <tbody><template x-for="b in series" :key="b.date"><tr><td x-text="b.label"></td><td x-text="b.views.toLocaleString('en-GB')"></td></tr></template></tbody>
-    </table>
-  </div>
 </section>
 
 <div class="layout">

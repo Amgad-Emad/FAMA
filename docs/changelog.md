@@ -6,6 +6,11 @@ Notable changes to the Fama project. Newest first.
 - `/` (route `home`) no longer shows the Laravel welcome page: it redirects to `/feed` when the viewer's frozen
   candidate list has posts, otherwise to login (a signed-in viewer goes to `route('dashboard')`).
   `FeedController::home`.
+- Profile views chart: the "Show as a table" toggle and its table are removed (each bar keeps its aria-label);
+  bars grow in from the baseline, staggered left to right, on load and on every range switch
+  (`profileViews.grown`/`delay()`; reduced-motion snaps).
+- Drop lists on fama-ui pages draw one chevron (app-bridge.css) instead of the browser arrow: 16px from the end,
+  vertically centred, RTL-aware, text never runs under it.
 
 ## 2026-10-12 — Guest feed + login landing polish
 - Guest feed identical to the prototype: the link-chip glyph sprite no longer renders as a 300×150 box (it used
