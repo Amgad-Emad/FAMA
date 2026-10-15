@@ -3,15 +3,20 @@
 namespace App\Http\Controllers\Feed;
 
 use App\Data\Feed\FeedQueryData;
+use App\Feed\Actor;
 use App\Http\Resources\Feed\ActorResource;
 use App\Http\Resources\Feed\PostResource;
 use App\Models\Post;
 use App\Models\Talent;
+use App\Models\TalentType;
 use App\Services\DiscoverTalentsService;
 use App\Services\FeedService;
 use App\Services\FollowService;
+use App\Support\FeedComposer;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
 /**
@@ -22,6 +27,23 @@ use Illuminate\View\View;
  */
 class FeedController extends FeedBaseController
 {
+    /**
+     * The site root: the feed when it has something to show this viewer,
+     * otherwise login (a signed-in viewer goes to their home instead). Reads
+     * the same cached frozen candidate list /feed slices, so "empty" here
+     * means /feed would render empty too.
+     */
+    public function home(Request $request, FeedService $feed): RedirectResponse
+    {
+        $viewer = $this->currentActor->resolve();
+
+        if ($feed->candidateIds($viewer, $this->sessionSeed($request)) !== []) {
+            return redirect()->route('feed');
+        }
+
+        return $viewer !== null ? redirect()->route('dashboard') : redirect()->route('login');
+    }
+
     /**
      * The Daylight feed shell with page 1 server-rendered from the ranked
      * stream (same frozen candidate list the Ajax pages slice — D10).
@@ -45,24 +67,9 @@ class FeedController extends FeedBaseController
             followingOnly: $following,
         ));
 
-        // The composer is a talent-only surface (ADR-F1): its Skills and
-        // shareable Projects ride along server-side, no extra round-trips.
-        $composer = null;
-
-        if ($viewer instanceof Talent) {
-            $composer = [
-                'skills' => $viewer->talentTypes()->get(['talent_types.id', 'name', 'slug'])
-                    ->map(fn ($skill) => ['id' => $skill->id, 'name' => $skill->name, 'slug' => $skill->slug]),
-                'projects' => $viewer->projects()->latest('id')->get()
-                    ->map(fn ($project) => [
-                        'id' => $project->id,
-                        'title' => $project->title,
-                        'cover' => $project->cover_image_url,
-                        'year' => $project->year,
-                    ]),
-                'username' => $viewer->feedUsername(),
-            ];
-        }
+        // The composer is a talent-only surface (ADR-F1): its config rides
+        // along server-side, no extra round-trips.
+        $composer = FeedComposer::for($viewer);
 
         return view('feed.index', [
             'items' => $page['items'],
@@ -72,7 +79,7 @@ class FeedController extends FeedBaseController
             'composer' => $composer,
             'activeSkill' => is_string($skill) && $skill !== '' ? $skill : null,
             'followingOnly' => $following,
-            'filterSkills' => \App\Models\TalentType::query()->orderBy('id')->get(['id', 'name', 'slug']),
+            'filterSkills' => TalentType::query()->orderBy('id')->get(['id', 'name', 'slug']),
         ]);
     }
 
@@ -137,7 +144,7 @@ class FeedController extends FeedBaseController
     /**
      * A casting strip with the viewer's follow-state stamped on each talent.
      */
-    private function castingWithState(DiscoverTalentsService $discover, FollowService $follows, ?\App\Feed\Actor $viewer, string $seed): \Illuminate\Support\Collection
+    private function castingWithState(DiscoverTalentsService $discover, FollowService $follows, ?Actor $viewer, string $seed): Collection
     {
         $talents = $discover->strip($viewer, $seed);
         $state = $follows->isFollowing($viewer, $talents);

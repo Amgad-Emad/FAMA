@@ -11,6 +11,16 @@ that walks a brand and a talent through booking, quoting, contracting, payment, 
 
 ## Status
 
+**UI: the fama-ui design (2026-10-12, ADR-AB).** Talent, feed, public profile, auth and error pages use the
+client's fama-ui kit (`public/fama-ui/`, `<x-fama.layout>`). Talent nav: **Feed · Activity · Profile structure ·
+Projects · Credits** + Preview profile + notifications bell. Profile structure is the talent home (the dashboard
+redirects there). Full Pest suite **789/789 green**.
+
+Demo logins (password `password`): `talent-demo@fama.test` (every screen populated), `talent-new@fama.test`
+(Private, unverified — the go-Live steps), `brand-demo@fama.test`, `admin-demo@fama.test` (at `/admin/login`).
+Top up an existing dev DB with `php artisan db:seed --class=ScreensDemoSeeder`; if `/feed` looks empty (seeded
+content older than the 30-day ranking windows), run `php artisan demo:freshen`.
+
 **Talent, brand and admin slices — complete (production-grade).** Full Pest suite **345/345 green**;
 `php artisan migrate:fresh --seed` seeds demo data end-to-end. Blade + Alpine on the shared `http.js`
 (no page reloads), JSON envelope, i18n (EN/AR + RTL), light/dark. Manual QA checklist:

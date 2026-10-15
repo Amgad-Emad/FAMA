@@ -3,6 +3,7 @@
 use App\Http\Resources\PublicProfileResource;
 use App\Models\BlockType;
 use App\Models\PortfolioItem;
+use App\Models\ProfileBlock;
 use App\Models\Project;
 use App\Models\Review;
 use App\Models\Talent;
@@ -16,7 +17,7 @@ beforeEach(function () {
 });
 
 /** A block in a scope (talent_type_id NULL = universal). */
-function scopedBlock(Talent $talent, string $key, ?int $typeId, int $position = 0, bool $visible = true): \App\Models\ProfileBlock
+function scopedBlock(Talent $talent, string $key, ?int $typeId, int $position = 0, bool $visible = true): ProfileBlock
 {
     $bt = BlockType::where('key', $key)->firstOrFail();
 
@@ -59,6 +60,7 @@ function tabbedTalent(): Talent
 
 it('renders identity + universal blocks + a tab per skill, with the primary tab active server-side', function () {
     tabbedTalent();
+    config(['features.reviews' => true]); // the universal block here is reviews
 
     $res = $this->get('/multi')->assertOk();
 

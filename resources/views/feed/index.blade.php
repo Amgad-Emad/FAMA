@@ -1,185 +1,152 @@
-<x-public-layout :title="__('Feed')" :animate="false">
-    @include('feed.partials.daylight-head')
+{{-- /feed — the fama-ui Feed (port of feed.html). Page 1 of the RANKED stream
+     is server-rendered (same frozen candidate list the cursor pages slice —
+     D10); more loads at the bottom. "Talent to follow" sits beside the feed on
+     wide screens and becomes a strip between posts on narrow ones; "Talent to
+     discover" every Nth post (feed.casting_every). Floating buttons: Filters ·
+     Back to top · New post. Guests read everything (ADR-F8) and get the way in
+     inside the hero. Behaviour = feedStream / feedComposer / $store.famaPeople. --}}
+@php
+    $isGuest = $currentActor === null;
+    $filterKey = $followingOnly ? 'following' : ($activeSkill ?? 'all');
+    $me = $currentActor;
+    $meName = $me?->feedDisplayName() ?? '';
+    $meInitials = collect(preg_split('/\s+/', trim($meName)))->filter()->take(2)->map(fn ($w) => mb_strtoupper(mb_substr($w, 0, 1)))->implode('');
+    $skillNames = $filterSkills->mapWithKeys(fn ($s) => [$s->slug => $s->name]);
+@endphp
+
+<x-fama.layout :title="__('Feed')" :css="['posts', 'pages/feed', 'pages/feed-common']">
+    <x-slot:head>
+        @include('feed.partials.lang')
+    </x-slot:head>
+
+    <x-slot:hero>
+        @if ($isGuest)
+            <x-fama.hero :label="__('Creative talent on Fama')" :title="__('Feed')" :lead="__('Work from stylists, models, photographers and more. Join to post your own.')" photo="feed">
+                <a class="btn" href="{{ route('register') }}"><svg class="icon" aria-hidden="true"><use href="#a-user-plus"/></svg>{{ __('Join as talent') }}</a>
+                <a class="btn btn-2" href="{{ route('login') }}"><svg class="icon" aria-hidden="true"><use href="#a-log-in"/></svg>{{ __('Log in') }}</a>
+            </x-fama.hero>
+        @else
+            <x-fama.hero :label="__('Your people')" :title="__('Feed')" :lead="__('See what your network is working on, and share your own.')" photo="feed" />
+        @endif
+    </x-slot:hero>
+
     @include('feed.partials.glyphs')
-    @include('feed.partials.report-dialog')
 
-    {{-- The Daylight surface (5M/5AA): TALENT rail inline-start · the spine ·
-         BRANDS rail inline-end — the two sides of the marketplace embodied.
-         Rails hydrate AFTER the feed (Ajax) so they never delay first paint;
-         a brand viewer gets no brand rail and the grid rebalances. Guests
-         read everything (ADR-F8). --}}
-    @php $viewerIsBrand = $currentActor instanceof \App\Models\Brand; @endphp
-
-    <div data-surface="daylight" class="min-h-screen"
-         x-data="feedStream({
+    <div x-data="feedStream({
             nextCursor: @js($nextCursor),
-            castingEvery: {{ (int) config('feed.ranking.casting_every') }},
-            skill: @js($activeSkill),
-            following: {{ $followingOnly ? 'true' : 'false' }},
+            filter: @js($filterKey),
+            count: {{ count($items) }},
+            isGuest: @js($isGuest),
+            skillNames: @js($skillNames),
          })">
+        <main class="wrap main"><div class="layout">
+            <div>
+                <div class="filterbar" x-show="filter !== 'all'" @if ($filterKey === 'all') x-cloak @endif>
+                    <span class="tag tag-ink" x-text="showingLabel()">{{ __('Showing: :filter', ['filter' => $filterKey === 'following' ? __('Following') : ($skillNames[$filterKey] ?? $filterKey)]) }}</span>
+                    <button type="button" class="link" @click="setFilter('all')">{{ __('Clear filter') }}</button>
+                </div>
 
-        <div class="light-bar" aria-hidden="true"></div>
-        <div class="grain" aria-hidden="true"></div>
-        <div class="fab-scroll-marker" x-ref="fabMarker" aria-hidden="true"></div>
-
-        {{-- Floating actions (5AC): New post + Back to top, bottom inline-start
-             (right in RTL), hidden while any modal is open. TELEPORTED to
-             <body>: the page's `<main class="animate-fade-in-up">` animates a
-             transform, and a transformed ancestor becomes the containing block
-             for position:fixed — which would pin the FABs to the bottom of the
-             full-height feed, far below the fold, instead of the viewport. The
-             daylight host restores the scoped tokens outside the surface. --}}
-        <template x-teleport="body">
-            <div data-surface="daylight" class="fab-host">
-                <div class="fab-stack" x-data="fabStack({ canPost: @js($composer !== null), isGuest: @js($currentActor === null) })">
-                    <button type="button" x-show="showTop" x-cloak
-                            class="fab fab--quiet fab-appear" :class="{ 'is-visible': showTop }"
-                            @click="toTop()" aria-label="{{ __('Back to top') }}">
-                        <span aria-hidden="true">↑</span>
-                    </button>
-
-                    {{-- Filters FAB: THE feed filter surface (the chrome header
-                         and its inline chips were removed) — always visible.
-                         Opens the chips in a popover above the button. --}}
-                    <div class="relative"
-                         @keydown.escape="filtersOpen = false" @click.outside="filtersOpen = false">
-                        <div x-show="filtersOpen" x-cloak class="fab-filter-panel" role="group" aria-label="{{ __('Feed filters') }}">
-                            <button type="button" class="dl-chip" :class="{ 'is-active': !skill && !following }"
-                                    @click="setFilter(null, false); filtersOpen = false; window.scrollTo({ top: 0, behavior: 'smooth' })">{{ __('ALL') }}</button>
-                            @if ($currentActor !== null)
-                                <button type="button" class="dl-chip" :class="{ 'is-active': following }"
-                                        @click="setFilter(null, true); filtersOpen = false; window.scrollTo({ top: 0, behavior: 'smooth' })">{{ __('FOLLOWING') }}</button>
-                            @endif
-                            @foreach ($filterSkills as $skillOption)
-                                <button type="button" class="dl-chip" :class="{ 'is-active': skill === '{{ $skillOption->slug }}' }"
-                                        @click="setFilter('{{ $skillOption->slug }}', false); filtersOpen = false; window.scrollTo({ top: 0, behavior: 'smooth' })">{{ $skillOption->name }}</button>
-                            @endforeach
+                @if ($composer !== null)
+                    <div class="composer" id="composer">
+                        <div class="top">
+                            <span class="av md" aria-hidden="true">@if ($me?->feedAvatarUrl())<img src="{{ $me->feedAvatarUrl() }}" alt="">@else{{ $meInitials }}@endif</span>
+                            <button type="button" class="start" id="start" aria-haspopup="dialog" @click="$dispatch('open-composer', {})">{{ __('Start a post') }}</button>
                         </div>
-                        <button type="button" class="fab" @click="filtersOpen = !filtersOpen"
-                                :aria-expanded="filtersOpen ? 'true' : 'false'" aria-haspopup="true"
-                                aria-label="{{ __('Feed filters') }}">
-                            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 5h18M6 12h12M10 19h4" />
-                            </svg>
-                            <span class="fab-label t-meta">{{ __('FILTERS') }}</span>
-                        </button>
+                        <div class="quick">
+                            <button type="button" aria-haspopup="dialog" @click="$dispatch('open-composer', { mode: 'photo' })"><svg class="icon" aria-hidden="true"><use href="#i-image"/></svg><span>{{ __('Photo') }}</span></button>
+                            <button type="button" aria-haspopup="dialog" @click="$dispatch('open-composer', { mode: 'video' })"><svg class="icon" aria-hidden="true"><use href="#i-video"/></svg><span>{{ __('Video') }}</span></button>
+                            <button type="button" aria-haspopup="dialog" @click="$dispatch('open-composer', { mode: 'project' })"><svg class="icon" aria-hidden="true"><use href="#i-folder"/></svg><span class="lg">{{ __('Share a project') }}</span><span class="sm">{{ __('Project') }}</span></button>
+                        </div>
                     </div>
+                @endif
 
-                    @if ($composer !== null || $currentActor === null)
-                        <div class="relative">
-                            <div x-show="gate" x-cloak class="absolute bottom-full mb-2 w-56 rounded-md border border-seam bg-veil/40 p-3"
-                                 style="background: var(--dl-surface); box-shadow: var(--dl-shadow-raised);">
-                                <p class="t-body">{{ __('Sign in to share your work') }}</p>
-                                <div class="mt-2 flex gap-2">
-                                    <a href="{{ route('login', ['role' => 'talent']) }}" class="dl-chip">{{ __("I'm a talent") }}</a>
-                                    @feature('brands')
-                                        <a href="{{ route('login', ['role' => 'brand']) }}" class="dl-chip">{{ __("I'm a brand") }}</a>
-                                    @endfeature
-                                </div>
-                            </div>
-                            <button type="button" class="fab" @click="newPost()" aria-label="{{ __('New post') }}">
-                                <span aria-hidden="true" class="t-display" style="font-size: 24px; line-height: 1;">+</span>
-                                <span class="fab-label t-meta">{{ __('NEW POST') }}</span>
-                            </button>
-                        </div>
+                <div id="posts" x-ref="spine" aria-live="polite">
+                    @foreach ($items as $index => $post)
+                        @if (in_array($index, $castingPositions, true) && $castingTalents->isNotEmpty())
+                            <x-feed.casting :talents="$castingTalents" />
+                        @endif
+                        @include('feed.partials.post', ['post' => $post, 'eagerMedia' => $index === 0])
+                    @endforeach
+                </div>
+
+                <div class="card empty" x-show="count === 0 && !loading" @if (count($items) > 0) x-cloak @endif>
+                    <h2 class="h2" x-text="filter === 'all' ? @js(__('Be the first — share your work.')) : @js(__('No posts match this filter yet.'))">{{ $filterKey === 'all' ? __('Be the first — share your work.') : __('No posts match this filter yet.') }}</h2>
+                    <p>{{ __('Posts from people on Fama show here. Share a set, a note or a project.') }}</p>
+                    @if ($composer !== null)
+                        <button type="button" class="btn" x-show="filter === 'all'" @click="$dispatch('open-composer', {})"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>{{ __('New post') }}</button>
                     @endif
                 </div>
+                <p class="loading" x-show="loading || (!finished && count > 0)" @if ($nextCursor === null) x-cloak @endif>{{ __('Loading more…') }}</p>
+                <p class="end" x-show="finished && count > 0 && !loading" @if ($nextCursor !== null || count($items) === 0) x-cloak @endif>{{ __("You're all caught up.") }}</p>
+                <div id="sentinel" x-ref="sentinel"></div>
             </div>
+
+            <aside class="side card tight" aria-labelledby="tf" x-data x-show="!$store.famaPeople.loaded || $store.famaPeople.items.length > 0">
+                <h2 class="h3" id="tf">{{ __('Talent to follow') }}</h2>
+                <ul class="rows" id="toFollow" style="margin-top:var(--s2)">
+                    <template x-for="p in $store.famaPeople.items.slice(0, 4)" :key="p.type + '-' + p.id">
+                        <li>
+                            <a class="av" :href="$store.famaPeople.url(p)" aria-hidden="true" tabindex="-1"><img x-show="p.avatar_url" :src="p.avatar_url" alt=""><span x-show="!p.avatar_url" x-text="$store.famaPeople.initials(p)"></span></a>
+                            <span class="grow"><a :href="$store.famaPeople.url(p)"><b x-text="p.display_name"></b></a><span class="why" x-text="$store.famaPeople.why(p)"></span>
+                                <button type="button" class="btn btn-2" :aria-pressed="p.following.toString()" style="min-height:36px;padding-inline:var(--s4);margin-top:var(--s2)" @click="$store.famaPeople.follow(p)" x-text="p.following ? @js(__('Following')) : @js(__('Follow'))"></button></span>
+                            <button type="button" class="iconbtn plain" @click="$store.famaPeople.dismiss(p)" :aria-label="@js(__('Hide :name from suggestions')).replace(':name', p.display_name)"><svg class="icon sm" aria-hidden="true"><use href="#i-x"/></svg></button>
+                        </li>
+                    </template>
+                </ul>
+            </aside>
+        </div></main>
+
+        {{-- The narrow-screen "Talent to follow" strip, inserted after the 2nd post. --}}
+        <template x-ref="followStrip">
+            <section class="strip mobile-follow" aria-label="{{ __('Talent to follow') }}" x-data x-show="$store.famaPeople.items.length > 0">
+                <div class="strip-h"><div><h2 class="h3">{{ __('Talent to follow') }}</h2><p class="why">{{ __('People near your work') }}</p></div></div>
+                <div class="people">
+                    <template x-for="p in $store.famaPeople.items.slice(0, 4)" :key="'s-' + p.type + '-' + p.id">
+                        <div class="pp">
+                            <button type="button" class="iconbtn plain px" @click="$store.famaPeople.dismiss(p)" :aria-label="@js(__('Hide :name from suggestions')).replace(':name', p.display_name)"><svg class="icon sm" aria-hidden="true"><use href="#i-x"/></svg></button>
+                            <a class="av md" :href="$store.famaPeople.url(p)" aria-hidden="true" tabindex="-1"><img x-show="p.avatar_url" :src="p.avatar_url" alt=""><span x-show="!p.avatar_url" x-text="$store.famaPeople.initials(p)"></span></a>
+                            <a :href="$store.famaPeople.url(p)"><b x-text="p.display_name"></b></a>
+                            <span class="role" x-text="$store.famaPeople.skill(p)"></span>
+                            @unless ($isGuest)<span class="why" x-show="p.reason" x-text="p.reason"></span>@endunless
+                            <button type="button" class="btn btn-2" :aria-pressed="p.following.toString()" @click="$store.famaPeople.follow(p)"><svg class="icon" aria-hidden="true" x-show="!p.following"><use href="#a-user-plus"/></svg><span x-text="p.following ? @js(__('Following')) : @js(__('Follow'))"></span></button>
+                        </div>
+                    </template>
+                </div>
+            </section>
         </template>
 
-        <div class="mx-auto max-w-[1400px] px-5 py-10">
-            {{-- Rebalance the grid (drop the brand-rail column) for brand viewers OR
-                 when the brands feature is off (V1). --}}
-            <div class="feed-grid {{ ($viewerIsBrand || ! \App\Support\Features::brands()) ? 'no-brand-rail' : '' }}">
-
-                {{-- Left rail: TALENT TO FOLLOW (≥1400px) --}}
-                <aside class="feed-rail feed-rail--talents"
-                       x-data="suggestionRail({ type: 'talents' })" x-show="!collapsed" x-cloak
-                       aria-label="{{ __('Talent to follow') }}">
-                    <h2 class="rail-header t-meta">{{ __('TALENT TO FOLLOW') }}</h2>
-                    <p class="sr-only" aria-live="polite" x-text="announcement"></p>
-                    <div x-show="undo.active" x-cloak class="mb-3 rounded-md border border-seam bg-veil/40 px-3 py-2">
-                        <span class="t-meta" x-text="undo.label"></span>
-                        <button type="button" class="t-meta underline ms-2" @click="undoLast()">{{ __('Undo') }}</button>
-                    </div>
-                    <ul class="rail-list" x-ref="list"
-                        @rail-follow.stop="onFollow($event.detail)"
-                        @rail-dismiss.stop="onDismiss($event.detail)"></ul>
-                    <div x-show="loading" aria-hidden="true" class="mt-1 space-y-3">
-                        <div class="skeleton" style="block-size: 58px; border-radius: 12px;"></div>
-                        <div class="skeleton" style="block-size: 58px; border-radius: 12px;"></div>
-                        <div class="skeleton" style="block-size: 58px; border-radius: 12px;"></div>
-                        <div class="skeleton" style="block-size: 58px; border-radius: 12px;"></div>
-                    </div>
-                    <button type="button" x-show="nextOffset !== null" x-cloak
-                            class="dl-btn is-ready mt-4 w-full justify-center" @click="showMore()">{{ __('SHOW MORE') }}</button>
-                </aside>
-
-                {{-- The spine column. The old chrome header (title · eyebrow ·
-                     inline filter chips) is gone — filtering lives in the
-                     always-visible Filters FAB. --}}
-                <div class="feed-spine min-w-0">
-                    @if ($composer !== null)
-                        <div class="mb-10 flex justify-center">
-                            @include('feed.partials.composer', ['composer' => $composer])
-                        </div>
-                    @endif
-
-                    {{-- The spine --}}
-                    <div class="flex flex-col items-center gap-10" x-ref="spine">
-                        @forelse ($items as $index => $post)
-                            @if (in_array($index, $castingPositions, true) && $castingTalents->isNotEmpty())
-                                <x-feed.casting :talents="$castingTalents" />
-                            @endif
-                            @include('feed.partials.post', ['post' => $post, 'eagerMedia' => $index === 0])
-                        @empty
-                            <div class="feed-col frame-shadow">
-                                <div class="frame p-10 text-center">
-                                    <p class="t-note">{{ __('Nothing here yet.') }}</p>
-                                    <p class="t-meta mt-2">{{ __('BE THE FIRST — SHARE YOUR WORK') }}</p>
-                                </div>
-                            </div>
-                        @endforelse
-                    </div>
-
-                    {{-- Loading skeletons while a page is in flight --}}
-                    <div x-show="loading" x-cloak class="mt-10 flex flex-col items-center gap-10">
-                        <x-feed.skeleton :count="2" />
-                    </div>
-
-                    {{-- Infinite-scroll sentinel --}}
-                    <div x-ref="sentinel" class="h-px w-full" aria-hidden="true"></div>
-
-                    <p x-show="finished" x-cloak class="t-meta mt-10 text-center">{{ __('YOU’RE ALL CAUGHT UP') }}</p>
-                </div>
-
-                {{-- Right rail: brands to get opportunity alerts from (bell) —
-                     ≥1100px; never for brand viewers. Gated behind the `brands`
-                     release flag (V1 ships a talent-only feed). --}}
-                @feature('brands')
-                @unless ($viewerIsBrand)
-                    <aside class="feed-rail feed-rail--brands"
-                           x-data="suggestionRail({ type: 'brands' })" x-show="!collapsed" x-cloak
-                           aria-label="{{ __('Brands to watch') }}">
-                        <h2 class="rail-header t-meta">{{ __('BRANDS TO WATCH') }}</h2>
-                        <p class="sr-only" aria-live="polite" x-text="announcement"></p>
-                        <div x-show="undo.active" x-cloak class="mb-3 rounded-md border border-seam bg-veil/40 px-3 py-2">
-                            <span class="t-meta" x-text="undo.label"></span>
-                            <button type="button" class="t-meta underline ms-2" @click="undoLast()">{{ __('Undo') }}</button>
-                        </div>
-                        <ul class="rail-list" x-ref="list"
-                            @rail-follow.stop="onFollow($event.detail)"
-                            @rail-dismiss.stop="onDismiss($event.detail)"></ul>
-                        <div x-show="loading" aria-hidden="true" class="rail-list mt-3">
-                            <div class="skeleton frame" style="block-size: 200px;"></div>
-                            <div class="skeleton frame" style="block-size: 200px;"></div>
-                        </div>
-                        <button type="button" x-show="nextOffset !== null" x-cloak
-                                class="dl-btn is-ready mt-4 w-full justify-center" @click="showMore()">{{ __('SHOW MORE') }}</button>
-                    </aside>
-                @endunless
-                @endfeature
-            </div>
+        <div class="fab" id="fab">
+            <button type="button" id="fabTop" x-show="showTop" x-cloak @click="toTop()" aria-label="{{ __('Back to top') }}" data-tip="{{ __('Back to top') }}"><svg class="icon" aria-hidden="true"><use href="#i-up"/></svg></button>
+            <button type="button" id="fabFilter" aria-haspopup="dialog" @click="openFilters()" :aria-label="filterTip()" :data-tip="filterTip()" aria-label="{{ __('Filters') }}" data-tip="{{ __('Filters') }}"><svg class="icon" aria-hidden="true"><use href="#i-filter"/></svg><span class="dot" x-show="filter !== 'all'" @if ($filterKey === 'all') x-cloak @endif></span></button>
+            @if ($composer !== null)
+                <button type="button" class="pri" id="fabNew" aria-haspopup="dialog" @click="$dispatch('open-composer', {})" aria-label="{{ __('New post') }}" data-tip="{{ __('New post') }}"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg></button>
+            @endif
         </div>
+
+        <dialog class="dlg" id="filterDlg" x-ref="filterDlg">
+            <form method="dialog" @submit.prevent="applyPick()">
+                <h2>{{ __('Filter the feed') }}</h2>
+                <p class="d">{{ __('Show everything, only people you follow, or one skill. The link updates so you can share it.') }}</p>
+                <input class="in" id="fsearch" type="search" autocomplete="off" x-model="fq" placeholder="{{ __('Search skills') }}" aria-label="{{ __('Search skills') }}" style="margin-top:var(--s5)">
+                <div class="chips" id="fpills" style="margin-top:var(--s4);max-height:50vh;overflow:auto">
+                    <button type="button" class="chip" :aria-pressed="(pick === 'all').toString()" @click="pick = 'all'">{{ __('All') }}</button>
+                    @unless ($isGuest)
+                        <button type="button" class="chip" :aria-pressed="(pick === 'following').toString()" @click="pick = 'following'">{{ __('Following') }}</button>
+                    @endunless
+                    @foreach ($filterSkills as $skillOption)
+                        <button type="button" class="chip" x-show="pickVisible(@js($skillOption->slug), @js($skillOption->name))" :aria-pressed="(pick === @js($skillOption->slug)).toString()" @click="pick = @js($skillOption->slug)">{{ $skillOption->name }}</button>
+                    @endforeach
+                </div>
+                <div class="acts">
+                    <button type="button" class="btn btn-2" @click="$refs.filterDlg.close()">{{ __('Cancel') }}</button>
+                    <button class="btn">{{ __('Show posts') }}</button>
+                </div>
+            </form>
+        </dialog>
     </div>
-</x-public-layout>
+
+    @if ($composer !== null)
+        @include('feed.partials.composer', ['composer' => $composer])
+    @endif
+    @include('feed.partials.dialogs')
+</x-fama.layout>

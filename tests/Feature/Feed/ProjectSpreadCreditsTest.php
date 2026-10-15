@@ -78,7 +78,7 @@ it('adds no queries per additional project share on a feed page', function () {
 
 // ----- Skill tags + collaborators-beside-name (revised) ----------------------
 
-it('renders skills as professional tags and puts collaborators beside the author name', function () {
+it('renders skills as card tags and credits collaborators inline as mentions', function () {
     $author = Talent::factory()->create(['slug' => 'darwin-carter', 'display_name' => 'Darwin Carter']);
     $skills = TalentType::query()->limit(2)->get();
 
@@ -97,16 +97,16 @@ it('renders skills as professional tags and puts collaborators beside the author
 
     $html = $this->getJson("/posts/{$post->id}/fragment")->assertOk()->json('data.html');
 
-    // Skills render as professional tag pills carrying the skill names.
-    // Escape the expectation: a skill name may legitimately carry an ampersand
-    // ("Hair & makeup"), which Blade renders as `&amp;`.
-    expect($html)->toContain('feed-tag')
-        ->toContain(e($skills[0]->name))
-        ->toContain(e($skills[1]->name));
+    // Skills render as the card's tag pills (fama-ui .ptags) carrying the skill
+    // names. Escape the expectation: a skill name may legitimately carry an
+    // ampersand ("Hair & makeup"), which Blade renders as `&amp;`.
+    expect($html)->toContain('class="chips ptags"')
+        ->toContain('<span class="tag">'.e($skills[0]->name).'</span>')
+        ->toContain('<span class="tag">'.e($skills[1]->name).'</span>');
 
-    // The collaborator sits beside the author name in the header
-    // (Facebook-style "with <display name>"), not in a credits WITH line.
-    expect($html)->toContain('with')
-        ->toContain('Pattie Collins')
+    // The collaborator is credited inline in the text as a mention link to
+    // their profile (the fama-ui card has no "with …" header line).
+    expect($html)->toContain('class="feed-mention"')
+        ->toContain(route('talent.public', ['slug' => 'pattie-collins']))
         ->not->toContain('class="credits"'); // the old credits block is gone
 });

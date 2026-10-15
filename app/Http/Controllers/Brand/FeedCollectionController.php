@@ -15,9 +15,7 @@ use Illuminate\View\View;
  */
 class FeedCollectionController extends Controller
 {
-    public function __construct(private readonly FeedCollectionService $collections)
-    {
-    }
+    public function __construct(private readonly FeedCollectionService $collections) {}
 
     /**
      * The SAVED page shell.

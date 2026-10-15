@@ -1,0 +1,72 @@
+/* Screen: /posts/{id} — "Post & comments" in the Fama V1 Blueprint.
+   Newest comments first, 10 at a time. Each shows 3 replies and "View more replies".
+   Replies go one level deep and start with the person's @username. Comments can be liked.
+   Authors can edit for 15 minutes (a countdown shows) and delete at any time. A deleted
+   comment that has replies stays as a "Comment deleted" placeholder. A failed send shows Retry.
+   A hidden or removed post shows "not found". Review: ?id=4812 · ?view=guest · ?id=0 */
+.col{max-width:720px;margin-inline:auto}
+.back{display:inline-flex;align-items:center;gap:var(--s2);text-decoration:none;font-weight:600;color:var(--purple-dk);min-height:44px;margin-bottom:var(--s3)}
+.bk{transform:scaleX(-1)}[dir=rtl] .bk{transform:none}
+.thread{background:var(--white);border:var(--border);border-radius:var(--radius);padding:var(--s5);margin-top:var(--s4)}
+.add{display:flex;gap:var(--s3);align-items:flex-start}
+.add form{flex:1;min-width:0}
+.add .ta{min-height:52px;resize:vertical}
+.add .row{display:flex;justify-content:space-between;align-items:center;margin-top:var(--s2);gap:var(--s3)}
+.cm{list-style:none;margin:var(--s5) 0 0;padding:0}
+.c{display:grid;grid-template-columns:40px minmax(0,1fr);gap:var(--s3);padding-block:var(--s4);border-top:var(--border)}
+.c.reply{border-top:0;padding-block:var(--s2)}
+.c .bubble b{font-weight:600}
+.c .bubble .meta{margin-inline-start:var(--s2)}
+.c p.tx{margin-top:var(--s1);white-space:pre-wrap}
+.c .acts{display:flex;align-items:center;gap:var(--s4);margin-top:var(--s2);flex-wrap:wrap;font-size:var(--t-meta)}
+.c .acts button{border:0;background:none;padding:0;min-height:32px;font-weight:600;color:var(--grey);cursor:pointer;display:inline-flex;align-items:center;gap:var(--s1)}
+.c .acts button:hover{color:var(--ink)}
+.c .acts button[aria-pressed=true]{color:var(--purple-dk)}
+.c .acts .icon{width:16px;height:16px}
+.c .timer{color:var(--purple-dk);font-weight:600}
+.c.deleted>div>.tx{color:var(--grey);font-style:italic}
+.c.failed .tx{color:var(--grey)}
+.c .fail{color:var(--rose-fg);font-weight:600}
+.replies{list-style:none;margin:var(--s2) 0 0;padding:0;border-inline-start:2px solid var(--line);padding-inline-start:var(--s4)}
+.moreR{border:0;background:none;color:var(--purple-dk);font-weight:600;cursor:pointer;min-height:36px;padding:0}
+.loadmore{display:block;margin:var(--s4) auto 0}
+.editbox .ta{min-height:72px}
+.editbox .row{display:flex;gap:var(--s2);justify-content:flex-end;margin-top:var(--s2)}
+.gone{text-align:center;padding:var(--s9) var(--s5)}
+/* comments, spaced and grouped (7 Oct 2026): a titled thread, the composer in its own box, one comment per row
+   with its name, words and actions stacked on a steady rhythm, replies indented under the words they answer */
+.thread{padding:var(--s6)}
+.thread-h{font-family:var(--font-display);font-weight:600;font-size:24px;line-height:1.2;margin:0 0 var(--s4)}
+.thread-h span{font-family:var(--font-body);font-weight:500;font-size:var(--t-meta);color:var(--grey);margin-inline-start:var(--s2)}
+.thread>.cm:first-of-type .add{margin-top:0!important;background:var(--cream);border-radius:var(--s4);padding:var(--s4)}
+.add .ta{background:var(--white)}
+.add .row .meta[data-count]:empty{visibility:hidden}
+.cm{margin-top:var(--s4)}
+.c{gap:var(--s4);padding-block:var(--s5)}
+.cm>.c:first-child{border-top:0}
+.c .bubble{display:flex;align-items:baseline;flex-wrap:wrap;gap:0 var(--s2)}
+.c .bubble .meta{margin-inline-start:0}
+.c p.tx{margin-top:var(--s1);line-height:1.55}
+.c .acts{gap:var(--s5);margin-top:var(--s2)}
+.replies{margin-top:var(--s3);padding-inline-start:var(--s5)}
+.c.reply{grid-template-columns:32px minmax(0,1fr);gap:var(--s3);padding-block:var(--s3)}
+.c.reply>.av{width:32px;height:32px;font-size:12px}
+.moreR{margin-top:var(--s1);padding-inline-start:var(--s5)}
+/* composer: one rounded box with the send button inside (11 Oct 2026) */
+.thread>.cm:first-of-type .add{background:none!important;padding:0!important}
+.add{margin-top:var(--s3)}
+.add .av{width:32px;height:32px;font-size:12px;margin-top:6px}
+.cbox{display:flex;align-items:flex-end;gap:var(--s2);border:1px solid var(--line);border-radius:24px;padding:4px;padding-inline-start:var(--s4);background:var(--white)}
+.cbox:focus-within{border-color:var(--ink)}
+.cbox .ta{flex:1;min-width:0;border:0;background:none;resize:none;min-height:40px;max-height:160px;padding:9px 0;font-size:15px;line-height:1.45;outline:0;box-shadow:none}
+.rto{display:flex;align-items:center;gap:var(--s1);margin:0 0 var(--s1);font-size:13px;color:var(--grey)}
+.rto b{color:var(--ink);font-weight:600}
+.rto .iconbtn{width:28px;height:28px}
+.add [data-count]{display:block;margin-top:var(--s1)}
+.add [data-count]:empty{display:none}
+@media (max-width:760px){
+  .thread{padding:var(--s5) var(--s4)}
+  .c{grid-template-columns:32px minmax(0,1fr);gap:var(--s3)}
+  .c>.av{width:32px;height:32px;font-size:12px}
+  .replies,.moreR{padding-inline-start:var(--s3)}
+}

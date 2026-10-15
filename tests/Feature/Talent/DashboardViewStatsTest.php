@@ -132,19 +132,20 @@ it('requires the talent guard', function () {
     $this->getJson(route('talent.dashboard.views'))->assertStatus(401);
 });
 
-// --- Dashboard home ----------------------------------------------------------
+// --- Views card (folded into Profile structure, fama-ui 2026-10-12) ---------
 
-it('shows the visibility switch and weekly views delta, without the removed KPI cards', function () {
+it('shows the views card with the lifetime total and the weekly delta on Profile structure', function () {
     $this->travelTo('2026-08-10 12:00:00');
-    $talent = Talent::factory()->create();
+    $talent = Talent::factory()->create(['view_count' => 1234]);
     seedViews($talent, '2026-08-09', 3);
 
-    $this->actingAs($talent, 'talent')->get(route('talent.dashboard'))
+    $this->actingAs($talent, 'talent')->get(route('talent.profile.edit'))
         ->assertOk()
-        ->assertSee('Profile visibility')
-        ->assertSee('dashboardHome', false)
-        ->assertSee('role="switch"', false)
-        ->assertSee('this week')
+        ->assertSee('Profile views · all time')
+        ->assertSee('profileViews', false)
+        ->assertSee('1,234')
+        ->assertSee('▲ 3')
+        ->assertSee('vs last week')
         ->assertDontSee('Pending reviews')
         ->assertDontSee('Blocks · skills');
 });

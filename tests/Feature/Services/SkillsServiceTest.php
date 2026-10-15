@@ -1,6 +1,8 @@
 <?php
 
 use App\Models\BlockType;
+use App\Models\PortfolioItem;
+use App\Models\Project;
 use App\Models\Talent;
 use App\Models\TalentType;
 use App\Services\SkillsService;
@@ -64,22 +66,35 @@ it('blocks duplicate skills', function () {
     expect(fn () => $service->addType($talent->fresh(), $model))->toThrow(InvalidArgumentException::class);
 });
 
-it('reassigns the primary and reorders skills', function () {
+it('derives the primary flag from the order (first skill only) on reorder, add and remove', function () {
     $talent = Talent::factory()->create(['display_name' => 'P']);
     $service = app(SkillsService::class);
     $model = TalentType::where('slug', 'modeling')->firstOrFail();
     $photographer = TalentType::where('slug', 'photography')->firstOrFail();
+    $stylist = TalentType::where('slug', 'styling')->firstOrFail();
+    $primary = fn () => $talent->talentTypes()->wherePivot('is_primary', true)->pluck('slug')->all();
+    $order = fn () => $talent->fresh()->talentTypes->pluck('slug')->all();
 
+    // Add: appended at the end; the first skill stays the one flagged.
     $service->addType($talent, $model);
     $service->addType($talent->fresh(), $photographer);
+    expect($order())->toBe(['modeling', 'photography'])->and($primary())->toBe(['modeling']);
 
-    $service->setPrimary($talent->fresh(), $photographer);
-    expect($talent->talentTypes()->wherePivot('is_primary', true)->first()->slug)->toBe('photography');
-    expect($talent->talentTypes()->wherePivot('is_primary', true)->count())->toBe(1);
-
+    // Reorder: the flag follows position 0, and only one skill carries it.
     $service->reorderTypes($talent->fresh(), [$photographer->id, $model->id]);
-    $position = (int) $talent->talentTypes()->where('talent_types.id', $photographer->id)->first()->pivot->position;
-    expect($position)->toBe(0);
+    expect($order())->toBe(['photography', 'modeling'])->and($primary())->toBe(['photography']);
+
+    // "Make primary" (route kept) = move to the front.
+    $service->setPrimary($talent->fresh(), $model);
+    expect($order())->toBe(['modeling', 'photography'])->and($primary())->toBe(['modeling']);
+
+    // Add first: the new skill leads and takes the flag.
+    $service->addType($talent->fresh(), $stylist, true);
+    expect($order()[0])->toBe('styling')->and($primary())->toBe(['styling']);
+
+    // Remove the first: the next in order opens first now.
+    $service->removeType($talent->fresh(), $stylist);
+    expect($order())->toBe(['modeling', 'photography'])->and($primary())->toBe(['modeling']);
 });
 
 it('removes a skill: deletes its tab blocks but PRESERVES content (items un-linked, projects un-scoped)', function () {
@@ -91,8 +106,8 @@ it('removes a skill: deletes its tab blocks but PRESERVES content (items un-link
 
     // Attach a gallery item to the model tab's gallery block, and a project to the skill.
     $gallery = $talent->profileBlocks()->whereRelation('blockType', 'key', 'gallery')->where('talent_type_id', $model->id)->firstOrFail();
-    $item = \App\Models\PortfolioItem::factory()->for($talent)->create(['block_id' => $gallery->id]);
-    $project = \App\Models\Project::factory()->for($talent)->create(['talent_type_id' => $model->id]);
+    $item = PortfolioItem::factory()->for($talent)->create(['block_id' => $gallery->id]);
+    $project = Project::factory()->for($talent)->create(['talent_type_id' => $model->id]);
 
     $service->removeType($talent->fresh(), $model);
 

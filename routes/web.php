@@ -40,7 +40,9 @@ Route::group([
     // Public talent (fama.com/{slug}) and brand (fama.com/brands/{slug})
     // profile pages are Phase 1 (they need their tables) and are added here,
     // unguarded, then.
-    Route::view('/', 'welcome')->name('home');
+    // The root opens the feed, or login when the feed has nothing to show.
+    Route::get('/', [\App\Http\Controllers\Feed\FeedController::class, 'home'])
+        ->middleware('resolve.actor')->name('home');
 
     // --- Post-login entry point ---------------------------------------------
     // A single route('dashboard') that dispatches to the active guard's

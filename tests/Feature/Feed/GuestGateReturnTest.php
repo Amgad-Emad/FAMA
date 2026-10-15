@@ -4,9 +4,11 @@ use App\Models\Like;
 use App\Models\Post;
 use App\Models\Talent;
 
-// ----- The full guest loop (5O, ADR-F8): gate → login → replay → anchor ------
+// ----- The full guest loop (ADR-F8): gate → login → replay → Profile structure ------
+// Product rule (2026-10-12): a talent ALWAYS lands on Profile structure after login;
+// the visitor's pending action is still replayed by the Login event.
 
-it('returns the guest to the exact post anchor after login, action already landed', function () {
+it('replays the guest action on login and lands the talent on Profile structure', function () {
     $talent = Talent::factory()->create(['password' => bcrypt('password')]);
     $post = Post::factory()->create();
 
@@ -15,12 +17,13 @@ it('returns the guest to the exact post anchor after login, action already lande
         ->assertStatus(401)
         ->assertJsonPath('data.intent.action', 'like');
 
-    // Login replays the like AND lands back on the post anchor.
+    // Login replays the like and lands on the talent home.
     $response = $this->post('/login', [
         'email' => $talent->email, 'password' => 'password', 'role' => 'talent',
     ]);
 
-    $response->assertRedirect(route('posts.show', $post).'#post-'.$post->id);
+    $response->assertRedirect(route('talent.profile.edit'));
+    expect(session('feed.return_to'))->toBeNull();
 
     expect(Like::query()->where([
         'likeable_type' => 'post', 'likeable_id' => $post->id,
@@ -28,9 +31,9 @@ it('returns the guest to the exact post anchor after login, action already lande
     ])->exists())->toBeTrue();
 });
 
-it('sends an ordinary login to the dashboard — the feed return slot is feed-only', function () {
+it('sends an ordinary talent login straight to Profile structure', function () {
     $talent = Talent::factory()->create(['password' => bcrypt('password')]);
 
     $this->post('/login', ['email' => $talent->email, 'password' => 'password', 'role' => 'talent'])
-        ->assertRedirect(route('dashboard'));
+        ->assertRedirect(route('talent.profile.edit'));
 });

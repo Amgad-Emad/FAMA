@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Models\ProfileBlock;
 use App\Models\Talent;
 use App\Models\TalentType;
 use Illuminate\Http\Request;
@@ -29,9 +30,9 @@ class PublicProfileResource extends BaseResource
         $talent = $this->resource;
 
         $skills = $talent->talentTypes
-            ->sortBy(fn (TalentType $t) => [$t->pivot->is_primary ? 0 : 1, (int) $t->pivot->position])
+            ->sortBy(fn (TalentType $t) => [(int) $t->pivot->position, (int) $t->id])
             ->values();
-        $primary = $skills->firstWhere(fn (TalentType $t) => (bool) $t->pivot->is_primary) ?? $skills->first();
+        $primary = $skills->first(); // order-derived: the first skill
 
         // Claimed specialities, bucketed by skill once (ADR-Y) so neither the
         // identity block nor the skills list re-groups per row.
@@ -100,7 +101,7 @@ class PublicProfileResource extends BaseResource
     /**
      * A scope's visible blocks in position order (hero is the header — skipped).
      *
-     * @return Collection<int, \App\Models\ProfileBlock>
+     * @return Collection<int, ProfileBlock>
      */
     private function visibleBlocks(Talent $talent, ?int $typeId): Collection
     {

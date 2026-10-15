@@ -1,11 +1,7 @@
+{{-- Looks. The app stores a look as a name only (no picture set yet), so it renders as chips. --}}
 @php $looks = $talent->lookTypes; @endphp
-
-@if ($looks->isNotEmpty())
-    <x-ui.section :title="$block->title ?: $block->blockType->name" :eyebrow="__('Looks')">
-        <div class="flex flex-wrap gap-2">
-            @foreach ($looks as $look)
-                <x-ui.chip tone="neutral">{{ $look->name }}</x-ui.chip>
-            @endforeach
-        </div>
-    </x-ui.section>
-@endif
+<x-profile.block :block="$block" :empty="$looks->isEmpty()" :is-owner="$isOwner ?? false">
+    <ul class="chips" style="margin-top:var(--s4);list-style:none;padding:0">
+        @foreach ($looks as $look)<li class="chip">{{ $look->name }}</li>@endforeach
+    </ul>
+</x-profile.block>

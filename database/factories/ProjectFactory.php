@@ -25,7 +25,10 @@ class ProjectFactory extends Factory
             'role' => ['en' => fake()->jobTitle(), 'ar' => 'الدور'],
             'summary' => ['en' => fake()->sentence(), 'ar' => 'ملخص'],
             'body' => ['en' => fake()->paragraphs(3, true), 'ar' => 'المحتوى الكامل'],
-            'results' => ['reach' => fake()->numberBetween(10000, 5000000), 'roi' => fake()->numberBetween(2, 12).'x'],
+            'results' => [
+                ['label' => 'Reach', 'value' => (string) fake()->numberBetween(10000, 5000000), 'compare' => ''],
+                ['label' => 'ROI', 'value' => fake()->numberBetween(2, 12).'x', 'compare' => ''],
+            ],
             // ADR-AA: `occurred_on` is the real field; the mutator derives `year`
             // from it, so setting the date alone keeps both consistent.
             'occurred_on' => fake()->dateTimeBetween('-6 years', 'now')->format('Y-m-d'),

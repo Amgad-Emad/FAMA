@@ -1,0 +1,43 @@
+/* FAMA — app bridge for the fama-ui design. The prototype CSS (shell/ds/posts/…) is
+   loaded verbatim; this file only adds what the live app needs on top of it:
+   Alpine's x-cloak. RULE: never pair x-show with the `hidden` attribute on these pages —
+   ds.css has `[hidden]{display:none!important}`, which beats x-show's inline display, so
+   the element would never appear. Use x-cloak for the pre-Alpine hidden state instead. */
+[x-cloak]{display:none!important}
+.fx-av img{display:block}
+.fx-pop form{margin:0}
+.dlg::backdrop{background:rgba(20,17,15,.45)}
+/* Alpine's <template x-for> takes the list's first-child slot, so ds.css's
+   `.rows>li:first-child{border-top:0}` never matches — re-apply it to the first
+   rendered row (no divider above the first "Talent to follow" person). */
+
+/* GENERATED from every prototype `:first-child` rule (2026-10-12): Alpine's <template x-for>/<x-if>
+   is the real first child, so the prototype's first-row rules (no top divider/padding, lead tile span)
+   never match. Each rule below targets the first element rendered AFTER the template instead. */
+.brl template:first-child+li{border-top:0;padding-top:0}
+.cm>template:first-child+.c{border-top:0}
+.links template:first-child+li{border-top:0;padding-top:0}
+.links template:first-child+li{padding-top:0}
+.look .strip template:first-child+.ph{grid-row:span 2}
+.nowlist template:first-child+.nowrow{border-top:var(--border);padding-top:var(--s3)}
+.owners .stack template:first-child+i{margin-inline-start:0;background:#E9DDF3}
+.picklist template:first-child+li label{border-top:0}
+.pmedia.n3 template:first-child+.ph{aspect-ratio:auto}
+.pmedia.n3 template:first-child+.ph{grid-row:span 2}
+.projpick template:first-child+li label{border-top:0}
+.role-b>template:first-child+.f,.role-b>template:first-child+.two .f{margin-top:0}
+.role-b>template:first-child+.two{margin-top:0}
+.rows>template:first-child+li.row{border-top:0}
+.rows>template:first-child+li{border-top:0}
+.sheet-recs template:first-child+li{border-top:0;padding-top:0}
+.side-xp template:first-child+li{border-top:0;padding-top:0}
+.wte template:first-child+li{border-top:0;padding-top:0}
+template:first-child+.cr{border-top:0;padding-top:0}
+template:first-child+.fx-gl{margin-top:0}
+template:first-child+.f{margin-top:0}
+template:first-child+.item{border-top:0}
+template:first-child+.nowrow{border-top:0;padding-top:0}
+template:first-child+.pc{border-top:0}
+template:first-child+.rc{border-top:0;padding-top:0}
+template:first-child+.row{border-top:0}
+template:first-child+.xp-g{border-top:0;padding-top:0}

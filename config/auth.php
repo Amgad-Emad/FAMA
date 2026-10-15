@@ -103,14 +103,14 @@ return [
 
         'brands' => [
             'provider' => 'brands',
-            'table' => 'password_reset_tokens',
+            'table' => 'brand_password_reset_tokens',
             'expire' => 60,
             'throttle' => 60,
         ],
 
         'talents' => [
             'provider' => 'talents',
-            'table' => 'password_reset_tokens',
+            'table' => 'talent_password_reset_tokens',
             'expire' => 60,
             'throttle' => 60,
         ],

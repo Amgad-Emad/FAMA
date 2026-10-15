@@ -15,8 +15,8 @@ use App\Models\TalentType;
 use App\Services\TalentProjectService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 /**
@@ -34,50 +34,40 @@ class ProjectController extends TalentController
     public function __construct(private readonly TalentProjectService $projects) {}
 
     /**
-     * The Projects page shell: the talent's skills (for the filter bar and the
-     * composer's required skill picker) and the counts per skill.
+     * The Projects page shell (fama-ui `projects.html`): the talent's skills for
+     * the filter chips, and the total for the "All work" count. The list itself
+     * is Ajax (data()); creating and editing live on their own pages now.
      */
     public function index(): View
     {
         $talent = $this->talent()->load('talentTypes');
-        $skills = $this->orderedSkills($talent);
-
-        // The controlled speciality vocabulary for the talent's skills (ADR-Y),
-        // in ONE query — the composer reveals a skill's specialities as it is
-        // tagged, so it needs the whole set up front rather than per selection.
-        $specialities = Speciality::query()
-            ->selectable()
-            ->whereIn('talent_type_id', $skills->pluck('id'))
-            ->orderBy('position')->orderBy('id')
-            ->get();
 
         return view('talent.projects', [
             'talent' => $talent,
-            'skills' => $skills->map(fn (TalentType $type) => [
-                'id' => (int) $type->id,
-                'slug' => $type->slug,
-                'name' => $type->getTranslation('name', app()->getLocale(), false) ?: $type->getTranslation('name', 'en', false),
-                'icon' => $type->icon,
-                'is_primary' => (bool) $type->pivot->is_primary,
-            ])->all(),
+            'skills' => $this->presentSkills($this->orderedSkills($talent)),
             'total' => $talent->projects()->count(),
-            // EVERY skill, not just the talent's own: a photographer crediting a
-            // stylist needs Styling in the picker even though they do not do it.
-            'allSkills' => TalentType::query()->orderBy('id')->get()->map(fn (TalentType $type) => [
-                'id' => (int) $type->id,
-                'name' => $type->getTranslation('name', app()->getLocale(), false) ?: $type->getTranslation('name', 'en', false),
-            ])->values()->all(),
-            // Keyed by skill id — the composer reads its own slice per tag.
-            'specialities' => $specialities->groupBy('talent_type_id')->map(
-                fn (Collection $group) => $group->map(fn (Speciality $speciality) => [
-                    'id' => (int) $speciality->id,
-                    'slug' => $speciality->slug,
-                    'name' => $speciality->getTranslation('name', app()->getLocale(), false)
-                        ?: $speciality->getTranslation('name', 'en', false),
-                    'is_regional' => (bool) $speciality->is_regional,
-                ])->values()
-            ),
         ]);
+    }
+
+    /**
+     * The project editor on its own page (fama-ui `project-edit.html`) for a NEW
+     * project. Nothing is written until the talent publishes; the page then posts
+     * to store() and carries on editing the created project in place.
+     */
+    public function create(): View
+    {
+        return view('talent.project-edit', $this->editorData(null));
+    }
+
+    /**
+     * The project editor for an existing project. ANY owner may open it — the
+     * creator or an accepted co-owner (ProjectPolicy::update); 403 otherwise.
+     */
+    public function edit(Project $project): View
+    {
+        $this->authorizeTalent('update', $project);
+
+        return view('talent.project-edit', $this->editorData($project));
     }
 
     /**
@@ -90,7 +80,7 @@ class ProjectController extends TalentController
         $skill = (string) $request->query('skill', '');
 
         $query = $this->talent()->projects()
-            ->with(['media', 'talentTypes', 'specialities', 'credits.talent', 'credits.talentType'])
+            ->with(['media', 'talentTypes', 'specialities', 'credits.talent', 'credits.talentType', 'ownerCredits'])
             ->orderBy('position')
             ->orderBy('id');
 
@@ -109,6 +99,10 @@ class ProjectController extends TalentController
         );
     }
 
+    /**
+     * Create a project (the editor page's Publish). Skills are required and
+     * must be the talent's own (ADR-X); the service re-checks both rules.
+     */
     public function store(StoreProjectRequest $request): JsonResponse
     {
         $data = $request->validated();
@@ -127,9 +121,13 @@ class ProjectController extends TalentController
         );
     }
 
+    /**
+     * Save the whole project (the editor autosaves through this). Absent
+     * `speciality_ids` leaves the picks alone; an empty list clears them.
+     */
     public function update(UpdateProjectRequest $request, Project $project): JsonResponse
     {
-        $this->ensureOwns($project);
+        $this->authorizeTalent('update', $project);
 
         $data = $request->validated();
         $project = $this->projects->update(
@@ -147,14 +145,42 @@ class ProjectController extends TalentController
         );
     }
 
+    /**
+     * Delete one of the talent's own projects, with its tags and media.
+     */
     public function destroy(Project $project): JsonResponse
     {
-        $this->ensureOwns($project);
+        $this->authorizeTalent('delete', $project);
         $this->projects->delete($project);
 
         return response()->success(null, __('Project removed.'), meta: ['counts' => $this->counts()]);
     }
 
+    /**
+     * Leave a project (co-ownership). A co-owner's credit is withdrawn; the
+     * creator hands the project to the longest-standing co-owner; a sole owner
+     * is told to delete instead (422). The rules live in
+     * TalentProjectService::leave().
+     */
+    public function leave(Project $project): JsonResponse
+    {
+        $this->authorizeTalent('leave', $project);
+
+        $wasHome = (int) $project->talent_id === (int) $this->talent()->getKey();
+        $project = $this->projects->leave($project, $this->talent())->loadMissing('talent');
+
+        return response()->success(
+            ['id' => (int) $project->id, 'owner' => $wasHome ? $project->talent?->display_name : null],
+            $wasHome
+                ? __(':name owns it now.', ['name' => (string) $project->talent?->display_name])
+                : __('You left the project.'),
+            meta: ['counts' => $this->counts()],
+        );
+    }
+
+    /**
+     * Persist the order visitors see (the unfiltered list's drag order).
+     */
     public function reorder(ReorderRequest $request): JsonResponse
     {
         $this->projects->reorder($this->talent(), $request->orderedIds());
@@ -162,17 +188,23 @@ class ProjectController extends TalentController
         return response()->success(null, __('Order saved.'));
     }
 
+    /**
+     * Upload (or replace) the project's single-file cover.
+     */
     public function uploadCover(UpdateProjectCoverRequest $request, Project $project): JsonResponse
     {
-        $this->ensureOwns($project);
+        $this->authorizeTalent('update', $project);
         $project = $this->projects->setCover($project, $request->file('cover'));
 
         return response()->success($this->present($project), __('Cover updated.'));
     }
 
+    /**
+     * Remove the cover; the lead media item takes its place on cards.
+     */
     public function destroyCover(Project $project): JsonResponse
     {
-        $this->ensureOwns($project);
+        $this->authorizeTalent('update', $project);
         $project = $this->projects->removeCover($project);
 
         return response()->success($this->present($project), __('Cover removed.'));
@@ -181,16 +213,11 @@ class ProjectController extends TalentController
     // ----- Internal ----------------------------------------------------------
 
     /**
-     * A single project payload with the relations the resource needs loaded.
-     *
-     * @return array<string, mixed>
-     */
-    /**
      * Upload work into the project's media gallery (ADR-AA).
      */
     public function storeMedia(StoreProjectMediaRequest $request, Project $project): JsonResponse
     {
-        $this->ensureOwns($project);
+        $this->authorizeTalent('update', $project);
 
         $project = $this->projects->addMedia($project, $request->file('files', []));
 
@@ -203,26 +230,34 @@ class ProjectController extends TalentController
      */
     public function reorderMedia(ReorderRequest $request, Project $project): JsonResponse
     {
-        $this->ensureOwns($project);
+        $this->authorizeTalent('update', $project);
 
         $project = $this->projects->reorderMedia($project, $request->orderedIds());
 
         return response()->success($this->present($project), __('Order saved.'));
     }
 
+    /**
+     * Remove one uploaded file from the project's gallery.
+     */
     public function destroyMedia(Project $project, int $media): JsonResponse
     {
-        $this->ensureOwns($project);
+        $this->authorizeTalent('update', $project);
 
         $project = $this->projects->removeMedia($project, $media);
 
         return response()->success($this->present($project), __('Removed.'));
     }
 
+    /**
+     * A single project payload with the relations the resource needs loaded.
+     *
+     * @return array<string, mixed>
+     */
     private function present(Project $project): array
     {
         return (new TalentProjectResource($project->load([
-            'media', 'talentTypes', 'specialities', 'credits.talent', 'credits.talentType',
+            'media', 'talentTypes', 'specialities', 'credits.talent', 'credits.talentType', 'ownerCredits',
         ])))->resolve();
     }
 
@@ -270,6 +305,78 @@ class ProjectController extends TalentController
             'none' => $homes->reject(fn ($p) => isset($scoped[(int) $p->id]))->count(),
             'by_skill' => array_map('count', $bySkill),
         ];
+    }
+
+    /**
+     * Everything the editor page needs: the talent's skills (the required skill
+     * picker), the speciality vocabulary for those skills (ADR-Y, ONE query,
+     * keyed by skill id), every skill for a collaborator credit (ADR-AA — a
+     * photographer crediting a stylist needs Styling even though they do not do
+     * it), and the project payload when editing.
+     *
+     * Co-ownership: when editing, the skill picker offers the project's HOME
+     * owner's skills (the tags must be theirs, ADR-X), even if a co-owner is
+     * the one editing; `homeOwner` drives the preview URL.
+     *
+     * @return array<string, mixed>
+     */
+    private function editorData(?Project $project): array
+    {
+        $talent = $this->talent()->load('talentTypes');
+        $homeOwner = $project ? $project->talent()->with('talentTypes')->firstOrFail() : $talent;
+        $skills = $this->orderedSkills($homeOwner);
+
+        $specialities = Speciality::query()
+            ->selectable()
+            ->whereIn('talent_type_id', $skills->pluck('id'))
+            ->orderBy('position')->orderBy('id')
+            ->get();
+
+        return [
+            'talent' => $talent,
+            'homeOwner' => $homeOwner,
+            'project' => $project,
+            'payload' => $project ? $this->present($project) : null,
+            'skills' => $this->presentSkills($skills),
+            'allSkills' => TalentType::query()->orderBy('id')->get()->map(fn (TalentType $type) => [
+                'id' => (int) $type->id,
+                'name' => $this->localName($type),
+            ])->values()->all(),
+            'specialities' => $specialities->groupBy('talent_type_id')->map(
+                fn (Collection $group) => $group->map(fn (Speciality $speciality) => [
+                    'id' => (int) $speciality->id,
+                    'slug' => $speciality->slug,
+                    'name' => $this->localName($speciality),
+                    'is_regional' => (bool) $speciality->is_regional,
+                ])->values()
+            ),
+        ];
+    }
+
+    /**
+     * The talent's skills as the pages consume them (id, slug, name, icon,
+     * primary flag), in the order given.
+     *
+     * @param  Collection<int, TalentType>  $skills
+     * @return array<int, array<string, mixed>>
+     */
+    private function presentSkills(Collection $skills): array
+    {
+        return $skills->map(fn (TalentType $type) => [
+            'id' => (int) $type->id,
+            'slug' => $type->slug,
+            'name' => $this->localName($type),
+            'icon' => $type->icon,
+            'is_primary' => (bool) $type->pivot->is_primary,
+        ])->values()->all();
+    }
+
+    /**
+     * A translatable `name` in the current locale, falling back to English.
+     */
+    private function localName(TalentType|Speciality $model): string
+    {
+        return (string) ($model->getTranslation('name', app()->getLocale(), false) ?: $model->getTranslation('name', 'en', false));
     }
 
     /**

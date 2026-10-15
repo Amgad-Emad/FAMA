@@ -51,7 +51,7 @@ it('renders the profile-image uploader in the editor', function () {
 
     $this->actingAs($talent, 'talent')->withoutVite()->get(route('talent.profile.edit'))
         ->assertOk()
-        ->assertSee(__('Profile image'))
+        ->assertSee(__('Profile photo'))
         ->assertSee(__('Upload photo'))
         ->assertSee('uploadAvatar($event.target.files)', false);
 });

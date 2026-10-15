@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Auth\PasswordBrokerResolver;
 use App\Http\Controllers\Controller;
-use App\Models\User;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -25,24 +25,30 @@ class NewPasswordController extends Controller
     }
 
     /**
-     * Handle an incoming new password request.
+     * Handle an incoming new password request through the broker of the
+     * account the reset link was issued for (talent / brand / admin user).
      *
      * @throws ValidationException
      */
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, PasswordBrokerResolver $brokers): RedirectResponse
     {
         $request->validate([
             'token' => ['required'],
             'email' => ['required', 'email'],
+            'account' => ['nullable', 'string'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
-        // Here we will attempt to reset the user's password. If it is successful we
-        // will update the password on an actual user model and persist it to the
-        // database. Otherwise we will parse the error and return the response.
-        $status = Password::reset(
+        // The reset link carries the account type it was issued for; without it
+        // (an old link) resolve from the email the same way the request step did.
+        $account = $brokers->allowed($request->input('account'))
+            ? $request->input('account')
+            : $brokers->accountFor($request->string('email')->toString());
+
+        // Reset through THAT broker — the callback receives a Talent, Brand or User.
+        $status = Password::broker($brokers->broker($account))->reset(
             $request->only('email', 'password', 'password_confirmation', 'token'),
-            function (User $user) use ($request) {
+            function ($user) use ($request) {
                 $user->forceFill([
                     'password' => Hash::make($request->password),
                     'remember_token' => Str::random(60),

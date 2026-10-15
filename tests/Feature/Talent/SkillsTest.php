@@ -19,7 +19,9 @@ it('adds a skill (seeding blocks), sets primary, reorders and removes', function
     $this->actingAs($talent, 'talent')->patchJson(route('talent.profile.skills.primary', $photographer->id))->assertOk();
     expect($talent->fresh()->talentTypes()->wherePivot('is_primary', true)->first()->slug)->toBe('photography');
 
-    $this->actingAs($talent, 'talent')->patchJson(route('talent.profile.skills.reorder'), ['order' => [$photographer->id, $model->id]])->assertOk();
+    // Order-derived: reorder puts model first again, and the flag follows it.
+    $this->actingAs($talent, 'talent')->patchJson(route('talent.profile.skills.reorder'), ['order' => [$model->id, $photographer->id]])->assertOk();
+    expect($talent->fresh()->talentTypes()->wherePivot('is_primary', true)->first()->slug)->toBe('modeling');
     $this->actingAs($talent, 'talent')->deleteJson(route('talent.profile.skills.destroy', $model->id))->assertOk();
     expect($talent->fresh()->talentTypes()->count())->toBe(1);
 });

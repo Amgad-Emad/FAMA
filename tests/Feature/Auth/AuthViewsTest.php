@@ -30,6 +30,8 @@ it('renders the show-password toggle on every password form', function () {
         $html = $this->get($url)->assertOk()->getContent();
         expect($html)->toContain(__('Show password'));
         expect($html)->toContain("show ? 'text' : 'password'");
+        // The no-JS default stays masked.
+        expect($html)->toContain('type="password"');
     }
 });
 
@@ -42,12 +44,58 @@ it('renders login validation errors in the restyled markup', function () {
     expect($html)->toContain('role="alert"');
 });
 
-it('renders the register, forgot-password and login pages on the Fama layout', function () {
+it('renders the register, forgot-password and login pages on the fama-ui layout', function () {
     foreach (['/login', '/register', '/forgot-password'] as $url) {
         $html = $this->get($url)->assertOk()->getContent();
-        // The Fama wordmark + token body treatment (not stock Breeze grays).
-        expect($html)->toContain('Fama<span class="text-accent">.</span>');
-        expect($html)->toContain('bg-bg text-ink');
+        // The fama-ui shell: its own stylesheets + the auth sheet, the auth nav
+        // (logo + "Browse the feed"), and the prototype's pane — no Tailwind app.css.
+        expect($html)->toContain('fama-ui/css/auth.css');
+        expect($html)->toContain('class="fx-browse"');
+        expect($html)->toContain('class="pane');
         expect($html)->not->toContain('bg-gray-100');
     }
+
+    // Login + register are the split screen with the showcase panel.
+    foreach (['/login', '/register'] as $url) {
+        expect($this->get($url)->getContent())->toContain('class="au-show"');
+    }
+});
+
+it('marks the failing field and replaces its help line with the server error', function () {
+    $this->from('/register')->post('/register', [
+        'account_type' => 'talent', 'name' => '', 'email' => 'not-an-email',
+        'password' => 'short', 'password_confirmation' => 'nope',
+    ]);
+
+    $html = $this->get('/register')->assertOk()->getContent();
+    expect($html)->toContain('class="f bad"');
+    expect($html)->toContain('class="help err"');
+    expect($html)->toContain('aria-invalid="true"');
+});
+
+it('shows the sent state once a reset link is emailed', function () {
+    \Illuminate\Support\Facades\Notification::fake();
+    // The default password broker resolves the `users` provider.
+    $user = \App\Models\User::factory()->create();
+
+    $this->from('/forgot-password')->post('/forgot-password', ['email' => $user->email]);
+
+    $html = $this->get('/forgot-password')->assertOk()->getContent();
+    expect($html)->toContain(e(__("We've emailed your reset link")));
+    expect($html)->toContain(e($user->email));
+});
+
+it('tells a guest bounced from a follow what logging in will finish', function () {
+    $talent = \App\Models\Talent::factory()->create(['display_name' => 'Nour Studio']);
+
+    $html = $this->withSession(['feed.pending_intent' => [
+        'action' => 'follow', 'target_type' => 'talent', 'target_id' => $talent->id, 'payload' => [],
+    ]])->get('/login')->assertOk()->getContent();
+
+    expect($html)->toContain('id="next"')
+        ->toContain(e(__('Log in to finish following :name.', ['name' => $talent->feedDisplayName()])));
+});
+
+it('shows no intent note on a plain visit', function () {
+    expect($this->get('/login')->getContent())->not->toContain('id="next"');
 });

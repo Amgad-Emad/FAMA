@@ -3,48 +3,31 @@
 namespace App\Http\Controllers\Talent;
 
 use App\Http\Requests\Talent\ViewStatsRequest;
-use App\Models\Contract;
 use App\Services\ProfileViewStatsService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\View\View;
+use Illuminate\Http\RedirectResponse;
 
 /**
- * Talent dashboard home — status overview (talent-spec): live/private with an
- * inline publish toggle, the views KPI (lifetime total + week-over-week delta,
- * expandable chart), and the active contracts + whose-turn slot.
+ * Talent dashboard. The fama-ui design (2026-10-12) folded the dashboard into
+ * Profile structure — the completion steps and the views card live there now —
+ * so the page itself only redirects. The route name stays (`talent.dashboard`)
+ * because login redirects and old links still point at it, and the views
+ * series endpoint stays here because the Profile structure views card reads it.
  */
 class DashboardController extends TalentController
 {
     public function __construct(private readonly ProfileViewStatsService $viewStats) {}
 
-    public function index(): View
+    /**
+     * The old dashboard home → Profile structure, where its content now lives.
+     */
+    public function index(): RedirectResponse
     {
-        $talent = $this->talent();
-
-        $stats = [
-            'status' => $talent->status->getValue(),
-            'is_published' => (bool) $talent->is_published,
-            'is_verified' => (bool) $talent->is_verified,
-            'view_count' => (int) $talent->view_count,
-            'weekly' => $this->viewStats->weeklyComparison($talent),
-        ];
-
-        // Live (non-terminal) contracts for the "whose turn" overview — only when
-        // the contracts feature is enabled (V1 ships without contracts).
-        $activeContracts = \App\Support\Features::contracts()
-            ? Contract::forTalent($talent->getKey())
-                ->whereIn('status', ['draft', 'awaiting_brand', 'awaiting_talent', 'awaiting_admin'])
-                ->with(['brand', 'currentStep'])
-                ->latest()
-                ->limit(5)
-                ->get()
-            : collect();
-
-        return view('talent.dashboard', ['talent' => $talent, 'stats' => $stats, 'activeContracts' => $activeContracts]);
+        return redirect()->route('talent.profile.edit');
     }
 
     /**
-     * Bucketed view series for the expandable KPI chart (Ajax). `range` is a
+     * Bucketed view series for the views card chart (Ajax). `range` is a
      * validated preset; 'all' reaches back to the profile's creation date.
      */
     public function viewStats(ViewStatsRequest $request): JsonResponse

@@ -27,9 +27,13 @@ class CreditController extends TalentController
 
     // ----- The project owner's side ------------------------------------------
 
+    /**
+     * Credit someone on the owner's project. On-platform credits land pending
+     * and notify the person (post-commit); off-platform names list at once.
+     */
     public function store(StoreCreditRequest $request, Project $project): JsonResponse
     {
-        $this->ensureOwns($project);
+        $this->authorizeTalent('update', $project);
 
         $credit = $this->credits->add($project, $request->validated());
 
@@ -45,9 +49,12 @@ class CreditController extends TalentController
         );
     }
 
+    /**
+     * Remove a credit from the owner's project.
+     */
     public function destroy(Project $project, ProjectCredit $credit): JsonResponse
     {
-        $this->ensureOwns($project);
+        $this->authorizeTalent('update', $project);
         abort_unless((int) $credit->project_id === (int) $project->getKey(), 404);
 
         $this->credits->remove($credit);
@@ -55,9 +62,12 @@ class CreditController extends TalentController
         return response()->success($this->payload($project), __('Credit removed.'));
     }
 
+    /**
+     * Persist the order of a project's credit block.
+     */
     public function reorder(ReorderRequest $request, Project $project): JsonResponse
     {
-        $this->ensureOwns($project);
+        $this->authorizeTalent('update', $project);
         $this->credits->reorder($project, $request->orderedIds());
 
         return response()->success(null, __('Order saved.'));
@@ -66,14 +76,42 @@ class CreditController extends TalentController
     // ----- The credited person's side ----------------------------------------
 
     /**
-     * "Credits" page — the confirmations they owe an answer to, plus the ones
-     * already on their portfolio so withdrawing stays possible.
+     * "Credits & recognitions" page (fama-ui `credits.html`) — the confirmations
+     * they owe an answer to, the credited work already on their portfolio (so
+     * leaving stays possible), and the peer recognitions they have received.
+     *
+     * Recognitions are READ-ONLY here (moderation is admin-side): approved and
+     * still-pending ones, newest first, with the author eager-loaded. The
+     * "Show on profile" switch drives the talent's own profile-level
+     * `recognitions` block through the existing block-visibility endpoint.
      */
     public function index(): View
     {
-        return view('talent.credits', ['talent' => $this->talent()]);
+        $talent = $this->talent();
+
+        $recognitions = $talent->recognitions()
+            ->whereIn('status', ['pending', 'approved'])
+            ->with('author.media')
+            ->latest('id')
+            ->get();
+
+        $block = $talent->profileBlocks()
+            ->whereNull('talent_type_id')
+            ->whereHas('blockType', fn ($q) => $q->where('key', 'recognitions'))
+            ->first();
+
+        return view('talent.credits', [
+            'talent' => $talent,
+            // Which credited skills already have a tab on this profile.
+            'heldSkillIds' => $talent->talentTypes()->pluck('talent_types.id')->map('intval')->values()->all(),
+            'recognitions' => $recognitions,
+            'recognitionsBlock' => $block,
+        ]);
     }
 
+    /**
+     * The credits naming the signed-in talent: pending first, then accepted.
+     */
     public function data(): JsonResponse
     {
         $credits = $this->talent()->projectCredits()

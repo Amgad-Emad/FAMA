@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers\Feed;
 
+use App\Http\Resources\Feed\NotificationResource;
+use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Notifications\DatabaseNotification;
 
 /**
  * The actor's notification inbox (feed-spec §9): paginated 20, localized at
@@ -14,18 +15,33 @@ use Illuminate\Notifications\DatabaseNotification;
 class NotificationController extends FeedBaseController
 {
     /**
-     * The inbox, newest first.
+     * The inbox, newest first. ?filter=unread narrows to unread rows and
+     * ?filter=mention to post/comment mentions (the fama-ui page's
+     * All / Unread / Mentions segments).
      */
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         $actor = $this->currentActor->resolve();
 
-        $page = $actor->notifications()->paginate(20);
+        $page = $actor->notifications()
+            ->when($request->query('filter') === 'unread', fn ($query) => $query->whereNull('read_at'))
+            ->when($request->query('filter') === 'mention', fn ($query) => $query->where('type', 'like', '%Mentioned%'))
+            ->paginate(20)
+            ->withQueryString();
 
         return response()->paginated(
             $page,
-            \App\Http\Resources\Feed\NotificationResource::collection($page->getCollection()),
+            NotificationResource::collection($page->getCollection()),
         );
+    }
+
+    /**
+     * The full notifications page (fama-ui) — a shell; the list loads over Ajax
+     * from index().
+     */
+    public function page(): View
+    {
+        return view('feed.notifications');
     }
 
     /**

@@ -1,525 +1,566 @@
+{{--
+    Profile structure (GET /talent/profile) — the fama-ui "profile-structure.html"
+    screen on real data. The old dashboard is folded in (completion steps while
+    Private + the views card). EVERY edit — identity, availability, links,
+    skills (order = tab order; the first opens first), specialities, sections,
+    willing to explore, pricing — collects in a draft; the bottom bar saves it
+    through the existing endpoints or discards it (toast with Undo), and leaving
+    with unsaved changes warns. Only the photo uploads immediately. A Private
+    profile shows no link anywhere on this page.
+    Behaviour: `profileStructure` (resources/js/ui/profile-structure*.js) + `profileViews`.
+--}}
 @php
     $core = [
-        'display_name' => $talent->display_name,
+        'display_name' => (string) $talent->display_name,
         'headline' => array_merge(['en' => '', 'ar' => ''], $talent->getTranslations('headline')),
         'bio' => array_merge(['en' => '', 'ar' => ''], $talent->getTranslations('bio')),
         'worldview' => array_merge(['en' => '', 'ar' => ''], $talent->getTranslations('worldview')),
-        'slug' => $talent->slug,
-        'base_city' => $talent->base_city,
-        'base_country' => $talent->base_country,
+        'slug' => (string) $talent->slug,
+        'base_city' => (string) $talent->base_city,
+        'base_country' => (string) $talent->base_country,
     ];
     $publish = ['is_published' => (bool) $talent->is_published, 'status' => $talent->status->getValue(), 'is_verified' => (bool) $talent->is_verified];
-    $rate = ['rate_unit' => $talent->rate_unit, 'rate_amount' => $talent->rate_amount, 'rate_currency' => $talent->rate_currency];
+    $rate = [
+        'rate_unit' => (string) ($talent->rate_unit ?? ''),
+        'rate_amount' => $talent->rate_amount !== null ? (string) $talent->rate_amount : '',
+        'rate_currency' => (string) ($talent->rate_currency ?? ''),
+    ];
+    $host = parse_url(url('/'), PHP_URL_HOST) ?: 'fama.so';
+    $initials = collect(preg_split('/\s+/', trim((string) ($talent->display_name ?: $talent->slug))))->filter()->take(2)->map(fn ($w) => mb_strtoupper(mb_substr($w, 0, 1)))->implode('');
+
+    // Views card head: lifetime total + rolling week-over-week change.
+    $weekly = $views['weekly'];
+    $deltaUp = $weekly['delta'] >= 0;
+    $deltaText = $weekly['delta_pct'] !== null
+        ? ($deltaUp ? '▲' : '▼').' '.number_format(abs($weekly['delta_pct'])).'%'
+        : ($weekly['current_week'] > 0 ? '▲ '.number_format($weekly['current_week']) : '–');
+
+    $steps = [
+        ['key' => 'photo', 'label' => __('Profile photo'), 'help' => __('A clear photo of you. Brands are looking for a person.'), 'href' => '#core'],
+        ['key' => 'name', 'label' => __('Display name'), 'help' => __('The name brands see in search results.'), 'href' => '#core'],
+        ['key' => 'place', 'label' => __('City and country'), 'help' => __('Brands filter by where you are.'), 'href' => '#core'],
+        ['key' => 'bio', 'label' => __('A short bio'), 'help' => __('A line or two about your work.'), 'href' => '#core'],
+        ['key' => 'skill', 'label' => __('A skill and a speciality'), 'help' => __('What brands search for.'), 'href' => '#skills'],
+        ['key' => 'project', 'label' => __('One project'), 'help' => __('At least one project, with its photos or video.'), 'href' => route('talent.projects')],
+    ];
+
+    $strings = [
+        'steps' => $steps,
+        'sbClean' => __('All changes saved'), 'sbCleanN' => __('Your profile is up to date.'), 'sbSavedNow' => __('Saved just now'),
+        'sbDirtyOne' => __('You have unsaved changes in 1 part'), 'sbDirtyMany' => __('You have unsaved changes in :n parts'),
+        'sbDirtyN' => __('Save to update your profile, or discard to undo them.'),
+        'sbBad' => __('Fix the highlighted field before saving'), 'sbBadN' => __('Your profile needs a display name and a valid username.'),
+        'tSaved' => __('Changes saved'), 'saveFailed' => __('Some changes couldn’t be saved. Try again.'), 'tPhoto' => __('Profile photo updated'), 'tDiscarded' => __('Changes discarded'), 'tRemoved' => __(':name removed'), 'tAdded' => __(':name added'),
+        'tMoved' => __(':name moved to :group'), 'tLive' => __('Your profile is Live'), 'tPrivate' => __('Your profile is Private'),
+        'photo' => __('Profile photo'), 'photoType' => __('Use a JPG, PNG or WebP photo.'), 'photoBig' => __('That photo is over 5 MB. Choose a smaller one.'),
+        'photoRmTitle' => __('Remove profile photo?'), 'photoRmHelp' => __('Your photo will be removed and replaced with your initials.'),
+        'uploadFailed' => __('Upload failed'), 'remove' => __('Remove'),
+        'copyOffN' => __('Complete your profile to go Live. Then you can share your link.'), 'copiedA' => __('Link copied to the clipboard'),
+        'privTitle' => __('Make your profile Private?'), 'privHelp' => __('Only you will be able to see it, and your link stops working for everyone else until you go Live again.'), 'privOk' => __('Make private'),
+        'travelOn' => __('Brands see you’ll take jobs outside :city.'), 'travelOff' => __('Brands see only that you’re based in :city.'), 'yourCity' => __('your city'),
+        'website' => __('Website'), 'other' => __('Other'),
+        'skMoved' => __(':name is now tab :n'),
+        'addTitle' => __('Add a skill'), 'addHelp' => __('It gets its own tab, with default sections you can change.'), 'addOk' => __('Add skill'),
+        'rmTitle' => __('Remove :name?'), 'rmHelp' => __('Its tab and sections come off your profile. The content inside them is kept, so you can add the skill back later.'), 'rmOk' => __('Remove skill'),
+        'pw' => __('Profile-wide'), 'offA' => __(':name is hidden from your profile. It keeps its content.'),
+        'cantMove' => __('That section can’t go there.'),
+        'wtePickT' => __('Choose a skill to explore'), 'wtePickH' => __('Any skill, including one you have no work in yet.'), 'wtePickOk' => __('Choose skill'),
+    ];
+    $viewStrings = ['sum' => __(':n views in this period'), 'nViews' => __(':n views')];
+    $brandBlock = $talent->profileBlocks->first(fn ($b) => $b->blockType->key === 'brand_collabs');
+    $brandsUrl = route('talent.content', ['section' => $brandBlock?->talent_type_id ? optional($talent->talentTypes->firstWhere('id', $brandBlock->talent_type_id))->slug ?? 'universal' : 'universal']).'#block-brand_collabs';
 @endphp
 
-<x-talent-layout :title="__('Profile structure')">
-    <div x-data="profileEditor({
+<x-fama.layout :title="__('Profile structure')" mode="talent" :css="['fields', 'views', 'exp']">
+    <x-slot:styles>
+        <link rel="stylesheet" href="{{ asset('fama-ui/css/pages/profile-structure.css') }}?v=1">
+    </x-slot:styles>
+
+<div x-data="profileStructure({
+        strings: @js($strings),
+        host: @js($host),
         core: @js($core),
         avatarUrl: @js($talent->avatar_url),
-        displayName: @js($talent->display_name),
-        blocks: @js($blocks),
-        catalog: @js($catalog),
-        universalLabel: @js(__('Universal · profile-level')),
-        universalPosition: {{ (int) ($talent->meta['universal_position'] ?? 0) }},
+        publish: @js($publish),
+        completion: @js($completion),
+        now: @js($now),
+        social: @js($social),
         skills: @js($skills),
         availableSkills: @js($availableSkills),
         specialities: @js($specialities),
-        now: @js($now),
-        social: @js($social),
-        interests: @js($interests),
         interestSkills: @js($interestSkills),
+        blocks: @js($blocks),
+        catalog: @js($catalog),
         contentKeys: @js($contentKeys),
-        publish: @js($publish),
+        universalPosition: {{ (int) ($talent->meta['universal_position'] ?? 0) }},
+        interests: @js($interests),
+        collabs: @js($collabs),
+        hasPricing: {{ \App\Support\Features::enabled('pricing') ? 'true' : 'false' }},
         rate: @js($rate),
-    })" class="space-y-10">
+        reviewsOn: {{ \App\Support\Features::enabled('reviews') ? 'true' : 'false' }},
+    })">
 
-        {{-- Core details — identity + username, with the publishing status/toggle
-             merged in as the card's first row (the old standalone Publishing
-             section is folded in here). --}}
-        <x-ui.section :title="__('Core details')" :eyebrow="__('Your identity')">
-            {{-- Awaiting verification: an admin must approve before going public. --}}
-            <div x-show="!isVerified && !isPublished" x-cloak
-                 class="mb-3 flex items-start gap-3 rounded-xl border border-warn/40 bg-warn/10 p-4">
-                <span class="mt-0.5 text-warn">⏳</span>
-                <div>
-                    <p class="font-medium text-ink">{{ __('Awaiting verification') }}</p>
-                    <p class="mt-0.5 text-sm text-muted">{{ __('Our team is reviewing your profile. You can keep editing now — the Publish button unlocks once your account is verified.') }}</p>
-                </div>
-            </div>
-            <x-ui.card class="space-y-6">
-                {{-- Publishing (merged): status + publish/unpublish. --}}
-                <div class="flex flex-wrap items-center justify-between gap-4 border-b border-line pb-6">
-                    <div>
-                        <div class="flex items-center gap-2">
-                            <span class="h-2.5 w-2.5 rounded-pill" :class="isPublished ? 'bg-success' : (isVerified ? 'bg-warn' : 'bg-muted')"></span>
-                            <span class="font-display text-xl text-ink" x-text="isPublished ? '{{ __('Live') }}' : ('{{ __('Not live') }}' + ' · ' + status)"></span>
-                            <template x-if="isVerified">
-                                <span class="rounded-pill bg-accent-weak px-2 py-0.5 text-xs text-accent-ink">{{ __('verified') }}</span>
-                            </template>
-                        </div>
-                        <p x-show="publishError" x-cloak class="mt-1 text-xs text-danger" x-text="publishError"></p>
-                    </div>
-                    <x-ui.button variant="accent" x-on:click="togglePublish()" x-bind:disabled="publishing || (!isVerified && !isPublished)"
-                                 x-bind:title="(!isVerified && !isPublished) ? '{{ __('Your account must be verified before you can publish.') }}' : ''">
-                        <span x-text="isPublished ? '{{ __('Unpublish') }}' : '{{ __('Publish') }}'"></span>
-                    </x-ui.button>
-                </div>
+<main class="wrap">
 
-                {{-- Profile image (avatar) — uploads to the `avatar` collection, Ajax, no reload. --}}
-                <div class="flex flex-col items-center gap-5 border-b border-line pb-6 sm:flex-row sm:items-center">
-                    <span class="inline-flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-pill border border-line-strong bg-elevated shadow-e1">
-                        <template x-if="avatarUrl">
-                            <img :src="avatarUrl" alt="{{ __('Profile image') }}" class="h-full w-full object-cover">
-                        </template>
-                        <template x-if="!avatarUrl">
-                            <span class="flex h-full w-full items-center justify-center font-display text-3xl text-accent-ink"
-                                  style="background: linear-gradient(135deg, var(--accent-weak), var(--gold-weak));"
-                                  x-text="avatarInitials"></span>
-                        </template>
-                    </span>
-
-                    <div class="space-y-2 text-center sm:text-start">
-                        <div class="font-mono text-[10px] uppercase tracking-wider text-subtle">{{ __('Profile image') }}</div>
-                        <input x-ref="avatarInput" type="file" accept="image/png,image/jpeg,image/jpg,image/webp" class="hidden"
-                               @change="uploadAvatar($event.target.files)">
-                        <div class="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
-                            <x-ui.button variant="outline" size="sm" x-on:click="$refs.avatarInput.click()" x-bind:disabled="uploadingAvatar">
-                                <span x-show="!uploadingAvatar" x-text="avatarUrl ? '{{ __('Change photo') }}' : '{{ __('Upload photo') }}'"></span>
-                                <span x-show="uploadingAvatar" x-cloak>{{ __('Uploading…') }}</span>
-                            </x-ui.button>
-                            <button type="button" x-show="avatarUrl" x-cloak @click="$confirm({ title: '{{ __('Remove profile photo?') }}', message: '{{ __('Your photo will be removed and replaced with your initials.') }}', confirmLabel: '{{ __('Remove') }}' }).then(ok => ok && removeAvatar())" x-bind:disabled="uploadingAvatar"
-                                    class="text-sm text-muted underline underline-offset-2 transition hover:text-danger focus:outline-none focus-visible:ring-2 focus-visible:ring-accent">{{ __('Remove') }}</button>
-                        </div>
-                        <p class="text-xs text-subtle">{{ __('JPG, PNG or WebP · up to 5 MB · square works best.') }}</p>
-                        <p x-show="avatarError" x-cloak class="text-xs text-danger" x-text="avatarError"></p>
-                    </div>
-                </div>
-
-                <div class="grid gap-4 sm:grid-cols-2">
-                    <div>
-                        <label class="mb-1 block text-sm font-medium text-ink">{{ __('Display name') }}</label>
-                        <input x-model="core.display_name" type="text" class="w-full rounded-md border-line bg-elevated text-ink shadow-sm focus:border-accent focus:ring-accent">
-                        <p x-show="errors.display_name" x-cloak class="mt-1 text-xs text-danger" x-text="errors.display_name?.[0]"></p>
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-sm font-medium text-ink">{{ __('Username') }}</label>
-                        <div class="flex items-center gap-2">
-                            <span class="font-mono text-sm text-subtle">fama.com/</span>
-                            <input x-model="core.slug" type="text" class="w-full rounded-md border-line bg-elevated font-mono text-sm text-ink shadow-sm focus:border-accent focus:ring-accent">
-                        </div>
-                        <p x-show="errors.slug" x-cloak class="mt-1 text-xs text-danger" x-text="errors.slug?.[0]"></p>
-                    </div>
-                    <div class="sm:col-span-2">
-                        <label class="mb-1 block text-sm font-medium text-ink">{{ __('Headline') }}</label>
-                        <input x-model="core.headline.en" type="text" class="w-full rounded-md border-line bg-elevated text-ink shadow-sm focus:border-accent focus:ring-accent">
-                    </div>
-                    {{-- Arabic input hidden while the app is English-only (restore for the AR pass).
-                    <div dir="rtl">
-                        <label class="mb-1 block text-sm font-medium text-ink">{{ __('Headline (AR)') }}</label>
-                        <input x-model="core.headline.ar" type="text" class="w-full rounded-md border-line bg-elevated text-ink shadow-sm focus:border-accent focus:ring-accent">
-                    </div>
-                    --}}
-                    <div class="sm:col-span-2">
-                        <label class="mb-1 block text-sm font-medium text-ink">{{ __('Bio') }}</label>
-                        <textarea x-model="core.bio.en" rows="3" class="w-full rounded-md border-line bg-elevated text-ink shadow-sm focus:border-accent focus:ring-accent"></textarea>
-                    </div>
-                    {{-- Arabic input hidden while the app is English-only (restore for the AR pass).
-                    <div class="sm:col-span-2" dir="rtl">
-                        <label class="mb-1 block text-sm font-medium text-ink">{{ __('Bio (AR)') }}</label>
-                        <textarea x-model="core.bio.ar" rows="3" class="w-full rounded-md border-line bg-elevated text-ink shadow-sm focus:border-accent focus:ring-accent"></textarea>
-                    </div>
-                    --}}
-                    {{-- Worldview (ADR-Z). PROMPTED, not an empty box: an unprompted
-                         second textarea next to Bio just gets a second bio typed into it. --}}
-                    <div class="sm:col-span-2">
-                        <label for="pe-worldview" class="mb-1 block text-sm font-medium text-ink">{{ __('Point of view') }}</label>
-                        <textarea id="pe-worldview" x-model="core.worldview.en" rows="3"
-                                  placeholder="{{ __('What kind of work are you drawn to? What do you turn down? Who do you want to work with?') }}"
-                                  class="w-full rounded-md border-line bg-elevated text-ink shadow-sm focus:border-accent focus:ring-accent"></textarea>
-                        <p class="mt-1 text-xs text-subtle">{{ __('Your taste, not your track record — the bio above covers that.') }}</p>
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-sm font-medium text-ink">{{ __('Base city') }}</label>
-                        <input x-model="core.base_city" type="text" class="w-full rounded-md border-line bg-elevated text-ink shadow-sm focus:border-accent focus:ring-accent">
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-sm font-medium text-ink">{{ __('Base country') }}</label>
-                        <input x-model="core.base_country" type="text" class="w-full rounded-md border-line bg-elevated text-ink shadow-sm focus:border-accent focus:ring-accent">
-                    </div>
-                </div>
-
-                <div class="flex items-center gap-3">
-                    <x-ui.button variant="accent" x-on:click="saveCore()" x-bind:disabled="savingCore">
-                        <span x-show="!savingCore">{{ __('Save details') }}</span>
-                        <span x-show="savingCore" x-cloak>{{ __('Saving…') }}</span>
-                    </x-ui.button>
-                    <span x-show="coreSaved" x-cloak class="text-sm text-success">{{ __('Saved') }}</span>
-                </div>
-            </x-ui.card>
-        </x-ui.section>
-
-        {{-- ═══ NOW (ADR-Z) ═══ The time-sensitive strip. Both toggles save on
-             flip — there is no Save button, because a toggle you have to confirm
-             is one people forget to confirm, and this is the part of the page
-             that goes stale fastest. --}}
-        <x-ui.section :title="__('Now')" :eyebrow="__('What a brand checks first')">
-            <x-ui.card class="space-y-5">
-                <div class="flex flex-wrap items-start justify-between gap-4">
-                    <div class="min-w-0">
-                        <div class="text-sm font-medium text-ink">{{ __('Taking work') }}</div>
-                        <p class="mt-0.5 text-xs leading-relaxed text-muted">
-                            {{ __('Shown on your profile with the date you last changed it, so people know it is current.') }}
-                        </p>
-                        <p class="mt-1 font-mono text-[11px] text-subtle" x-show="now.availability_changed_for_humans" x-cloak>
-                            {{ __('Last changed') }} <span x-text="now.availability_changed_for_humans"></span>
-                        </p>
-                    </div>
-                    <button type="button" role="switch" @click="toggleAvailability()"
-                            :aria-checked="now.is_available ? 'true' : 'false'"
-                            :aria-label="now.is_available ? '{{ __('Taking work') }}' : '{{ __('Not taking work') }}'"
-                            class="relative inline-flex h-6 w-11 shrink-0 rounded-full transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
-                            :class="now.is_available ? 'bg-accent' : 'bg-line-strong'">
-                        <span class="absolute top-0.5 h-5 w-5 rounded-full bg-surface transition-all"
-                              :class="now.is_available ? 'start-[1.375rem]' : 'start-0.5'"></span>
-                    </button>
-                </div>
-
-                <hr class="border-line">
-
-                <div class="flex flex-wrap items-start justify-between gap-4">
-                    <div class="min-w-0">
-                        <div class="text-sm font-medium text-ink">{{ __('Will travel') }}</div>
-                        <p class="mt-0.5 text-xs leading-relaxed text-muted">
-                            {{ __('Whether you will work outside your city at all. Which city and on whose budget is a conversation — this just says you are open to it.') }}
-                        </p>
-                    </div>
-                    <button type="button" role="switch" @click="toggleTravel()"
-                            :aria-checked="now.will_travel ? 'true' : 'false'"
-                            aria-label="{{ __('Will travel') }}"
-                            class="relative inline-flex h-6 w-11 shrink-0 rounded-full transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
-                            :class="now.will_travel ? 'bg-accent' : 'bg-line-strong'">
-                        <span class="absolute top-0.5 h-5 w-5 rounded-full bg-surface transition-all"
-                              :class="now.will_travel ? 'start-[1.375rem]' : 'start-0.5'"></span>
-                    </button>
-                </div>
-            </x-ui.card>
-        </x-ui.section>
-
-        {{-- ═══ LINKS (ADR-Z, About) ═══ Instagram and anywhere else the work lives. --}}
-        <x-ui.section :title="__('Links')" :eyebrow="__('Where else your work lives')">
-            <x-ui.card class="space-y-4">
-                <template x-for="(link, index) in social" :key="index">
-                    <div class="flex flex-wrap items-end gap-2">
-                        <div class="w-36">
-                            <label class="mb-1 block text-xs font-medium text-muted">{{ __('Platform') }}</label>
-                            <select x-model="link.platform" class="w-full rounded-md border-line bg-elevated text-sm text-ink">
-                                @foreach (['instagram' => 'Instagram', 'tiktok' => 'TikTok', 'x' => 'X', 'linkedin' => 'LinkedIn', 'youtube' => 'YouTube', 'behance' => 'Behance', 'vimeo' => 'Vimeo', 'website' => __('Website'), 'other' => __('Other')] as $value => $label)
-                                    <option value="{{ $value }}">{{ $label }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="min-w-[8rem] flex-1">
-                            <label class="mb-1 block text-xs font-medium text-muted">{{ __('Handle') }}</label>
-                            <input x-model="link.handle" type="text" maxlength="120"
-                                   class="w-full rounded-md border-line bg-elevated text-sm text-ink shadow-sm focus:border-accent focus:ring-accent">
-                        </div>
-                        <div class="min-w-[12rem] flex-1">
-                            <label class="mb-1 block text-xs font-medium text-muted">{{ __('URL') }}</label>
-                            <input x-model="link.url" type="url"
-                                   class="w-full rounded-md border-line bg-elevated text-sm text-ink shadow-sm focus:border-accent focus:ring-accent">
-                        </div>
-                        <button type="button" @click="removeSocial(index)"
-                                class="rounded-md px-2 py-2 text-subtle transition hover:text-danger focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-                                aria-label="{{ __('Remove') }}">&times;</button>
-                    </div>
-                </template>
-
-                <p x-show="social.length === 0" x-cloak class="rounded-lg border border-dashed border-line p-4 text-center text-xs text-subtle">
-                    {{ __('No links yet.') }}
-                </p>
-                <p x-show="socialErrors._" x-cloak class="text-xs text-danger" x-text="socialErrors._?.[0]"></p>
-
-                <div class="flex items-center gap-3">
-                    <x-ui.button size="sm" x-on:click="addSocial()">{{ __('Add a link') }}</x-ui.button>
-                    <x-ui.button size="sm" variant="accent" x-on:click="saveSocial()" x-bind:disabled="savingSocial">
-                        <span x-show="!savingSocial">{{ __('Save links') }}</span>
-                        <span x-show="savingSocial" x-cloak>{{ __('Saving…') }}</span>
-                    </x-ui.button>
-                    <span x-show="socialSaved" x-cloak class="text-sm text-success">{{ __('Saved') }}</span>
-                </div>
-            </x-ui.card>
-        </x-ui.section>
-
-        {{-- ═══ WILLING TO EXPLORE (ADR-Z) ═══ The one section that asks for
-             something instead of proving something. Structured (skill + kind of
-             work) so brands can filter it; as free text nobody acts on it. --}}
-        <x-ui.section :title="__('Willing to explore')" :eyebrow="__('Where you want to go next')">
-            <x-ui.card class="space-y-4">
-                <p class="text-xs leading-relaxed text-muted">
-                    {{ __('Directions you want to move toward. These do not have to be skills you already list — that is the point.') }}
-                </p>
-
-                <ul class="space-y-2">
-                    <template x-for="interest in interests" :key="interest.id">
-                        <li class="flex flex-wrap items-center gap-3 rounded-lg border border-line bg-elevated p-3">
-                            <span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-accent" aria-hidden="true"></span>
-                            <div class="min-w-0 flex-1">
-                                <div class="text-sm text-ink">
-                                    <span x-text="interest.skill?.name"></span>
-                                    <template x-if="interest.speciality">
-                                        <span><span class="text-subtle">·</span> <span class="text-muted" x-text="interest.speciality.name"></span></span>
-                                    </template>
-                                </div>
-                                <p class="mt-0.5 text-xs text-subtle" x-show="interest.note" x-cloak x-text="interest.note"></p>
-                            </div>
-                            <button type="button"
-                                    @click="$confirm({ title: '{{ __('Remove this direction?') }}', message: '{{ __('It will no longer show on your profile.') }}', confirmLabel: '{{ __('Remove') }}', tone: 'danger' }).then(ok => ok && removeInterest(interest))"
-                                    class="rounded-md px-2 py-1 text-subtle transition hover:text-danger focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-                                    aria-label="{{ __('Remove') }}">&times;</button>
-                        </li>
-                    </template>
-                </ul>
-
-                <p x-show="interests.length === 0" x-cloak class="rounded-lg border border-dashed border-line p-4 text-center text-xs text-subtle">
-                    {{ __('Nothing listed yet.') }}
-                </p>
-
-                <div class="flex flex-wrap items-end gap-2 border-t border-line pt-4">
-                    <div class="min-w-[10rem] flex-1">
-                        <label for="pe-interest-skill" class="mb-1 block text-xs font-medium text-muted">{{ __('Skill') }}</label>
-                        <select id="pe-interest-skill" x-model.number="newInterest.talent_type_id"
-                                @change="newInterest.speciality_id = ''"
-                                class="w-full rounded-md border-line bg-elevated text-sm text-ink">
-                            <option value="">{{ __('Pick a skill…') }}</option>
-                            <template x-for="skill in interestSkills" :key="skill.id">
-                                <option :value="skill.id" x-text="skill.name"></option>
-                            </template>
-                        </select>
-                    </div>
-                    <div class="min-w-[10rem] flex-1">
-                        <label for="pe-interest-spec" class="mb-1 block text-xs font-medium text-muted">{{ __('Kind of work') }} <span class="text-subtle">({{ __('optional') }})</span></label>
-                        <select id="pe-interest-spec" x-model="newInterest.speciality_id"
-                                :disabled="interestSpecialities().length === 0"
-                                class="w-full rounded-md border-line bg-elevated text-sm text-ink disabled:opacity-50">
-                            <option value="">{{ __('Any') }}</option>
-                            <template x-for="speciality in interestSpecialities()" :key="speciality.id">
-                                <option :value="speciality.id" x-text="speciality.name"></option>
-                            </template>
-                        </select>
-                    </div>
-                    <div class="min-w-[12rem] flex-1">
-                        <label for="pe-interest-note" class="mb-1 block text-xs font-medium text-muted">{{ __('Note') }} <span class="text-subtle">({{ __('optional') }})</span></label>
-                        <input id="pe-interest-note" x-model="newInterest.note" type="text" maxlength="160"
-                               class="w-full rounded-md border-line bg-elevated text-sm text-ink shadow-sm focus:border-accent focus:ring-accent">
-                    </div>
-                    <x-ui.button size="sm" variant="accent" x-on:click="addInterest()" x-bind:disabled="savingInterest || !newInterest.talent_type_id">
-                        {{ __('Add') }}
-                    </x-ui.button>
-                </div>
-                <p x-show="interestErrors._" x-cloak class="text-xs text-danger" x-text="interestErrors._?.[0]"></p>
-            </x-ui.card>
-        </x-ui.section>
-
-        {{-- Pricing rate (ADR-N — replaces the removed rate card). Hidden in V1. --}}
-        @feature('pricing')
-        <x-ui.section :title="__('Pricing rate')" :eyebrow="__('An indicative rate shown on your profile')">
-            <x-ui.card class="space-y-4">
-                <div class="grid gap-4 sm:grid-cols-3">
-                    <div>
-                        <label class="mb-1 block text-sm font-medium text-ink">{{ __('Amount') }}</label>
-                        <input x-model="rate.rate_amount" type="number" min="0" step="0.01" class="w-full rounded-md border-line bg-elevated text-ink shadow-sm focus:border-accent focus:ring-accent">
-                        <p x-show="rateErrors.rate_amount" x-cloak class="mt-1 text-xs text-danger" x-text="rateErrors.rate_amount?.[0]"></p>
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-sm font-medium text-ink">{{ __('Currency') }}</label>
-                        <input x-model="rate.rate_currency" type="text" maxlength="3" placeholder="EGP" class="w-full rounded-md border-line bg-elevated font-mono uppercase text-ink shadow-sm focus:border-accent focus:ring-accent">
-                        <p x-show="rateErrors.rate_currency" x-cloak class="mt-1 text-xs text-danger" x-text="rateErrors.rate_currency?.[0]"></p>
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-sm font-medium text-ink">{{ __('Per') }}</label>
-                        <select x-model="rate.rate_unit" class="w-full rounded-md border-line bg-elevated text-ink shadow-sm focus:border-accent focus:ring-accent">
-                            <option value="">{{ __('Choose…') }}</option>
-                            <option value="project">{{ __('Project') }}</option>
-                            <option value="day">{{ __('Day') }}</option>
-                            <option value="hour">{{ __('Hour') }}</option>
-                        </select>
-                        <p x-show="rateErrors.rate_unit" x-cloak class="mt-1 text-xs text-danger" x-text="rateErrors.rate_unit?.[0]"></p>
-                    </div>
-                </div>
-                <p class="text-xs text-subtle">{{ __('Fill all three fields, or leave them blank to hide your rate.') }}</p>
-                <div class="flex items-center gap-3">
-                    <x-ui.button variant="accent" x-on:click="saveRate()" x-bind:disabled="savingRate">{{ __('Save rate') }}</x-ui.button>
-                    <button type="button" x-on:click="clearRate()" class="text-sm text-muted underline hover:text-ink">{{ __('Clear rate') }}</button>
-                    <span x-show="rateSaved" x-cloak class="text-sm text-success">{{ __('Saved') }}</span>
-                </div>
-            </x-ui.card>
-        </x-ui.section>
-        @endfeature
-
-        {{-- Blocks — ONE orderable list of section pills: the universal/profile-
-             level section sits AMONG the skill sections and drags like them (its
-             slot decides whether its blocks render above or below the skill tabs
-             on the public profile). A section's card shows when selected. --}}
-        <x-ui.section :title="__('Blocks')" :eyebrow="__('Sections · drag to reorder your profile')">
-            <div class="space-y-6">
-                <div class="space-y-3">
-                    <p class="font-mono text-[10px] uppercase tracking-wider text-subtle">{{ __('Sections') }} · {{ __('Drag to reorder · star to set primary') }}</p>
-                    <div class="flex flex-wrap items-center gap-1.5" role="group" aria-label="{{ __('Sections') }}">
-                        <template x-for="g in sectionPills" :key="g.key">
-                            <div draggable="true"
-                                 @dragstart="onRowDragStart($event, 'section', g.key)"
-                                 @dragover.prevent="onRowDragOver($event, g.key)"
-                                 @drop.prevent="onRowDrop('section', g)"
-                                 @dragend="onRowDragEnd()"
-                                 class="flex select-none items-center rounded-pill border transition-all duration-150"
-                                 :class="[
-                                     g.typeId !== null && expanded[g.key] ? 'border-accent bg-accent text-on-accent' : 'border-line text-muted hover:border-line-strong',
-                                     dragging?.key === g.key ? 'scale-[.97] opacity-40' : '',
-                                     dragOverKey === g.key ? 'ring-2 ring-accent' : '',
-                                 ]">
-                                <button type="button"
-                                        @click="g.typeId !== null && toggleExpanded(g.key)"
-                                        :aria-pressed="g.typeId !== null && expanded[g.key] ? 'true' : 'false'"
-                                        class="flex cursor-grab items-center gap-1.5 rounded-s-pill ps-3.5 py-1.5 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-                                        :class="[g.typeId !== null && expanded[g.key] ? '' : 'hover:text-ink', g.typeId === null ? 'rounded-e-pill pe-3.5' : 'pe-1']">
-                                    <span x-text="g.label"></span>
-                                </button>
-                                <template x-if="g.typeId !== null">
-                                    <button type="button" @click.stop="makePrimarySkill({ id: g.typeId })"
-                                            class="px-1 py-1.5 text-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-                                            :class="g.is_primary ? (expanded[g.key] ? 'text-on-accent' : 'text-gold') : 'opacity-60 hover:opacity-100'"
-                                            :title="g.is_primary ? '{{ __('Primary') }}' : '{{ __('Make primary') }}'"
-                                            :aria-label="g.is_primary ? '{{ __('Primary') }}' : '{{ __('Make primary') }}'"
-                                            x-text="g.is_primary ? '★' : '☆'"></button>
-                                </template>
-                                {{-- Removing a skill deletes its tab's blocks (content is kept) — confirm first. --}}
-                                <template x-if="g.typeId !== null">
-                                    <button type="button"
-                                            @click.stop="$confirm({ title: '{{ __('Remove this skill?') }}', message: '{{ __('Delete this tab’s blocks? (your content is kept)') }}', confirmLabel: '{{ __('Remove') }}' }).then(ok => ok && removeSkill({ id: g.typeId }))"
-                                            class="rounded-e-pill py-1.5 pe-2.5 ps-1 text-xs opacity-60 transition hover:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-                                            :aria-label="'{{ __('Remove skill') }}: ' + g.label" title="{{ __('Remove skill') }}">✕</button>
-                                </template>
-                            </div>
-                        </template>
-
-                        {{-- Add skill: reveals the picker beside the pills. --}}
-                        <button type="button" @click="showAddSkill = !showAddSkill" x-show="availableSkills.length > 0"
-                                :aria-expanded="showAddSkill ? 'true' : 'false'"
-                                class="flex items-center gap-1.5 rounded-pill bg-accent px-3.5 py-1.5 text-sm font-semibold text-on-accent shadow-e1 transition hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg">
-                            <span aria-hidden="true">+</span> {{ __('Add skill') }}
-                        </button>
-                    </div>
-                    <p class="text-xs text-subtle">{{ __('The universal section shows above your skill tabs — drag it after a skill to show it below them.') }}</p>
-
-                    <div x-show="showAddSkill" x-cloak class="flex flex-wrap items-center gap-2">
-                        <select x-model="addSkillId" class="rounded-md border-line bg-elevated text-sm text-ink shadow-sm focus:border-accent focus:ring-accent">
-                            <option value="">{{ __('Choose…') }}</option>
-                            <template x-for="type in availableSkills" :key="type.id">
-                                <option :value="type.id" x-text="t(type.name)"></option>
-                            </template>
-                        </select>
-                        <x-ui.button variant="accent" size="sm" x-on:click="addSkill()" x-bind:disabled="!addSkillId">{{ __('Add skill') }}</x-ui.button>
-                    </div>
-
-                    <p x-show="skills.length === 0" x-cloak class="rounded-lg border border-line bg-surface p-6 text-center text-sm text-subtle">{{ __('Add your first skill to create its tab and blocks.') }}</p>
-                    {{-- The ONE unified card: universal block rows + each skill as a
-                         SINGLE collapsed row (expand to manage its blocks), in the
-                         true section order (universal_position). --}}
-                    <x-ui.card class="space-y-3">
-                        <div class="flex items-center gap-2">
-                            <span class="font-display text-lg text-ink">{{ __('Universal · profile-level') }}</span>
-                            <span class="font-mono text-[10px] uppercase tracking-wider text-subtle"
-                                  x-text="universalPosition === 0 ? '{{ __('Above the tabs') }}' : '{{ __('Below the tabs') }}'"></span>
-                        </div>
-
-                        <div class="space-y-2">
-                            <template x-for="entry in unifiedRows" :key="entry.key">
-                                <div>
-                                    {{-- A universal / profile-level block row --}}
-                                    <template x-if="entry.kind === 'block'">
-                                        <div>
-                                            <template x-for="block in [entry.block]" :key="block.id">
-                                                @include('talent.partials.block-row')
-                                            </template>
-                                        </div>
-                                    </template>
-
-                                    {{-- A skill section, treated as ONE block row (expandable) --}}
-                                    <template x-if="entry.kind === 'skill'">
-                                        <div class="rounded-lg border border-line bg-elevated transition-all duration-150"
-                                             :class="[
-                                                 dragging?.key === entry.key ? 'scale-[.99] opacity-40' : '',
-                                                 dragOverKey === entry.key ? 'border-transparent ring-2 ring-accent' : '',
-                                                 denyKey === entry.key ? 'border-transparent ring-2 ring-danger' : '',
-                                             ]">
-                                            <div draggable="true"
-                                                 @dragstart="onRowDragStart($event, 'section', entry.key)"
-                                                 @dragover.prevent="onRowDragOver($event, entry.key)"
-                                                 @drop.prevent="onRowDrop('section', entry.group)"
-                                                 @dragend="onRowDragEnd()"
-                                                 class="flex select-none flex-wrap items-center gap-3 p-3">
-                                                <span class="cursor-grab text-subtle" title="{{ __('Drag') }}">⋮⋮</span>
-                                                <div class="min-w-0 flex-1">
-                                                    <div class="font-mono text-[10px] uppercase tracking-wider text-subtle">{{ __('Skill section') }}</div>
-                                                    <div class="flex items-center gap-2">
-                                                        <span class="text-ink" x-text="entry.group.label"></span>
-                                                        <span x-show="entry.group.is_primary" x-cloak class="rounded-pill bg-gold-weak px-2 py-0.5 text-[10px] font-medium text-gold">{{ __('Primary') }}</span>
-                                                    </div>
-                                                </div>
-                                                <span class="font-mono text-[11px] text-subtle" x-text="blocksInScope(entry.group.typeId).length + ' {{ __('blocks') }}'"></span>
-                                                <button type="button" @click="toggleExpanded(entry.key)"
-                                                        :aria-expanded="expanded[entry.key] ? 'true' : 'false'"
-                                                        class="flex items-center gap-1.5 rounded-pill border border-line-strong px-3 py-1 text-xs font-medium text-muted transition hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-accent">
-                                                    <span x-text="expanded[entry.key] ? '{{ __('Collapse') }}' : '{{ __('Manage blocks') }}'"></span>
-                                                    <svg class="h-3 w-3 transition-transform" :class="expanded[entry.key] ? 'rotate-180' : ''" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                                                </button>
-                                            </div>
-                                            <div x-show="expanded[entry.key]" x-cloak class="space-y-2 border-t border-line p-3">
-                                                {{--
-                                                    Specialities (ADR-Y) — the second and final level of the skills
-                                                    tree. A CONTROLLED list: these pills are the only options and
-                                                    there is deliberately no free-text field, because an invented
-                                                    entry would never match on the project side and the filter
-                                                    would stop working.
-                                                --}}
-                                                <template x-if="specialityOptions(entry.group.typeId).length > 0">
-                                                    <div class="rounded-lg border border-line bg-surface p-3">
-                                                        <div class="flex items-baseline justify-between gap-3">
-                                                            <div class="font-mono text-[10px] uppercase tracking-wider text-subtle">{{ __('Specialities') }}</div>
-                                                            <span class="text-[11px] text-subtle"
-                                                                  x-show="savingSpecialities === entry.group.typeId" x-cloak>{{ __('Saving…') }}</span>
-                                                        </div>
-                                                        <p class="mt-1 text-xs text-subtle">{{ __('What kind of subject you shoot. Pick as many as apply.') }}</p>
-                                                        <div class="mt-2.5 flex flex-wrap gap-2" role="group" aria-label="{{ __('Specialities') }}">
-                                                            <template x-for="speciality in specialityOptions(entry.group.typeId)" :key="speciality.id">
-                                                                <button type="button"
-                                                                        @click="toggleSpeciality(entry.group.typeId, speciality.id)"
-                                                                        :aria-pressed="specialityPicked(entry.group.typeId, speciality.id) ? 'true' : 'false'"
-                                                                        class="rounded-pill border px-3 py-1.5 text-xs font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-                                                                        :class="specialityPicked(entry.group.typeId, speciality.id)
-                                                                            ? 'border-transparent bg-accent text-on-accent'
-                                                                            : 'border-line-strong text-muted hover:text-ink'">
-                                                                    <span x-text="speciality.name.en || speciality.slug"></span>
-                                                                </button>
-                                                            </template>
-                                                        </div>
-                                                    </div>
-                                                </template>
-
-                                                <template x-for="block in blocksInScope(entry.group.typeId)" :key="block.id">
-                                                    @include('talent.partials.block-row')
-                                                </template>
-                                                <p x-show="blocksInScope(entry.group.typeId).length === 0" x-cloak class="rounded-lg border border-dashed border-line p-4 text-center text-xs text-subtle">{{ __('No blocks here yet.') }}</p>
-                                            </div>
-                                        </div>
-                                    </template>
-                                </div>
-                            </template>
-                            <p x-show="unifiedRows.length === 0" x-cloak class="rounded-lg border border-dashed border-line p-4 text-center text-xs text-subtle">{{ __('No blocks here yet.') }}</p>
-                        </div>
-                    </x-ui.card>
-                </div>
-            </div>
-        </x-ui.section>
+<section class="hero soft">
+  <div class="body">
+    <span class="ph" :class="{ has: avatarUrl }" :style="avatarUrl ? `background-image:url(${avatarUrl})` : ''" aria-hidden="true" x-text="avatarUrl ? '' : initials">{{ $talent->avatar_url ? '' : $initials }}</span>
+    <div>
+      <span class="hello">{{ __('Your profile') }}</span>
+      <h1 x-text="savedName || '—'">{{ $talent->display_name ?: '—' }}</h1>
     </div>
-</x-talent-layout>
+    <div class="pub">
+      {{-- Live only: a Private profile shows no link at all — just its status. --}}
+      <template x-if="isPublished">
+        <button type="button" class="linkbtn" :class="{ copied }" @click="copyLink()" aria-describedby="copyNote" :aria-label="@js(__('Copy your profile link')) + ', ' + linkLabel">
+          <span id="pubState" dir="ltr" x-text="linkLabel"></span>
+          <span class="lb-ic"><svg class="icon" aria-hidden="true"><use :href="copied ? '#i-check' : '#i-copy'" href="#i-copy"/></svg><span id="copyTx" x-text="copied ? @js(__('Copied')) : @js(__('Copy'))"></span></span>
+        </button>
+      </template>
+      <span class="vh" id="copyNote" aria-live="polite" x-text="note"></span>
+      <span class="stat">
+        <span class="pill" :class="isPublished ? 'p-live' : 'p-off'" x-text="isPublished ? @js(__('Live')) : @js(__('Private'))">{{ $talent->is_published ? __('Live') : __('Private') }}</span>
+        <button type="button" class="tipbtn" aria-describedby="pubTip" aria-label="{{ __('What Live and Private mean') }}"><svg class="icon" aria-hidden="true"><use href="#i-info"/></svg></button>
+        <span class="tip" role="tooltip" id="pubTip">
+          <p :class="{ cur: isPublished }"><b>{{ __('Live') }}</b> {{ __('Anyone can open your profile, and brands find you in the Creatives Index.') }}</p>
+          <p :class="{ cur: !isPublished }"><b>{{ __('Private') }}</b> {{ __('Only you can see it. Complete your profile to go Live, then share your link.') }}</p>
+        </span>
+      </span>
+      <button type="button" class="btn btn-text pub-act" x-show="isPublished" x-cloak @click="setPublished(false)" :disabled="publishing">{{ __('Make private') }}</button>
+    </div>
+  </div>
+  <div class="band" role="presentation"></div>
+</section>
+
+{{-- The dashboard lives here now: the steps to go Live while Private, and the views. --}}
+<section class="vw" id="gate" aria-label="{{ __('Creatives Index') }}" x-show="!isPublished" x-cloak>
+  <div class="vw-head">
+    <div>
+      <span class="vw-label">{{ __('Creatives Index') }}</span>
+      <h2 class="vw-h" x-text="stepsLeft === 0 ? @js(__('Ready to go Live')) : (stepsLeft === 1 ? @js(__('1 more step to go Live')) : @js(__(':n more steps to go Live')).replace(':n', stepsLeft))"></h2>
+      <p class="vw-lead">{{ __('Only you can see your profile for now. Complete these and it goes Live: anyone can open your link, and brands find you in the Creatives Index.') }}</p>
+    </div>
+    <span class="vw-only"><svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg>{{ __('Only you see this') }}</span>
+  </div>
+  <ul class="vw-todo">
+    <template x-for="s in gateSteps" :key="s.key">
+      <li :class="{ ok: s.done }">
+        <span class="tick"><svg class="icon" aria-hidden="true" x-show="s.done"><use href="#i-check"/></svg></span>
+        <span class="txt"><b x-text="s.label"></b><p x-show="!s.done" x-text="s.help"></p></span>
+        <a class="vw-link" :href="s.href"><span x-text="s.done ? @js(__('Edit')) : @js(__('Add'))"></span><span class="vh" x-text="' ' + s.label"></span><svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+      </li>
+    </template>
+    {{-- App step (not in the prototype): Fama verifies every profile once before it can go Live (ADR-U). --}}
+    <li :class="{ ok: isVerified }">
+      <span class="tick"><svg class="icon" aria-hidden="true" x-show="isVerified"><use href="#i-check"/></svg></span>
+      <span class="txt"><b>{{ __('Checked by Fama') }}</b><p x-show="!isVerified">{{ __('Our team reviews every new profile once. You can keep editing meanwhile.') }}</p></span>
+    </li>
+  </ul>
+  <div class="vw-go">
+    <button type="button" class="btn" @click="setPublished(true)" :disabled="publishing || !isVerified">{{ __('Go Live') }}</button>
+  </div>
+  <p class="vw-err" x-show="publishError" x-text="publishError"></p>
+  <p class="vw-note" x-text="isVerified ? @js(__('You choose when it goes Live. You can make it Private again at any time.')) : @js(__('Go Live unlocks once our team has checked your profile.'))"></p>
+</section>
+
+<section class="vw" id="views" aria-label="{{ __('Profile views') }}" x-data="profileViews({ strings: @js($viewStrings) })">
+  <div class="vw-head">
+    <div>
+      <span class="vw-label">{{ __('Profile views · all time') }}</span>
+      <span class="vw-n">{{ number_format($views['total']) }}</span>
+      <span class="vw-d"><b>{{ $deltaText }}</b> {{ __('vs last week') }}</span>
+    </div>
+    <span class="vw-only"><svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg>{{ __('Only you see this') }}</span>
+  </div>
+  <div class="vw-sh">
+    <p class="vw-sum" x-text="sumText"></p>
+    <div class="vw-seg" role="group" aria-label="{{ __('Period') }}">
+      @foreach (['7d' => __('7 days'), '30d' => __('30 days'), '90d' => __('90 days'), 'all' => __('All time')] as $r => $label)
+        <button type="button" @click="load('{{ $r }}')" :aria-pressed="(range === '{{ $r }}').toString()">{{ $label }}</button>
+      @endforeach
+    </div>
+  </div>
+  <div class="vw-plot" :style="loading ? 'opacity:.55' : ''">
+    <div class="vw-yax" aria-hidden="true"><template x-for="(tk, i) in yTicks" :key="i"><span x-text="tk"></span></template></div>
+    <div class="vw-area" x-ref="area">
+      <div class="vw-grid"><i></i><i></i><i></i><i></i></div>
+      <div class="vw-bars">
+        <template x-for="(b, i) in series" :key="b.date">
+          <button type="button" :aria-label="b.label + ': ' + b.views.toLocaleString('en-GB') + ' ' + @js(__('views'))"
+                  @mouseenter="tip($event, i)" @focus="tip($event, i)" @mouseleave="untip()" @blur="untip()"><span :style="'height:' + height(b.views) + '%'"></span></button>
+        </template>
+      </div>
+      <div class="vw-tip" x-ref="tip" role="status"></div>
+    </div>
+    <div class="vw-xax" aria-hidden="true"><template x-for="i in xPicks" :key="i"><span x-text="series[i] ? series[i].label : ''"></span></template></div>
+  </div>
+  <p class="vw-err" x-show="error" x-cloak>{{ __('Couldn’t load your views. Try again in a moment.') }}</p>
+  <button type="button" class="vw-link" @click="showTable = !showTable" :aria-expanded="showTable.toString()" x-text="showTable ? @js(__('Hide table')) : @js(__('Show as a table'))">{{ __('Show as a table') }}</button>
+  <div x-show="showTable" x-cloak>
+    <table class="vw-table"><thead><tr><th>{{ __('Date') }}</th><th>{{ __('Views') }}</th></tr></thead>
+      <tbody><template x-for="b in series" :key="b.date"><tr><td x-text="b.label"></td><td x-text="b.views.toLocaleString('en-GB')"></td></tr></template></tbody>
+    </table>
+  </div>
+</section>
+
+<div class="layout">
+
+  {{-- ═══ Core details ═══ --}}
+  <section class="sec panel" id="core" :class="{ changed: dirty.core }">
+    <div class="phead">
+      <div class="ptitle"><div class="hrow"><h2 class="h3x">{{ __('Core details') }}</h2><span class="dirty" x-show="dirty.core" x-cloak>{{ __('Unsaved') }}</span></div>
+        <p class="pdesc">{{ __('Your name, your address on Fama, and how you introduce yourself.') }}</p></div>
+    </div>
+    <div class="pbody" id="body-core">
+      <div class="form">
+        <div class="f">
+          <span>{{ __('Profile photo') }}</span>
+          <div class="photo">
+            <span class="ph" :class="{ has: avatarUrl }" :style="avatarUrl ? `background-image:url(${avatarUrl})` : ''" aria-hidden="true" x-text="avatarUrl ? '' : initials"></span>
+            <div>
+              <div class="acts">
+                <button class="btn btn-2" type="button" @click="$refs.avatarInput.click()" :disabled="uploadingAvatar">
+                  <svg class="icon" aria-hidden="true"><use href="#i-upload"/></svg>
+                  <span x-text="uploadingAvatar ? @js(__('Uploading…')) : (avatarUrl ? @js(__('Change photo')) : @js(__('Upload photo')))">{{ __('Upload photo') }}</span>
+                </button>
+                <button class="btn btn-text" type="button" x-show="avatarUrl" x-cloak @click="removeAvatar()" :disabled="uploadingAvatar">{{ __('Remove') }}</button>
+                <input type="file" x-ref="avatarInput" accept="image/jpeg,image/png,image/webp" hidden @change="uploadAvatar($event.target.files)">
+              </div>
+              <p class="help" :class="{ err: avatarError }" x-text="avatarError || @js(__('JPG, PNG or WebP, up to 5 MB. Shown in a circle.'))">{{ __('JPG, PNG or WebP, up to 5 MB. Shown in a circle.') }}</p>
+            </div>
+          </div>
+        </div>
+        <div class="two f">
+          <label class="f" :class="{ bad: nameBad }">
+            <span><span>{{ __('Display name') }}</span><small>{{ __('Needed to go Live') }}</small></span>
+            <input class="in" id="fDisplay" maxlength="255" autocomplete="name" x-model="core.display_name" @input="errors.display_name = null">
+            <p class="help" :class="{ err: nameBad }" x-text="errors.display_name ? errors.display_name[0] : (nameBad ? @js(__('Add a display name. Your profile needs one to go Live.')) : @js(__('The name people see on your profile.')))"></p>
+          </label>
+          <label class="f" :class="{ bad: userBad }">
+            <span>{{ __('Username') }}</span>
+            <span class="url"><b>{{ $host }}/</b><input class="in" id="fUser" maxlength="60" autocomplete="off" spellcheck="false" dir="ltr" x-model="core.slug" @input="errors.slug = null"></span>
+            <p class="help" :class="{ err: userBad }" x-text="errors.slug ? errors.slug[0] : (userBad ? @js(__('Use only letters, numbers and dashes.')) : @js(__('Letters, numbers and dashes. It becomes your profile address.')))"></p>
+          </label>
+        </div>
+        <label class="f"><span><span>{{ __('Headline') }}</span><small>{{ __('Optional') }}</small></span><input class="in" id="fHeadline" maxlength="255" x-model="core.headline.en"></label>
+        <label class="f"><span><span>{{ __('Bio') }}</span><small x-text="count(core.bio.en, 5000)"></small></span><textarea class="ta" id="fBio" maxlength="5000" x-model="core.bio.en"></textarea><p class="help">{{ __('Your background and track record.') }}</p></label>
+        <div class="f">
+          <label for="fPov" class="lbl"><span>{{ __('Point of view') }}</span><small x-text="count(core.worldview.en, 2000)"></small></label>
+          <textarea class="ta" id="fPov" maxlength="2000" x-model="core.worldview.en"></textarea>
+          <p class="help">{{ __('Your taste, in your words. Not a second bio.') }}</p>
+          <div class="prompts">
+            @foreach ([__('What do you notice that others miss?'), __('A reference you keep going back to'), __('Work you won’t take, and why')] as $prompt)
+              <button type="button" class="chip" @click="addPrompt(@js($prompt))">{{ $prompt }}</button>
+            @endforeach
+          </div>
+        </div>
+        <div class="two f">
+          <label class="f"><span>{{ __('City') }}</span><input class="in" id="fCity" maxlength="255" autocomplete="address-level2" x-model="core.base_city"></label>
+          <label class="f"><span>{{ __('Country') }}</span><input class="in" id="fCountry" maxlength="255" autocomplete="country-name" x-model="core.base_country"></label>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {{-- ═══ Availability ═══ --}}
+  <section class="sec panel" id="now" :class="{ changed: dirty.now }">
+    <div class="phead">
+      <div class="ptitle"><div class="hrow"><h2 class="h3x">{{ __('Availability') }}</h2><span class="dirty" x-show="dirty.now" x-cloak>{{ __('Unsaved') }}</span></div>
+        <p class="pdesc">{{ __('Tell brands if they can book you right now. It shows under your name on your profile.') }}</p></div>
+    </div>
+    <div class="pbody" id="body-now">
+      <div class="nowprev" aria-live="polite">
+        <span class="nowprev-l">{{ __('On your profile') }}</span>
+        <span class="nowchips"><span :class="{ on: now.is_available }" x-text="now.is_available ? @js(__('Open for work')) : @js(__('Not open for work'))"></span><span x-show="now.will_travel" x-cloak>{{ __('Will travel') }}</span></span>
+      </div>
+      <div class="nowlist">
+        <div class="nowrow">
+          <div><b id="lTaking">{{ __('Open for work') }}</b><p class="nowdesc" id="dTaking" x-text="now.is_available ? @js(__('Brands see you’re open for work, and can send you a job now.')) : @js(__('Brands see you’re not open for work right now. Your profile stays up.'))"></p></div>
+          <button type="button" class="switch" role="switch" :aria-checked="now.is_available.toString()" aria-labelledby="lTaking" aria-describedby="dTaking" @click="flipNow('is_available')"><i></i></button>
+        </div>
+        <div class="nowrow">
+          <div><b id="lTravel">{{ __('Happy to travel for work') }}</b><p class="nowdesc" id="dTravel" x-text="travelText(now.will_travel)"></p></div>
+          <button type="button" class="switch" role="switch" :aria-checked="now.will_travel.toString()" aria-labelledby="lTravel" aria-describedby="dTravel" @click="flipNow('will_travel')"><i></i></button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {{-- ═══ Social links ═══ --}}
+  <section class="sec panel" id="social" :class="{ changed: dirty.social }">
+    <div class="phead">
+      <div class="ptitle"><div class="hrow"><h2 class="h3x">{{ __('Social links') }}</h2><span class="dirty" x-show="dirty.social" x-cloak>{{ __('Unsaved') }}</span></div>
+        <p class="pdesc">{{ __('Choose the platform, then type your username. Your profile shows its icon and links to your page. Up to nine.') }}</p></div>
+    </div>
+    <div class="pbody" id="body-social">
+      <div class="pin-card">
+        <ul class="links" id="links">
+          <template x-for="(l, i) in links" :key="l._k">
+            <li>
+              <button type="button" class="platbtn" @click.stop="togglePlat(i)" aria-haspopup="listbox" :aria-expanded="(platOpen === i).toString()"
+                      :aria-label="@js(__('Account type: :platform. Change')).replace(':platform', platName(l.platform))">
+                <span class="ic" x-html="socialIcon(l.platform)"></span><svg class="icon caret" aria-hidden="true"><use href="#i-chev"/></svg>
+              </button>
+              <span class="url" :class="{ web: isWeb(l.platform) }"><b x-show="!isWeb(l.platform)" x-text="prefix(l.platform)"></b><input class="in" :data-link="i" :value="l.handle" @input="onLinkInput(i, $event)"
+                     :placeholder="isWeb(l.platform) ? @js(__('Link to social profile')) : 'username'"
+                     :aria-label="isWeb(l.platform) ? @js(__('Link to social profile')) : @js(__('Your :platform username')).replace(':platform', platName(l.platform))"
+                     dir="ltr" autocomplete="off" autocapitalize="none" spellcheck="false"></span>
+              <button type="button" class="iconbtn plain rm" @click="removeLink(i)" :aria-label="@js(__('Remove :platform link')).replace(':platform', platName(l.platform))"><svg class="icon" aria-hidden="true"><use href="#i-trash"/></svg></button>
+              <div class="platmenu" role="listbox" aria-label="{{ __('Account type') }}" x-show="platOpen === i" x-cloak @keydown="platKey($event)">
+                <p class="pm-h">{{ __('Account type') }}</p>
+                <template x-for="p in platforms" :key="p">
+                  <button type="button" role="option" class="pm-o" :aria-selected="(p === l.platform).toString()" :aria-disabled="(usedBy(i).includes(p)).toString()"
+                          @click="!usedBy(i).includes(p) && setPlat(i, p)">
+                    <span class="pm-ck" aria-hidden="true"><svg class="icon" x-show="p === l.platform"><use href="#i-check"/></svg></span>
+                    <span class="ic" x-html="socialIcon(p)"></span><span class="pm-n" x-text="platName(p)"></span><span class="pm-x" x-show="usedBy(i).includes(p)">{{ __('Added') }}</span>
+                  </button>
+                </template>
+              </div>
+            </li>
+          </template>
+          <li class="newrow" x-show="showNewRow" x-cloak>
+            <button type="button" class="platbtn" @click.stop="togglePlat('new')" aria-haspopup="listbox" :aria-expanded="(platOpen === 'new').toString()"
+                    :aria-label="@js(__('Account type: :platform. Change')).replace(':platform', platName(newRow.platform))">
+              <span class="ic" x-html="socialIcon(newRow.platform)"></span><svg class="icon caret" aria-hidden="true"><use href="#i-chev"/></svg>
+            </button>
+            <span class="url" :class="{ web: isWeb(newRow.platform) }"><b x-show="!isWeb(newRow.platform)" x-text="prefix(newRow.platform)"></b><input class="in" data-link="new" value="" @input="onLinkInput('new', $event); $event.target.value = ''"
+                   :placeholder="isWeb(newRow.platform) ? @js(__('Link to social profile')) : 'username'" aria-label="{{ __('Link to social profile') }}"
+                   dir="ltr" autocomplete="off" autocapitalize="none" spellcheck="false"></span>
+            <span></span>
+            <div class="platmenu" role="listbox" aria-label="{{ __('Account type') }}" x-show="platOpen === 'new'" x-cloak @keydown="platKey($event)">
+              <p class="pm-h">{{ __('Account type') }}</p>
+              <template x-for="p in platforms" :key="p">
+                <button type="button" role="option" class="pm-o" :aria-selected="(p === newRow.platform).toString()" :aria-disabled="(usedBy(-1).includes(p)).toString()"
+                        @click="!usedBy(-1).includes(p) && setPlat('new', p)">
+                  <span class="pm-ck" aria-hidden="true"><svg class="icon" x-show="p === newRow.platform"><use href="#i-check"/></svg></span>
+                  <span class="ic" x-html="socialIcon(p)"></span><span class="pm-n" x-text="platName(p)"></span><span class="pm-x" x-show="usedBy(-1).includes(p)">{{ __('Added') }}</span>
+                </button>
+              </template>
+            </div>
+          </li>
+        </ul>
+        <button class="btn btn-2" type="button" x-show="!linksFull && !showNewRow" x-cloak @click="showNew = true; focusLink('new')" style="margin-top:var(--s3)"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg><span>{{ __('Add another link') }}</span></button>
+        <p class="help" x-show="linksFull" x-cloak>{{ __('You\'ve added nine. Remove one to add another.') }}</p>
+        <p class="help err" x-show="socialError" x-cloak x-text="socialError"></p>
+      </div>
+    </div>
+  </section>
+
+  {{-- ═══ Skills — the order of the profile tabs; the first opens first (no separate primary) ═══ --}}
+  <section class="sec panel" id="skills" :class="{ changed: dirty.skills }">
+    <div class="phead">
+      <div class="ptitle"><div class="hrow"><h2 class="h3x">{{ __('Skills') }}</h2><span class="dirty" x-show="dirty.skills" x-cloak>{{ __('Unsaved') }}</span></div>
+        <p class="pdesc">{{ __('Each skill is a tab on your profile, in this order. The first one opens first. Drag to reorder.') }}</p></div>
+      <button class="btn btn-2" type="button" id="addSkill" @click="addSkill()" :disabled="!canAddSkill"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg><span>{{ __('Add skill') }}</span></button>
+    </div>
+    <div id="skillList">
+      <template x-for="(s, i) in skills" :key="s.id">
+        <div class="sk skill" :data-s="s.id"
+             :class="{ 'is-new': s.id === newSkillId, dragging: skDrag === s.id, 'drop-before': skDropOn === s.id && !skDropAfter, 'drop-after': skDropOn === s.id && skDropAfter }"
+             @dragover.prevent="skOver($event, s)" @drop.prevent="skDrop(s)">
+          <div class="shead">
+            <button type="button" class="grip" draggable="true" data-grip @dragstart="skStart($event, s)" @dragend="skEnd()"
+                    @keydown.up.prevent="moveSkill(s.id, i - 1)" @keydown.down.prevent="moveSkill(s.id, i + 1)"
+                    :aria-label="@js(__('Reorder :name. Use the arrow keys, or drag.')).replace(':name', skName(s))"><svg class="icon" aria-hidden="true"><use href="#i-grip"/></svg></button>
+            <div class="stitle"><b><span x-text="skName(s)"></span><span class="order" x-show="i === 0">{{ __('Opens first') }}</span></b></div>
+            <span class="skacts">
+              <button type="button" class="iconbtn mv" data-mv="-1" @click="moveSkill(s.id, i - 1, '[data-mv=&quot;-1&quot;]:not(:disabled)')" :disabled="i === 0"
+                      :aria-label="@js(__('Move :name up')).replace(':name', skName(s))"><svg class="icon" aria-hidden="true"><use href="#i-up"/></svg></button>
+              <button type="button" class="iconbtn mv" data-mv="1" @click="moveSkill(s.id, i + 1, '[data-mv=&quot;1&quot;]:not(:disabled)')" :disabled="i === skills.length - 1"
+                      :aria-label="@js(__('Move :name down')).replace(':name', skName(s))"><svg class="icon" aria-hidden="true"><use href="#i-down"/></svg></button>
+              <button type="button" class="btn btn-2 skrm" @click="removeSkill(s)" :disabled="skills.length < 2"
+                      :aria-label="@js(__('Remove :name')).replace(':name', skName(s))"><svg class="icon" aria-hidden="true"><use href="#i-trash"/></svg><span>{{ __('Remove') }}</span></button>
+            </span>
+          </div>
+          <div class="sbody">
+            <p class="specs-l" :id="'sl-' + s.id">{{ __('Specialities') }}</p>
+            <div class="specs" role="group" :aria-labelledby="'sl-' + s.id">
+              <template x-for="sp in specialityOptions(s.id)" :key="sp.id">
+                <button type="button" class="chip" :aria-pressed="specialityPicked(s.id, sp.id).toString()" @click="toggleSpeciality(s.id, sp.id)" x-text="tr(sp.name) || sp.slug"></button>
+              </template>
+            </div>
+          </div>
+        </div>
+      </template>
+      <p class="empty" x-show="!skills.length" x-cloak style="padding-inline:var(--s6)">{{ __('Add your first skill to create its tab and sections.') }}</p>
+    </div>
+  </section>
+
+  {{-- ═══ Sections — the blocks on each tab (app feature; built from the
+       prototype's own section-row pattern: name → content, Move to, Visible). ═══ --}}
+  <section class="sec panel" id="sections" :class="{ changed: dirty.sections }">
+    <div class="phead">
+      <div class="ptitle"><div class="hrow"><h2 class="h3x">{{ __('Sections') }}</h2><span class="dirty" x-show="dirty.sections" x-cloak>{{ __('Unsaved') }}</span></div>
+        <p class="pdesc">{{ __('What shows on each tab of your profile. Choose a section to fill it in, drag to reorder, or switch it off to hide it. Hidden sections keep their content.') }}</p></div>
+    </div>
+    <div class="pbody">
+      <div class="place" x-show="blocksInScope(null).length" style="margin-top:0">
+        <span class="lbl" style="margin:0">{{ __('Show profile-wide sections') }}</span>
+        <div class="seg" role="group" aria-label="{{ __('Show profile-wide sections') }}">
+          <button type="button" :aria-pressed="(universalPosition === 0).toString()" @click="setPlace(false)">{{ __('Before your work') }}</button>
+          <button type="button" :aria-pressed="(universalPosition > 0).toString()" @click="setPlace(true)">{{ __('After your work') }}</button>
+        </div>
+      </div>
+      <template x-for="g in scopeGroups" :key="g.key">
+        <div class="group">
+          <h3><button type="button" class="ghead" @click="toggleGroup(g.key)" :aria-expanded="(!!openGroups[g.key]).toString()">
+            <span x-text="g.label"></span>
+            <span class="meta" x-text="g.typeId === null ? @js(__('Shows on every tab')) : (blocksInScope(g.typeId).length === 1 ? @js(__('1 section')) : @js(__(':n sections')).replace(':n', blocksInScope(g.typeId).length))"></span>
+            <svg class="icon" aria-hidden="true"><use href="#i-chev"/></svg>
+          </button></h3>
+          <ul class="rows" x-show="openGroups[g.key]" :class="{ 'drop-ok': dropOn === g.key && !dropDeny, 'drop-no': dropOn === g.key && dropDeny }"
+              @dragover.prevent="groupOver(g)" @dragleave.self="dropOn = null" @drop.prevent="groupDrop(g)">
+            <template x-for="b in blocksInScope(g.typeId)" :key="b.id">
+              <li class="row" :class="{ off: !b.is_visible, dragging: dragBlock === b.id }" @drop.prevent.stop="rowDrop(b)">
+                <span class="rname">
+                  <button type="button" class="grip" draggable="true" @dragstart="rowStart($event, b)" @dragend="rowEnd()"
+                          :aria-label="@js(__('Drag to reorder :name')).replace(':name', blockName(b))"><svg class="icon" aria-hidden="true"><use href="#i-grip"/></svg></button>
+                  <template x-if="hasContentEditor(b)">
+                    <a class="name" :href="contentUrl(b)"><span x-text="blockName(b)"></span><svg class="icon" aria-hidden="true"><use href="#i-pen"/></svg></a>
+                  </template>
+                  <template x-if="!hasContentEditor(b)">
+                    <span class="name" x-text="blockName(b)"></span>
+                  </template>
+                  <span class="tag tag-hidden" x-show="!b.is_visible">{{ __('Hidden') }}</span>
+                </span>
+                <span class="rmeta">
+                  <select class="sel" x-show="moveTargets(b).length" @change="moveBlock(b, $event.target.value); $event.target.value = ''"
+                          :aria-label="@js(__('Move :name to another tab')).replace(':name', blockName(b))">
+                    <option value="">{{ __('Move to…') }}</option>
+                    <template x-for="t in moveTargets(b)" :key="t.key"><option :value="t.typeId === null ? 'u' : t.typeId" x-text="t.label"></option></template>
+                  </select>
+                </span>
+                <button type="button" class="switch" role="switch" :aria-checked="b.is_visible.toString()" @click="toggleVisible(b)"
+                        :aria-label="@js(__('Show :name on your profile')).replace(':name', blockName(b))"><i></i></button>
+              </li>
+            </template>
+            <li class="empty" x-show="!blocksInScope(g.typeId).length" x-text="g.isNew ? @js(__('Its sections appear once you save.')) : @js(__('No sections here. Drag one in, or use Move to.'))"></li>
+          </ul>
+        </div>
+      </template>
+    </div>
+  </section>
+
+  {{-- ═══ Willing to explore ═══ --}}
+  <section class="sec panel" id="explore" :class="{ 'is-off': uniBlock('interests') && !uniBlock('interests').is_visible, changed: dirty.explore }">
+    <div class="phead">
+      <div class="ptitle"><div class="hrow"><h2 class="h3x">{{ __('Willing to explore') }}</h2><span class="tag tag-hidden hidtag" x-show="uniBlock('interests') && !uniBlock('interests').is_visible" x-cloak>{{ __('Hidden from your profile') }}</span><span class="dirty" x-show="dirty.explore" x-cloak>{{ __('Unsaved') }}</span></div>
+        <p class="pdesc">{{ __('Skills you\'d like to be asked about, even ones you don\'t hold yet. Up to six.') }}</p></div>
+      <template x-if="uniBlock('interests')">
+        <label class="showsw"><span>{{ __('Show on profile') }}</span><button type="button" class="switch" role="switch" :aria-checked="uniBlock('interests').is_visible.toString()" @click="toggleVisible(uniBlock('interests'))" aria-label="{{ __('Show on profile') }}: {{ __('Willing to explore') }}"><i></i></button></label>
+      </template>
+    </div>
+    <div class="pbody" id="body-explore">
+      <div class="pin-card">
+        <ul class="wte" id="wte">
+          <template x-for="(w, i) in interests" :key="w.id">
+            <li>
+              <div><span class="lbl" :id="'wl-' + i">{{ __('Skill') }}</span><button type="button" class="sel pickbtn" @click="pickInterestSkill(w)" aria-haspopup="dialog" :aria-labelledby="'wl-' + i + ' wp-' + i"><span :id="'wp-' + i" x-text="allSkillName(w.talent_type_id)"></span><svg class="icon" aria-hidden="true"><use href="#i-search"/></svg></button></div>
+              <label><span class="lbl"><span>{{ __('Speciality') }}</span><small>{{ __('Optional') }}</small></span>
+                <select class="sel" @change="w.speciality_id = $event.target.value ? Number($event.target.value) : null">
+                  <option value="">{{ __('Any speciality') }}</option>
+                  <template x-for="sp in skillSpecs(w.talent_type_id)" :key="sp.id"><option :value="sp.id" :selected="sp.id === w.speciality_id" x-text="sp.name"></option></template>
+                </select></label>
+              <button type="button" class="iconbtn" @click="removeInterest(w)" aria-label="{{ __('Remove this entry') }}" style="margin-top:34px"><svg class="icon" aria-hidden="true"><use href="#i-trash"/></svg></button>
+              <label class="note"><span class="lbl"><span>{{ __('Note') }}</span><small x-text="(w.note || '').length + ' / 160'"></small></span>
+                <input class="in" maxlength="160" x-model="w.note" placeholder="{{ __('What you\'d like to try, in a line') }}"></label>
+            </li>
+          </template>
+        </ul>
+        <button class="btn btn-2" type="button" @click="addInterest()" :disabled="interests.length >= 6" style="margin-top:var(--s4)"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg><span>{{ __('Add another') }}</span></button>
+      </div>
+    </div>
+  </section>
+
+  {{-- ═══ Experience — the talent's brand collabs (the app has no roles model;
+       see the report). Read here, edited on the profile-content page. ═══ --}}
+  <section class="sec panel" id="brands" :class="{ 'is-off': uniBlock('brand_collabs') && !uniBlock('brand_collabs').is_visible, changed: dirty.brands }">
+    <div class="phead">
+      <div class="ptitle"><div class="hrow"><h2 class="h3x">{{ __('Experience') }}</h2><span class="tag tag-hidden hidtag" x-show="uniBlock('brand_collabs') && !uniBlock('brand_collabs').is_visible" x-cloak>{{ __('Hidden from your profile') }}</span><span class="dirty" x-show="dirty.brands" x-cloak>{{ __('Unsaved') }}</span></div>
+        <p class="pdesc">{{ __('Brands you\'ve worked with, with the project and year. It shows on your profile after your work.') }}</p></div>
+      <template x-if="uniBlock('brand_collabs')">
+        <label class="showsw"><span>{{ __('Show on profile') }}</span><button type="button" class="switch" role="switch" :aria-checked="uniBlock('brand_collabs').is_visible.toString()" @click="toggleVisible(uniBlock('brand_collabs'))" aria-label="{{ __('Show on profile') }}: {{ __('Experience') }}"><i></i></button></label>
+      </template>
+      <a class="btn btn-2" href="{{ $brandsUrl }}"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg><span>{{ __('Add brand') }}</span></a>
+    </div>
+    <div class="pbody" id="body-brands">
+      <div id="exp">
+        <ol class="xp" x-show="collabs.length">
+          <template x-for="c in collabs" :key="c.id">
+            <li class="xp-g one">
+              <span class="xp-logo" aria-hidden="true"><template x-if="c.logo"><img :src="c.logo" alt=""></template><template x-if="!c.logo"><span x-text="initialsOf(c.name)"></span></template></span>
+              <div class="xp-b"><div class="xp-top"><div>
+                <h3 class="xp-t" x-text="c.name"></h3>
+                <p class="xp-m" x-show="c.project" x-text="c.project"></p>
+                <p class="xp-d" x-show="c.year" x-text="c.year"></p>
+              </div><a class="iconbtn plain xp-ed" href="{{ $brandsUrl }}" :aria-label="@js(__('Edit :name')).replace(':name', c.name)"><svg class="icon" aria-hidden="true"><use href="#i-pen"/></svg></a></div></div>
+            </li>
+          </template>
+        </ol>
+        <p class="empty" x-show="!collabs.length">{{ __('Nothing here yet. Add the companies and brands you\'ve worked with.') }}</p>
+      </div>
+    </div>
+  </section>
+
+  {{-- ═══ Pricing rate (ADR-N; hidden in V1 — no prototype design, same panel pattern) ═══ --}}
+  @feature('pricing')
+  <section class="sec panel" id="pricing" :class="{ changed: dirty.pricing }">
+    <div class="phead">
+      <div class="ptitle"><div class="hrow"><h2 class="h3x">{{ __('Pricing rate') }}</h2><span class="dirty" x-show="dirty.pricing" x-cloak>{{ __('Unsaved') }}</span></div>
+        <p class="pdesc">{{ __('An indicative rate shown on your profile. Fill all three, or leave them blank to hide it.') }}</p></div>
+    </div>
+    <div class="pbody">
+      <div class="three">
+        <label class="f" :class="{ bad: rateErrors.rate_amount }"><span>{{ __('Amount') }}</span><input class="in" type="number" min="0" step="0.01" x-model="rate.rate_amount"><p class="help err" x-show="rateErrors.rate_amount" x-cloak x-text="rateErrors.rate_amount?.[0]"></p></label>
+        <label class="f" :class="{ bad: rateErrors.rate_currency }"><span>{{ __('Currency') }}</span><input class="in" maxlength="3" placeholder="EGP" x-model="rate.rate_currency"><p class="help err" x-show="rateErrors.rate_currency" x-cloak x-text="rateErrors.rate_currency?.[0]"></p></label>
+        <label class="f" :class="{ bad: rateErrors.rate_unit }"><span>{{ __('Per') }}</span>
+          <select class="sel" x-model="rate.rate_unit"><option value="">{{ __('Choose…') }}</option><option value="project">{{ __('Project') }}</option><option value="day">{{ __('Day') }}</option><option value="hour">{{ __('Hour') }}</option></select>
+          <p class="help err" x-show="rateErrors.rate_unit" x-cloak x-text="rateErrors.rate_unit?.[0]"></p></label>
+      </div>
+      <div class="pdone"><button type="button" class="btn btn-text" @click="rate = { rate_unit: '', rate_amount: '', rate_currency: '' }">{{ __('Clear rate') }}</button></div>
+    </div>
+  </section>
+  @endfeature
+
+</div>
+</main>
+
+<div class="savebar" id="savebar" :class="{ dirty: dirtyCount > 0, bad: dirtyCount > 0 && badField }">
+  <div class="in-bar">
+    <p class="msg" role="status" aria-live="polite"><span class="dot" aria-hidden="true"></span><span><span x-text="sbTitle">{{ __('All changes saved') }}</span><small x-text="sbNote">{{ __('Your profile is up to date.') }}</small></span></p>
+    <div class="acts" x-show="dirtyCount > 0" x-cloak>
+      <button type="button" class="btn btn-2" @click="discardAll()">{{ __('Discard') }}</button>
+      <button type="button" class="btn btn-save" @click="saveAll()" :disabled="saving" x-text="saving ? @js(__('Saving…')) : @js(__('Save changes'))">{{ __('Save changes') }}</button>
+    </div>
+  </div>
+</div>
+
+{{-- One skill picker for the page: add a skill, or choose one to explore. --}}
+<dialog id="dlgAdd" x-ref="dlgAdd" @close="picker.resolve && closePicker(null)">
+  <form method="dialog" class="dlg" @submit.prevent="closePicker(currentPick)">
+    <h2 x-text="picker.title"></h2>
+    <p x-text="picker.help"></p>
+    <input class="in" type="search" style="margin-top:var(--s4)" placeholder="{{ __('Search skills or specialities') }}" x-ref="pickSearch" x-model="picker.q">
+    <ul class="picklist">
+      <template x-for="o in pickerList" :key="o.id">
+        <li><label><input type="radio" name="newskill" :value="o.id" :checked="o.id === currentPick" @change="picker.current = o.id"><span><span x-text="o.name"></span><small class="via" x-show="o.via" x-text="o.via"></small></span></label></li>
+      </template>
+      <li class="empty" style="padding:var(--s4)" x-show="!pickerList.length">{{ __('No skill matches that. Try another word.') }}</li>
+    </ul>
+    <div class="acts">
+      <button type="button" class="btn btn-2" @click="closePicker(null)">{{ __('Cancel') }}</button>
+      <button type="submit" class="btn" :disabled="!pickerList.length" x-text="picker.ok"></button>
+    </div>
+  </form>
+</dialog>
+</div>
+
+    <x-slot:scripts>
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                var hero = document.querySelector('.hero.soft');
+                if (hero && window.famaStar) window.famaStar(hero, hero.querySelector('.body'), @js(asset('fama-ui/img/banners/profile-structure.jpg')), { text: 470 });
+            });
+        </script>
+    </x-slot:scripts>
+</x-fama.layout>

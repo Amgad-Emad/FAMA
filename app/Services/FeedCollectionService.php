@@ -54,6 +54,57 @@ class FeedCollectionService extends Service
     }
 
     /**
+     * Load the rest of the canonical post-card graph onto a collection page
+     * (fama-ui Activity renders full cards): project, mentions, link chips and
+     * the viewer's like + save state — constrained eager loads, no per-row
+     * queries.
+     *
+     * @param  LengthAwarePaginator<int, Post>  $posts
+     */
+    public function withCardGraph(LengthAwarePaginator $posts, Actor $viewer): void
+    {
+        // An empty collection page is a plain Support collection — wrap the
+        // items so eager loading works either way (same model instances).
+        (new \Illuminate\Database\Eloquent\Collection($posts->items()))->load([
+            'project.media',
+            'mentions.mentioned',
+            'linkedUrls.preview',
+            'viewerLike' => fn ($query) => $query
+                ->where('liker_type', $viewer->getMorphClass())
+                ->where('liker_id', $viewer->getKey()),
+            'viewerBookmark' => fn ($query) => $query
+                ->where('bookmarker_type', $viewer->getMorphClass())
+                ->where('bookmarker_id', $viewer->getKey()),
+        ]);
+    }
+
+    /**
+     * How many published posts the actor has saved and liked (the Activity
+     * tab counts) — one count query each.
+     *
+     * @return array{saved: int, liked: int}
+     */
+    public function counts(Actor $actor): array
+    {
+        $published = Post::query()->published()->select('posts.id');
+
+        return [
+            'saved' => Bookmark::query()
+                ->where('bookmarker_type', $actor->getMorphClass())
+                ->where('bookmarker_id', $actor->getKey())
+                ->where('bookmarkable_type', 'post')
+                ->whereIn('bookmarkable_id', $published)
+                ->count(),
+            'liked' => Like::query()
+                ->where('liker_type', $actor->getMorphClass())
+                ->where('liker_id', $actor->getKey())
+                ->where('likeable_type', 'post')
+                ->whereIn('likeable_id', $published)
+                ->count(),
+        ];
+    }
+
+    /**
      * Hydrate an interaction-ordered ID list with filters, keeping the order.
      *
      * @param  list<int>  $ids

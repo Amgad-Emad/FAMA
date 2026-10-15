@@ -1,77 +1,113 @@
-<x-talent-layout :title="__('Profile content')">
-    {{-- Section switcher — the profile's own sections (ADR-Q/ADR-R): the
-         profile-wide scope plus one per skill. Picking one opens ALL of that
-         section's content blocks, stacked down the page in block order. --}}
-    <nav class="mb-8" aria-label="{{ __('Profile sections') }}">
-        <p class="mb-3 font-mono text-[11px] uppercase tracking-wider text-subtle">{{ __('Sections') }} · {{ __('Pick one to edit its blocks') }}</p>
-        <div class="flex flex-wrap gap-2">
-            @foreach ($sections as $section)
-                @php $isActive = $section['key'] === $active; @endphp
-                <a href="{{ route('talent.content', ['section' => $section['key']]) }}"
-                   @if ($isActive) aria-current="page" @endif
-                   @class([
-                       'group inline-flex items-center gap-2.5 rounded-pill px-5 py-2.5 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg',
-                       'bg-accent text-on-accent shadow-sm' => $isActive,
-                       'border border-line bg-elevated text-ink hover:border-line-strong hover:shadow-sm' => ! $isActive,
-                   ])>
-                    @if ($section['icon'])
-                        <x-skill-icon :icon="$section['icon']" class="h-4 w-4 shrink-0" />
-                    @else
-                        <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18-2.5-2.7-2.5-15.3 0-18z"/></svg>
-                    @endif
-                    <span>{{ $section['label'] }}</span>
-                    @if ($section['is_primary'])
-                        <span @class([
-                            'rounded-pill px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider',
-                            'bg-on-accent/20 text-on-accent' => $isActive,
-                            'bg-accent-weak text-accent-ink' => ! $isActive,
-                        ])>{{ __('Primary') }}</span>
-                    @endif
-                    <span @class([
-                        'grid h-5 min-w-5 place-items-center rounded-pill px-1.5 font-mono text-[10px]',
-                        'bg-on-accent/20 text-on-accent' => $isActive,
-                        'bg-surface text-muted' => ! $isActive,
-                    ])>{{ $section['count'] }}</span>
-                </a>
-            @endforeach
-        </div>
-    </nav>
+{{--
+    Profile content (GET /talent/content/{section?}) — the fama-ui
+    "profile-content.html" screen. One row of section buttons (the profile's own
+    sections: Profile-wide, then each skill, in the talent's order); all of a
+    section's blocks stack below. Switching section swaps the blocks in place
+    (`contentTabs` fetches the section's page and replaces #blocks — no reload).
+    Each block's items: `contentBlock` (resources/js/ui/profile.js) on the
+    existing CRUD endpoints. Reviews show only while features.reviews is on.
+--}}
+@php
+    $desc = [
+        'gallery' => __('Photos, videos and embeds. Drag to reorder; select one to edit its caption.'),
+        'look_types' => __('Each look is a named set of images.'),
+        'digitals' => __('Plain, unretouched shots so people see you as you are now.'),
+        'showreel' => __('Your reel, from YouTube, Vimeo or an upload.'),
+        'equipment' => __('The kit you work with.'),
+        'software_stack' => __('The tools you work in.'),
+        'brand_collabs' => __('Brands you\'ve worked with, with the project and year.'),
+        'reviews' => __('Written by clients. Our team approves each one before it shows on your profile.'),
+        'recognitions' => __('Peers vouching for you. Each is approved before it shows.'),
+    ];
+    $labels = [
+        'caption' => __('Caption'), 'media_type' => __('Type'), 'embed_url' => __('Embed link'),
+        'name' => __('Name'), 'shot_type' => __('Shot type'), 'captured_at' => __('Date taken'),
+        'title' => __('Title'), 'video_url' => __('Video link'), 'platform' => __('Platform'), 'duration_seconds' => __('Length (seconds)'),
+        'category' => __('Category'), 'brand' => __('Brand'), 'model' => __('Model'), 'notes' => __('Notes'),
+        'software_name' => __('Name'), 'proficiency' => __('Level'),
+        'brand_name' => __('Brand name'), 'project_title' => __('Project title'), 'year' => __('Year'), 'url' => __('Link'),
+    ];
+    $options = [
+        'image' => __('Image'), 'video' => __('Video'), 'embed' => __('Embed'),
+        'front' => __('Front'), 'side' => __('Side'), 'back' => __('Back'), 'full' => __('Full'), 'headshot' => __('Headshot'), 'smile' => __('Smile'),
+        'youtube' => 'YouTube', 'vimeo' => 'Vimeo', 'self_hosted' => __('Uploaded'),
+        'camera' => __('Camera'), 'lens' => __('Lens'), 'lighting' => __('Lighting'), 'audio' => __('Audio'), 'grip' => __('Grip'), 'drone' => __('Drone'), 'accessory' => __('Accessory'),
+        'beginner' => __('Beginner'), 'intermediate' => __('Intermediate'), 'advanced' => __('Advanced'), 'expert' => __('Expert'),
+    ];
+    $strings = [
+        'savedT' => __(':name saved'), 'deleted' => __(':name deleted'),
+        'delTitle' => __('Delete :name?'), 'delHelp' => __('It comes off your profile.'), 'delOk' => __('Delete'),
+        'options' => $options,
+    ];
+    $reviewsOn = \App\Support\Features::enabled('reviews');
+    $panels = array_values(array_filter($panels, fn ($p) => $reviewsOn || $p['kind'] !== 'reviews'));
+@endphp
 
-    {{-- Every block of the active section, stacked. --}}
-    <div class="space-y-8">
-        @forelse ($panels as $panel)
-            <section id="block-{{ $panel['type'] }}" class="rounded-xl border border-line bg-surface p-5 sm:p-6">
-                <header class="mb-5 flex flex-wrap items-center gap-3 border-b border-line pb-4">
-                    <div class="min-w-0 flex-1">
-                        <div class="font-mono text-[10px] uppercase tracking-wider text-subtle">{{ $activeLabel }}</div>
-                        <h3 class="truncate text-lg font-semibold text-ink">{{ $panel['title'] }}</h3>
-                    </div>
-                    @unless ($panel['is_visible'])
-                        <span class="rounded-pill border border-line px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider text-muted">{{ __('Hidden on your profile') }}</span>
-                    @endunless
-                </header>
+<x-fama.layout :title="__('Profile content')" mode="talent">
+    <x-slot:styles>
+        <link rel="stylesheet" href="{{ asset('fama-ui/css/pages/profile-content.css') }}?v=1">
+    </x-slot:styles>
 
-                @if ($panel['kind'] === 'reviews')
-                    <p class="mb-4 text-sm text-muted">{{ __('Reviews are written by clients and moderated by Fama — you can read and filter them here.') }}</p>
-                    @include('talent.partials.reviews-list')
-                @elseif ($panel['kind'] === 'link')
-                    {{-- A block authored on its own page (projects — ADR-X): a signpost, not a second editor. --}}
-                    <div class="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-line bg-elevated p-5">
-                        <p class="max-w-xl text-sm text-muted">{{ $panel['blurb'] }}</p>
-                        <x-ui.button variant="accent" :href="$panel['url']">
-                            {{ $panel['cta'] }}
-                            <svg class="h-4 w-4 rtl:-scale-x-100" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg>
-                        </x-ui.button>
-                    </div>
-                @else
-                    @include('talent.partials.content-editor', ['type' => $panel['type'], 'config' => $panel['config']])
-                @endif
-            </section>
-        @empty
-            <p class="rounded-xl border border-line bg-surface p-8 text-center text-sm text-subtle">
-                {{ __('This section has no content blocks yet.') }}
-                <a href="{{ route('talent.profile.edit') }}" class="text-accent hover:underline">{{ __('Manage your blocks') }}</a>
-            </p>
-        @endforelse
+    <x-slot:hero>
+        <x-fama.hero :label="__('Fill in your profile')" :title="__('Profile content')"
+                     :lead="__('The parts of your profile around your projects: recognitions, brands and what you’d like to explore.')">
+            <a class="fx-hbtn light" href="{{ route('talent.profile.edit') }}#sections">{{ __('Show or hide sections') }}</a>
+        </x-fama.hero>
+    </x-slot:hero>
+
+<main class="wrap" x-data="contentTabs()">
+  @if (count($sections) > 1)
+    <div class="tabs" role="tablist" id="tabs" aria-label="{{ __('Profile sections') }}" @keydown.arrow-right.prevent="step(1)" @keydown.arrow-left.prevent="step(-1)">
+      @foreach ($sections as $section)
+        <button type="button" role="tab" data-url="{{ route('talent.content', ['section' => $section['key']]) }}" data-s="{{ $section['key'] }}"
+                aria-selected="{{ $section['key'] === $active ? 'true' : 'false' }}" @click="open($el)">{{ $section['label'] }}<span class="n">{{ $section['count'] }}</span></button>
+      @endforeach
     </div>
-</x-talent-layout>
+  @endif
+  <p class="meta tabhint" id="tabhint">{{ __('Every change saves in place.') }}</p>
+
+  <div id="blocks" role="tabpanel" x-ref="blocks" :aria-busy="loading.toString()" :style="loading ? 'opacity:.55' : ''">
+    @forelse ($panels as $panel)
+      @php
+        $isOn = $panel['is_visible'];
+        $help = $isOn ? ($panel['kind'] === 'link' ? $panel['blurb'] : ($desc[$panel['type']] ?? '')) : __('Hidden from your profile. It keeps its content, and you can show it again in Profile structure.');
+      @endphp
+      <section class="block{{ $isOn ? '' : ' off' }}" id="block-{{ $panel['type'] }}" data-b="{{ $panel['type'] }}" aria-label="{{ $panel['title'] }}"
+        @if ($panel['kind'] === 'content')
+          x-data="contentBlock({ endpoint: @js('/talent/content/'.$panel['type']), blank: @js(collect($panel['config']['fields'])->mapWithKeys(fn ($f) => [$f['name'] => $f['kind'] === 'translatable' ? ['en' => '', 'ar' => ''] : ''])->put('position', null)->all()), fields: @js($panel['config']['fields']), media: @js($panel['config']['media']), label: @js($panel['title']), strings: @js($strings + ['labels' => $labels + ($panel['type'] === 'look_types' ? ['name' => __('Look name')] : [])]) })"
+        @endif>
+        <div class="bhead"><h2 class="h2">{{ $panel['title'] }}</h2>@unless ($isOn)<span class="tag tag-hidden">{{ __('Hidden') }}</span>@endunless
+          <span class="acts">
+            @if ($panel['kind'] === 'reviews')
+              <a class="link" href="{{ route('talent.reviews') }}">{{ __('All reviews') }}<svg class="icon flip" style="width:16px;height:16px" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+            @elseif ($panel['kind'] === 'content' && $panel['type'] !== 'gallery')
+              <button type="button" class="btn btn-2" x-show="editing === null" @click="startAdd()"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>{{ __('Add') }}</button>
+            @endif
+          </span></div>
+        <p class="bdesc">{{ $help }}</p>
+
+        @if ($panel['kind'] === 'reviews')
+          @include('talent.partials.reviews-list')
+        @elseif ($panel['kind'] === 'recognitions')
+          @if (count($panel['items']))
+            <ul class="revs">
+              @foreach ($panel['items'] as $rec)
+                <li class="rev rec"><div class="top"><span @class(['pill', 'p-live' => $rec['status'] === 'approved', 'p-bad' => $rec['status'] === 'rejected', 'p-off' => ! in_array($rec['status'], ['approved', 'rejected'], true)])>{{ __(ucfirst($rec['status'])) }}</span></div>
+                  <q style="margin-top:var(--s3)">{{ $rec['body'] }}</q><p class="who">— {{ $rec['who'] }}</p></li>
+              @endforeach
+            </ul>
+          @else
+            <p class="none">{{ __('Nothing here yet.') }}</p>
+          @endif
+        @elseif ($panel['kind'] === 'link')
+          <p style="margin-top:var(--s4)"><a class="link" href="{{ $panel['url'] }}">{{ $panel['cta'] }}<svg class="icon flip" aria-hidden="true"><use href="#i-arrow"/></svg></a></p>
+        @else
+          @include('talent.partials.content-editor', ['type' => $panel['type'], 'config' => $panel['config']])
+        @endif
+      </section>
+    @empty
+      <section class="block"><p class="none">{{ __('This section has no content blocks yet.') }} <a class="link" href="{{ route('talent.profile.edit') }}#sections">{{ __('Manage your sections') }}</a></p></section>
+    @endforelse
+  </div>
+</main>
+</x-fama.layout>

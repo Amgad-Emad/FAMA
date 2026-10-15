@@ -39,11 +39,13 @@ class TalentProjectResource extends BaseResource
             'client_name' => $this->client_name,
             'year' => $this->year,
             'url' => $this->url,
-            // Flexible metric map (schema-master) flattened for the editor's rows.
-            'results' => collect($this->results ?? [])
-                ->map(fn ($value, $label) => ['label' => (string) $label, 'value' => (string) $value])
-                ->values()
-                ->all(),
+            // Up to four {label, value, compare} rows, in order.
+            'results' => $this->resultRows(),
+            // Co-ownership: the home owner (whose skills the tags are), and
+            // whether anyone else owns it — delete is refused while they do.
+            'home_owner_id' => (int) $this->talent_id,
+            'is_home' => (int) $this->talent_id === (int) auth('talent')->id(),
+            'has_co_owners' => $this->whenLoaded('ownerCredits', fn () => $this->hasCoOwners(), false),
             'cover_image_url' => $this->cover_image_url,
             // Recorded, not displayed (ADR-AA) — the editor needs it, the public
             // page never renders it.

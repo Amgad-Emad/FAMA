@@ -40,6 +40,8 @@ class DatabaseSeeder extends Seeder
             BrandDemoSeeder::class,
             AdminDemoSeeder::class,
             FeedSeeder::class,
+            // Tops up every fama-ui screen for the demo talent (+ a Private talent).
+            ScreensDemoSeeder::class,
         ]);
     }
 }

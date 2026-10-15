@@ -2,4 +2,5 @@
 
 @section('code', '419')
 @section('title', __("Page expired"))
-@section('message', __("Your session timed out for security. Go back, refresh the page, and try again."))
+@section('heading', __("This page timed out"))
+@section('message', __("For your security, the page expired. Go back, refresh it, and try again. Nothing you saved is lost."))

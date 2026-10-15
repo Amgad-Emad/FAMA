@@ -1,10 +1,7 @@
 <?php
 
-use App\Models\Brand;
-use App\Models\ContractFlow;
 use App\Models\Talent;
 use App\Models\User;
-use App\Services\ContractService;
 use Database\Seeders\BlockTypeSeeder;
 use Database\Seeders\TalentTypeSeeder;
 
@@ -13,24 +10,14 @@ beforeEach(function () {
     $this->seed([TalentTypeSeeder::class, BlockTypeSeeder::class]);
 });
 
-it('shows active contracts with whose-turn on the dashboard home', function () {
+it('folds the dashboard home into Profile structure (the route name stays for login redirects)', function () {
     $talent = Talent::factory()->create();
-    $contracts = app(ContractService::class);
-    $contract = $contracts->initiate([
-        'brand_id' => Brand::factory()->create()->id, 'talent_id' => $talent->id,
-        'title' => 'Autumn campaign shoot', 'initiated_by' => 'brand',
-    ], ContractFlow::factory()->standard()->create());
-    // brand submits the brief → now it's the talent's turn (awaiting_talent).
-    $contracts->advance($contract, ['fields' => ['scope' => 'x', 'dates' => 'y', 'budget' => 'z']], 'brand', $contract->brand);
 
     $this->actingAs($talent, 'talent')->get(route('talent.dashboard'))
-        ->assertOk()
-        ->assertSee('Autumn campaign shoot')
-        ->assertSee('Your turn');
+        ->assertRedirect(route('talent.profile.edit'));
 });
 
 $pages = [
-    'talent.dashboard',
     'talent.profile.edit',
     'talent.reviews',
 ];
@@ -51,6 +38,7 @@ it('redirects guests to login for every dashboard page', function () use ($pages
     }
 
     $this->get(route('talent.content', ['type' => 'gallery']))->assertRedirect(route('login'));
+    $this->get(route('talent.dashboard'))->assertRedirect(route('login'));
 });
 
 it('does not let an admin user reach the talent dashboard', function () {

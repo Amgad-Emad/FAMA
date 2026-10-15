@@ -2,4 +2,5 @@
 
 @section('code', '404')
 @section('title', __("Page not found"))
-@section('message', __("The page you're looking for doesn't exist or has moved."))
+@section('heading', __("This page isn't here"))
+@section('message', __("The link may be old, or the page was moved. Your profile and work are safe."))

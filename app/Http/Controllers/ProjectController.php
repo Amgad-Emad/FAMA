@@ -2,27 +2,64 @@
 
 namespace App\Http\Controllers;
 
+use App\Feed\CurrentActor;
 use App\Models\Project;
 use App\Models\Talent;
+use App\Services\FollowService;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 /**
- * Project detail — `fama.com/{slug}/work/{project}` (talent-spec, public). One
- * projects record expanded. 404 unless the talent is published and the project
- * belongs to them.
+ * Project detail — `fama.com/{slug}/work/{project}` (talent-spec, public; fama-ui
+ * `project.html`). One projects record told as a story. 404 unless the talent is
+ * published and the project belongs to them.
  */
 class ProjectController extends Controller
 {
-    public function show(string $slug, Project $project): View
+    /** How many other projects the "more from" strip shows. */
+    private const MORE = 4;
+
+    /**
+     * Render the project page: the project with its media and public credits,
+     * the owner (with their primary skill for the owner band), up to four other
+     * projects by the same talent, and whether the viewer follows the owner.
+     * `?preview=1` from the owner's editor shows the preview strip.
+     */
+    public function show(Request $request, string $slug, Project $project, CurrentActor $actor, FollowService $follows): View
     {
-        $talent = Talent::query()->where('slug', $slug)->where('is_published', true)->firstOrFail();
+        $talent = Talent::query()->where('slug', $slug)->where('is_published', true)
+            ->with(['media', 'talentTypes'])
+            ->firstOrFail();
 
         abort_unless((int) $project->talent_id === (int) $talent->getKey(), 404);
 
         // Credits render on this page, so the collaborator + skill relations
         // ride along — a credit block is the most N+1-prone thing here.
-        $project->load(['media', 'credits.talent.media', 'credits.talentType']);
+        $project->load(['media', 'talentTypes', 'specialities', 'credits.talent.media', 'credits.talentType', 'ownerCredits.talent']);
+        $project->setRelation('talent', $talent);
 
-        return view('public.project', ['talent' => $talent, 'project' => $project]);
+        // `media` eager-loaded: lead_image_url goes through getFirstMediaUrl,
+        // which loadMissing()s and slips past preventLazyLoading.
+        $more = $talent->projects()
+            ->whereKeyNot($project->getKey())
+            ->with('media')
+            ->orderBy('position')->orderBy('id')
+            ->limit(self::MORE)
+            ->get();
+
+        $viewer = $actor->resolve();
+        // ANY owner (creator or accepted co-owner) gets Edit + the preview strip.
+        $isOwner = $viewer instanceof Talent && $project->isOwnedBy($viewer);
+        $following = ! $isOwner && $viewer !== null && ! ($viewer instanceof Talent && $viewer->is($talent))
+            && ($follows->isFollowing($viewer, collect([$talent]))['talent:'.$talent->getKey()] ?? false);
+
+        return view('public.project', [
+            'talent' => $talent,
+            'project' => $project,
+            'more' => $more,
+            'isOwner' => $isOwner,
+            'following' => $following,
+            'preview' => $isOwner && $request->boolean('preview'),
+        ]);
     }
 }

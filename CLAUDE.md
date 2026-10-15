@@ -1030,3 +1030,66 @@ the button's own table (it floats); dark-mode button rules must stay AFTER the g
 PNG (public/images/email/fama-logo.png — no SVG in Gmail/Outlook); new email copy → lang/ar.json; the admin
 review-delete live preview hand-mirrors emails/review-removed.
 
+FAMA-UI DESIGN ADOPTED (2026-10-12, ADR-AB; suite 787 green; :first-child rules are re-targeted after <template> in app-bridge.css, build green, migrate:fresh --seed exits 0).
+The client's static prototype (`fama-ui`, reference copy in ~/Downloads/fama-ui) IS the UI for talent, feed,
+public profile, auth and error pages. SUPERSEDES the Orchid/Daylight styling notes above for those pages
+(brand/admin/contract surfaces stay on Tailwind app.css).
+- Shell: `<x-fama.layout :title mode="talent|public|auth|bare" :css="['posts',…]">` loads ONLY
+  `public/fama-ui/css/{shell,ds,<extra>}.css` + `app-bridge.css` + `@vite('resources/js/app.js')` — NO app.css,
+  so use prototype classes, never Tailwind utilities, on these pages. Page styles = the prototype's <style>
+  verbatim in `public/fama-ui/css/pages/<page>.css`. Pieces: `components/fama/{nav,hero,footer,icons,
+  confirm-dialog,toast}`, `partials/fama-head` (locale prefix + label maps), `public/fama-ui/js/hero.js` (star
+  photo banner). JS per area in `resources/js/ui/` (shell, feed*, profile*, projects, auth). Error pages are a
+  STANDALONE layout (no Vite/Alpine/DB).
+- WATCH OUTS: (1) ds.css `[hidden]{display:none!important}` beats x-show — never put `hidden` on an x-show
+  element, use `x-cloak`. (2) Alpine CALLS a function-valued expression: bind `x-show="!!fn"`, never a bare
+  function (the toast Undo fired instantly). (3) `$confirm` still works (native `.dlg` on the same store);
+  toasts = `window.famaToast(msg, undoFn)`. (4) The prototype's JS is fake data — never ship it. (5) Visitor-first actions: `window.famaSignedIn` (fama-head)
+  is checked BEFORE any optimistic flip — use `asVisitor(verb, request)` (ui/feed-util) so a guest's button never
+  flashes "Following"/liked before the sign-in dialog (the request still runs so the 401 captures the intent).
+  (6) Tailwind classes (e.g. `hidden`) do nothing on fama-ui pages — an SVG sprite "hidden" that way renders as a
+  300×150 box; hide sprites with width/height 0 + position:absolute. (7) The prototype defines `i-msg` twice: the
+  sprite's `i-msg` is the posts.js chat bubble; preview.html's square-plus is `i-msg-plus`.
+- Talent nav: Feed · Activity · Profile structure · Projects · Credits (+ Preview, bell → `GET /notifications/all`
+  page `notifications.page`). `talent.dashboard` REDIRECTS to `talent.profile.edit` (dashboard view deleted).
+- SITE ROOT: `/` → `/feed` when the viewer's candidate list is non-empty, else login (signed-in → dashboard);
+  `FeedController::home` (2026-10-15, suite 789 green).
+- LOGIN LANDING: a talent login (and talent registration) ALWAYS lands on `talent.profile.edit` — the visitor's
+  pending feed action is still replayed by the Login event, but `feed.return_to` is discarded (copy says "we'll
+  finish it as soon as you're in", never "bring you back"). Brand/admin keep route('dashboard').
+- PRODUCT RULES (stakeholder, must not change): no dashboard; NO PRIMARY SKILL — order = tab order, first opens
+  first, `is_primary` is derived from position 0 by `SkillsService::syncPrimaryFromOrder()` (setPrimary = move
+  to front); Private profiles show NO link (only the status); Profile structure is DRAFT + bottom save bar
+  (Discard has Undo; avatar + publish stay immediate); NO REVIEWS — `features.reviews` (default false) hides
+  them, Recognitions replace them; CO-OWNERS — an accepted on-platform credit = co-owner; any owner edits or
+  leaves (`POST /talent/projects/{project}/leave`; creator exit transfers to the earliest-confirmed co-owner,
+  tags re-homed to the heir's skills); only a SOLE owner deletes (422 otherwise). One home:
+  `Project::isOwnedBy/isSoleOwner/ownerIds` + `ProjectPolicy`; skill tags validate against the HOME owner.
+- Project editor is a PAGE (`talent.projects.new` / `talent.projects.edit`): publish creates, then autosave
+  (700ms). Results = ≤4 `{label,value,compare}` rows (`Project::resultRows()`; migration 2026_10_12_000300).
+  On-platform credits are picked via `/mentions/search`.
+- Feed: ONE card `feed/partials/post` (page 1, /feed/items html[], fragment, Activity); runtime strings via
+  `feed/partials/lang` (`window.famaLang`, `window.famaMe`) — daylight-head is no longer used by the feed;
+  `#SkillTag` → `App\Support\SkillTags`; brands rail removed from the feed. Live /feed is empty in dev when
+  every post is older than the ranking windows (data, not a bug).
+- PASSWORD RESET is per account type (fixed 2026-10-12): `App\Auth\PasswordBrokerResolver` picks the broker
+  from the email (talent → brand [flag] → admin user; `role` hint on the form wins when that account exists);
+  reset links carry `account=talent|brand|user` (ResetPassword::createUrlUsing in AppServiceProvider) and
+  NewPasswordController resets through that broker. Each broker has its OWN token table
+  (`talent_password_reset_tokens`, `brand_password_reset_tokens`, framework `password_reset_tokens` = admins).
+- DEMO DATA: `ScreensDemoSeeder` (last in DatabaseSeeder, idempotent — `php artisan db:seed
+  --class=ScreensDemoSeeder` tops up a live dev DB) fills every screen for talent-demo@fama.test (120 days of
+  views, socials, 3 rich projects with galleries/Results/pending+listed+co-owner credits, 2 credits waiting,
+  6 recognitions incl. pending, mutual follows, saved posts, 9 notifications; its covers/galleries/digitals/
+  post photos are the PROTOTYPE's sample photos from public/fama-ui/img/banners, avatar removed → initials, as in
+  preview.html) + a Private/unverified
+  `talent-new@fama.test` (password `password`) for the gate states. `php artisan demo:freshen` slides feed
+  timestamps forward when the dev feed has aged past the 30-day ranking windows (flushes the cache; refuses in
+  production without --force). WATCH OUT: dev .env uses real SMTP — auth flows send real mail.
+- Profile-content SELECT fields (equipment category, gallery media_type, digital shot_type, showreel platform,
+  software proficiency) are NOT NULL enums with defaults: `BlockContentController::dropBlankSelects()` omits a
+  blank select so create takes the default and edit keeps the stored value (was a 500 — fixed 2026-10-12).
+- KNOWN GAPS (see the 2026-10-12 report): prototype-only features
+  with no backend (41-skill taxonomy, per-skill practice fields, LinkedIn-style experience, repost, project
+  drafts/free-form blocks/video embeds, hiding single credits/recognitions, recognition notifications).
+

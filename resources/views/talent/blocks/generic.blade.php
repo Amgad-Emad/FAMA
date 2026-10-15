@@ -1,14 +1,9 @@
-{{-- Fallback renderer for inline/unmapped block types. --}}
-<x-ui.section :title="$block->title ?: $block->blockType->name">
-    @if (! empty($block->content))
-        <x-ui.card>
-            <div class="space-y-2 text-ink">
-                @foreach ((array) $block->content as $line)
-                    <p class="text-sm">{{ is_scalar($line) ? $line : json_encode($line, JSON_UNESCAPED_UNICODE) }}</p>
-                @endforeach
-            </div>
-        </x-ui.card>
-    @else
-        <x-ui.card class="text-sm text-subtle">{{ __('Coming soon.') }}</x-ui.card>
-    @endif
-</x-ui.section>
+{{-- Fallback for inline / unmapped block types. --}}
+@php $lines = array_filter((array) ($block->content ?? []), fn ($l) => $l !== null && $l !== ''); @endphp
+<x-profile.block :block="$block" :empty="empty($lines)" :is-owner="$isOwner ?? false">
+    <div class="card tight" style="margin-top:var(--s4)">
+        @foreach ($lines as $line)
+            <p>{{ is_scalar($line) ? $line : json_encode($line, JSON_UNESCAPED_UNICODE) }}</p>
+        @endforeach
+    </div>
+</x-profile.block>

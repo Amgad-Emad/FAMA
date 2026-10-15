@@ -11,8 +11,11 @@ use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
 
 /**
- * Skills manager (talent-spec workflow #11). Add/remove skills, mark one primary,
- * reorder. Adding a skill seeds THAT skill's default blocks into its own tab
+ * Skills manager (talent-spec workflow #11). Add/remove skills and reorder.
+ * There is no separately chosen primary skill (fama-ui, 2026-10-12): the ORDER
+ * is the profile's tab order and the first skill opens first. `is_primary` stays
+ * on the pivot for compatibility but is DERIVED — syncPrimaryFromOrder() sets it
+ * on the position-0 skill only, inside every transaction that changes the order. Adding a skill seeds THAT skill's default blocks into its own tab
  * (per-skill, ADR-Q). Removing a skill deletes its tab's blocks but preserves the
  * underlying content (gallery items are un-linked, projects are un-scoped). Skills
  * persist through the `talent_types` catalog (see schema-master).
@@ -22,12 +25,13 @@ class SkillsService extends Service
     public function __construct(private readonly SeedBlocksForSkill $seedBlocksForSkill) {}
 
     /**
-     * Link a skill to the talent, seed its own tab's default blocks, and optionally
-     * make it the primary (the first skill is always primary).
+     * Link a skill to the talent at the END of the order and seed its own tab's
+     * default blocks. `$first` puts it at the front instead (it then opens first).
+     * The derived primary flag is re-synced in the same transaction.
      */
-    public function addType(Talent $talent, TalentType $type, bool $primary = false): void
+    public function addType(Talent $talent, TalentType $type, bool $first = false): void
     {
-        $this->runInTransaction(function () use ($talent, $type, $primary): void {
+        $this->runInTransaction(function () use ($talent, $type, $first): void {
             if ($talent->talentTypes()->whereKey($type->id)->exists()) {
                 throw new InvalidArgumentException("Talent already works as [{$type->slug}].");
             }
@@ -43,9 +47,11 @@ class SkillsService extends Service
             $talent->load('talentTypes');
             ($this->seedBlocksForSkill)($talent, $type);
 
-            if ($primary || $talent->talentTypes()->count() === 1) {
-                $this->setPrimary($talent, $type);
+            if ($first) {
+                $this->moveToFront($talent, $type->id);
             }
+
+            $this->syncPrimaryFromOrder($talent);
         }, ['talent_id' => $talent->id, 'type' => $type->slug]);
     }
 
@@ -87,6 +93,9 @@ class SkillsService extends Service
 
             $talent->talentTypes()->detach($type->id);
 
+            // The next skill in the order now opens first.
+            $this->syncPrimaryFromOrder($talent);
+
             Log::channel('app')->info('Talent removed a skill (content preserved).', [
                 'talent_id' => $talent->id,
                 'talent_type_id' => $type->id,
@@ -98,7 +107,8 @@ class SkillsService extends Service
     }
 
     /**
-     * Make one linked skill the primary (clears the flag on the others).
+     * Kept for compatibility (the route stays): "make primary" now means "move
+     * to the front of the order", and the derived flag follows the order.
      */
     public function setPrimary(Talent $talent, TalentType $type): void
     {
@@ -107,10 +117,8 @@ class SkillsService extends Service
                 throw new InvalidArgumentException("Talent does not work as [{$type->slug}].");
             }
 
-            $talent->talentTypes()->newPivotStatement()
-                ->where('talent_id', $talent->id)->update(['is_primary' => false]);
-
-            $talent->talentTypes()->updateExistingPivot($type->id, ['is_primary' => true]);
+            $this->moveToFront($talent, $type->id);
+            $this->syncPrimaryFromOrder($talent);
         }, ['talent_id' => $talent->id, 'type' => $type->slug]);
     }
 
@@ -131,7 +139,47 @@ class SkillsService extends Service
 
                 $talent->talentTypes()->updateExistingPivot($id, ['position' => $index]);
             }
+
+            $this->syncPrimaryFromOrder($talent);
         }, ['talent_id' => $talent->id]);
+    }
+
+    /**
+     * Derive the primary flag from the order: true on the first skill (lowest
+     * position, ties by id), false on every other. Call inside the transaction
+     * that changed the order.
+     */
+    public function syncPrimaryFromOrder(Talent $talent): void
+    {
+        $pivot = fn () => $talent->talentTypes()->newPivotStatement()->where('talent_id', $talent->id);
+
+        $firstId = $pivot()->orderBy('position')->orderBy('talent_type_id')->value('talent_type_id');
+
+        $pivot()->update(['is_primary' => false]);
+
+        if ($firstId !== null) {
+            $pivot()->where('talent_type_id', $firstId)->update(['is_primary' => true]);
+        }
+    }
+
+    /**
+     * Rewrite the positions 0..n with one skill moved to the front.
+     */
+    private function moveToFront(Talent $talent, int $typeId): void
+    {
+        $order = $talent->talentTypes()->newPivotStatement()
+            ->where('talent_id', $talent->id)
+            ->orderBy('position')->orderBy('talent_type_id')
+            ->pluck('talent_type_id')
+            ->reject(fn ($id) => (int) $id === $typeId)
+            ->prepend($typeId)
+            ->values();
+
+        foreach ($order as $index => $id) {
+            $talent->talentTypes()->newPivotStatement()
+                ->where('talent_id', $talent->id)->where('talent_type_id', $id)
+                ->update(['position' => $index]);
+        }
     }
 
     /**

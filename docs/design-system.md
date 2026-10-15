@@ -1,5 +1,15 @@
 # Design system
 
+> **2026-10-12 — fama-ui is the product UI (ADR-AB).** Talent, feed, public-profile, auth and error pages render
+> through `<x-fama.layout>` and the prototype CSS in `public/fama-ui/css` (shell.css + ds.css tokens: cream
+> `#FBFAF2`, ink `#14110F`, grey `#6B6560`, line `#E6E2D8`, purple `#AD50D3` / purple-dk `#8A2FA8`, yellow
+> `#FFEB73`, lavender `#F3EAF8`; Oswald 600 display + Sofia Sans body; spacing 4·8·12·16·24·32·48·64·104;
+> cards 1px line, radius 20, no shadow; content 1060; breakpoints ≤760 / ≤960). Use the token, not the value.
+> Shell pieces: `components/fama/{layout,nav,hero,footer,icons,confirm-dialog,toast}`; page styles in
+> `public/fama-ui/css/pages/`; behaviour in `resources/js/ui/`. WATCH OUT: ds.css has
+> `[hidden]{display:none!important}` — never pair `hidden` with `x-show` (use `x-cloak`). The two systems
+> below now cover only brand/admin/contract surfaces (core) and legacy feed tokens (Daylight).
+
 Fama runs **two token systems**, both keyed on the same `data-theme` (light/dark) and `dir`
 (LTR/RTL) switches:
 

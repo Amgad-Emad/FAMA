@@ -1,45 +1,25 @@
-{{-- The casting strip (Prompt 5M/5P) — the brand-side discovery rail injected
-     every 6th feed slot: horizontally scrollable notched talent cards
-     (portrait crop, Fraunces name, mono skills), keyboard navigable,
-     RTL-mirrored by logical flow. Talents come from DiscoverTalentsService. --}}
+{{-- "Talent to discover" (fama-ui: the tinted .strip band of swipeable
+     .pp cards between posts, every Nth slot — feed.casting_every). Talents
+     come from DiscoverTalentsService with the viewer's follow-state stamped
+     on. Follow is castingCard (ui/feed.js); a guest gets the sign-in prompt. --}}
 @props(['talents'])
 
 @if ($talents->isNotEmpty())
-    <section class="w-full max-w-[780px]" aria-label="{{ __('Casting — talents to discover') }}">
-        <p class="t-meta mb-3">{{ __('CASTING') }}</p>
-        <div class="flex snap-x gap-4 overflow-x-auto pb-3" role="list">
+    <section class="strip" aria-label="{{ __('Talent to discover') }}">
+        <div class="strip-h"><div><h2 class="h3">{{ __('Talent to discover') }}</h2><p class="why">{{ __('New faces in your skills') }}</p></div></div>
+        <div class="people">
             @foreach ($talents as $talent)
-                <div role="listitem" class="w-44 flex-none snap-start frame-shadow"
-                     x-data="castingCard({ id: {{ $talent->id }}, following: {{ ($talent->followed_by_viewer ?? false) ? 'true' : 'false' }} })">
-                    <div class="frame">
-                        <a href="{{ route('talent.public', ['slug' => $talent->slug]) }}" class="block">
-                            @if ($talent->avatar_url)
-                                <img src="{{ $talent->avatar_url }}" alt="{{ $talent->display_name }}"
-                                     loading="lazy" class="block aspect-[3/4] w-full object-cover">
-                            @else
-                                <div class="flex aspect-[3/4] w-full items-center justify-center bg-ground-sunk">
-                                    <span class="t-display opacity-30">{{ str($talent->display_name)->substr(0, 1) }}</span>
-                                </div>
-                            @endif
-                        </a>
-                        <div class="p-3">
-                            <a href="{{ route('talent.public', ['slug' => $talent->slug]) }}" class="block">
-                                <span class="block truncate" style="font-family: var(--dl-font-display); font-size: 17px;">{{ $talent->display_name }}</span>
-                            </a>
-                            <p class="t-meta mt-1 truncate">
-                                {{ $talent->talentTypes->pluck('name')->implode(' · ') }}
-                            </p>
-                            <div class="mt-2 flex items-center justify-between">
-                                <span class="t-meta tabular-nums">{{ $talent->followers_count }}</span>
-                                <button type="button" class="dl-chip"
-                                        :class="{ 'is-active': following }" :aria-pressed="following ? 'true' : 'false'"
-                                        @click="toggle()"
-                                        x-text="following ? '{{ __('FOLLOWING') }}' : '{{ __('FOLLOW') }}'">
-                                    {{ __('FOLLOW') }}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+                @php
+                    $name = $talent->display_name ?: $talent->slug;
+                    $init = collect(preg_split('/\s+/', trim((string) $name)))->filter()->take(2)->map(fn ($w) => mb_strtoupper(mb_substr($w, 0, 1)))->implode('');
+                @endphp
+                <div class="pp" x-data="castingCard({ id: {{ $talent->id }}, following: {{ ($talent->followed_by_viewer ?? false) ? 'true' : 'false' }} })">
+                    <a class="av md" href="{{ route('talent.public', ['slug' => $talent->slug]) }}" aria-hidden="true" tabindex="-1">@if ($talent->avatar_url)<img src="{{ $talent->avatar_url }}" alt="" loading="lazy">@else{{ $init }}@endif</a>
+                    <a href="{{ route('talent.public', ['slug' => $talent->slug]) }}"><b>{{ $name }}</b></a>
+                    <span class="role">{{ $talent->talentTypes->first()?->name }}</span>
+                    <button type="button" class="btn btn-2" @click="toggle()" :aria-pressed="following.toString()" aria-pressed="{{ ($talent->followed_by_viewer ?? false) ? 'true' : 'false' }}">
+                        <svg class="icon" aria-hidden="true" x-show="!following"><use href="#a-user-plus"/></svg><span x-text="following ? @js(__('Following')) : @js(__('Follow'))">{{ ($talent->followed_by_viewer ?? false) ? __('Following') : __('Follow') }}</span>
+                    </button>
                 </div>
             @endforeach
         </div>

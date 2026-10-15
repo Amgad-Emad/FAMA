@@ -1,0 +1,56 @@
+/* FAMA — the talent's own numbers and the steps to the Creatives Index (assets/js/views.js) */
+.vw{background:var(--white);border:var(--border);border-radius:var(--radius);padding:var(--s6);margin-top:var(--s5)}
+.vw[hidden]{display:none}
+.vw-head{display:flex;justify-content:space-between;align-items:flex-start;gap:var(--s4);flex-wrap:wrap}
+.vw-label{display:block;font-weight:500;font-size:var(--t-label);color:var(--purple-dk)}
+.vw-n{display:block;font-family:var(--font-display);font-weight:600;font-size:var(--t-h1);line-height:1;margin-top:var(--s3)}
+.vw-d{display:block;margin-top:var(--s2);font-size:var(--t-meta);color:var(--grey)}
+.vw-d b{color:var(--ink);font-weight:600}
+.vw-h{font-family:var(--font-display);font-weight:600;font-size:24px;line-height:1.2;margin:var(--s2) 0 0}
+.vw-lead{color:var(--grey);font-size:15px;margin-top:var(--s1);max-width:62ch}
+.vw-only{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--grey);background:var(--cream);border:var(--border);border-radius:var(--radius-pill);padding:4px 12px}
+.vw-only .icon{width:14px;height:14px}
+.vw-sh{display:flex;justify-content:space-between;align-items:center;gap:var(--s4);flex-wrap:wrap;margin-top:var(--s6);padding-top:var(--s5);border-top:var(--border)}
+.vw-sum{font-size:var(--t-meta);color:var(--grey)}
+.vw-seg{display:inline-flex;gap:var(--s1);border:var(--border);border-radius:var(--radius-pill);padding:var(--s1)}
+.vw-seg button{border:0;background:none;border-radius:var(--radius-pill);padding:6px var(--s3);font-size:13px;font-weight:500;color:var(--grey);cursor:pointer;white-space:nowrap;min-height:32px}
+.vw-seg button:hover{color:var(--ink)}
+.vw-seg button[aria-pressed=true]{background:var(--ink);color:var(--cream)}
+.vw-plot{position:relative;margin-top:var(--s5);display:grid;grid-template-columns:auto 1fr;column-gap:var(--s3)}
+.vw-yax{display:flex;flex-direction:column;justify-content:space-between;height:200px;text-align:end;font-size:13px;color:var(--grey);line-height:1;margin-block:-6px}
+.vw-area{position:relative;height:200px}
+.vw-grid{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-between;pointer-events:none}
+.vw-grid i{border-top:1px solid var(--line);display:block}
+.vw-grid i:last-child{border-top-color:var(--grey)}
+.vw-bars{position:absolute;inset:0;display:flex;align-items:flex-end;gap:2px}
+.vw-bars button{flex:1;height:100%;border:0;padding:0;background:none;display:flex;align-items:flex-end;cursor:default}
+.vw-bars button span{display:block;width:100%;background:var(--purple);border-radius:4px 4px 0 0;min-height:2px;transition:background var(--fast) var(--ease)}
+.vw-bars button:hover span,.vw-bars button:focus-visible span{background:var(--purple-dk)}
+.vw-bars button:focus-visible{outline:none}
+.vw-bars button:focus-visible span{outline:2px solid var(--ink);outline-offset:2px}
+.vw-xax{grid-column:2;display:flex;justify-content:space-between;margin-top:var(--s2);font-size:13px;color:var(--grey)}
+.vw-xax span{white-space:nowrap}
+.vw-tip{position:absolute;z-index:2;pointer-events:none;background:var(--ink);color:var(--cream);border-radius:var(--s3);padding:6px var(--s3);font-size:13px;white-space:nowrap;transform:translate(-50%,calc(-100% - 8px));opacity:0;transition:opacity var(--fast)}
+.vw-tip b{font-weight:600}
+.vw-link{display:inline-flex;align-items:center;gap:var(--s1);border:0;background:none;padding:0;min-height:44px;color:var(--purple-dk);font:inherit;font-weight:600;text-decoration:none;cursor:pointer;margin-top:var(--s3)}
+.vw-link .icon{width:16px;height:16px}
+.vw-table{width:100%;border-collapse:collapse;margin-top:var(--s3);font-size:var(--t-meta)}
+.vw-table th,.vw-table td{text-align:start;padding:var(--s2) 0;border-bottom:var(--border)}
+.vw-table th{font-weight:600}
+.vw-todo{list-style:none;margin:var(--s5) 0 0;padding:0;border-top:var(--border)}
+.vw-todo li{display:flex;align-items:center;gap:var(--s4);padding:var(--s3) 0;border-bottom:var(--border)}
+.vw-todo .tick{width:28px;height:28px;border-radius:var(--radius-pill);border:2px solid var(--line);display:flex;align-items:center;justify-content:center;flex:none}
+.vw-todo .ok .tick{background:var(--purple);border-color:var(--purple);color:var(--white)}
+.vw-todo .tick .icon{width:16px;height:16px;stroke-width:2.5}
+.vw-todo .txt{flex:1;min-width:0}
+.vw-todo b{font-weight:600;display:block}
+.vw-todo .ok b{color:var(--grey);font-weight:500}
+.vw-todo p{font-size:var(--t-meta);color:var(--grey)}
+.vw-todo .vw-link{margin-top:0}
+.vw-note{font-size:var(--t-meta);color:var(--grey);margin-top:var(--s4)}
+@media (max-width:760px){
+  .vw{padding:var(--s5)}
+  .vw-seg{display:flex;width:100%}.vw-seg button{flex:1}
+  .vw-yax,.vw-area{height:160px}
+  .vw-xax span:nth-child(2),.vw-xax span:nth-child(4){display:none}
+}

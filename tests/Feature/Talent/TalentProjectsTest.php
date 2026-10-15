@@ -37,7 +37,7 @@ it('renders the Projects page with the talent\'s skills', function () {
     $this->actingAs($talent, 'talent')->get(route('talent.projects'))
         ->assertOk()
         ->assertSee('Projects', false)
-        ->assertSee('talentProjects(', false)
+        ->assertSee('famaProjects(', false)
         ->assertSee('Modeling', false)
         ->assertSee('Photography', false);
 });
@@ -57,7 +57,7 @@ it('creates a project with several skills, mirroring the first onto the home-tab
     ])->assertCreated()
         ->assertJsonPath('data.skill_ids', [$photography->id, $modeling->id])
         ->assertJsonPath('data.talent_type_id', $photography->id)
-        ->assertJsonPath('data.results', [['label' => 'Reach', 'value' => '2.4M']])
+        ->assertJsonPath('data.results', [['label' => 'Reach', 'value' => '2.4M', 'compare' => '']])
         ->json('data.id');
 
     $project = Project::findOrFail($id);
@@ -286,13 +286,47 @@ it('still clears an English translation when the visible input is blanked', func
     expect($project->fresh()->getTranslation('summary', 'en', false))->toBe('');
 });
 
-it('does not render an Arabic title input in the composer (V1)', function () {
+it('does not render an Arabic title input in the editor (V1)', function () {
     [$talent] = projectTalent();
 
-    $this->actingAs($talent, 'talent')->get(route('talent.projects'))
+    $this->actingAs($talent, 'talent')->get(route('talent.projects.new'))
         ->assertOk()
         ->assertDontSee('pc-title-ar', false)
         ->assertDontSee('Title (Arabic)', false)
-        // The cover reads as optional rather than a mandatory-looking dropzone.
-        ->assertSee('Optional', false);
+        // The cover is an invitation ("Add a cover"), never a required field.
+        ->assertSee('Add a cover', false);
+});
+
+it('renders the new-project editor page for a talent', function () {
+    [$talent] = projectTalent();
+
+    $this->actingAs($talent, 'talent')->get(route('talent.projects.new'))
+        ->assertOk()
+        ->assertSee('famaProjectEdit(', false)
+        ->assertSee('Untitled project', false)
+        ->assertSee('Modeling', false);
+});
+
+it('sends a guest away from the new-project page', function () {
+    $this->get(route('talent.projects.new'))->assertRedirect(route('login'));
+});
+
+it('renders the edit page for the owner only', function () {
+    [$talent, $modeling] = projectTalent();
+    $project = Project::factory()->for($talent)->create(['talent_type_id' => $modeling->id, 'title' => ['en' => 'Desert light']]);
+
+    $this->actingAs($talent, 'talent')->get(route('talent.projects.edit', $project))
+        ->assertOk()
+        ->assertSee('famaProjectEdit(', false)
+        ->assertSee('Desert light', false);
+
+    $stranger = Talent::factory()->create();
+    $this->actingAs($stranger, 'talent')->get(route('talent.projects.edit', $project))->assertForbidden();
+});
+
+it('sends a guest away from the edit page', function () {
+    [$talent, $modeling] = projectTalent();
+    $project = Project::factory()->for($talent)->create(['talent_type_id' => $modeling->id]);
+
+    $this->get(route('talent.projects.edit', $project))->assertRedirect(route('login'));
 });

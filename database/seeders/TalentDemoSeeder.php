@@ -146,7 +146,7 @@ class TalentDemoSeeder extends Seeder
                 'client_name' => 'Nomad Coffee Co.', 'occurred_on' => '2025-09-12', 'position' => 0,
                 'role' => ['en' => 'Lead model & stills', 'ar' => 'عارضة رئيسية وتصوير ثابت'],
                 'summary' => ['en' => 'A two-day lifestyle shoot introducing the autumn menu across three Cairo locations.', 'ar' => 'تصوير لايف ستايل على مدار يومين لتقديم قائمة الخريف في ثلاثة مواقع بالقاهرة.'],
-                'results' => ['Reach' => '2.4M', 'Engagement' => '+38%', 'Assets' => '60+'],
+                'results' => [['label' => 'Reach', 'value' => '2.4M', 'compare' => ''], ['label' => 'Engagement', 'value' => '+38%', 'compare' => 'vs last campaign'], ['label' => 'Assets', 'value' => '60+', 'compare' => '']],
             ]);
             Project::factory()->for($talent)->create([
                 'talent_type_id' => $photographer->id,
@@ -154,7 +154,7 @@ class TalentDemoSeeder extends Seeder
                 'client_name' => 'Nefertari Cosmetics', 'occurred_on' => '2026-02-24', 'position' => 1,
                 'role' => ['en' => 'Beauty model', 'ar' => 'عارضة جمال'],
                 'summary' => ['en' => 'Studio beauty campaign for the spring colour range.', 'ar' => 'حملة جمال في الاستوديو لمجموعة ألوان الربيع.'],
-                'results' => ['Reach' => '1.1M', 'Stores' => '40'],
+                'results' => [['label' => 'Reach', 'value' => '1.1M', 'compare' => ''], ['label' => 'Stores', 'value' => '40', 'compare' => '']],
             ]);
 
             // Brand collaborations.

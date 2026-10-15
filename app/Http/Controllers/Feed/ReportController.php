@@ -6,6 +6,7 @@ use App\Http\Requests\Feed\StoreReportRequest;
 use App\Models\Comment;
 use App\Models\Post;
 use App\Models\PostReport;
+use App\Services\FeedModerationService;
 use Illuminate\Http\JsonResponse;
 
 /**
@@ -52,7 +53,7 @@ class ReportController extends FeedBaseController
 
         // The auto-hide tripwire (5Q): enough open reports hide the item
         // pending review.
-        app(\App\Services\FeedModerationService::class)->registerReport($reportable);
+        app(FeedModerationService::class)->registerReport($reportable);
 
         return response()->success(message: __('Thanks — our team will take a look.'), status: 201);
     }

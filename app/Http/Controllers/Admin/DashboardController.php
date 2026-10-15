@@ -8,6 +8,7 @@ use App\Models\BrandReview;
 use App\Models\Contract;
 use App\Models\Review;
 use App\Models\Talent;
+use App\Support\Features;
 use Illuminate\View\View;
 use Spatie\Activitylog\Models\Activity;
 
@@ -34,7 +35,7 @@ class DashboardController extends AdminController
             ];
 
             // Brand-owned counts only when the brands feature is enabled (V1 off).
-            if (\App\Support\Features::brands()) {
+            if (Features::brands()) {
                 $stats['moderation']['pending_brand_reviews'] = BrandReview::where('status', 'pending')->count();
                 $stats['moderation']['unverified_brands'] = Brand::where('is_verified', false)->count();
 
@@ -48,7 +49,7 @@ class DashboardController extends AdminController
             }
         }
 
-        if (\App\Support\Features::contracts() && $admin->can('intervene-contracts')) {
+        if (Features::contracts() && $admin->can('intervene-contracts')) {
             $turns = Contract::toBase()
                 ->whereIn('status', ['awaiting_brand', 'awaiting_talent', 'awaiting_admin'])
                 ->groupBy('status')->selectRaw('status, count(*) as n')->pluck('n', 'status');

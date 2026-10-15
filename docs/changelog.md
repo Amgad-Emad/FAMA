@@ -2,6 +2,50 @@
 
 Notable changes to the Fama project. Newest first.
 
+## 2026-10-15 — Site root
+- `/` (route `home`) no longer shows the Laravel welcome page: it redirects to `/feed` when the viewer's frozen
+  candidate list has posts, otherwise to login (a signed-in viewer goes to `route('dashboard')`).
+  `FeedController::home`.
+
+## 2026-10-12 — Guest feed + login landing polish
+- Guest feed identical to the prototype: the link-chip glyph sprite no longer renders as a 300×150 box (it used
+  Tailwind's `hidden`); `i-msg` is the posts.js chat bubble; every prototype `:first-child` rule is re-targeted to
+  the first element after Alpine's `<template>` (app-bridge.css) — no stray dividers above first rows.
+- Visitor-first actions: follow/like/save/comment-like check `window.famaSignedIn` BEFORE flipping (`asVisitor`).
+- Talent login/registration always land on Profile structure; the visitor's pending action is still replayed.
+- Demo talent uses the prototype's sample photos (covers, galleries, digitals, post photos; initials avatar).
+
+## 2026-10-12 — Talent password reset, blank-select 500 fixed + demo data for every screen
+- Password reset resolves the broker from the account (`App\Auth\PasswordBrokerResolver`): talents (and brands
+  when enabled) can reset — previously only admin `users` could. Links carry `account=`; per-broker token tables
+  (migration `2026_10_12_000400`).
+- Friendly auth copy (fama-ui): failed login → "That email and password don't match. Try again, or reset your
+  password." (lang/en/auth.php, also staff login), softer throttle line, plain-words field messages on login
+  (LoginRequest::messages) and register (taken email → "This email already has an account. Log in instead.").
+- Profile content: a blank select (equipment category and the 4 other NOT NULL enum selects) no longer 500s —
+  dropped before insert/update so the column default / stored value applies.
+- `ScreensDemoSeeder` (idempotent) fills every fama-ui screen for the demo talent + adds the Private demo talent
+  `talent-new@fama.test`; `php artisan demo:freshen` re-dates an aged demo feed.
+
+## 2026-10-12 — The fama-ui design replaces the talent/feed/auth UI (ADR-AB)
+- New UI kit from the client prototype (`fama-ui`): CSS/fonts/images verbatim in `public/fama-ui/`; ONE shell
+  `<x-fama.layout>` (+ `components/fama/{nav,hero,footer,icons,confirm-dialog,toast}`, `partials/fama-head`,
+  `resources/js/ui/*`, `public/fama-ui/js/hero.js`). Tailwind `app.css` is NOT loaded on these pages.
+- Ported pages: login/register/forgot/reset/verify/confirm, error pages (standalone, no Vite), feed, post,
+  Activity (Saved · Liked · Following), notifications page (NEW `GET /notifications/all`), Profile structure
+  (dashboard folded in — `/talent/dashboard` redirects), Profile content, public profile, Projects, the NEW
+  project editor page (`/talent/projects/new`, `/talent/projects/{project}/edit`), public project page,
+  Credits (+ recognitions), Recognise.
+- Product rules (stakeholder, 2026-10-12): no dashboard; no primary skill (order = tab order, `is_primary`
+  derived from position 0 — migration `2026_10_12_000100`); Private profiles show no link; Profile structure
+  is draft + save bar (Undo); reviews hidden behind `features.reviews` (default off) — Recognitions replace
+  them; **co-ownership** (accepted credit = co-owner; any owner edits/leaves; only a sole owner deletes;
+  `POST /talent/projects/{project}/leave` transfers on creator exit); project **results** become ≤4
+  `{label,value,compare}` rows (migration `2026_10_12_000300`); social links ≤9.
+- Feed: one post card (`feed/partials/post`) everywhere, `#SkillTag` linking (`App\Support\SkillTags`),
+  `?filter=unread|mention` on notifications, `?format=html` on the collection endpoint; Daylight components
+  deleted, brands rail removed from the feed (V1 brands off). `feed/partials/lang` replaces daylight-head.
+
 ## 2026-09-22 — Branded email design
 - One Fama email shell for ALL mail (`components/email/{layout,button,callout,panel}` + `App\Mail\EmailTheme`):
   cream ground, official logo (PNG), yellow→orchid band, plum ink, preheader, support footer, dark mode, RTL.

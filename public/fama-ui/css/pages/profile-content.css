@@ -1,0 +1,181 @@
+
+/* ---- tokens.css, copied verbatim so the file stays self-contained ---- */
+:root{
+  color-scheme: light;
+  --cream:#FBFAF2; --white:#FFFFFF; --ink:#14110F; --grey:#6B6560; --line:#E6E2D8;
+  --purple:#AD50D3; --purple-dk:#8A2FA8; --yellow:#FFEB73;
+  --mint:#6CEAC2; --rose:#E8927C; --sky:#8FE1FF;
+  --mint-bg:#E2F9F0; --mint-fg:#1B6B52;
+  --rose-bg:#FCE8E2; --rose-fg:#9B4526;
+  --font-display:"Oswald",sans-serif;
+  --font-body:"Sofia Sans",sans-serif;
+  --font-ar:"KO Sans","Zanjabeel",sans-serif;
+  --t-display:96px; --t-display-lh:1;
+  --t-h1:44px; --t-h2:30px; --t-h3:18px;
+  --t-body:16px; --t-body-lh:1.5;
+  --t-label:14px; --t-meta:14px;
+  --t-display-ar:72px; --t-display-ar-lh:1.25;
+  --t-h2-ar:28px; --t-body-ar-lh:1.8;
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px;
+  --s6:32px; --s7:48px; --s8:64px; --s9:104px;
+  --section-gap:104px; --section-gap-mobile:64px;
+  --radius:20px; --radius-pill:999px;
+  --border:1px solid var(--line); --shadow:none;
+  --ease:cubic-bezier(.2,.9,.3,1); --fast:120ms; --slow:260ms;
+  --content:1060px; --columns:12; --gutter:24px;
+}
+/* ---- end tokens ---- */
+
+/* Screen: /talent/content/{section} — "Profile content" in the Fama V1 Blueprint.
+   One row of section buttons (Profile-wide, then each skill); all of a section's
+   blocks are stacked on one page. Add, edit, drag to reorder, delete with confirmation.
+   Hidden blocks are listed, dimmed, with a Hidden tag. */
+:root{--ar:var(--font-ar),"IBM Plex Sans Arabic",Tahoma,sans-serif}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--cream);color:var(--ink);font-family:var(--font-body);font-size:var(--t-body);line-height:var(--t-body-lh);-webkit-font-smoothing:antialiased}
+[dir=rtl] body{font-family:var(--ar);line-height:var(--t-body-ar-lh)}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:inherit}
+p{margin:0}
+:focus-visible{outline:2px solid var(--purple-dk);outline-offset:2px}
+.wrap{max-width:calc(var(--content) + 2 * var(--s5));margin-inline:auto;padding-inline:var(--s5)}
+.icon{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;flex:none}
+[dir=rtl] .flip{transform:scaleX(-1)}
+
+.label{font-weight:500;font-size:var(--t-label);color:var(--purple-dk)}
+.meta{font-size:var(--t-meta);color:var(--grey)}
+.h2{font-family:var(--font-display);font-weight:600;font-size:var(--t-h2);line-height:1.1;margin:0}
+[dir=rtl] .h2{font-family:var(--ar);font-weight:700;font-size:var(--t-h2-ar);line-height:1.4}
+
+.btn{font-weight:600;font-size:15px;min-height:44px;padding:var(--s2) var(--s5);border-radius:var(--radius);border:1px solid var(--ink);background:var(--ink);color:var(--cream);display:inline-flex;align-items:center;justify-content:center;gap:var(--s2);text-decoration:none;cursor:pointer;white-space:nowrap}
+.btn .st{color:var(--yellow)}
+.btn-2{background:var(--white);color:var(--ink);border:var(--border)}
+.btn-2:hover{border-color:var(--ink)}
+.btn-text{background:none;border:0;color:var(--purple-dk);padding-inline:var(--s2);min-height:44px}
+.btn-text:hover{color:var(--ink)}
+.btn-danger{background:var(--rose-fg);border-color:var(--rose-fg);color:var(--white)}
+.link{color:var(--purple-dk);font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:var(--s1)}
+.link:hover{color:var(--ink)}
+.iconbtn{width:44px;height:44px;border-radius:var(--radius-pill);border:var(--border);background:var(--white);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:var(--grey);flex:none}
+.iconbtn:hover{color:var(--ink);border-color:var(--ink)}
+.iconbtn.del:hover{color:var(--rose-fg);border-color:var(--rose-fg)}
+
+.tag{font-weight:600;font-size:13px;border-radius:var(--radius-pill);padding:2px var(--s3);white-space:nowrap}
+.tag-primary{background:var(--ink);color:var(--cream);display:inline-flex;align-items:center;gap:5px}
+/* primary skill: a pin (Lucide), it's the skill the profile opens on */
+.tag-primary::before,.pin{content:"";display:inline-block;vertical-align:-2px;width:13px;height:13px;flex:none;background:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 17v5'/%3E%3Cpath d='M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 17v5'/%3E%3Cpath d='M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z'/%3E%3C/svg%3E") center/contain no-repeat}
+.tag-hidden{background:var(--line);color:var(--grey)}
+.pill{font-weight:600;font-size:13px;border-radius:var(--radius-pill);padding:2px var(--s3);display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.pill::before{content:"";width:6px;height:6px;border-radius:var(--radius-pill);background:currentColor}
+.p-live{background:var(--mint-bg);color:var(--mint-fg)}
+.p-off{background:var(--line);color:var(--grey)}
+.p-bad{background:var(--rose-bg);color:var(--rose-fg)}
+
+/* section row — Profile-wide, then each skill */
+.tabs{display:flex;gap:var(--s2);flex-wrap:wrap;margin-top:var(--s7)}
+.tabs button{min-height:44px;white-space:nowrap;flex:none;display:inline-flex;align-items:center;gap:var(--s2);padding:0 var(--s4);border-radius:var(--radius-pill);border:var(--border);background:var(--white);font-weight:600;cursor:pointer}
+.tabs button:hover{border-color:var(--ink)}
+.tabs button[aria-selected=true]{background:var(--ink);border-color:var(--ink);color:var(--cream)}
+.tabs .n{font-weight:500;font-size:13px;color:var(--grey)}
+.tabs button[aria-selected=true] .n{color:var(--line)}
+.tabs .st{color:var(--yellow)}
+.tabhint{margin-top:var(--s3)}
+
+/* blocks, stacked */
+.block{background:var(--white);border:var(--border);border-radius:var(--radius);padding:var(--s6);margin-top:var(--s5)}
+.block.off{background:var(--cream)}
+.bhead{display:flex;align-items:center;gap:var(--s3);flex-wrap:wrap}
+.bhead .h2{font-size:26px}
+.bhead .acts{margin-inline-start:auto;display:flex;gap:var(--s2);flex-wrap:wrap}
+.bdesc{color:var(--grey);margin-top:var(--s2);max-width:62ch}
+
+/* list items */
+.items{list-style:none;margin:var(--s5) 0 0;padding:0}
+.item{display:grid;grid-template-columns:32px minmax(0,1fr) auto;gap:var(--s3);align-items:center;padding-block:var(--s3);border-top:var(--border);min-height:64px}
+.item:first-child{border-top:0}
+.item.dragging{opacity:.4}
+.item b{font-weight:600;display:block}
+.item .meta{display:block}
+.item .acts{display:flex;gap:var(--s2)}
+.grip{width:32px;height:44px;display:flex;align-items:center;justify-content:center;color:var(--grey);cursor:grab}
+.none{color:var(--grey);padding-block:var(--s4)}
+
+/* media grid */
+.media{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:var(--s3);margin-top:var(--s5)}
+.tile{position:relative;aspect-ratio:4/5;border-radius:var(--s3);background:var(--line);border:2px solid transparent;cursor:pointer;padding:0;display:flex;flex-direction:column;justify-content:flex-end;text-align:start;overflow:hidden}
+.tile:hover{border-color:var(--grey)}
+.tile[aria-pressed=true]{border-color:var(--ink)}
+.tile .kind{position:absolute;top:var(--s2);inset-inline-start:var(--s2);background:var(--white);border-radius:var(--radius-pill);font-size:12px;font-weight:600;padding:0 var(--s2)}
+.tile .cap{background:var(--white);font-size:13px;padding:var(--s2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%}
+.tile .ic{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--grey)}
+.tile.dragging{opacity:.4}
+.drop{border:2px dashed var(--line);border-radius:var(--s3);aspect-ratio:4/5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--s2);background:var(--white);cursor:pointer;color:var(--ink);font-weight:600;text-align:center;padding:var(--s3)}
+.drop:hover{border-color:var(--ink)}
+.drop small{font-weight:400;color:var(--grey);font-size:13px}
+
+/* inline form */
+.form{margin-top:var(--s5);padding:var(--s5);border:var(--border);border-radius:var(--radius);background:var(--cream)}
+.form h3{margin:0 0 var(--s4);font-size:var(--t-h3);font-weight:600}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s4)}
+.f{display:block}
+.f.full{grid-column:1/-1}
+.f>span{display:flex;flex-wrap:wrap;justify-content:space-between;gap:0 var(--s3);font-weight:600;font-size:15px;margin-bottom:var(--s2)}
+.f>span small{font-weight:400;color:var(--grey);font-size:var(--t-meta)}
+.in,.sel,.ta{width:100%;min-width:0;min-height:48px;background:var(--white);border:1px solid var(--line);border-radius:var(--s3);padding:var(--s3) var(--s4);font-size:16px}
+.in:focus,.sel:focus,.ta:focus{outline:none;border-color:var(--ink);box-shadow:0 0 0 1px var(--ink)}
+.ta{min-height:96px;resize:vertical}
+.f.bad .in{border-color:var(--rose-fg)}
+.err{color:var(--rose-fg);font-size:var(--t-meta);margin-top:var(--s2)}
+.form .acts{display:flex;gap:var(--s2);justify-content:flex-end;margin-top:var(--s5);flex-wrap:wrap}
+
+/* reviews — read only */
+.filters{display:flex;flex-wrap:wrap;gap:var(--s2);margin-top:var(--s5)}
+.filters button{min-height:40px;padding:0 var(--s4);border-radius:var(--radius-pill);border:var(--border);background:var(--white);font-weight:500;cursor:pointer}
+.filters button[aria-pressed=true]{background:var(--ink);border-color:var(--ink);color:var(--cream)}
+.filters .c{color:var(--grey);margin-inline-start:var(--s1)}
+.filters button[aria-pressed=true] .c{color:var(--line)}
+.revs{list-style:none;margin:var(--s5) 0 0;padding:0;display:grid;gap:var(--s3)}
+.rev{border:var(--border);border-radius:var(--radius);padding:var(--s5)}
+.rev .top{display:flex;align-items:center;gap:var(--s3);flex-wrap:wrap}
+.stars{color:var(--purple);letter-spacing:0;font-size:18px}
+.stars span{color:var(--line)}
+.rev q{display:block;margin-top:var(--s3);font-size:17px}
+.rev .who{margin-top:var(--s3);font-size:var(--t-meta);color:var(--grey)}
+.rec q{font-size:17px;display:block}
+.rec .who{margin-top:var(--s2);font-size:var(--t-meta);color:var(--grey)}
+
+dialog{border:0;border-radius:var(--radius);padding:0;max-width:440px;width:calc(100% - 32px);background:var(--white);color:var(--ink)}
+dialog::backdrop{background:rgba(20,17,15,.5)}
+.dlg{padding:var(--s6)}
+.dlg h2{font-family:var(--font-display);font-weight:600;font-size:26px;margin:0}
+[dir=rtl] .dlg h2{font-family:var(--ar);font-weight:700}
+.dlg p{color:var(--grey);margin-top:var(--s2)}
+.dlg .acts{display:flex;justify-content:flex-end;gap:var(--s2);margin-top:var(--s5);flex-wrap:wrap}
+.toast{position:fixed;bottom:var(--s5);inset-inline-start:50%;transform:translateX(-50%);background:var(--ink);color:var(--cream);padding:var(--s3) var(--s5);border-radius:var(--radius-pill);font-weight:500;display:flex;gap:var(--s4);align-items:center;z-index:50}
+[dir=rtl] .toast{transform:translateX(50%)}
+.toast[hidden]{display:none}
+.toast button{background:none;border:0;color:var(--yellow);font-weight:600;cursor:pointer;min-height:32px}
+
+@media (max-width:760px){
+  .wrap{padding-inline:var(--s4)}
+  .tabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-inline:calc(-1 * var(--s4));padding-inline:var(--s4);margin-top:var(--s7)}
+  .block{padding:var(--s5)}
+  .grid{grid-template-columns:minmax(0,1fr)}
+  .item{grid-template-columns:32px minmax(0,1fr)}
+  .item .acts{grid-column:2}
+  .media{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+
+
+/* ---- app bridge (not in the prototype): the layout also loads ds.css, which this
+   screen never did. Put back the prototype's own values where ds.css would win. ---- */
+.form{max-width:none}
+.grid>.f,.grid>.f+.f{margin-top:0}
+.drop{width:auto}
+.item .thumb{width:44px;height:44px;border-radius:var(--s2);object-fit:cover;display:block}
+.tile img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.err[hidden]{display:none}
+dialog.dlg{padding:0}
+/* Alpine's <template x-for> is the list's first child: the first row's rule on :first-of-type. */
+.items>li:first-of-type{border-top:0}

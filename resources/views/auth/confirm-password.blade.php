@@ -1,23 +1,24 @@
-<x-guest-layout>
-    <div class="mb-6">
-        <h1 class="font-display text-2xl text-ink">{{ __('Confirm your password') }}</h1>
-        <p class="mt-1 text-sm text-muted">
-            {{ __('This is a secure area of the application. Please confirm your password before continuing.') }}
-        </p>
-    </div>
-
-    <form method="POST" action="{{ route('password.confirm') }}" class="space-y-4">
-        @csrf
-
-        <!-- Password -->
-        <div>
-            <x-input-label for="password" :value="__('Password')" />
-            <div class="mt-1"><x-password-input id="password" :error="$errors->has('password')" autocomplete="current-password" /></div>
-            <x-input-error :messages="$errors->get('password')" class="mt-2" />
-        </div>
-
-        <x-primary-button class="w-full">
-            {{ __('Confirm') }}
-        </x-primary-button>
-    </form>
-</x-guest-layout>
+{{--
+    Confirm password — the secure-area gate on the fama-ui solo pane. No prototype
+    page exists; it follows forgot-password.html (label · h1 · sub · one field ·
+    block button). POSTs to route('password.confirm').
+--}}
+@php
+    $serverErrors = collect($errors->getMessages())->map(fn ($m) => $m[0]);
+@endphp
+<x-fama.layout :title="__('Confirm password')" mode="auth" :css="['auth']">
+    <main class="wrap"><section class="pane solo">
+        <span class="label">{{ __('Security check') }}</span>
+        <h1 class="h2">{{ __('Confirm your password') }}</h1>
+        <p class="sub">{{ __("You're opening a secure area. Enter your password to carry on.") }}</p>
+        <form id="form" method="POST" action="{{ route('password.confirm') }}" novalidate
+              x-data="famaAuthForm({ errors: {{ \Illuminate\Support\Js::from($serverErrors) }}, checks: [
+                  { field: 'password', rule: 'required', message: @js(__('Enter your password.')) },
+              ] })"
+              @submit="submit($event)">
+            @csrf
+            @include('auth.partials.password', ['name' => 'password', 'id' => 'pw', 'label' => __('Password'), 'autocomplete' => 'current-password'])
+            <button class="btn btn-block"><svg class="icon" aria-hidden="true"><use href="#a-check"/></svg><span>{{ __('Confirm') }}</span></button>
+        </form>
+    </section></main>
+</x-fama.layout>

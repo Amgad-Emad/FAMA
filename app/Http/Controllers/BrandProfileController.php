@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Feed\CurrentActor;
 use App\Models\Brand;
 use App\Models\BrandProject;
+use App\Services\FollowService;
 use Illuminate\View\View;
 
 /**
@@ -16,7 +18,7 @@ class BrandProfileController extends Controller
     /**
      * Show a published brand's public profile by slug (404 otherwise).
      */
-    public function show(Brand $brand, \App\Feed\CurrentActor $currentActor, \App\Services\FollowService $follows): View
+    public function show(Brand $brand, CurrentActor $currentActor, FollowService $follows): View
     {
         abort_unless((bool) $brand->is_published, 404);
 
@@ -34,7 +36,7 @@ class BrandProfileController extends Controller
         // this brand's opportunities. Hidden for brand viewers (brands don't
         // subscribe to brands).
         $actor = $currentActor->resolve();
-        $canNotify = ! ($actor instanceof \App\Models\Brand);
+        $canNotify = ! ($actor instanceof Brand);
         $subscribed = $actor !== null
             ? ($follows->isFollowing($actor, collect([$brand]))['brand:'.$brand->id] ?? false)
             : false;

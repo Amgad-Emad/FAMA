@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Auth\PasswordBrokerResolver;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -20,25 +21,30 @@ class PasswordResetLinkController extends Controller
     }
 
     /**
-     * Handle an incoming password reset link request.
+     * Handle an incoming password reset link request: resolve which account
+     * (talent / brand / admin user) the email belongs to and send that broker's link.
      *
      * @throws ValidationException
      */
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, PasswordBrokerResolver $brokers): RedirectResponse
     {
         $request->validate([
             'email' => ['required', 'email'],
+            'role' => ['nullable', 'string'],
         ]);
 
-        // We will send the password reset link to this user. Once we have attempted
-        // to send the link, we will examine the response then see the message we
-        // need to show to the user. Finally, we'll send out a proper response.
-        $status = Password::sendResetLink(
+        // One public form, three login entities: send the link through the broker
+        // of the account this email belongs to (talent first; `role` is a hint).
+        $account = $brokers->accountFor($request->string('email')->toString(), $request->input('role'));
+
+        $status = Password::broker($brokers->broker($account))->sendResetLink(
             $request->only('email')
         );
 
         return $status == Password::RESET_LINK_SENT
                     ? back()->with('status', __($status))
+                        // Flash the address so the "sent" state can name it.
+                        ->withInput($request->only('email'))
                     : back()->withInput($request->only('email'))
                         ->withErrors(['email' => __($status)]);
     }

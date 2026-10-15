@@ -100,6 +100,9 @@ Route::middleware('resolve.actor')->group(function () {
             ->name('notifications');
         Route::post('/notifications/read', [\App\Http\Controllers\Feed\NotificationController::class, 'markRead'])
             ->name('notifications.read');
+        // fama-ui notifications page (the bell's "See all notifications").
+        Route::get('/notifications/all', [\App\Http\Controllers\Feed\NotificationController::class, 'page'])
+            ->name('notifications.page');
         Route::get('/notifications/unread-count', [\App\Http\Controllers\Feed\NotificationController::class, 'unreadCount'])
             ->name('notifications.unread');
     });

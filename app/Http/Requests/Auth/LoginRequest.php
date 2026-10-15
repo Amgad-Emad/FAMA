@@ -4,6 +4,7 @@ namespace App\Http\Requests\Auth;
 
 use App\Enums\UserRole;
 use App\Support\Auth\Guards;
+use App\Support\Features;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -40,7 +41,7 @@ class LoginRequest extends FormRequest
         // Brand login is gated behind the `brands` feature flag: V1 ships
         // talent-only, so only the talent role is accepted when brands are off
         // (the role defaults to Talent anyway).
-        $roles = \App\Support\Features::brands()
+        $roles = Features::brands()
             ? [UserRole::Talent->value, UserRole::Brand->value]
             : [UserRole::Talent->value];
 
@@ -48,6 +49,21 @@ class LoginRequest extends FormRequest
             'email' => ['required', 'string', 'email'],
             'password' => ['required', 'string'],
             'role' => ['nullable', 'string', Rule::in($roles)],
+        ];
+    }
+
+    /**
+     * Friendly field messages (the fama-ui login copy) instead of Laravel's
+     * generic "The email field is required." — inherited by AdminLoginRequest.
+     *
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'email.required' => __('Enter the email you signed up with.'),
+            'email.email' => __('Enter an email address like name@studio.com.'),
+            'password.required' => __('Enter your password.'),
         ];
     }
 

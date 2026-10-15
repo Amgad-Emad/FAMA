@@ -187,6 +187,7 @@ function sectionedTalent(): Talent
 it('renders one section at a time with every content block in it stacked', function () {
     $this->seed([TalentTypeSeeder::class, BlockTypeSeeder::class]);
     $talent = sectionedTalent();
+    config(['features.reviews' => true]); // the reviews panel shows only with the flag on
 
     // Universal: the brand-collabs editor AND the reviews list, both on the page.
     $page = $this->actingAs($talent, 'talent')->get(route('talent.content', ['section' => 'universal']))->assertOk();
@@ -236,3 +237,45 @@ it('never offers an editor for a block type that has none (comp_card)', function
         ->assertOk()
         ->assertViewHas('contentKeys', fn (array $keys) => in_array('reviews', $keys, true) && ! in_array('comp_card', $keys, true));
 });
+
+it('adds equipment with a blank category without a 500 — the column default applies', function () {
+    $talent = Talent::factory()->create();
+
+    $this->actingAs($talent, 'talent')
+        ->postJson(route('talent.content.store', ['type' => 'equipment']), ['name' => 'Sony FX3', 'category' => null])
+        ->assertCreated();
+
+    expect($talent->equipment()->first()->category)->toBe('camera');
+});
+
+it('keeps the stored select value when an edit sends it blank', function () {
+    $talent = Talent::factory()->create();
+    $item = $talent->equipment()->create(['name' => 'Aputure 600d', 'category' => 'lighting', 'position' => 0]);
+
+    $this->actingAs($talent, 'talent')
+        ->patchJson(route('talent.content.update', ['type' => 'equipment', 'id' => $item->id]), ['name' => 'Aputure 600d Pro', 'category' => ''])
+        ->assertOk();
+
+    expect($item->fresh())->name->toBe('Aputure 600d Pro')->category->toBe('lighting');
+});
+
+it('still rejects an unknown select value (422)', function () {
+    $talent = Talent::factory()->create();
+
+    $this->actingAs($talent, 'talent')
+        ->postJson(route('talent.content.store', ['type' => 'equipment']), ['name' => 'Rig', 'category' => 'spaceship'])
+        ->assertStatus(422)->assertJsonValidationErrors('category');
+});
+
+it('accepts blank selects on every content type backed by a NOT NULL enum', function (string $type, array $payload) {
+    $talent = Talent::factory()->create();
+
+    $this->actingAs($talent, 'talent')
+        ->postJson(route('talent.content.store', ['type' => $type]), $payload)
+        ->assertCreated();
+})->with([
+    'showreel platform' => ['showreel', ['video_url' => 'https://vimeo.com/1', 'platform' => null]],
+    'software proficiency' => ['software_stack', ['software_name' => 'Capture One', 'proficiency' => null]],
+    'digital shot type' => ['digitals', ['shot_type' => null]],
+    'gallery media type' => ['gallery', ['media_type' => null]],
+]);

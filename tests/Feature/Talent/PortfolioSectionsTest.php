@@ -78,7 +78,8 @@ it('shows availability with its last-changed date on the public profile', functi
 
     $this->get(url($talent->slug))
         ->assertOk()
-        ->assertSee(__('Not taking work'))
+        ->assertSee(__('Not open for work'))
+        ->assertSee(__('Changed :when', ['when' => $talent->fresh()->availability_changed_at->diffForHumans()]))
         ->assertSee(__('Will travel'));
 });
 

@@ -1,27 +1,23 @@
-@php $reviews = $talent->reviews; @endphp
-
-@if ($reviews->isNotEmpty())
-    <x-ui.section :title="$block->title ?: $block->blockType->name" :eyebrow="__('What clients say')">
-        <div class="grid gap-4 sm:grid-cols-2">
-            @foreach ($reviews as $review)
-                <x-ui.card>
-                    <div class="flex items-center gap-0.5 text-gold" aria-label="{{ $review->rating }}/5">
-                        @for ($i = 1; $i <= 5; $i++)
-                            <span>{{ $i <= $review->rating ? '★' : '☆' }}</span>
-                        @endfor
-                    </div>
-                    <p class="mt-3 text-ink">&ldquo;{{ $review->body }}&rdquo;</p>
-                    <div class="mt-4 flex items-center gap-3">
-                        <x-ui.avatar :src="$review->reviewer_avatar_url" :name="$review->reviewer_name" size="sm" />
-                        <div>
-                            <div class="text-sm font-medium text-ink">{{ $review->reviewer_name }}</div>
-                            <div class="font-mono text-[11px] uppercase tracking-wider text-subtle">
-                                {{ $review->reviewer_role }}{{ $review->reviewer_company ? ' · '.$review->reviewer_company : '' }}
-                            </div>
-                        </div>
-                    </div>
-                </x-ui.card>
-            @endforeach
-        </div>
-    </x-ui.section>
-@endif
+{{--
+    Reviews (brand → talent). Hidden on the public profile while
+    features.reviews is off (the fama-ui design replaces them with
+    Recognitions) — profile.blade.php filters the block out; kept for the flag.
+--}}
+@php
+    $reviews = $talent->reviews;
+    $avg = $reviews->isNotEmpty() ? round((float) $reviews->avg('rating'), 1) : null;
+@endphp
+<x-profile.block :block="$block" :empty="$reviews->isEmpty()" :is-owner="$isOwner ?? false">
+    @if ($avg !== null)
+        <x-slot:sum><p class="revsum"><b>{{ number_format($avg, 1) }}</b><span class="stars" aria-hidden="true">★★★★★</span><span class="meta">{{ __('from :n reviews', ['n' => $reviews->count()]) }}</span></p></x-slot:sum>
+    @endif
+    <div class="revs">
+        @foreach ($reviews as $review)
+            <article class="card tight rev">
+                <span class="stars" aria-label="{{ __(':n out of 5', ['n' => $review->rating]) }}">{{ str_repeat('★', (int) $review->rating) }}<span>{{ str_repeat('★', 5 - (int) $review->rating) }}</span></span>
+                <q>{{ $review->body }}</q>
+                <p class="who">{{ collect([$review->reviewer_name, $review->reviewer_role, $review->reviewer_company])->filter()->implode(' · ') }}</p>
+            </article>
+        @endforeach
+    </div>
+</x-profile.block>

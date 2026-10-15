@@ -9,7 +9,6 @@ use App\Models\Talent;
  * toggle wired to the feed follow endpoints, reflecting the viewer's state and
  * hidden on the viewer's own profile.
  */
-
 function publishedTalent(): Talent
 {
     return Talent::factory()->create(['is_published' => true]);
@@ -20,8 +19,11 @@ it('shows a Follow button to a guest', function () {
 
     $html = $this->get("/{$talent->slug}")->assertOk()->getContent();
 
-    expect($html)->toContain('talentFollow(')
-        ->toContain('following: false');
+    // A guest's Follow opens the sign-in prompt (fama-ui); its Log in records
+    // the follow first so it replays once after sign-in.
+    expect($html)->toContain("signIn('follow')")
+        ->toContain(__('Sign in to follow'))
+        ->toContain('loginFor($event');
 });
 
 it('reflects the existing follow state for a signed-in actor', function () {

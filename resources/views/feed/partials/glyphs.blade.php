@@ -2,7 +2,7 @@
      currentColor, included ONCE per Daylight page. No icon CDN, no icon font.
      Simplified marks drawn on a 24×24 grid; the platform's own colour appears
      only as a hover glint (--chip-glint, daylight.css). --}}
-<svg xmlns="http://www.w3.org/2000/svg" class="hidden" aria-hidden="true">
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true" focusable="false">
     <symbol id="glyph-instagram" viewBox="0 0 24 24">
         <rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="1.8"/>
         <circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="1.8"/>

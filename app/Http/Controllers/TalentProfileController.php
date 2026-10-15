@@ -3,10 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Events\TalentProfileViewed;
+use App\Feed\CurrentActor;
+use App\Models\ProfileBlock;
 use App\Models\Talent;
 use App\Models\TalentType;
+use App\Services\FollowService;
+use App\Support\Features;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
 /**
@@ -22,11 +27,15 @@ class TalentProfileController extends Controller
      * Show a published talent's public profile by slug (404 otherwise). The active
      * tab comes from `?skill=` (when that skill has visible blocks) or the primary.
      */
-    public function show(string $slug, \App\Feed\CurrentActor $currentActor, \App\Services\FollowService $follows): View
+    public function show(string $slug, CurrentActor $currentActor, FollowService $follows): View
     {
         $talent = $this->publishedProfile($slug);
 
-        TalentProfileViewed::dispatch($talent);
+        // The owner previewing their own profile is not a view (and an
+        // unpublished profile is only ever seen by its owner).
+        if (! $this->isOwner($talent)) {
+            TalentProfileViewed::dispatch($talent);
+        }
 
         // The viewer's follow state (one bulk query) so the CTA reflects it.
         // The button is hidden on your own profile (self-follow is forbidden).
@@ -61,6 +70,7 @@ class TalentProfileController extends Controller
             'talent' => $talent,
             'skill' => $skill,
             'blocks' => $blocks,
+            'isOwner' => $this->isOwner($talent),
         ])->render();
 
         return response()->success(['html' => $html]);
@@ -71,23 +81,41 @@ class TalentProfileController extends Controller
      */
     private function publishedProfile(string $slug): Talent
     {
-        return Talent::query()
+        $talent = Talent::query()
             ->where('slug', $slug)
-            ->where('is_published', true)
             ->with($this->eagerLoads())
             ->firstOrFail();
+
+        // Unpublished profiles 404 for everyone except their owner, who gets
+        // the Preview (fama-ui preview.html: "Your profile is private. This is
+        // how people will see it once it's public.").
+        abort_unless($talent->is_published || $this->isOwner($talent), 404);
+
+        return $talent;
+    }
+
+    /**
+     * Whether the signed-in talent is the profile's owner (the Preview case).
+     */
+    private function isOwner(Talent $talent): bool
+    {
+        $viewer = auth('talent')->user();
+
+        return $viewer !== null && (int) $viewer->getKey() === (int) $talent->getKey();
     }
 
     /**
      * A skill's visible blocks in position order (the `hero` block is the header).
      *
-     * @return \Illuminate\Support\Collection<int, \App\Models\ProfileBlock>
+     * @return Collection<int, ProfileBlock>
      */
-    private function blocksForSkill(Talent $talent, TalentType $skill): \Illuminate\Support\Collection
+    private function blocksForSkill(Talent $talent, TalentType $skill): Collection
     {
         return $talent->profileBlocks
             ->where('talent_type_id', $skill->id)
             ->filter(fn ($block) => $block->blockType->key !== 'hero')
+            // Reviews stay off the public page while features.reviews is off.
+            ->filter(fn ($block) => Features::enabled('reviews') || $block->blockType->key !== 'reviews')
             ->sortBy('position')
             ->values();
     }

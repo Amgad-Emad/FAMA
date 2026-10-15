@@ -1,67 +1,71 @@
 <!DOCTYPE html>
 {{--
-    Shared error-page shell (403/404/419/429/500/503). Deliberately
-    dependency-light: token styling via the app stylesheet, no Alpine
-    components, no data queries — an error page must render even when the app
-    is degraded. The dashboard link is resolved defensively (rescue) because
-    auth/session may be unavailable mid-failure.
+    Shared error-page shell (403/404/419/429/500/503) on the fama-ui design —
+    the composition of the prototype's 404.html (big purple code · h1 · line ·
+    one way out). Deliberately dependency-light: it links the fama-ui CSS
+    directly (no Vite, no Alpine, no <x-fama.layout>, whose nav queries the DB)
+    and renders a STATIC header (logo + the public nav) and footer, so it keeps
+    rendering when the app is degraded. Every auth/route lookup is wrapped in
+    rescue() because session/routing may be unavailable mid-failure.
+    Sections: code, title (<title>), heading (h1), message.
 --}}
-<html
-    lang="{{ str_replace('_', '-', app()->getLocale()) }}"
-    dir="{{ \Mcamara\LaravelLocalization\Facades\LaravelLocalization::getCurrentLocaleDirection() }}"
->
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
+@php
+    $isTalent = rescue(fn () => auth('talent')->check(), false, false);
+    $href = fn (string $name, string $fallback = '/') => rescue(fn () => route($name), url($fallback), false);
+    $feedUrl = $href('feed');
+    $ctaUrl = $isTalent ? $href('talent.profile.edit', '/talent/profile') : $feedUrl;
+    $dir = rescue(fn () => \Mcamara\LaravelLocalization\Facades\LaravelLocalization::getCurrentLocaleDirection(), 'ltr', false);
+@endphp
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" dir="{{ $dir }}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="robots" content="noindex">
+    <title>@yield('title') · Fama</title>
+    <link rel="icon" href="{{ asset('fama-ui/img/fama-emblem.svg') }}" type="image/svg+xml">
+    <link rel="stylesheet" href="{{ asset('fama-ui/css/shell.css') }}">
+    <link rel="stylesheet" href="{{ asset('fama-ui/css/ds.css') }}">
+    <style>
+    /* One clear way out (UX audit #22): back to the profile for talents, the feed for guests. */
+    .nf{max-width:640px;margin:var(--s9) auto 0;text-align:center}
+    .nf .code{font-family:var(--font-display);font-weight:600;font-size:clamp(96px,16vw,160px);line-height:1;color:var(--purple)}
+    .nf .h1{margin-top:var(--s3)}
+    .nf p{color:var(--grey);margin:var(--s3) auto var(--s6);max-width:44ch}
+    </style>
+</head>
+<body>
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+        <symbol id="a-home" viewBox="0 0 24 24"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></symbol>
+    </svg>
 
-        <title>@yield('code') — {{ config('app.name', 'Fama') }}</title>
-
-        @include('partials.design-head')
-
-        @vite(['resources/css/app.css'])
-    </head>
-    <body class="min-h-screen bg-bg text-ink antialiased">
-        <div class="flex min-h-screen flex-col">
-            <header class="border-b border-line">
-                <div class="mx-auto flex h-16 max-w-6xl items-center px-4 sm:px-6">
-                    <a href="{{ url('/') }}" class="font-display text-2xl tracking-tight text-ink">
-                        Fama<span class="text-accent">.</span>
-                    </a>
-                </div>
-            </header>
-
-            <main class="flex flex-1 items-center justify-center px-4 py-16 sm:px-6">
-                <div class="w-full max-w-md text-center">
-                    <p class="font-mono text-[11px] uppercase tracking-[0.18em] text-subtle">{{ __('Error') }} @yield('code')</p>
-                    <h1 class="mt-3 font-display text-7xl leading-none text-ink">@yield('code')</h1>
-                    <h2 class="mt-4 font-display text-2xl text-ink">@yield('title')</h2>
-                    <p class="mt-2 text-sm text-muted">@yield('message')</p>
-
-                    <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
-                        <a href="{{ url('/') }}"
-                           class="inline-flex items-center justify-center rounded-pill bg-primary px-4 py-2.5 text-sm font-medium text-on-primary transition hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg">
-                            {{ __('Back to home') }}
-                        </a>
-                        @php
-                            $hasSession = rescue(fn () => auth('admin')->check() || auth('brand')->check() || auth('talent')->check(), false, false);
-                        @endphp
-                        @if ($hasSession && Route::has('dashboard'))
-                            <a href="{{ route('dashboard') }}"
-                               class="inline-flex items-center justify-center rounded-pill border border-line-strong px-4 py-2.5 text-sm font-medium text-ink transition hover:bg-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg">
-                                {{ __('Go to dashboard') }}
-                            </a>
-                        @endif
-                    </div>
-                </div>
-            </main>
-
-            <footer class="border-t border-line py-6">
-                <div class="mx-auto flex max-w-6xl items-center justify-center px-4 sm:px-6">
-                    <span class="font-mono text-[11px] uppercase tracking-[0.18em] text-subtle">
-                        {{ __('Creative talent · Egypt-first · MENA-wide') }}
-                    </span>
-                </div>
-            </footer>
+    <header class="fx-nav">
+        <div class="fx-wrap fx-in">
+            <a class="fx-logo" href="{{ $feedUrl }}"><img src="{{ asset('fama-ui/img/fama-logo-tight.svg') }}" alt="Fama"></a>
+            <ul class="fx-links fx-keep">
+                <li><a href="{{ $feedUrl }}">{{ __('Feed') }}</a></li>
+            </ul>
+            <div class="fx-end">
+                @if ($isTalent)
+                    <a class="fx-preview fx-login" href="{{ $ctaUrl }}">{{ __('Profile structure') }}</a>
+                @else
+                    <a class="fx-preview fx-login" href="{{ $href('login', '/login') }}">{{ __('Log in') }}</a>
+                @endif
+            </div>
         </div>
-    </body>
+    </header>
+
+    <main class="wrap"><section class="nf">
+        <p class="code" aria-hidden="true">@yield('code')</p>
+        <h1 class="h1">@yield('heading')</h1>
+        <p>@yield('message')</p>
+        <a class="btn" href="{{ $ctaUrl }}"><svg class="icon" aria-hidden="true"><use href="#a-home"/></svg><span>{{ $isTalent ? __('Go to your profile') : __('Go to the feed') }}</span></a>
+    </section></main>
+
+    <footer class="fx-foot">
+        <div class="fx-wrap"><div class="fx-in">
+            <img src="{{ asset('fama-ui/img/fama-logo-tight.svg') }}" alt="Fama">
+            <span>© {{ date('Y') }} {{ __('Fama') }}. {{ __('Where creative talent gets seen.') }}</span>
+        </div></div>
+    </footer>
+</body>
 </html>

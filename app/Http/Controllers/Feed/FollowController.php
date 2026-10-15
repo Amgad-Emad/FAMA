@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Feed;
 use App\Actions\Feed\ToggleFollow;
 use App\Feed\Actor;
 use App\Models\Brand;
+use App\Models\Follow;
 use App\Models\Talent;
 use Illuminate\Http\JsonResponse;
 
@@ -22,7 +23,7 @@ class FollowController extends FeedBaseController
     {
         $followable = $this->resolveFollowable($type, $id);
 
-        $this->gate()->authorize('create', [\App\Models\Follow::class, $followable]);
+        $this->gate()->authorize('create', [Follow::class, $followable]);
 
         $result = $toggleFollow($this->currentActor->resolve(), $followable, onlyFollow: true);
 
@@ -36,7 +37,7 @@ class FollowController extends FeedBaseController
     {
         $followable = $this->resolveFollowable($type, $id);
 
-        $this->gate()->authorize('create', [\App\Models\Follow::class, $followable]);
+        $this->gate()->authorize('create', [Follow::class, $followable]);
 
         $result = $toggleFollow($this->currentActor->resolve(), $followable, onlyUnfollow: true);
 

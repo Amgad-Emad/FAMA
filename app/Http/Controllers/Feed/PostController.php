@@ -9,7 +9,10 @@ use App\Actions\Feed\UpdatePost;
 use App\Data\Feed\CreatePostData;
 use App\Http\Requests\Feed\StorePostRequest;
 use App\Http\Requests\Feed\UpdatePostRequest;
+use App\Http\Resources\Feed\PostResource;
 use App\Models\Post;
+use App\Models\Talent;
+use App\Support\FeedComposer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\View\View;
 
@@ -28,9 +31,13 @@ class PostController extends FeedBaseController
     {
         abort_unless($this->gate()->allows('view', $post), 404);
 
-        $post->load(['author.media', 'skills', 'project', 'linkedUrls.preview', 'mentions', 'media']);
+        $post->load($this->frameGraph());
 
-        return view('feed.post', ['post' => $post]);
+        return view('feed.post', [
+            'post' => $post,
+            // The author edits from here too (fama-ui Edit post dialog).
+            'composer' => FeedComposer::for($this->currentActor->resolve()),
+        ]);
     }
 
     /**
@@ -41,11 +48,37 @@ class PostController extends FeedBaseController
     {
         abort_unless($this->gate()->allows('view', $post), 404);
 
-        $post->load(['author.media', 'skills', 'project', 'linkedUrls.preview', 'mentions', 'media']);
+        $post->load($this->frameGraph());
 
         return response()->success([
-            'html' => view('feed.partials.post', ['post' => $post])->render(),
+            // ?full=1 → the post-page variant (an edit made on the post page).
+            'html' => view('feed.partials.post', ['post' => $post, 'full' => request()->boolean('full')])->render(),
         ]);
+    }
+
+    /**
+     * The eager graph the canonical post card reads: author, media, skills,
+     * project, mentions + link chips, and — only for a signed-in actor — the
+     * viewer's like/save state (a guest skips both constrained queries, so the
+     * detail page stays inside its fixed query budget).
+     *
+     * @return array<int|string, mixed>
+     */
+    private function frameGraph(): array
+    {
+        $graph = ['author.media', 'skills', 'project.media', 'linkedUrls.preview', 'mentions.mentioned', 'media'];
+        $viewer = $this->currentActor->resolve();
+
+        if ($viewer !== null) {
+            $graph['viewerLike'] = fn ($query) => $query
+                ->where('liker_type', $viewer->getMorphClass())
+                ->where('liker_id', $viewer->getKey());
+            $graph['viewerBookmark'] = fn ($query) => $query
+                ->where('bookmarker_type', $viewer->getMorphClass())
+                ->where('bookmarker_id', $viewer->getKey());
+        }
+
+        return $graph;
     }
 
     /**
@@ -57,7 +90,7 @@ class PostController extends FeedBaseController
 
         $post->load(['author.media', 'skills', 'project.media', 'mentions.mentioned', 'linkedUrls.preview', 'media']);
 
-        return response()->success(new \App\Http\Resources\Feed\PostResource($post));
+        return response()->success(new PostResource($post));
     }
 
     /**
@@ -65,7 +98,7 @@ class PostController extends FeedBaseController
      */
     public function byTalent(string $username): JsonResponse
     {
-        $talent = \App\Models\Talent::query()
+        $talent = Talent::query()
             ->where('slug', $username)->where('is_published', true)->first();
 
         abort_if($talent === null, 404);
@@ -90,7 +123,7 @@ class PostController extends FeedBaseController
             ->latest('published_at')
             ->paginate(12);
 
-        return response()->paginated($posts, \App\Http\Resources\Feed\PostResource::collection($posts->getCollection()));
+        return response()->paginated($posts, PostResource::collection($posts->getCollection()));
     }
 
     /**

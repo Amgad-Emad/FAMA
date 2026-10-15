@@ -32,6 +32,7 @@ class AppServiceProvider extends ServiceProvider
         // (TalentProfileViewed), LogMediaUploaded (MediaHasBeenAddedEvent),
         // AdvancePortfolioMediaState (ConversionHasBeenCompletedEvent).
         $this->configureModels();
+        $this->configurePasswordResetLinks();
         $this->enforceMorphMap();
         $this->registerResponseMacros();
         $this->configureFeedRateLimiters();
@@ -112,5 +113,21 @@ class AppServiceProvider extends ServiceProvider
         Response::macro('paginated', function (LengthAwarePaginator $paginator, mixed $data = null, ?string $message = null, array $meta = [], int $status = 200) {
             return ApiResponse::paginated($paginator, $data, $message, $meta, $status);
         });
+    }
+
+    /**
+     * Reset links name the account type they were issued for (`account=talent|
+     * brand|user`, the MorphMap alias) so the new-password step resets the same
+     * account through the matching broker — one email can exist as several types.
+     */
+    private function configurePasswordResetLinks(): void
+    {
+        \Illuminate\Auth\Notifications\ResetPassword::createUrlUsing(
+            fn ($notifiable, string $token) => route('password.reset', [
+                'token' => $token,
+                'email' => $notifiable->getEmailForPasswordReset(),
+                'account' => $notifiable->getMorphClass(),
+            ])
+        );
     }
 }

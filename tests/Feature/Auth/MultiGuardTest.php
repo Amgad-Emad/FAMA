@@ -95,7 +95,7 @@ it('ignores a cross-guard intended URL so a talent login is not bounced to a bra
 
     // Logging in as a talent must land on the talent dashboard, not the brand page.
     $this->post('/login', ['email' => $talent->email, 'password' => 'password', 'role' => 'talent'])
-        ->assertRedirect(route('dashboard'));
+        ->assertRedirect(route('talent.profile.edit')); // the talent home, never the brand route
 
     $this->assertAuthenticated('talent');
     $this->get('/dashboard')->assertRedirect(route('talent.dashboard'));

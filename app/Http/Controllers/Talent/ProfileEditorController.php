@@ -23,6 +23,8 @@ use App\Models\Speciality;
 use App\Models\Talent;
 use App\Models\TalentType;
 use App\Services\ProfileBlockService;
+use App\Services\ProfileCompletionService;
+use App\Services\ProfileViewStatsService;
 use App\Services\TalentProfileService;
 use App\Support\ContentRegistry;
 use Illuminate\Http\JsonResponse;
@@ -43,13 +45,21 @@ class ProfileEditorController extends TalentController
     public function __construct(
         private readonly ProfileBlockService $blocks,
         private readonly TalentProfileService $profile,
+        private readonly ProfileCompletionService $completion,
+        private readonly ProfileViewStatsService $viewStats,
     ) {}
 
+    /**
+     * The Profile structure page (fama-ui): identity, availability, links,
+     * skills + specialities, sections (blocks), willing-to-explore, experience
+     * and pricing, plus the folded-in dashboard (completion steps + views).
+     */
     public function edit(): View
     {
         $talent = $this->talent()->load([
             'profileBlocks.blockType', 'talentTypes', 'specialities',
             'socialHandles', 'interests.talentType', 'interests.speciality',
+            'brandCollabs.media', 'media',
         ]);
         $skills = $this->orderedSkills($talent);
 
@@ -84,7 +94,23 @@ class ProfileEditorController extends TalentController
             // Block types whose content is editable somewhere — the rest
             // (comp_card) must not offer a dead "Edit content" link. `projects`
             // is editable on its own page (ADR-X), not the content page.
-            'contentKeys' => [...ContentRegistry::keys(), 'reviews', 'projects'],
+            'contentKeys' => [...ContentRegistry::keys(), 'reviews', 'projects', 'recognitions', 'interests'],
+            // The fama-ui page folds the old dashboard in (2026-10-12): the steps
+            // to a complete profile (shown while Private) and the views card.
+            'completion' => $this->completion->steps($talent),
+            'views' => [
+                'total' => (int) $talent->view_count,
+                'weekly' => $this->viewStats->weeklyComparison($talent),
+            ],
+            // Brand collabs — the "Experience" panel lists them read-only; they
+            // are edited on the profile-content page.
+            'collabs' => $talent->brandCollabs->sortBy('position')->map(fn ($collab) => [
+                'id' => (int) $collab->id,
+                'name' => (string) $collab->brand_name,
+                'project' => (string) ($collab->project_title ?? ''),
+                'year' => $collab->year,
+                'logo' => $collab->brand_logo_url,
+            ])->values()->all(),
         ]);
     }
 
@@ -160,14 +186,14 @@ class ProfileEditorController extends TalentController
     }
 
     /**
-     * The talent's skills ordered primary-first, then by pivot position (ADR-Q).
+     * The talent's skills in their order (pivot position) — the tab order; the first opens first.
      *
      * @return Collection<int, TalentType>
      */
-    private function orderedSkills(\App\Models\Talent $talent): Collection
+    private function orderedSkills(Talent $talent): Collection
     {
         return $talent->talentTypes
-            ->sortBy(fn (TalentType $t) => [$t->pivot->is_primary ? 0 : 1, (int) $t->pivot->position])
+            ->sortBy(fn (TalentType $t) => [(int) $t->pivot->position, (int) $t->id])
             ->values();
     }
 

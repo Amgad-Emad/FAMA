@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Models\Brand;
-use App\Models\BrandReview;
 use App\Models\BrandProject;
+use App\Models\BrandReview;
 use App\Models\Recognition;
 use App\Models\Review;
 use App\Models\Talent;
@@ -13,9 +13,10 @@ use App\Services\ProjectOversightService;
 use App\Services\RecognitionService;
 use App\Services\ReviewModerationService;
 use App\Services\TalentModerationService;
+use App\Support\Features;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 /**
@@ -42,7 +43,7 @@ class ModerationController extends AdminController
     {
         $queues = ['talents', 'all-reviews', 'reviews', 'recognitions'];
         // Brand-owned queues only exist when the brands feature is enabled (V1 off).
-        if (\App\Support\Features::brands()) {
+        if (Features::brands()) {
             $queues = [...$queues, 'brands', 'brand-reviews', 'projects'];
         }
         $queue = $request->query('queue');

@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Talent;
 use App\Models\ProfileBlock;
 use App\Models\TalentType;
 use App\Support\ContentRegistry;
+use App\Support\Features;
+use App\Support\Html\BriefSanitizer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -90,7 +92,7 @@ class BlockContentController extends TalentController
             ->all();
 
         $sections = $talent->talentTypes
-            ->sortBy(fn (TalentType $t) => [$t->pivot->is_primary ? 0 : 1, (int) $t->pivot->position])
+            ->sortBy(fn (TalentType $t) => [(int) $t->pivot->position, (int) $t->id])
             ->map(fn (TalentType $t) => $this->section(
                 (string) $t->slug,
                 $t->getTranslation('name', $locale, false) ?: $t->getTranslation('name', 'en', false),
@@ -136,8 +138,44 @@ class BlockContentController extends TalentController
         $key = $block->blockType->key;
         $title = $block->getTranslation('title', $locale, false);
 
+        // Reviews follow the public profile: off while features.reviews is off.
+        if ($key === 'reviews' && ! Features::enabled('reviews')) {
+            return null;
+        }
+
         if ($key === 'reviews') {
             return ['kind' => 'reviews', 'type' => $key, 'title' => $title ?: __('Reviews'), 'is_visible' => (bool) $block->is_visible];
+        }
+
+        // Recognitions are written by peers and moderated by Fama: the talent
+        // reads them here (every status), never edits them.
+        if ($key === 'recognitions') {
+            return [
+                'kind' => 'recognitions',
+                'type' => $key,
+                'title' => $title ?: __('Recognitions'),
+                'is_visible' => (bool) $block->is_visible,
+                'items' => $this->talent()->recognitions()->with('author')->latest('id')->get()
+                    ->map(fn ($r) => [
+                        'status' => (string) $r->status,
+                        'body' => (string) $r->body,
+                        'who' => collect([$r->author?->display_name, $r->relationship])->filter()->implode(' · '),
+                    ])->all(),
+            ];
+        }
+
+        // Willing to explore is set on Profile structure (structured skill +
+        // speciality picks), so this panel only points there.
+        if ($key === 'interests') {
+            return [
+                'kind' => 'link',
+                'type' => $key,
+                'title' => $title ?: __('Willing to explore'),
+                'is_visible' => (bool) $block->is_visible,
+                'url' => route('talent.profile.edit').'#explore',
+                'blurb' => __('Skills you\'d like to be asked about. You set these in Profile structure.'),
+                'cta' => __('Edit in Profile structure'),
+            ];
         }
 
         // Projects are authored on their own page (ADR-X); this panel is the
@@ -149,7 +187,11 @@ class BlockContentController extends TalentController
                 'title' => $title ?: __('Projects'),
                 'is_visible' => (bool) $block->is_visible,
                 'url' => route('talent.projects'),
-                'blurb' => __('Projects have their own page — covers, credits, metrics and the skills behind each piece of work.'),
+                'blurb' => __(':n projects tagged with this skill. Your photos and videos live inside each project.', [
+                    'n' => $block->talent_type_id
+                        ? $this->talent()->projects()->inSkillScope($block->talent_type_id)->count()
+                        : $this->talent()->projects()->withoutSkill()->count(),
+                ]),
                 'cta' => __('Open Projects'),
             ];
         }
@@ -222,7 +264,7 @@ class BlockContentController extends TalentController
     public function store(Request $request, string $type): JsonResponse
     {
         $config = $this->config($type);
-        $data = $this->sanitizeRich($request->validate($this->rules($config)), $config);
+        $data = $this->dropBlankSelects($this->sanitizeRich($request->validate($this->rules($config)), $config), $config);
         // Append at the end when no position is given (the front-end blank sends
         // null); `position` is a NOT NULL column, so never insert null.
         $data['position'] = $data['position'] ?? $this->talent()->{$config['relation']}()->count();
@@ -235,9 +277,31 @@ class BlockContentController extends TalentController
     {
         $config = $this->config($type);
         $item = $this->find($config, $id);
-        $item->update($this->sanitizeRich($request->validate($this->rules($config)), $config));
+        $item->update($this->dropBlankSelects($this->sanitizeRich($request->validate($this->rules($config)), $config), $config));
 
         return response()->success($this->present($item, $config), __('Saved.'));
+    }
+
+    /**
+     * Drop select fields submitted blank. Every select-backed column (equipment
+     * category, gallery media_type, digital shot_type, showreel platform, software
+     * proficiency) is a NOT NULL enum with a default, so an explicit null used to
+     * reach the INSERT and 500. Omitting the key lets a new item take the column
+     * default and leaves an existing item's value unchanged on edit.
+     *
+     * @param  array<string, mixed>  $data
+     * @param  array<string, mixed>  $config
+     * @return array<string, mixed>
+     */
+    private function dropBlankSelects(array $data, array $config): array
+    {
+        foreach ($config['fields'] as [$name, $kind]) {
+            if ($kind === 'select' && array_key_exists($name, $data) && blank($data[$name])) {
+                unset($data[$name]);
+            }
+        }
+
+        return $data;
     }
 
     /**
@@ -258,7 +322,7 @@ class BlockContentController extends TalentController
 
             foreach (['en', 'ar'] as $loc) {
                 if (isset($data[$f[0]][$loc]) && $data[$f[0]][$loc] !== '') {
-                    $data[$f[0]][$loc] = \App\Support\Html\BriefSanitizer::clean((string) $data[$f[0]][$loc]);
+                    $data[$f[0]][$loc] = BriefSanitizer::clean((string) $data[$f[0]][$loc]);
                 }
             }
         }
@@ -338,6 +402,9 @@ class BlockContentController extends TalentController
     }
 
     /**
+     * One content item for the editor list: id, position, display label,
+     * thumbnail, and every form field's stored value (to prefill Edit).
+     *
      * @return array<string, mixed>
      */
     private function present(Model $item, array $config): array
@@ -349,11 +416,20 @@ class BlockContentController extends TalentController
             ? ($item->getTranslation($labelField, app()->getLocale()) ?: '')
             : (string) ($item->getAttribute($labelField) ?? '');
 
+        // Every form field's stored value, so the editor can open an item
+        // prefilled (translatable fields carry all locales).
+        $values = [];
+        foreach ($config['fields'] as [$name, $kind]) {
+            $raw = $kind === 'translatable' ? $item->getTranslations($name) : $item->getAttribute($name);
+            $values[$name] = $raw instanceof \DateTimeInterface ? $raw->format('Y-m-d') : $raw;
+        }
+
         return [
             'id' => $item->id,
             'position' => (int) $item->position,
             'label' => $label,
             'thumb' => $config['thumb'] ? $item->{$config['thumb']} : null,
+            'values' => $values,
         ];
     }
 }

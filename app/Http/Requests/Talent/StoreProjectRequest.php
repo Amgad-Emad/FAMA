@@ -23,7 +23,7 @@ class StoreProjectRequest extends FormRequest
      */
     public function rules(): array
     {
-        $ownSkills = $this->user('talent')?->talentTypes()->pluck('talent_types.id')->all() ?? [];
+        $ownSkills = $this->taggableSkillIds();
 
         return [
             'skill_ids' => ['required', 'array', 'min:1'],
@@ -56,10 +56,24 @@ class StoreProjectRequest extends FormRequest
             'occurred_on' => ['nullable', 'date', 'before_or_equal:'.now()->addYear()->toDateString()],
             'url' => ['nullable', 'url', 'max:2048'],
 
-            'results' => ['nullable', 'array', 'max:6'],
+            // Up to four results, each {label, value, compare} — the value's
+            // shape decides how it renders (number / percent bar / rise-fall).
+            'results' => ['nullable', 'array', 'max:4'],
             'results.*.label' => ['nullable', 'string', 'max:60'],
             'results.*.value' => ['nullable', 'string', 'max:60'],
+            'results.*.compare' => ['nullable', 'string', 'max:60'],
         ];
+    }
+
+    /**
+     * The skills a project may be tagged with: the requesting talent's own on
+     * create (they become its home owner, ADR-X).
+     *
+     * @return list<int>
+     */
+    protected function taggableSkillIds(): array
+    {
+        return $this->user('talent')?->talentTypes()->pluck('talent_types.id')->map('intval')->all() ?? [];
     }
 
     /**
@@ -72,6 +86,7 @@ class StoreProjectRequest extends FormRequest
             'skill_ids.min' => __('Pick at least one skill for this project.'),
             'skill_ids.*.in' => __('You can only tag your own skills on a project.'),
             'title.en.required' => __('Give the project a title.'),
+            'results.max' => __('A project can show up to four results.'),
         ];
     }
 

@@ -15,9 +15,7 @@ use Illuminate\View\View;
  */
 class FollowsController extends Controller
 {
-    public function __construct(private readonly FollowManagementService $follows)
-    {
-    }
+    public function __construct(private readonly FollowManagementService $follows) {}
 
     /**
      * The management page shell (FOLLOWING default, ?tab=followers switches).

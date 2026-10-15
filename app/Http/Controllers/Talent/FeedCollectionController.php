@@ -16,9 +16,7 @@ use Illuminate\View\View;
  */
 class FeedCollectionController extends Controller
 {
-    public function __construct(private readonly FeedCollectionService $collections)
-    {
-    }
+    public function __construct(private readonly FeedCollectionService $collections) {}
 
     /**
      * The SAVED page shell.
@@ -53,6 +51,17 @@ class FeedCollectionController extends Controller
         $posts = $mode === 'liked'
             ? $this->collections->liked($talent, $request->query('skill'), $request->query('q'))
             : $this->collections->saved($talent, $request->query('skill'), $request->query('q'));
+
+        // fama-ui Activity: ?format=html returns the canonical post cards.
+        if ($request->query('format') === 'html') {
+            $this->collections->withCardGraph($posts, $talent);
+
+            return response()->paginated($posts, $posts->getCollection()
+                ->map(fn ($post): array => [
+                    'id' => $post->id,
+                    'html' => view('feed.partials.post', ['post' => $post, 'currentActor' => $talent])->render(),
+                ])->values());
+        }
 
         return response()->paginated($posts, $this->collections->present($posts));
     }

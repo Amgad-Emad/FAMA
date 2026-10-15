@@ -1,0 +1,35 @@
+/* Verbatim from the fama-ui prototype: credits.html <style>. Do not edit — app additions go in the page view. */
+/* Screen: /talent/credits — the collaborator's side of journey 3 in the Fama V1 Blueprint.
+   Nothing appears on anyone's profile without their confirmation. */
+.cr{display:grid;grid-template-columns:120px minmax(0,1fr) auto;gap:var(--s5);align-items:center;padding-block:var(--s5);border-top:var(--border)}
+.cr:first-child{border-top:0;padding-top:0}
+.cr .ph{aspect-ratio:4/3;border-radius:var(--s3)}
+.cr b{display:block;font-weight:600;font-size:var(--t-h3)}
+.cr a.pt{text-decoration:none}
+.cr a.pt:hover b{color:var(--purple-dk)}
+.cr .by{margin-top:var(--s1)}
+.cr .role{display:flex;flex-wrap:wrap;gap:var(--s2);margin-top:var(--s3)}
+.cr .acts{display:flex;gap:var(--s2)}
+.cr.is-hidden .ph,.cr.is-hidden b{opacity:.55}
+.note{margin-top:var(--s3);font-size:var(--t-meta);color:var(--grey)}
+.count{background:var(--ink);color:var(--cream);border-radius:var(--radius-pill);font-size:14px;font-weight:600;padding:0 var(--s2);margin-inline-start:var(--s2);vertical-align:middle}
+.rc{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--s5);align-items:center;padding-block:var(--s5);border-top:var(--border)}
+.rc:first-child{border-top:0;padding-top:0}
+.rc q{display:block;font-size:17px}
+.rc q::before,.rc q::after{content:none}
+.rc .by{margin-top:var(--s2)}
+.rc.is-hidden q{opacity:.55}
+.rc .note{margin-top:var(--s2)}
+@media (max-width:760px){
+  .rc{grid-template-columns:minmax(0,1fr)}
+  .cr{grid-template-columns:80px minmax(0,1fr)}
+  .cr .acts{grid-column:1/-1}
+}
+.rhead{display:flex;justify-content:space-between;align-items:center;gap:var(--s4);flex-wrap:wrap}
+.rhead .h2{display:flex;align-items:center;gap:var(--s2);flex-wrap:wrap}
+.showsw{display:inline-flex;align-items:center;gap:var(--s3);font-size:var(--t-meta);font-weight:500;color:var(--grey);cursor:pointer;min-height:44px}
+.switch{width:48px;height:28px;border-radius:999px;border:1px solid var(--purple);background:var(--purple);position:relative;cursor:pointer;flex:none;padding:0}
+.switch i{position:absolute;top:3px;inset-inline-start:23px;width:20px;height:20px;border-radius:999px;background:var(--white);transition:inset-inline-start 120ms}
+.switch[aria-checked=false]{background:var(--line);border-color:var(--line)}
+.switch[aria-checked=false] i{inset-inline-start:3px}
+#recs.is-off{opacity:.55}

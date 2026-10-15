@@ -1,0 +1,21 @@
+/* Verbatim from the fama-ui prototype: recognise.html <style>. Do not edit — app additions go in the page view. */
+.col{max-width:680px;margin-inline:auto}
+.back{display:inline-flex;align-items:center;gap:var(--s2);text-decoration:none;font-weight:600;color:var(--purple-dk);min-height:44px}
+.bk{transform:scaleX(-1)}[dir=rtl] .bk{transform:none}
+.target{display:flex;align-items:center;gap:var(--s4);margin-top:var(--s4)}
+.target .h1{font-size:clamp(34px,5vw,44px)}
+.card form{margin-top:0}
+.rate{display:flex;gap:var(--s1)}
+.rate input{position:absolute;opacity:0;width:1px;height:1px}
+.rate label{font-size:36px;line-height:1;color:var(--line);cursor:pointer;padding:var(--s1);min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;border-radius:var(--s2)}
+.rate label.on{color:var(--purple)}
+.rate input:focus-visible+label{outline:2px solid var(--purple-dk);outline-offset:2px}
+.done{text-align:center;padding:var(--s7) var(--s5)}
+.done .ic{width:64px;height:64px;border-radius:var(--radius-pill);background:var(--mint-bg);color:var(--mint-fg);display:flex;align-items:center;justify-content:center;margin:0 auto var(--s4)}
+.done p{color:var(--grey);margin-top:var(--s2)}
+.acts{display:flex;gap:var(--s2);justify-content:flex-end;flex-wrap:wrap;margin-top:var(--s6)}
+.prev{margin-top:var(--s6);padding:var(--s5);border:var(--border);border-radius:var(--radius);background:var(--cream)}
+.prev q{display:block;margin-top:var(--s3);font-family:var(--font-display);font-weight:600;font-size:24px;line-height:1.25}
+[dir=rtl] .prev q{font-family:var(--ar);font-weight:700;font-size:22px;line-height:1.6}
+.prev .who{margin-top:var(--s3);color:var(--grey)}
+.note{background:var(--cream);border:var(--border);border-radius:var(--s3);padding:var(--s3) var(--s4);margin-top:var(--s5)}

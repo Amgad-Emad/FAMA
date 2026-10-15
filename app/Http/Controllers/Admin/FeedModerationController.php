@@ -21,9 +21,7 @@ use Illuminate\View\View;
  */
 class FeedModerationController extends Controller
 {
-    public function __construct(private readonly FeedModerationService $moderation)
-    {
-    }
+    public function __construct(private readonly FeedModerationService $moderation) {}
 
     /**
      * The console shell. ?queue= deep-links a tab (server-validated).

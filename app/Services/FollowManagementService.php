@@ -288,6 +288,9 @@ class FollowManagementService extends Service
                     ->values()
                     ->all(),
                 'quiet_since' => $this->quietSince($other->last_posted_at),
+                // fama-ui Activity status line ("Posted 3 days ago") — the
+                // column is already on the hydrated row, no extra query.
+                'last_posted_at' => $other->last_posted_at?->toIso8601String(),
             ];
         }
 
@@ -297,6 +300,7 @@ class FollowManagementService extends Service
             'city' => $other->base_city,
             'skills' => [],
             'quiet_since' => null,
+            'last_posted_at' => null,
         ];
     }
 

@@ -590,3 +590,26 @@
   lists (today the owner may name any skill, with the universal-region fallback above); whether a
   declined credit should be re-requestable by the owner or stay refused; video length limits for the
   media gallery (today only file size is capped, at 50 MB); AR copy for the new sections.
+
+## ADR-AB — The fama-ui prototype is the product UI; six product rules adopted with it
+- **Date:** 2026-10-12
+- **Context:** The client delivered a static HTML/CSS prototype (`fama-ui`: 19 screens + a developer
+  handoff) and asked for the app to match it exactly, plus six standing product rules.
+- **Decision:**
+  - The prototype CSS is shipped **verbatim** (`public/fama-ui/css`) and every redesigned page renders through
+    `<x-fama.layout>`, which loads only those sheets + the JS bundle (no Tailwind) so the two systems never
+    fight. Page-specific prototype styles live in `public/fama-ui/css/pages/<page>.css`. The prototype's JS
+    (fake data) is NOT shipped — behaviour is Blade + Alpine on the real endpoints.
+  - **No dashboard** — Profile structure is home (views + steps to Live at its top).
+  - **No primary skill** — skill order is tab order; `is_primary` is a derived projection of position 0,
+    maintained by `SkillsService::syncPrimaryFromOrder()`.
+  - **Live / Private** — a Private profile shows no link anywhere, only its status.
+  - **Draft and save** — Profile structure edits one draft; a bottom bar saves or discards (Undo). Avatar
+    and publish/private stay immediate (a file and a state change are not draft content).
+  - **No reviews** — `features.reviews` (default false) hides them; Recognitions replace them. Backend kept.
+  - **Co-owners** — confirming a credit makes you a co-owner. Any owner edits or leaves; only a sole owner
+    deletes. Rule lives in `Project::isOwnedBy()/isSoleOwner()` + `ProjectPolicy`; a creator leaving hands the
+    project to the earliest-confirmed co-owner (their credit row is kept; tags re-homed to the heir's skills).
+- **Consequences:** Daylight (`daylight.css`) no longer styles the feed (kept for the contrast gate and any
+  remaining surface). Brand/admin/contract surfaces stay on the Tailwind system until they get a design.
+  Arabic is paused in the prototype — new copy is English-only via `__()`.

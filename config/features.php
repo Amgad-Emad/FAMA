@@ -42,4 +42,10 @@ return [
     // data is preserved. FEATURE_PRICING=false in the production .env.
     'pricing' => env('FEATURE_PRICING', true),
 
+    // Client reviews on the PUBLIC profile (the reviews block + "Leave a review").
+    // OFF by default: the fama-ui design (2026-10-12) replaces reviews with peer
+    // Recognitions for now. The data, the talent's own reviews list and the admin
+    // queue all stay; flip this on to bring the public side back.
+    'reviews' => env('FEATURE_REVIEWS', false),
+
 ];

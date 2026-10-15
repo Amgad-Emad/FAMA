@@ -30,4 +30,11 @@ import './feed';
 // Fixed topbar scroll behaviour (5AB).
 import './topbar';
 
+// fama-ui design (2026-10-12): shell (nav, bell, toast) + per-area page components.
+import './ui/shell';
+import './ui/feed';
+import './ui/profile';
+import './ui/projects';
+import './ui/auth';
+
 Alpine.start();

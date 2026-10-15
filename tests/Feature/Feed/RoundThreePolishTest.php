@@ -6,69 +6,57 @@ use App\Models\Talent;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
-// ----- 5AB: fixed topbar + primary nav ---------------------------------------
+// ----- fama-ui shell (2026-10-12, replaces the 5AB topbar) -------------------
 
-it('renders the fixed topbar with the Feed-first nav and aria-current on the active item', function () {
+it('renders the fama-ui header with the Feed link marked current', function () {
     $html = $this->get('/feed')->assertOk()->getContent();
 
-    expect($html)->toContain('site-topbar');
-
-    // Nav order is Feed, Discover, Brands, Opportunities (round-3 default).
-    $positions = collect(['Feed', 'Discover', 'Brands', 'Opportunities'])
-        ->map(function (string $label) use ($html) {
-            preg_match('/>\s*'.$label.'\b/u', $html, $m, PREG_OFFSET_CAPTURE);
-
-            return $m[0][1] ?? false;
-        });
-
-    expect($positions->filter(fn ($p) => $p === false))->toBeEmpty()
-        ->and($positions->values()->all())->toBe($positions->sort()->values()->all());
-
-    // The active item is marked for assistive tech.
-    expect($html)->toContain('aria-current="page"');
+    // A visitor gets the public header: logo · Feed | Log in.
+    expect($html)->toContain('class="fx-nav"')
+        ->toMatch('/<a href="[^"]*\/feed"\s+aria-current="page"\s*>Feed<\/a>/');
 });
 
 // ----- Component-tag @js regression (round 3) --------------------------------
 
 it('never ships a literal Blade directive inside the rendered feed', function () {
     // @js() on a COMPONENT TAG attribute is not compiled by Blade — it reaches
-    // the browser verbatim and breaks the whole frame's Alpine tree. This
+    // the browser verbatim and breaks the whole card's Alpine tree. This
     // guards the postFrame x-data (and any future attribute) against it.
     Post::factory()->count(3)->create();
 
     $html = $this->get('/feed')->assertOk()->getContent();
 
     expect($html)->not->toContain('@js(')
-        ->and($html)->toContain('authorName:');
+        ->and($html)->toContain('postFrame(')
+        ->and($html)->toContain('authorName');
 });
 
-it('teleports the floating actions to <body> so position:fixed escapes the transformed feed ancestor', function () {
-    // <main class="animate-fade-in-up"> animates a transform, which would
-    // become the containing block for the fixed FAB stack and drop it below
-    // the fold. The stack is teleported to body inside a daylight host.
-    $html = $this->get('/feed')->assertOk()->getContent();
+it('renders the floating actions: Filters and Back to top for everyone, New post for a talent', function () {
+    $guest = $this->get('/feed')->assertOk()->getContent();
 
-    expect($html)->toContain('class="fab-host"')
-        ->toContain('Back to top')   // the back-to-top control
-        ->toContain('NEW POST');     // the new-post control
+    expect($guest)->toContain('class="fab" id="fab"')
+        ->toContain('aria-label="Back to top"')
+        ->toContain('id="fabFilter"')
+        ->not->toContain('id="fabNew"'); // a visitor cannot post
 
-    // The host is teleported (the template wraps it) and carries the daylight
-    // scope so the scoped tokens/positioning resolve at body level.
-    expect($html)->toMatch('/<template x-teleport="body">\s*<div data-surface="daylight" class="fab-host">/');
+    $talent = Talent::factory()->create();
+    $html = $this->actingAs($talent, 'talent')->get('/feed')->assertOk()->getContent();
+
+    expect($html)->toContain('id="fabNew"')
+        ->toContain('aria-label="New post"')
+        ->toContain('class="composer" id="composer"');
 });
 
-it('teleports the post overflow menu to <body> and puts bookmark in the top corner', function () {
-    // The Daylight frame clips with clip-path, so an in-frame dropdown opens
-    // invisibly — the overflow (⋯) menu is teleported. Bookmark is a top-corner
-    // toggle on the frame; the standalone on-bar Save button is gone.
+it('renders the post card with its More menu in place and Save on the action row', function () {
     Post::factory()->create();
 
     $html = $this->get('/feed')->assertOk()->getContent();
 
-    expect($html)->toContain('overflowMenu()')          // the teleporting menu component
-        ->toContain('x-ref="menu"')                     // its teleported panel
-        ->toContain('bookmark-corner')                  // bookmark lives in the post's top corner
-        ->not->toContain('Save this post by');          // the old on-bar Save button is gone
+    expect($html)->toContain('class="more-wrap"')          // the More (⋯) menu lives in the card header
+        ->toContain('class="pmenu"')
+        ->toContain('class="pacts"')                        // Like · Comment · Share · Save
+        ->toContain('aria-label="Save"')
+        ->toContain('class="pmenu smenu"');                 // the share menu opens above the row
 });
 
 it('defines the famaLang JS string bridge on feed pages', function () {

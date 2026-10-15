@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Feed;
 
-use App\Http\Controllers\Controller;
 use App\Feed\CurrentActor;
+use App\Http\Controllers\Controller;
 use Illuminate\Contracts\Auth\Access\Gate as GateContract;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\Auth;
@@ -17,9 +17,7 @@ use Illuminate\Support\Facades\Gate;
  */
 abstract class FeedBaseController extends Controller
 {
-    public function __construct(protected readonly CurrentActor $currentActor)
-    {
-    }
+    public function __construct(protected readonly CurrentActor $currentActor) {}
 
     /**
      * The acting identity for authorization: Actor, admin User, or null guest.

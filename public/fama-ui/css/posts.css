@@ -1,0 +1,125 @@
+/* FAMA — the post frame and everything around it (feed.html, post.html).
+   Blueprint asks for "a notched corner and a soft orchid shadow" on post frames.
+   Shadows are locked out of the system (CLAUDE.md), so the frame uses the hairline
+   and 20px radius like every other card. Open item, flagged to the designer. */
+.post{background:var(--white);border:var(--border);border-radius:var(--radius);padding:var(--s5);position:relative}
+.post+.post,.post+.strip,.strip+.post{margin-top:var(--s4)}
+.ph-head{display:flex;align-items:center;gap:var(--s3)}
+.ph-head .av{text-decoration:none}
+.ph-head .grow{flex:1;min-width:0}
+.ph-head .who{text-decoration:none;display:block}
+.ph-head .who b{font-weight:600}
+.ph-head .who:hover b{color:var(--purple-dk)}
+.ph-head .meta{display:block}
+.pinned{color:var(--purple-dk);font-weight:600}
+.more-wrap{position:relative}
+.pmenu{position:absolute;z-index:6;top:calc(100% + var(--s1));inset-inline-end:0;min-width:240px;background:var(--white);border:var(--border);border-radius:var(--radius);padding:var(--s2)}
+.pmenu button{display:block;width:100%;text-align:start;border:0;background:none;padding:var(--s3);border-radius:var(--s3);cursor:pointer;min-height:44px}
+.pmenu button:hover,.pmenu button:focus-visible{background:var(--cream)}
+.pmenu button[data-m=delete]{color:var(--rose-fg)}
+.pmenu button:disabled{color:var(--grey);cursor:default;background:none}
+.ptext{margin-top:var(--s4);font-size:17px;white-space:pre-wrap}
+.mention{color:var(--purple-dk);font-weight:600;text-decoration:none}
+.mention:hover{text-decoration:underline}
+.lchips{margin-top:var(--s3)}
+.lchips .icon{width:16px;height:16px}
+.pmedia{display:grid;gap:4px;margin-top:var(--s4);border-radius:var(--s3);overflow:hidden}
+.pmedia.n1{grid-template-columns:1fr}
+.pmedia.n2{grid-template-columns:1fr 1fr}
+.pmedia.n3{grid-template-columns:2fr 1fr;grid-template-rows:1fr 1fr}
+.pmedia.n3 .ph:first-child{grid-row:span 2}
+.pmedia.n4{grid-template-columns:1fr 1fr}
+.pmedia.n4 .ph,.pmedia.n2 .ph{aspect-ratio:16/11}
+.pmedia .ph{border:0;border-radius:0;aspect-ratio:4/3;cursor:zoom-in;position:relative;padding:0}
+.pmedia.n1 .ph{aspect-ratio:16/10}
+.pmedia.n3 .ph:first-child{aspect-ratio:auto}
+.ptrack{display:contents}
+.pmedia .ph.extra,.pcount,.pdots{display:none}
+.pmedia .plus{position:absolute;inset:0;background:rgba(20,17,15,.55);color:var(--white);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:600;font-size:30px}
+.ptags{margin-top:var(--s4)}
+.counts{margin-top:var(--s4)}
+.counts a{color:inherit}
+.pacts{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--s1);margin-top:var(--s3);padding-top:var(--s2);border-top:var(--border)}
+.pacts>*{min-height:44px;display:inline-flex;align-items:center;justify-content:center;gap:var(--s2);border:0;background:none;border-radius:var(--s3);font-weight:600;color:var(--ink);cursor:pointer;text-decoration:none}
+.pacts>*:hover{background:var(--cream)}
+.pacts [aria-pressed=true]{color:var(--purple-dk)}
+.projframe{display:grid;grid-template-columns:minmax(0,1fr);margin-top:var(--s4);border:var(--border);border-radius:var(--radius);overflow:hidden;text-decoration:none}
+.projframe .cover{aspect-ratio:16/9;border-radius:0}
+.projframe .pf-b{padding:var(--s5);display:flex;flex-direction:column;gap:var(--s1)}
+.projframe .pf-t{font-family:var(--font-display);font-weight:600;font-size:26px;line-height:1.15}
+[dir=rtl] .projframe .pf-t{font-family:var(--ar);font-weight:700}
+.projframe:hover .pf-t{color:var(--purple-dk)}
+.signin{position:absolute;z-index:7;inset-inline:var(--s5);bottom:calc(100% - 48px);background:var(--white);border:1px solid var(--ink);border-radius:var(--radius);padding:var(--s5)}
+.post .signin{bottom:64px}
+.signin b{display:block;font-weight:600;font-size:var(--t-h3)}
+.signin p{color:var(--grey);margin:var(--s1) 0 var(--s4)}
+.signin .row{display:flex;gap:var(--s2);flex-wrap:wrap}
+.done-r h2{font-family:var(--font-display);font-weight:600;font-size:26px}
+@media (max-width:760px){
+  .post{padding:var(--s4)}
+  .pacts>* span{display:none}
+  /* photos swipe sideways on a phone (11 Oct 2026) */
+  .pmedia{display:block;position:relative;overflow:visible;border-radius:0}
+  .ptrack{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}
+  .ptrack::-webkit-scrollbar{display:none}
+  .pmedia .ph,.pmedia .ph.extra{display:flex;flex:0 0 100%;aspect-ratio:9/10!important;border-radius:16px;scroll-snap-align:start;grid-row:auto}
+  .pmedia.many .ph{flex-basis:calc(100% - 36px)}
+  .pmedia .plus{display:none}
+  .pcount{display:block;position:absolute;top:10px;inset-inline-end:46px;background:rgba(20,17,15,.65);color:var(--white);font-size:12px;font-weight:600;padding:3px 10px;border-radius:var(--radius-pill);pointer-events:none}
+  .pdots{display:flex;justify-content:center;gap:6px;margin-top:10px}
+  .pdots i{width:6px;height:6px;border-radius:3px;background:var(--line);transition:width var(--fast),background var(--fast)}
+  .pdots i.on{width:16px;background:var(--purple-dk)}
+}
+
+/* comments, inline under a post */
+.clink{border:0;background:none;padding:0;font:inherit;color:inherit;cursor:pointer}
+.clink:hover{text-decoration:underline;text-underline-offset:3px}
+.pcomments{margin-top:var(--s3);padding-top:var(--s4);border-top:var(--border);display:grid;gap:var(--s4)}
+.av.sm{width:32px;height:32px;font-size:12px;flex:none}
+.cadd{display:flex;gap:var(--s2);align-items:center}
+.cadd .in{flex:1;min-width:0;min-height:44px}
+/* one rounded line with the send button inside it (11 Oct 2026) */
+.cpill{flex:1;min-width:0;display:flex;align-items:center;gap:var(--s2);min-height:48px;padding:4px 4px 4px var(--s4);border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--white)}
+[dir=rtl] .cpill{padding:4px var(--s4) 4px 4px}
+.cpill:focus-within{border-color:var(--ink)}
+.cpill input{flex:1;min-width:0;border:0;background:none;font:inherit;font-size:15px;outline:0;padding:0;min-height:38px}
+.csend{flex:none;width:38px;height:38px;border-radius:var(--radius-pill);border:0;background:var(--ink);color:var(--cream);display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+.csend .icon{width:18px;height:18px}
+.csend:disabled{background:var(--line);color:var(--grey);cursor:default}
+.clist{list-style:none;margin:0;padding:0;display:grid;gap:var(--s4)}
+.clist li{display:flex;gap:var(--s3);align-items:flex-start}
+.clist .cb{background:var(--cream);border-radius:var(--s3);padding:var(--s2) var(--s3);min-width:0;flex:1}
+.clist .cb p{margin:0;font-size:15px}
+.clist .who{color:inherit;text-decoration:none}
+.call{justify-self:start;font-size:15px}
+.cguest{margin:0}
+.cnone{margin:0}
+/* share menu opens above the action row */
+.pacts{position:relative}
+.pacts>.pmenu{display:block;min-height:0;background:var(--white);border:var(--border);padding:var(--s2);z-index:8;font-weight:400;border-radius:var(--radius)}
+.smenu{top:auto;bottom:calc(100% + var(--s1));min-width:260px}
+.smenu button,.smenu a{display:flex;align-items:center;gap:var(--s3);width:100%;text-align:start;border:0;background:none;padding:var(--s3);border-radius:var(--s3);cursor:pointer;min-height:44px;color:var(--ink);text-decoration:none;font:inherit;font-size:15px}
+.smenu button:hover,.smenu a:hover,.smenu [role=menuitem]:focus-visible{background:var(--cream)}
+.smenu .icon{width:18px;height:18px;flex:none}
+.smenu hr{border:0;border-top:var(--border);margin:var(--s1) 0}
+/* a shared post: your words, then the original in a frame */
+.rp{display:grid;gap:var(--s2);margin-top:var(--s3);padding:var(--s4);border:var(--border);border-radius:var(--radius);color:inherit;text-decoration:none}
+a.rp:hover{border-color:var(--ink)}
+.rp-h{display:flex;align-items:center;gap:var(--s2);flex-wrap:wrap}
+.rp-h b{font-weight:600}
+.rp-t{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.rp-m{display:inline-flex;align-items:center;gap:var(--s1)}
+.rp-m .icon{width:16px;height:16px}
+.rpprev{margin-top:var(--s4)}
+.fx-vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* guest sign-in: a centred dialog (7 Oct 2026) */
+dialog.signdlg{border:0;border-radius:24px;padding:var(--s7) var(--s7) var(--s6);width:min(480px,calc(100% - 32px));background:var(--white);color:var(--ink);text-align:center;box-shadow:0 24px 60px rgba(20,17,15,.25)}
+dialog.signdlg::backdrop{background:rgba(20,17,15,.55)}
+dialog.signdlg .sx{position:absolute;top:var(--s3);inset-inline-end:var(--s3)}
+dialog.signdlg .sstar{width:64px;height:58px;fill:var(--yellow);stroke:var(--purple);stroke-width:18;stroke-linejoin:round;display:block;margin:0 auto var(--s4)}
+dialog.signdlg h2{font-family:var(--font-display);font-weight:600;font-size:30px;line-height:1.15;margin:0}
+dialog.signdlg p{color:var(--grey);margin:var(--s2) auto 0;max-width:34ch}
+dialog.signdlg .row{display:flex;flex-direction:column;gap:var(--s2);margin-top:var(--s6)}
+dialog.signdlg .row .btn{width:100%;justify-content:center}
+@media (max-width:760px){dialog.signdlg{padding:var(--s6) var(--s5) var(--s5)}}

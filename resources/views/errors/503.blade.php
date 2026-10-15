@@ -2,4 +2,5 @@
 
 @section('code', '503')
 @section('title', __("Down for maintenance"))
-@section('message', __("Fama is briefly offline for scheduled maintenance. We'll be back shortly."))
+@section('heading', __("Fama is being updated"))
+@section('message', __("We're making some changes and will be back shortly. Your profile and work are safe."))

@@ -55,6 +55,37 @@ class PendingIntent
     }
 
     /**
+     * The login page's "finish what you started" line for the stored intent
+     * (prototype login.html `next` note), or null when nothing is pending.
+     * A follow names its target talent; the other actions name the post.
+     */
+    public function loginNote(): ?string
+    {
+        $intent = $this->peek();
+
+        if ($intent === null) {
+            return null;
+        }
+
+        $back = __("We'll finish it as soon as you're in.");
+
+        if ($intent['action'] === 'follow' && $intent['target_type'] === 'talent') {
+            $name = Talent::query()->find($intent['target_id'])?->feedDisplayName();
+
+            if ($name !== null) {
+                return __('Log in to finish following :name.', ['name' => $name]).' '.$back;
+            }
+        }
+
+        return match ($intent['action']) {
+            'like' => __('Log in to finish liking this.'),
+            'comment' => __('Log in to post your comment.'),
+            'bookmark' => __('Log in to finish saving this post.'),
+            default => __('Log in to finish following them.'),
+        }.' '.$back;
+    }
+
+    /**
      * Drop the stored intent without replaying.
      */
     public function clear(): void

@@ -1,220 +1,158 @@
-<x-talent-layout :title="__('Projects')">
-    @php
-        // Runtime strings for the Alpine component — this page uses design-head,
-        // so window.famaLang does not exist here (a dashboard rule).
-        $strings = [
-            'needTitle' => __('Give the project a title to save it.'),
-            'needSkill' => __('Pick at least one skill to save it.'),
-            'discardTitle' => __('Discard this project?'),
-            'discardMessage' => __('Your unsaved changes will be lost.'),
-            'discardConfirm' => __('Discard'),
-            'deleteTitle' => __('Remove this project?'),
-            'deleteMessage' => __('":title" and its cover will be permanently removed from your profile.'),
-            'deleteConfirm' => __('Remove'),
-            'removeMediaTitle' => __('Remove this file?'),
-            'removeMediaMessage' => __('It is deleted from this project for good.'),
-            'removeConfirm' => __('Remove'),
-        ];
-    @endphp
+{{--
+    Projects (fama-ui `projects.html`) — the talent's selected work.
 
-    <div x-data="talentProjects({ skills: @js($skills), specialities: @js($specialities), allSkills: @js($allSkills), total: @js($total), strings: @js($strings) })">
+    Every project carries at least one of the talent's own skills (ADR-X); those
+    tags decide the profile tabs it appears in. Filter by skill, drag to reorder
+    (only on the unfiltered single-page list — a partial list cannot express an
+    order), delete with confirmation. New / Edit open the editor PAGE
+    (talent.projects.new / talent.projects.edit) — no pop-up.
 
-        {{-- Page header — the promise of the page, then the one primary action. --}}
-        <div class="mb-8 flex flex-wrap items-end justify-between gap-5">
-            <div class="min-w-0">
-                <x-ui.eyebrow>{{ __('Selected work') }}</x-ui.eyebrow>
-                <h2 class="mt-1.5 font-display text-3xl leading-tight text-ink">{{ __('Projects') }}</h2>
-                <p class="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
-                    {{ __('Every project carries at least one skill — that is what decides which tab it appears in on your public profile. Drag the cards to set the order visitors see.') }}
-                </p>
-            </div>
+    Projects other people credited you on, and you confirmed (ADR-AA), are listed
+    after your own with a Leave action (withdrawing = declining the credit).
 
+    Behaviour: `famaProjects` (resources/js/ui/projects.js) on the JSON endpoints.
+--}}
+@php
+    $initials = collect(preg_split('/\s+/', trim((string) ($talent->display_name ?: $talent->slug))))
+        ->filter()->take(2)->map(fn ($w) => mb_strtoupper(mb_substr($w, 0, 1)))->implode('');
+    $strings = [
+        'you' => __('You'),
+        'and' => __('and'),
+        'ownMany' => __('You and :n others'),
+        'coowned' => __('Co-owned with :names'),
+        'waiting' => __(':n awaiting confirmation'),
+        'editA' => __('Edit :p'),
+        'delA' => __('Delete :p'),
+        'leaveA' => __('Leave :p'),
+        'dragA' => __('Drag to reorder :p'),
+        'delTitle' => __('Delete :p?'),
+        'delBody' => __('You’re its only owner, so it comes off Fama for everyone, with its photos and credits. This can’t be undone.'),
+        'delOk' => __('Delete project'),
+        'deleted' => __(':p deleted'),
+        'leaveTitle' => __('Leave :p?'),
+        'leaveBody' => __('You stop being an owner, and it comes off your profile. The project stays for :n. Nobody can delete a project that still has other owners.'),
+        'leaveOk' => __('Leave project'),
+        'left' => __('You left :p'),
+        'untitled' => __('Untitled project'),
+        'failed' => __('Something went wrong. Try again.'),
+    ];
+@endphp
+<x-fama.layout :title="__('Projects')">
+    <x-slot:styles>
+        <link rel="stylesheet" href="{{ asset('fama-ui/css/pages/projects.css') }}">
+        <style>
+            /* App additions: real cover images on the prototype's grey card cover. */
+            .pc .cover.has{background-size:cover;background-position:center}
+            .pager{display:flex;justify-content:center;align-items:center;gap:var(--s3);margin-top:var(--s6)}
+        </style>
+    </x-slot:styles>
+
+    <x-slot:hero>
+        <x-fama.hero :label="__('Selected work')" :title="__('Projects')"
+                     :lead="__('Each project carries at least one of your skills, which decides the profile tab it appears in.')"
+                     photo="projects">
             @if (count($skills))
-                <x-ui.button variant="accent" size="lg" x-on:click="openComposer()" class="shrink-0">
-                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-                    {{ __('New project') }}
-                </x-ui.button>
+                <a class="fx-hbtn" href="{{ route('talent.projects.new') }}"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg><span>{{ __('New project') }}</span></a>
             @endif
-        </div>
+        </x-fama.hero>
+    </x-slot:hero>
+
+    <main class="wrap main"
+          x-data="famaProjects({ skills: @js($skills), total: @js($total), slug: @js($talent->slug), live: @js((bool) $talent->is_published), me: @js($initials), strings: @js($strings) })">
 
         @if (! count($skills))
-            {{-- The skill rule made concrete: no skills, no projects. --}}
-            <x-ui.card class="text-center">
-                <div class="mx-auto max-w-md">
-                    <div class="mx-auto grid h-12 w-12 place-items-center rounded-pill bg-accent-weak text-accent-ink">
-                        <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2M3 7h18v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7zm0 5h18"/></svg>
-                    </div>
-                    <h3 class="mt-4 font-display text-xl text-ink">{{ __('Add a skill first') }}</h3>
-                    <p class="mt-2 text-sm text-muted">{{ __('A project has to say which discipline it belongs to, so you need at least one skill on your profile before you can add work.') }}</p>
-                    <x-ui.button variant="accent" :href="route('talent.profile.edit')" class="mt-5">{{ __('Manage your skills') }}</x-ui.button>
+            {{-- The skill rule made concrete: no skills, no projects (ADR-X). --}}
+            <section class="card">
+                <div class="empty">
+                    <h2 class="h2">{{ __('Add a skill first') }}</h2>
+                    <p>{{ __('A project has to say which of your skills it belongs to, so you need at least one skill on your profile before you can add work.') }}</p>
+                    <a class="btn" href="{{ route('talent.profile.edit') }}">{{ __('Manage your skills') }}</a>
                 </div>
-            </x-ui.card>
+            </section>
         @else
-
-            {{-- Skill filter bar — the same order as the public tab bar. --}}
-            <nav style="z-index: var(--z-sticky);" class="sticky top-16 -mx-4 mb-6 border-b border-line bg-bg/90 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6"
-                 aria-label="{{ __('Filter projects by skill') }}">
-                <div class="flex items-center gap-3 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                    <span class="shrink-0 font-mono text-[11px] uppercase tracking-wider text-subtle">{{ __('Skill') }}</span>
-
-                    <button type="button" x-on:click="setFilter('')" :aria-pressed="filter === '' ? 'true' : 'false'"
-                            class="inline-flex shrink-0 items-center gap-2 rounded-pill px-4 py-2 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
-                            :class="filter === '' ? 'bg-accent text-on-accent shadow-sm' : 'border border-line bg-elevated text-ink hover:border-line-strong'">
-                        <span>{{ __('All work') }}</span>
-                        <span class="grid h-5 min-w-5 place-items-center rounded-pill px-1.5 font-mono text-[10px]"
-                              :class="filter === '' ? 'bg-on-accent/20 text-on-accent' : 'bg-surface text-muted'"
-                              x-text="countFor('')">{{ $total }}</span>
-                    </button>
-
+            <div class="bar">
+                <div class="chips" id="filters" role="group" aria-label="{{ __('Filter projects by skill') }}">
+                    <button class="chip" type="button" @click="setFilter('')" :aria-pressed="(filter === '').toString()" aria-pressed="true">{{ __('All work') }}<span class="c" x-text="countFor('')">{{ $total }}</span></button>
                     @foreach ($skills as $skill)
-                        <button type="button" x-on:click="setFilter('{{ $skill['id'] }}')"
-                                :aria-pressed="filter === '{{ $skill['id'] }}' ? 'true' : 'false'"
-                                class="inline-flex shrink-0 items-center gap-2 rounded-pill px-4 py-2 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
-                                :class="filter === '{{ $skill['id'] }}' ? 'bg-accent text-on-accent shadow-sm' : 'border border-line bg-elevated text-ink hover:border-line-strong'">
-                            <x-skill-icon :icon="$skill['icon']" class="h-4 w-4 shrink-0" />
-                            <span>{{ $skill['name'] }}</span>
-                            @if ($skill['is_primary'])
-                                <span class="rounded-pill px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider"
-                                      :class="filter === '{{ $skill['id'] }}' ? 'bg-on-accent/20 text-on-accent' : 'bg-accent-weak text-accent-ink'">{{ __('Primary') }}</span>
-                            @endif
-                            <span class="grid h-5 min-w-5 place-items-center rounded-pill px-1.5 font-mono text-[10px]"
-                                  :class="filter === '{{ $skill['id'] }}' ? 'bg-on-accent/20 text-on-accent' : 'bg-surface text-muted'"
-                                  x-text="countFor('{{ $skill['id'] }}')">0</span>
-                        </button>
+                        <button class="chip" type="button" @click="setFilter('{{ $skill['id'] }}')" :aria-pressed="(filter === '{{ $skill['id'] }}').toString()" aria-pressed="false">{{ $skill['name'] }}<span class="c" x-text="countFor('{{ $skill['id'] }}')">0</span></button>
                     @endforeach
-
-                    {{-- Only offered when work is actually parked there (a removed skill leaves projects behind). --}}
-                    <button type="button" x-show="countFor('none') > 0" x-cloak x-on:click="setFilter('none')"
-                            :aria-pressed="filter === 'none' ? 'true' : 'false'"
-                            class="inline-flex shrink-0 items-center gap-2 rounded-pill px-4 py-2 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
-                            :class="filter === 'none' ? 'bg-accent text-on-accent shadow-sm' : 'border border-dashed border-line-strong bg-elevated text-muted hover:text-ink'">
-                        <span>{{ __('No skill yet') }}</span>
-                        <span class="grid h-5 min-w-5 place-items-center rounded-pill bg-surface px-1.5 font-mono text-[10px] text-muted" x-text="countFor('none')"></span>
-                    </button>
+                    {{-- Only offered while work is parked there (removing a skill can leave projects behind). --}}
+                    <button class="chip" type="button" x-show="countFor('none') > 0" x-cloak @click="setFilter('none')" :aria-pressed="(filter === 'none').toString()">{{ __('No skill yet') }}<span class="c" x-text="countFor('none')"></span></button>
                 </div>
-            </nav>
-
-            {{-- Loading skeletons --}}
-            <div x-show="loading" class="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-                @for ($i = 0; $i < 3; $i++)
-                    <div class="overflow-hidden rounded-lg border border-line bg-surface">
-                        <div class="aspect-video animate-pulse bg-elevated"></div>
-                        <div class="space-y-3 p-5">
-                            <div class="h-4 w-2/3 animate-pulse rounded bg-elevated"></div>
-                            <div class="h-3 w-1/3 animate-pulse rounded bg-elevated"></div>
-                            <div class="h-6 w-1/2 animate-pulse rounded-pill bg-elevated"></div>
-                        </div>
-                    </div>
-                @endfor
             </div>
+            <p class="meta hint" x-text="canReorder ? @js(__('Drag cards to set the order visitors see.')) : @js(__('Clear the filter to reorder.'))">{{ __('Drag cards to set the order visitors see.') }}</p>
 
-            {{-- The grid --}}
-            <div x-show="!loading" x-cloak class="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-                <template x-for="project in items" :key="project.id">
-                    <article :draggable="canReorder"
-                             x-on:dragstart="onDragStart($event, project)"
-                             x-on:dragover.prevent="dragOverId = project.id"
-                             x-on:dragleave="dragOverId === project.id && (dragOverId = null)"
-                             x-on:drop.prevent="onDrop(project)"
-                             x-on:dragend="dragId = null; dragOverId = null"
-                             class="group relative flex flex-col overflow-hidden rounded-lg border bg-surface shadow-e1 transition-all duration-150"
-                             :class="[
-                                 dragOverId === project.id ? 'border-accent ring-2 ring-accent' : 'border-line',
-                                 dragId === project.id ? 'scale-[0.98] opacity-50' : 'hover:shadow-e2',
-                                 canReorder ? 'cursor-grab active:cursor-grabbing' : '',
-                             ]">
-
-                        {{-- Cover --}}
-                        <button type="button" x-on:click="openComposer(project)"
-                                class="relative block aspect-video w-full overflow-hidden text-start focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-inset"
-                                :aria-label="'{{ __('Edit') }} ' + (project.label || '')">
-                            <template x-if="project.cover_image_url">
-                                <img :src="project.cover_image_url" :alt="project.label"
-                                     class="h-full w-full object-cover transition duration-500 group-hover:scale-105">
-                            </template>
-                            <template x-if="!project.cover_image_url">
-                                <span class="flex h-full w-full items-center justify-center" :style="`background:${tint(project)}`">
-                                    <svg class="h-8 w-8 text-ink/25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14M4 6h16a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2z"/></svg>
-                                </span>
-                            </template>
-                            <span x-show="project.year" x-cloak
-                                  class="absolute bottom-2 end-2 rounded-pill bg-ink/70 px-2 py-0.5 font-mono text-[10px] tracking-wider text-bg backdrop-blur"
-                                  x-text="project.year"></span>
-                        </button>
-
-                        {{-- Body --}}
-                        <div class="flex flex-1 flex-col gap-3 p-5">
-                            <div>
-                                <h3 class="font-display text-lg leading-snug text-ink" x-text="project.label || '{{ __('Untitled project') }}'"></h3>
-                                <p class="mt-1 font-mono text-[11px] uppercase tracking-wider text-subtle"
-                                   x-text="[project.client_name, t(project.role)].filter(Boolean).join(' · ') || '—'"></p>
-                            </div>
-
-                            {{-- Skill tags: the first is the home tab on the public profile. --}}
-                            <div class="flex flex-wrap gap-1.5">
-                                <template x-for="(skill, index) in project.skills" :key="skill.id">
-                                    <span class="inline-flex items-center gap-1.5 rounded-pill border px-2.5 py-1 text-[11px] font-medium"
-                                          :class="index === 0 ? 'border-transparent bg-accent-weak text-accent-ink' : 'border-line bg-surface text-muted'"
-                                          :title="index === 0 ? '{{ __('Home tab on your public profile') }}' : ''">
-                                        <span class="h-3.5 w-3.5" x-html="iconFor(skill)"></span>
-                                        <span x-text="skill.name"></span>
+            <div class="grid" id="grid" :aria-busy="loading.toString()">
+                {{-- Your own projects --}}
+                <template x-for="p in items" :key="'p' + p.id">
+                    <article class="pc" :class="{ dragging: dragId === p.id }" :draggable="canReorder.toString()"
+                             @dragstart="onDragStart($event, p)" @dragover="canReorder && dragId !== null && $event.preventDefault()"
+                             @drop.prevent="onDrop(p)" @dragend="dragId = null">
+                        <div class="cover" :class="{ has: !!p.cover_image_url }" :style="p.cover_image_url ? { backgroundImage: 'url(' + p.cover_image_url + ')' } : {}">
+                            <span class="grip" x-show="canReorder" :title="fmt(strings.dragA, { p: titleOf(p) })" aria-hidden="true"><svg class="icon sm"><use href="#i-grip"/></svg></span>
+                            <svg class="icon" x-show="!p.cover_image_url"><use href="#i-image"/></svg>
+                        </div>
+                        <div class="body">
+                            <a :href="viewUrl(p)" style="text-decoration:none"><b x-text="titleOf(p)"></b></a>
+                            <span class="meta" x-text="[p.client_name, p.role?.en].filter(Boolean).join(' · ')"></span>
+                            <template x-if="others(p).length">
+                                <span class="owners" :title="fmt(strings.coowned, { names: names(others(p)) })">
+                                    <span class="stack" aria-hidden="true">
+                                        <template x-for="(f, i) in faces(others(p))" :key="i"><i x-text="f"></i></template>
+                                        <template x-if="others(p).length > 2"><i class="more" x-text="'+' + (others(p).length - 2)"></i></template>
                                     </span>
-                                </template>
-                                <span x-show="!project.skills.length" x-cloak
-                                      class="inline-flex items-center rounded-pill border border-dashed border-warn px-2.5 py-1 text-[11px] font-medium text-warn">
-                                    {{ __('No skill — pick one') }}
+                                    <span x-text="ownersLine(others(p))"></span>
                                 </span>
+                            </template>
+                            <div class="chips">
+                                <template x-for="(s, i) in p.skills" :key="s.id"><span class="tag" :class="{ 'tag-ink': i === 0 }" x-text="s.name"></span></template>
                             </div>
-
-                            {{-- Actions --}}
-                            <div class="mt-auto flex items-center gap-2 border-t border-line pt-3">
-                                <button type="button" x-on:click="openComposer(project)"
-                                        class="rounded-pill border border-line-strong px-3 py-1.5 text-xs font-medium text-ink transition hover:bg-elevated focus:outline-none focus-visible:ring-2 focus-visible:ring-accent">
-                                    {{ __('Edit') }}
-                                </button>
-                                <a x-show="project.url" x-cloak :href="project.url" target="_blank" rel="noopener noreferrer"
-                                   class="rounded-pill border border-line px-3 py-1.5 text-xs font-medium text-muted transition hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-accent">
-                                    {{ __('Visit') }} ↗
-                                </a>
-                                <button type="button" x-on:click="remove(project)"
-                                        class="ms-auto rounded-pill px-3 py-1.5 text-xs font-medium text-subtle transition hover:text-danger focus:outline-none focus-visible:ring-2 focus-visible:ring-danger">
-                                    {{ __('Remove') }}
-                                </button>
+                            <div class="foot">
+                                <span class="waiting" x-text="waitingCount(p) ? fmt(strings.waiting, { n: waitingCount(p) }) : ''"></span>
+                                <span>
+                                    <a class="iconbtn plain" :href="editUrl(p)" :aria-label="fmt(strings.editA, { p: titleOf(p) })"><svg class="icon"><use href="#i-edit"/></svg></a>
+                                    {{-- Only a sole owner may delete; with other owners, you leave instead. --}}
+                                    <template x-if="p.has_co_owners"><button class="iconbtn plain del" type="button" @click="leaveOwn(p)" :aria-label="fmt(strings.leaveA, { p: titleOf(p) })" :title="fmt(strings.leaveA, { p: titleOf(p) })"><svg class="icon"><use href="#i-leave"/></svg></button></template>
+                                    <template x-if="!p.has_co_owners"><button class="iconbtn plain del" type="button" @click="remove(p)" :aria-label="fmt(strings.delA, { p: titleOf(p) })"><svg class="icon"><use href="#i-trash"/></svg></button></template>
+                                </span>
                             </div>
                         </div>
                     </article>
                 </template>
-            </div>
 
-            {{-- Empty states --}}
-            <div x-show="!loading && items.length === 0" x-cloak>
-                <x-ui.card class="text-center">
-                    <div class="mx-auto max-w-md">
-                        <h3 class="font-display text-xl text-ink" x-text="filter === '' ? '{{ __('No projects yet') }}' : '{{ __('Nothing under this filter') }}'"></h3>
-                        <p class="mt-2 text-sm text-muted" x-text="filter === '' ? '{{ __('Add your first piece of work — a cover, who it was for, and the skills behind it.') }}' : '{{ __('This skill has no work on it yet.') }}'"></p>
-                        <div class="mt-5 flex items-center justify-center gap-3">
-                            <x-ui.button variant="accent" x-on:click="openComposer()">{{ __('New project') }}</x-ui.button>
-                            <button type="button" x-show="filter !== ''" x-cloak x-on:click="setFilter('')"
-                                    class="text-sm text-accent-ink underline">{{ __('Show all work') }}</button>
+                {{-- Work other people credited you on, that you confirmed (ADR-AA) --}}
+                <template x-for="c in creditedShown" :key="'c' + c.id">
+                    <article class="pc">
+                        <div class="cover" :class="{ has: !!c.project?.cover_image_url }" :style="c.project?.cover_image_url ? { backgroundImage: 'url(' + c.project.cover_image_url + ')' } : {}">
+                            <svg class="icon" x-show="!c.project?.cover_image_url"><use href="#i-image"/></svg>
                         </div>
-                    </div>
-                </x-ui.card>
+                        <div class="body">
+                            <a :href="creditUrl(c)" style="text-decoration:none"><b x-text="c.project?.title"></b></a>
+                            <span class="meta" x-text="c.role"></span>
+                            <span class="owners" :title="fmt(strings.coowned, { names: c.project?.owner?.display_name || '' })">
+                                <span class="stack" aria-hidden="true"><i x-text="me"></i><i x-text="initials(c.project?.owner?.display_name || '')"></i></span>
+                                <span x-text="ownersLine([c.project?.owner?.display_name || ''])"></span>
+                            </span>
+                            <div class="chips"><span class="tag tag-ink" x-text="c.skill?.name"></span></div>
+                            <div class="foot">
+                                <span class="waiting"></span>
+                                <span>
+                                    <a class="iconbtn plain" :href="editUrl(c.project)" :aria-label="fmt(strings.editA, { p: c.project?.title || '' })"><svg class="icon"><use href="#i-edit"/></svg></a>
+                                    <button class="iconbtn plain del" type="button" @click="leaveCredited(c)" :aria-label="fmt(strings.leaveA, { p: c.project?.title || '' })" :title="fmt(strings.leaveA, { p: c.project?.title || '' })"><svg class="icon"><use href="#i-leave"/></svg></button>
+                                </span>
+                            </div>
+                        </div>
+                    </article>
+                </template>
+
+                <a class="newcard" href="{{ route('talent.projects.new') }}" style="text-decoration:none"><svg class="icon"><use href="#i-plus"/></svg>{{ __('Add a project') }}<small>{{ __('Title, skills and your best frames') }}</small></a>
             </div>
 
-            {{-- Pagination --}}
-            <div x-show="!loading && pages > 1" x-cloak class="mt-8 flex items-center justify-center gap-2">
-                <button type="button" x-on:click="load(page - 1)" :disabled="page <= 1"
-                        class="rounded-pill border border-line px-4 py-2 text-sm text-ink transition hover:bg-elevated disabled:opacity-40">{{ __('Previous') }}</button>
-                <span class="font-mono text-xs text-subtle" x-text="`${page} / ${pages}`"></span>
-                <button type="button" x-on:click="load(page + 1)" :disabled="page >= pages"
-                        class="rounded-pill border border-line px-4 py-2 text-sm text-ink transition hover:bg-elevated disabled:opacity-40">{{ __('Next') }}</button>
+            <div class="pager" x-show="pages > 1" x-cloak>
+                <button type="button" class="btn btn-2" @click="load(page - 1)" :disabled="page <= 1">{{ __('Previous') }}</button>
+                <span class="meta" x-text="page + ' / ' + pages"></span>
+                <button type="button" class="btn btn-2" @click="load(page + 1)" :disabled="page >= pages">{{ __('Next') }}</button>
             </div>
-
-            <p x-show="!loading && items.length > 1 && !canReorder" x-cloak class="mt-6 text-center text-xs text-subtle">
-                {{ __('Show all work on one page to drag the order.') }}
-            </p>
-
-            @include('talent.partials.project-composer')
         @endif
-    </div>
-</x-talent-layout>
+    </main>
+</x-fama.layout>

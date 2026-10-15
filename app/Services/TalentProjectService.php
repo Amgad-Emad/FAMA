@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Models\Project;
+use App\Models\ProjectCredit;
+use App\States\ProjectCredit\Declined;
 use App\Models\Speciality;
 use App\Models\Talent;
 use App\Support\Html\BriefSanitizer;
@@ -108,13 +110,114 @@ class TalentProjectService extends Service
     }
 
     /**
-     * Delete a project (its tags and media cascade).
+     * Delete a project (its tags, media and credits cascade). Only a SOLE owner
+     * may delete (co-ownership): while anyone else owns it, deleting would take
+     * their work away, so the owner is told to leave instead.
      */
     public function delete(Project $project): void
     {
+        if ($project->hasCoOwners()) {
+            throw new InvalidArgumentException(__('This project has other owners. Leave it instead.'));
+        }
+
         $this->runInTransaction(function () use ($project): void {
             $project->delete();
         }, ['project_id' => $project->id]);
+    }
+
+    /**
+     * An owner leaves the project (co-ownership).
+     *
+     *  - A CO-OWNER leaving = their accepted credit goes to `declined` (the same
+     *    withdraw transition the Credits page uses, which also notifies the
+     *    home owner). The project stays; it comes off their portfolio.
+     *  - The CREATOR leaving while co-owners exist = the project is transferred
+     *    to the longest-standing co-owner (earliest confirmation). See
+     *    transferTo() for what moves.
+     *  - The creator as SOLE owner cannot leave — that would orphan the project;
+     *    they delete it instead (422).
+     */
+    public function leave(Project $project, Talent $talent): Project
+    {
+        if (! $project->isOwnedBy($talent)) {
+            throw new InvalidArgumentException(__('You are not an owner of this project.'));
+        }
+
+        if ((int) $project->talent_id !== (int) $talent->getKey()) {
+            $credit = $project->coOwnerCredits()->firstWhere('talent_id', $talent->getKey());
+
+            app(ProjectCreditService::class)->decline($credit);
+
+            return $project->fresh();
+        }
+
+        $successor = $project->coOwnerCredits()->first();
+
+        if ($successor === null) {
+            throw new InvalidArgumentException(__('You’re the only owner of this project. Delete it instead.'));
+        }
+
+        return $this->transferTo($project, $successor);
+    }
+
+    /**
+     * Hand the project to a co-owner when its creator leaves. One transaction:
+     *
+     *  1. `talent_id` moves to the successor, appended to the end of THEIR
+     *     project ordering.
+     *  2. The successor's credit row is KEPT (still `accepted`): it carries their
+     *     role and skill line on the project's public Credits card, which is
+     *     true work history. Project::coOwnerCredits() ignores a row naming the
+     *     home owner, so they never count as their own co-owner, and
+     *     portfolioProjects() already shows a project you own AND are credited
+     *     on once.
+     *  3. Skill tags must belong to the home owner (ADR-X): the tags the
+     *     successor holds are kept in order; if none survive, the project is
+     *     re-homed on the skill they were credited in (if they hold it), else
+     *     their primary skill; a successor with no skills at all leaves the
+     *     project skill-less (ADR-Q's preserved-content state) rather than
+     *     breaking the transfer. Specialities that no longer hang off a tag are
+     *     pruned (ADR-Y).
+     *  4. The departing creator keeps no ownership: any credit naming them on
+     *     this project is declined, so their name comes off it.
+     */
+    private function transferTo(Project $project, ProjectCredit $successor): Project
+    {
+        $from = (int) $project->talent_id;
+        $heir = Talent::findOrFail($successor->talent_id);
+
+        return $this->runInTransaction(function () use ($project, $successor, $heir, $from): Project {
+            $held = $heir->talentTypes()->get()
+                ->sortBy(fn ($type) => [$type->pivot->is_primary ? 0 : 1, (int) $type->pivot->position])
+                ->pluck('id')->map('intval')->values();
+
+            $tags = collect($project->skillIds())->filter(fn ($id) => $held->contains($id))->values();
+
+            if ($tags->isEmpty() && $held->isNotEmpty()) {
+                $tags = collect([$held->contains((int) $successor->talent_type_id)
+                    ? (int) $successor->talent_type_id
+                    : $held->first()]);
+            }
+
+            $project->talent_id = $heir->getKey();
+            $project->talent_type_id = $tags->first();
+            $project->position = (int) Project::where('talent_id', $heir->getKey())->max('position') + 1;
+            $project->save();
+
+            $this->syncSkills($project, $tags->all());
+            $this->pruneSpecialities($project, $tags->all());
+
+            $project->credits()
+                ->where('talent_id', $from)
+                ->whereIn('status', ['pending', 'accepted'])
+                ->get()
+                ->each(function (ProjectCredit $credit): void {
+                    $credit->status->transitionTo(Declined::class);
+                    $credit->forceFill(['responded_at' => now()])->save();
+                });
+
+            return $project->fresh(['talentTypes', 'specialities']);
+        }, ['project_id' => $project->id, 'from' => $from, 'to' => $heir->getKey()]);
     }
 
     /**
@@ -356,13 +459,10 @@ class TalentProjectService extends Service
             }
         }
 
-        // `results` is a flexible metric map (schema-master) — the editor submits
-        // a label/value list, stored as a compact map with the blanks dropped.
-        if (isset($attributes['results']) && is_array($attributes['results'])) {
-            $attributes['results'] = collect($attributes['results'])
-                ->filter(fn ($row) => filled($row['label'] ?? null) && filled($row['value'] ?? null))
-                ->mapWithKeys(fn ($row) => [(string) $row['label'] => (string) $row['value']])
-                ->all() ?: null;
+        // `results`: an ordered list of up to four {label, value, compare}
+        // rows, blanks dropped (Project::normalizeResults is the one shape).
+        if (array_key_exists('results', $attributes)) {
+            $attributes['results'] = Project::normalizeResults((array) ($attributes['results'] ?? [])) ?: null;
         }
 
         return $attributes;

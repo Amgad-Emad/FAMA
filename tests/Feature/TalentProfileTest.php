@@ -1,9 +1,11 @@
 <?php
 
+use App\Models\BlockType;
 use App\Models\Project;
 use App\Models\Review;
 use App\Models\Talent;
 use App\Models\TalentType;
+use Database\Seeders\BlockTypeSeeder;
 
 beforeEach(fn () => $this->withoutVite());
 
@@ -26,6 +28,7 @@ it('renders the Instagram-style header (avatar, @username, primary skill, stats,
         'is_published' => true,
         'view_count' => 1200,
         'bio' => ['en' => 'Editorial photographer.'],
+        'headline' => null,                   // no headline → the first skill is the line under the name
     ]);
     $type = TalentType::factory()->create(['name' => ['en' => 'Photography'], 'slug' => 'photography']);
     $talent->talentTypes()->attach($type->id, ['is_primary' => true, 'position' => 0]);
@@ -37,12 +40,13 @@ it('renders the Instagram-style header (avatar, @username, primary skill, stats,
         ->assertSee('@nadia')                  // @username (slug)
         ->assertSee('NK')                      // circular avatar initials fallback (no cover image)
         ->assertSee('Photography')             // primary skill secondary line
-        ->assertSee('Projects')                // stat labels
-        ->assertSee('Views')
+        ->assertSee('Projects')                // stat labels (fama-ui: Projects · Recognitions · Skills)
+        ->assertSee(__('Recognitions'))
+        ->assertSee(__('Skills'))
         ->assertSee('Editorial photographer.') // bio
         ->assertSee(__('Message'))             // primary CTA (replaces "Contact" — ADR-P)
         ->assertDontSee(__('Contact'))
-        ->assertSee(__('Leave a review'));     // secondary CTA
+        ->assertSee(__('Recognise'));          // secondary CTA (reviews are off: features.reviews)
 });
 
 it('points the primary Message CTA at the reserved brand↔talent messaging route', function () {
@@ -64,15 +68,23 @@ it('shows the pricing rate near the identity when set, and hides it otherwise', 
     $this->get('/no-rate')->assertOk()->assertDontSee(__('Rate'));
 });
 
-it('shows the average rating only when there are approved reviews', function () {
+it('shows the review average only in the reviews section, and only while reviews are on', function () {
+    $this->seed(BlockTypeSeeder::class);
     $talent = Talent::factory()->create(['slug' => 'reviewed', 'is_published' => true]);
+    $talent->profileBlocks()->create([
+        'block_type_id' => BlockType::where('key', 'reviews')->firstOrFail()->id,
+        'talent_type_id' => null, 'position' => 0, 'is_visible' => true, 'status' => 'visible', 'settings' => [],
+    ]);
     Review::factory()->for($talent)->create(['rating' => 4]);
     Review::factory()->for($talent)->create(['rating' => 5]);
 
-    $this->get('/reviewed')->assertOk()->assertSee('4.5')->assertSee(__('Rating'));
+    // Recognitions replace reviews on the public page (features.reviews off).
+    $this->get('/reviewed')->assertOk()
+        ->assertDontSee('<b>4.5</b>', false)
+        ->assertDontSee(__('from :n reviews', ['n' => 2]));
 
-    Talent::factory()->create(['slug' => 'unreviewed', 'is_published' => true]);
-    $this->get('/unreviewed')->assertOk()->assertDontSee(__('Rating'));
+    config(['features.reviews' => true]);
+    $this->get('/reviewed')->assertOk()->assertSee('<b>4.5</b>', false)->assertSee(__('from :n reviews', ['n' => 2]));
 });
 
 it('returns 404 for an unpublished (draft) talent', function () {

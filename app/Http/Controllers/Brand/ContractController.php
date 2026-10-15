@@ -2,14 +2,17 @@
 
 namespace App\Http\Controllers\Brand;
 
+use App\Contracting\ContractDocument;
 use App\Http\Resources\ContractMessageResource;
 use App\Http\Resources\ContractResource;
 use App\Http\Resources\ContractStepResource;
 use App\Models\Contract;
 use App\Services\ContractService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Brand contract room + inbox (brand-spec) — the brand side of the shared contract
@@ -67,7 +70,7 @@ class ContractController extends BrandController
             'can_act' => $contract->currentStep?->actionableBy('brand') ?? false,
             // Live contract document — re-rendered each thread fetch (ADR-V).
             'document_html' => view('contracts.partials.document', [
-                'doc' => \App\Contracting\ContractDocument::fromContract($contract),
+                'doc' => ContractDocument::fromContract($contract),
             ])->render(),
         ]);
     }
@@ -81,7 +84,7 @@ class ContractController extends BrandController
         $contract->load(['brand', 'talent', 'flow.contractTemplate']);
 
         return response()->success([
-            'html' => view('contracts.partials.document', ['doc' => \App\Contracting\ContractDocument::fromContract($contract)])->render(),
+            'html' => view('contracts.partials.document', ['doc' => ContractDocument::fromContract($contract)])->render(),
             'pdf_url' => route('brand.contracts.document.pdf', $contract),
         ]);
     }
@@ -89,13 +92,13 @@ class ContractController extends BrandController
     /**
      * Download the contract document as a print-styled PDF (dompdf).
      */
-    public function documentPdf(Contract $contract): \Symfony\Component\HttpFoundation\Response
+    public function documentPdf(Contract $contract): Response
     {
         $this->ensureOwns($contract);
         $contract->load(['brand', 'talent', 'flow.contractTemplate']);
 
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('contracts.pdf.document', [
-            'doc' => \App\Contracting\ContractDocument::fromContract($contract),
+        $pdf = Pdf::loadView('contracts.pdf.document', [
+            'doc' => ContractDocument::fromContract($contract),
             'generatedAt' => now()->toDayDateTimeString(),
         ]);
 

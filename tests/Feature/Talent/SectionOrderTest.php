@@ -63,13 +63,17 @@ it('renders the universal region below the skill tabs when reordered', function 
     expect(strpos($html, 'id="universal-blocks"'))->toBeGreaterThan(strpos($html, 'x-ref="panel"'));
 });
 
-it('shows the sections pill bar with the universal pill in the editor', function () {
+it('shows the profile-wide placement control in the editor sections panel', function () {
     $talent = Talent::factory()->create();
 
     $this->actingAs($talent, 'talent')->get(route('talent.profile.edit'))
         ->assertOk()
-        ->assertSee('sectionPills', false)
-        ->assertSee(__('Universal · profile-level'));
+        ->assertSee('id="sections"', false)
+        ->assertSee(__('Show profile-wide sections'))
+        ->assertSee('setPlace(false)', false)
+        ->assertSee('setPlace(true)', false)
+        ->assertSee(__('Before your work'))
+        ->assertSee(__('After your work'));
 });
 
 it('shows the share-profile button on the public header', function () {
@@ -78,5 +82,9 @@ it('shows the share-profile button on the public header', function () {
     $this->get('/'.$talent->slug)
         ->assertOk()
         ->assertSee(__('Share profile'))
-        ->assertSee(__('Leave a review'));
+        ->assertSee(__('Recognise'))
+        ->assertDontSee(__('Leave a review')); // reviews are off on the public page (features.reviews)
+
+    config(['features.reviews' => true]);
+    $this->get('/'.$talent->slug)->assertOk()->assertSee(__('Leave a review'));
 });

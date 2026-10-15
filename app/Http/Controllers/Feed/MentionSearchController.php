@@ -75,6 +75,8 @@ class MentionSearchController extends FeedBaseController
             'username' => $actor->feedUsername(),
             'display_name' => $actor->feedDisplayName(),
             'avatar_url' => $actor->feedAvatarUrl(),
+            // fama-ui composer: "· you follow" beside people the viewer follows.
+            'followed' => $followed[$actor->getMorphClass().':'.$actor->getKey()] ?? false,
         ];
 
         return response()->success([

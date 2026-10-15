@@ -62,13 +62,13 @@ it('serves the talent-only feed without the brands rail', function () {
     $this->get('/feed')->assertOk()->assertDontSee('BRANDS TO WATCH');
 });
 
-it('hides the Message CTA on the public profile but keeps Leave a review', function () {
+it('hides the Message CTA on the public profile but keeps Recognise', function () {
     $talent = Talent::factory()->create();
 
     $this->get('/'.$talent->slug)
         ->assertOk()
         ->assertDontSee('brand/talents/'.$talent->slug.'/message')
-        ->assertSee(__('Leave a review'));
+        ->assertSee(__('Recognise'));
 });
 
 it('hides the dark-mode toggle and forces light when dark mode is off', function () {

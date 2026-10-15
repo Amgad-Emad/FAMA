@@ -1,0 +1,30 @@
+/* Screen: /talent/feed/activity?view=saved|liked|following — "Activity" in the Fama V1 Blueprint.
+   The talent's private feed collections. Following / Followers are portrait cards with a
+   Mutual badge and "quiet since…" after 90 days without posting. Unfollow has a 5-second
+   Undo. Followers get Follow back where it isn't mutual. The grid is capped so a few cards
+   don't leave a hole (UX audit #15). */
+.tools{display:flex;gap:var(--s3);flex-wrap:wrap;align-items:center;margin-top:var(--s5)}
+.tools .in{max-width:280px}
+.tools .sel{width:auto;min-width:180px}
+.tools .skf{width:220px}
+.tools .skf .in{max-width:none}
+/* people as rows (11 Oct 2026, Muhammad's review): who they are, why they matter, their three latest
+   pieces of work, and one action. No empty cover, so nothing looks unfinished. */
+.people{list-style:none;margin:var(--s5) 0 0;padding:0 var(--s5);background:var(--white);border:var(--border);border-radius:var(--radius);max-width:760px}
+.pc{display:grid;grid-template-columns:48px minmax(0,1fr) auto;gap:var(--s1) var(--s3);align-items:center;padding-block:var(--s4);border-top:var(--border)}
+.pc:first-child{border-top:0}
+.pc>.av{width:48px;height:48px;font-size:16px}
+.pc .who{min-width:0}
+.pc b{font-weight:600;font-size:16px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pc a{text-decoration:none;color:inherit}
+.pc a:hover b{color:var(--purple-dk)}
+.pc .meta{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pc .status{font-size:13px;font-weight:500;color:var(--purple-dk);margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pc .status.q{color:var(--grey);font-weight:400}
+.pc .foot .btn{min-height:36px;padding-inline:var(--s4);font-size:14px}
+.pc .work{grid-column:2/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:var(--s2)}
+.pc .work span{aspect-ratio:1;border-radius:8px;background:var(--line) center/cover no-repeat}
+@media (min-width:761px){.pc .work span{aspect-ratio:7/4}}
+.quiet{background:var(--line);color:var(--grey)}
+.posts-list{max-width:720px;margin-top:var(--s5)}
+@media (max-width:760px){.people{padding:0 var(--s4)}.tools .in,.tools .sel,.tools .skf{max-width:none;width:100%}}

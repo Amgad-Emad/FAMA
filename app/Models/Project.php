@@ -17,7 +17,15 @@ use Spatie\Translatable\HasTranslations;
 /**
  * Project — a long-form creative project write-up (schema-master §2). Cover is
  * an uploaded asset; `url` is the external project link. title/role/summary/body
- * are translatable; `results` holds flexible metrics.
+ * are translatable; `results` holds up to four metrics as an ordered list of
+ * {label, value, compare} (resultRows() also reads the legacy label→value map).
+ *
+ * OWNERSHIP (co-ownership, 2026-10-12): the owners of a project are its creator
+ * (`talent_id`, the "home owner" whose skills the tags must belong to — ADR-X)
+ * plus every on-platform credit in state `accepted`. Any owner may edit or
+ * leave; only a sole owner may delete. THIS model is the one home for that
+ * fact (isOwnedBy / ownerIds / hasCoOwners / coOwnerCredits) — the policy, the
+ * services, the controllers and the views all read it from here.
  */
 class Project extends Model implements HasMedia
 {
@@ -185,6 +193,130 @@ class Project extends Model implements HasMedia
     public function credits(): HasMany
     {
         return $this->hasMany(ProjectCredit::class)->orderBy('position')->orderBy('id');
+    }
+
+    /**
+     * The accepted on-platform credits — the co-owner rows — longest-standing
+     * first (earliest confirmation, then id). Eager-load it (with `.talent`)
+     * on lists so the ownership helpers below stay N+1-free.
+     *
+     * @return HasMany<ProjectCredit, $this>
+     */
+    public function ownerCredits(): HasMany
+    {
+        return $this->hasMany(ProjectCredit::class)
+            ->where('status', 'accepted')
+            ->whereNotNull('talent_id')
+            ->orderByRaw('responded_at IS NULL, responded_at')
+            ->orderBy('id');
+    }
+
+    /**
+     * The co-owner credit rows, EXCLUDING any row naming the home owner (after
+     * an ownership transfer the new home owner keeps their credit line — they
+     * must not count as their own co-owner). Reads the loaded relation if any.
+     *
+     * @return \Illuminate\Support\Collection<int, ProjectCredit>
+     */
+    public function coOwnerCredits(): \Illuminate\Support\Collection
+    {
+        $credits = $this->relationLoaded('ownerCredits') ? $this->ownerCredits : $this->ownerCredits()->get();
+
+        return $credits
+            ->reject(fn (ProjectCredit $credit) => (int) $credit->talent_id === (int) $this->talent_id)
+            ->unique('talent_id')
+            ->values();
+    }
+
+    /**
+     * Every owner's talent id: the home owner first, then co-owners by seniority.
+     *
+     * @return list<int>
+     */
+    public function ownerIds(): array
+    {
+        return collect([(int) $this->talent_id])
+            ->concat($this->coOwnerCredits()->pluck('talent_id')->map('intval'))
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * The owners as Talent models (home owner first). Callers eager-load
+     * `talent` and `ownerCredits.talent`.
+     *
+     * @return \Illuminate\Support\Collection<int, Talent>
+     */
+    public function owners(): \Illuminate\Support\Collection
+    {
+        return collect([$this->talent])
+            ->concat($this->coOwnerCredits()->map(fn (ProjectCredit $credit) => $credit->talent))
+            ->filter()
+            ->values();
+    }
+
+    /**
+     * THE ownership test: is this talent the creator or an accepted co-owner?
+     */
+    public function isOwnedBy(?Talent $talent): bool
+    {
+        return $talent !== null && in_array((int) $talent->getKey(), $this->ownerIds(), true);
+    }
+
+    /**
+     * Does anyone besides the home owner own this project? (Delete is refused
+     * while this is true — the other owners would lose their work.)
+     */
+    public function hasCoOwners(): bool
+    {
+        return $this->coOwnerCredits()->isNotEmpty();
+    }
+
+    /**
+     * Is this talent the project's ONLY owner (the one case delete is allowed)?
+     */
+    public function isSoleOwner(?Talent $talent): bool
+    {
+        return $this->isOwnedBy($talent) && ! $this->hasCoOwners();
+    }
+
+    /**
+     * The results as an ordered list of {label, value, compare}, capped at four.
+     * Reads both the current list shape and the legacy label→value map, so a row
+     * the conversion migration has not reached still renders.
+     *
+     * @return list<array{label: string, value: string, compare: string}>
+     */
+    public function resultRows(): array
+    {
+        return self::normalizeResults($this->results ?? []);
+    }
+
+    /**
+     * Normalise a results payload (list of rows, or the legacy map) to the
+     * stored shape: non-blank label + value, trimmed, max four, compare ''.
+     *
+     * @param  array<int|string, mixed>  $results
+     * @return list<array{label: string, value: string, compare: string}>
+     */
+    public static function normalizeResults(array $results): array
+    {
+        $rows = array_is_list($results)
+            ? $results
+            : collect($results)->map(fn ($value, $label) => ['label' => $label, 'value' => $value])->values()->all();
+
+        return collect($rows)
+            ->filter(fn ($row) => is_array($row))
+            ->map(fn (array $row) => [
+                'label' => trim((string) ($row['label'] ?? '')),
+                'value' => trim(is_scalar($row['value'] ?? null) ? (string) $row['value'] : ''),
+                'compare' => trim((string) ($row['compare'] ?? '')),
+            ])
+            ->filter(fn (array $row) => $row['label'] !== '' && $row['value'] !== '')
+            ->take(4)
+            ->values()
+            ->all();
     }
 
     /**

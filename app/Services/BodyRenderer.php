@@ -40,6 +40,77 @@ class BodyRenderer
     }
 
     /**
+     * The fama-ui post text: mentions linked, #skill tags linked to the feed
+     * filter, and every URL REMOVED from the prose — the card lists links as
+     * chips under the text instead (see chips()). Same eager-load contract as
+     * render().
+     */
+    public function renderText(Post|Comment $model): string
+    {
+        $mentions = $model->mentions->loadMissing('mentioned');
+        $parsedUrls = app(\App\Services\RichTextParser::class)->parse((string) $model->body)->urls;
+        $raw = (string) $model->body;
+
+        $tokens = collect()
+            ->concat($mentions->map(fn ($mention): array => [
+                'offset' => (int) $mention->start_offset,
+                'length' => (int) $mention->length,
+                'html' => $this->mentionHtml($mention->mentioned),
+            ]))
+            ->concat(collect($parsedUrls)->map(fn ($url): array => [
+                'offset' => $url->startOffset,
+                'length' => $url->length,
+                'html' => '',
+            ]))
+            ->sortBy('offset')
+            ->values();
+
+        $html = '';
+        $cursor = 0;
+
+        foreach ($tokens as $token) {
+            if ($token['offset'] < $cursor) {
+                continue;
+            }
+
+            $html .= \App\Support\SkillTags::linkify(e(mb_substr($raw, $cursor, $token['offset'] - $cursor)));
+            $html .= $token['html'];
+            $cursor = $token['offset'] + $token['length'];
+        }
+
+        $html .= \App\Support\SkillTags::linkify(e(mb_substr($raw, $cursor)));
+
+        return trim($html);
+    }
+
+    /**
+     * The link chips under a post's text, in appearance order: the target URL
+     * and the platform name the prototype shows ("YouTube", "Behance"; the
+     * registrable domain for anything else).
+     *
+     * @return list<array{url: string, label: string, provider: string}>
+     */
+    public function chips(Post|Comment $model): array
+    {
+        $names = [
+            'instagram' => 'Instagram', 'tiktok' => 'TikTok', 'youtube' => 'YouTube', 'behance' => 'Behance',
+            'vimeo' => 'Vimeo', 'x' => 'X', 'linkedin' => 'LinkedIn', 'pinterest' => 'Pinterest',
+            'dribbble' => 'Dribbble', 'spotify' => 'Spotify', 'soundcloud' => 'SoundCloud',
+            'facebook' => 'Facebook', 'snapchat' => 'Snapchat',
+        ];
+
+        return $model->linkedUrls->sortBy('position')->pluck('preview')->filter()
+            ->map(fn ($preview): array => [
+                'url' => (string) $preview->url,
+                'provider' => (string) $preview->provider,
+                'label' => $names[$preview->provider]
+                    ?? (string) preg_replace('/^www\./', '', (string) parse_url((string) $preview->url, PHP_URL_HOST)),
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
      * Render raw text with its mention and link rows. Tokens are replaced by
      * character range; everything between them is HTML-escaped. URL ranges
      * come from RE-PARSING the raw body (5V) — linked_urls stores appearance

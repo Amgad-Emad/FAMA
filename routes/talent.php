@@ -71,10 +71,16 @@ Route::delete('/profile/interests/{interest}', [InterestController::class, 'dest
 // tabs it appears in on the public profile.
 Route::get('/projects', [ProjectController::class, 'index'])->name('projects');
 Route::get('/projects/data', [ProjectController::class, 'data'])->name('projects.data');
+// The editor lives on its own page (fama-ui project-edit) — new + edit; both submit
+// to the JSON endpoints below. `new` is registered before the {project} routes.
+Route::get('/projects/new', [ProjectController::class, 'create'])->name('projects.new');
+Route::get('/projects/{project}/edit', [ProjectController::class, 'edit'])->name('projects.edit');
 Route::post('/projects', [ProjectController::class, 'store'])->name('projects.store');
 Route::patch('/projects/reorder', [ProjectController::class, 'reorder'])->name('projects.reorder');
 Route::patch('/projects/{project}', [ProjectController::class, 'update'])->name('projects.update');
 Route::delete('/projects/{project}', [ProjectController::class, 'destroy'])->name('projects.destroy');
+// Co-ownership: any owner may leave (a co-owner withdraws; the creator hands it on).
+Route::post('/projects/{project}/leave', [ProjectController::class, 'leave'])->name('projects.leave');
 Route::post('/projects/{project}/cover', [ProjectController::class, 'uploadCover'])->name('projects.cover.store');
 Route::delete('/projects/{project}/cover', [ProjectController::class, 'destroyCover'])->name('projects.cover.destroy');
 

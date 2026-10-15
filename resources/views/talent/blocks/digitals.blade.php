@@ -1,18 +1,22 @@
-@php $digitals = $talent->digitals; @endphp
-
-@if ($digitals->isNotEmpty())
-    <x-ui.section :title="$block->title ?: $block->blockType->name" :eyebrow="__('Digitals')">
-        <div class="grid grid-cols-3 gap-3 sm:grid-cols-6">
-            @foreach ($digitals as $digital)
-                <figure class="aspect-[3/4] overflow-hidden rounded-md border border-line">
-                    @if ($digital->thumbnail_url)
-                        <img src="{{ $digital->thumbnail_url }}" alt="{{ $digital->shot_type }}" class="h-full w-full object-cover">
-                    @else
-                        <div class="flex h-full w-full items-center justify-center font-mono text-[10px] uppercase tracking-wider text-subtle"
-                             style="background:linear-gradient(135deg, var(--accent-weak), var(--gold-weak));">{{ $digital->shot_type }}</div>
-                    @endif
-                </figure>
-            @endforeach
-        </div>
-    </x-ui.section>
-@endif
+{{-- Digitals (fama-ui .dig): unretouched shots, dated, each opens the lightbox. --}}
+@php
+    $digitals = $talent->digitals->sortBy('position')->values();
+    $taken = $digitals->pluck('captured_at')->filter()->max();
+    $lb = 'digitals-'.$block->id;
+@endphp
+<x-profile.block :block="$block" :empty="$digitals->isEmpty()" :is-owner="$isOwner ?? false">
+    <p class="meta" style="margin-top:var(--s2)">{{ __('Unretouched, natural light.') }}@if ($taken) {{ __('Taken :date', ['date' => \Illuminate\Support\Carbon::parse($taken)->translatedFormat('j M Y')]) }}.@endif</p>
+    <div class="dig">
+        @foreach ($digitals as $digital)
+            @php $label = __(ucfirst((string) $digital->shot_type)); @endphp
+            <button type="button" data-lb="{{ $lb }}" data-src="{{ $digital->media_url ?: $digital->thumbnail_url }}" data-cap="{{ $label }}" aria-label="{{ $label }}, {{ __('open') }}">
+                @if ($digital->thumbnail_url)
+                    <div class="ph cover" style="background-image:url('{{ $digital->thumbnail_url }}')" aria-hidden="true"></div>
+                @else
+                    <div class="ph" aria-hidden="true"><svg class="icon"><use href="#i-image"/></svg></div>
+                @endif
+                <b>{{ $label }}</b>
+            </button>
+        @endforeach
+    </div>
+</x-profile.block>

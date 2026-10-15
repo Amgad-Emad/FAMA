@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Feed;
 
 use App\Actions\Feed\ResolveLinkPreview;
+use App\Http\Resources\Feed\LinkChipResource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -24,6 +25,6 @@ class LinkPreviewController extends FeedBaseController
 
         $preview = $resolvePreview($validated['url']);
 
-        return response()->success(new \App\Http\Resources\Feed\LinkChipResource($preview));
+        return response()->success(new LinkChipResource($preview));
     }
 }

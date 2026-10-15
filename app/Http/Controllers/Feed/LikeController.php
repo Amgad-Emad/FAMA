@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Feed;
 
 use App\Actions\Feed\ToggleLike;
 use App\Models\Comment;
+use App\Models\Like;
 use App\Models\Post;
 use Illuminate\Http\JsonResponse;
 
@@ -18,7 +19,7 @@ class LikeController extends FeedBaseController
      */
     public function store(Post $post, ToggleLike $toggleLike): JsonResponse
     {
-        $this->gate()->authorize('create', \App\Models\Like::class);
+        $this->gate()->authorize('create', Like::class);
         abort_unless($this->gate()->allows('view', $post), 404);
 
         $result = $toggleLike($this->currentActor->resolve(), $post, onlyLike: true);
@@ -31,7 +32,7 @@ class LikeController extends FeedBaseController
      */
     public function destroy(Post $post, ToggleLike $toggleLike): JsonResponse
     {
-        $this->gate()->authorize('create', \App\Models\Like::class);
+        $this->gate()->authorize('create', Like::class);
         abort_unless($this->gate()->allows('view', $post), 404);
 
         $result = $toggleLike($this->currentActor->resolve(), $post, onlyUnlike: true);
@@ -44,7 +45,7 @@ class LikeController extends FeedBaseController
      */
     public function storeComment(Comment $comment, ToggleLike $toggleLike): JsonResponse
     {
-        $this->gate()->authorize('create', \App\Models\Like::class);
+        $this->gate()->authorize('create', Like::class);
         abort_unless($this->gate()->allows('view', $comment->post), 404);
 
         $result = $toggleLike($this->currentActor->resolve(), $comment, onlyLike: true);
@@ -57,7 +58,7 @@ class LikeController extends FeedBaseController
      */
     public function destroyComment(Comment $comment, ToggleLike $toggleLike): JsonResponse
     {
-        $this->gate()->authorize('create', \App\Models\Like::class);
+        $this->gate()->authorize('create', Like::class);
         abort_unless($this->gate()->allows('view', $comment->post), 404);
 
         $result = $toggleLike($this->currentActor->resolve(), $comment, onlyUnlike: true);

@@ -63,6 +63,7 @@ once after login. Rate limits (per actor, else IP): posts 10/h, comments 10/min,
 
 | Method | Path | Notes |
 |---|---|---|
+| GET | `/` | redirect: `/feed` when it has posts, else login (signed-in → dashboard) |
 | GET | `/feed` | page shell |
 | GET | `/feed/items?cursor=` | ranked stream — `{items, casting_positions, next_cursor, total}` (ADR-F5) |
 | GET | `/feed/casting` | 12 discovery talents + `followed_by_viewer` |
@@ -82,7 +83,8 @@ once after login. Rate limits (per actor, else IP): posts 10/h, comments 10/min,
 | GET | `/mentions/search?q=` | composer autocomplete, 8 grouped |
 | POST | `/links/preview` | instant chip parse + queued enrichment (ADR-F4) |
 | POST | `/posts/{post}/report`, `/comments/{comment}/report` | once per target per actor; `reason` ∈ config `feed.report_reasons` (7 keys), `note` required for `other` |
-| GET | `/notifications` · POST `/notifications/read` · GET `/notifications/unread-count` | actor inbox, localized at read |
+| GET | `/notifications?filter=unread\|mention` · POST `/notifications/read` · GET `/notifications/unread-count` | actor inbox, localized at read |
+| GET | `/notifications/all` | the notifications PAGE (fama-ui shell; list loads from `/notifications`) |
 | POST / DELETE | `/posts/{post}/bookmark` | save/unsave (5X; private collections, ADR-F9) |
 | GET | `/feed/suggestions/talents`, `/feed/suggestions/brands` | rail suggestions, offset cursor (5Z) |
 | POST | `/feed/suggestions/dismiss` | permanent dismissal, 60/min (5Z) |
@@ -176,7 +178,9 @@ Contracts). The old standalone Professions + Account tabs are folded into it (AD
 | Specialities | `PUT /talent/profile/skills/{type}/specialities` | replace the picks under ONE skill (`{speciality_ids: []}`, present-but-empty clears them). Every id must belong to that skill and still be selectable, else 422 (ADR-Y) |
 | Content | `GET /talent/content/{section?}` — page; `{section}` = `universal` or a skill slug (a legacy `{type}` key resolves to the section showing it; `projects` **redirects** to the Projects page). CRUD stays per type: `GET /talent/content/{type}/data`, `POST`, `PATCH {id}`, `DELETE {id}`, `PATCH reorder`, `POST {id}/media` | one section at a time, every content block in it stacked (gallery, digitals, showreel, equipment, software, brand collabs, looks + the read-only reviews list); a `projects` block renders a signpost panel, not an editor (ADR-X) |
 | Projects | `GET /talent/projects` · `GET /talent/projects/data?page=&skill=<id>\|none` | page shell (skills + total) · paginated 12 with `meta.counts.{all,none,by_skill}`; `skill` filters to one tab (home column OR tag) or to the untagged leftovers |
-| Projects | `POST /talent/projects` · `PATCH /talent/projects/{project}` · `DELETE /talent/projects/{project}` | create/update/remove — **`skill_ids` is required, min 1**, each one of the talent's own skills (ADR-X); tag 0 becomes the home tab. `occurred_on` is the date — **recorded, never rendered** (ADR-AA); `year` is a derived projection of it and is no longer accepted from a client. `speciality_ids` is optional and each id must hang off one of the tagged skills (ADR-Y) — on update, omitting it leaves the picks alone while changing `skill_ids` prunes the ones that lost their skill. `title.en` required; `summary`/`body` are rich text sanitized server-side; `results` is a `[{label,value}]` list (max 6) stored as a metric map |
+| Projects | `POST /talent/projects` · `PATCH /talent/projects/{project}` · `DELETE /talent/projects/{project}` | create/update/remove — **`skill_ids` is required, min 1**, each one of the talent's own skills (ADR-X); tag 0 becomes the home tab. `occurred_on` is the date — **recorded, never rendered** (ADR-AA); `year` is a derived projection of it and is no longer accepted from a client. `speciality_ids` is optional and each id must hang off one of the tagged skills (ADR-Y) — on update, omitting it leaves the picks alone while changing `skill_ids` prunes the ones that lost their skill. `title.en` required; `summary`/`body` are rich text sanitized server-side; `results` is an ordered `[{label,value,compare}]` list (**max 4**, ADR-AB) |
+| Projects | `GET /talent/projects/new` · `GET /talent/projects/{project}/edit` | the project editor PAGE (any owner; 403 otherwise) |
+| Projects | `POST /talent/projects/{project}/leave` | leave a project you own (co-owner → credit declined; creator → transfer to the earliest-confirmed co-owner; sole owner → 422). `DELETE` is refused (422) while co-owners exist (ADR-AB) |
 | Projects | `PATCH /talent/projects/reorder` (`{order: [id,…]}`) | the talent's own display order (drives the public profile); a foreign id → 422 |
 | Projects | `POST /talent/projects/{project}/cover` (`cover` file) · `DELETE /talent/projects/{project}/cover` | single-file `cover` collection via medialibrary (jpg/png/webp, ≤10 MB) |
 | Reviews | `GET /talent/reviews` (+ `/data?status=`, `PATCH {review}/approve`, `PATCH {review}/reject`) | moderation queue |

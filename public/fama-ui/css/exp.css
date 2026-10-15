@@ -1,0 +1,23 @@
+/* FAMA — experience, LinkedIn-style: one company, its roles on a line, highlights and skills (assets/js/profile.js FAMA_EXP) */
+.xp{list-style:none;margin:0;padding:0}
+.xp-g{display:grid;grid-template-columns:48px minmax(0,1fr);gap:var(--s4);padding-block:var(--s5);border-top:var(--border)}
+.xp-g:first-child{border-top:0;padding-top:0}
+.xp-logo{width:48px;height:48px;border-radius:var(--s3);background:var(--cream);border:var(--border);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:15px;color:var(--ink)}
+.xp-top{display:flex;justify-content:space-between;align-items:flex-start;gap:var(--s3)}
+.xp-org,.xp-t{font-weight:600;font-size:var(--t-h3);margin:0;line-height:1.3}
+h4.xp-t{font-size:16px}
+.xp-m{margin:2px 0 0;font-size:15px}
+.xp-d{margin:2px 0 0;font-size:var(--t-meta);color:var(--grey)}
+.xp-hl{margin:var(--s3) 0 0;padding:0;list-style:none;font-size:15px;line-height:1.55}
+.xp-hl li{position:relative;padding-inline-start:var(--s4)}
+.xp-hl li::before{content:"\00b7";position:absolute;inset-inline-start:2px;font-weight:700}
+.xp-sk{margin:var(--s3) 0 0;font-size:var(--t-meta)}
+.xp-sk b{font-weight:600}
+.xp-roles{list-style:none;margin:var(--s4) 0 0;padding:0}
+.xp-r{position:relative;padding:0 0 var(--s5) var(--s5)}
+.xp-r:last-child{padding-bottom:0}
+.xp-r::before{content:"";position:absolute;inset-inline-start:0;top:8px;width:8px;height:8px;border-radius:var(--radius-pill);background:var(--line);border:1px solid #CFC8BC}
+.xp-r:not(:last-child)::after{content:"";position:absolute;inset-inline-start:4px;top:22px;bottom:4px;width:2px;background:var(--line)}
+.xp-ed{flex:none;color:var(--grey);margin-top:-6px;border:0;background:none}
+.xp-ed:hover{color:var(--ink)}
+@media (max-width:760px){.xp-g{grid-template-columns:40px minmax(0,1fr);gap:var(--s3)}.xp-logo{width:40px;height:40px;font-size:13px}}

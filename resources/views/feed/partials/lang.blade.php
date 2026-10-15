@@ -1,0 +1,51 @@
+{{-- The feed's runtime string bridge (fama-ui). ui/feed.js reads
+     window.famaLang for every string it composes at runtime (toasts, labels,
+     hints) so they localize like Blade copy — the prototype's FAMA.T.en
+     strings. Keep a key here AND in lang/ar.json when adding one. --}}
+<script>
+    window.famaLang = {
+        like1: @js(__(':count like')), likeN: @js(__(':count likes')),
+        comment1: @js(__(':count comment')), commentN: @js(__(':count comments')),
+        copied: @js(__('Link copied')),
+        editLeft: @js(__('Edit · :min min left')),
+        delT: @js(__('Delete this post?')), delB: @js(__('It comes off the feed and your profile, with its comments.')), delOk: @js(__('Delete post')),
+        deleted: @js(__('Post deleted')),
+        pinT: @js(__('Pinned. It stays at the top of your posts.')), pinReplace: @js(__('Pinned. Your previous pin was replaced.')), unpinned: @js(__('Unpinned')),
+        signin: @js(__('Sign in to :action this')), signinP: @js(__("Log in and we'll finish the :action for you.")),
+        verbs: { like: @js(__('like')), save: @js(__('save')), comment: @js(__('comment')), follow: @js(__('follow')), report: @js(__('report')), share: @js(__('share')), post: @js(__('post')) },
+        all: @js(__('All')), following: @js(__('Following')), follow: @js(__('Follow')),
+        showing: @js(__('Showing: :filter')), filters: @js(__('Filters')),
+        hidden: @js(__(":name won't be suggested again")),
+        posted: @js(__('Posted to the feed')), updated: @js(__('Post updated')),
+        postedN: @js(__('Posted. :names :verb notified.')), and: @js(__('and')), others: @js(__(':count others')), is: @js(__('is')), are: @js(__('are')),
+        need: @js(__('Add text or media to publish.')), needProj: @js(__('Pick a project to share.')), needMax: @js(__("That's over 2,200 characters.")),
+        counter: @js(__(':count / 2,200')),
+        closeComposerTitle: @js(__('Discard this post?')), closeComposerBody: @js(__('What you wrote will be lost.')), closeLabel: @js(__('Discard')),
+        yours: @js(__('yours')),
+        publishFailed: @js(__('Could not publish — try again.')),
+        tooManyMedia: @js(__('That is more media than a post can carry.')),
+        badMediaType: @js(__('That file type is not supported.')),
+        mediaTooBig: @js(__('That file is too large.')),
+        commentMax: @js(__('Up to 2,200 characters.')),
+        commentSlow: @js(__("You're commenting fast. Wait a moment and try again.")),
+        commentFailed: @js(__("Couldn't send.")),
+        alreadyReported: @js(__('You already reported this.')),
+        unsaved: @js(__('Removed from saved')), unliked: @js(__('Removed from liked')),
+        unfollowed: @js(__('Unfollowed :name')), followedNow: @js(__('You follow :name now')),
+        postedToday: @js(__('Posted today')), postedYesterday: @js(__('Posted yesterday')), postedDays: @js(__('Posted :count days ago')),
+        followsYou: @js(__('Follows you')),
+        markedAll: @js(__('All marked as read')),
+        now: @js(__('now')),
+        image: @js(__('Image')),
+        allSkills: @js(__('All skills')),
+        textPh: @js(__('What are you working on? Type @ to credit someone, # to tag a skill.')),
+        projTextPh: @js(__('Say something about it (optional). Type @ to credit someone, # to tag a skill.')),
+        replyTo: @js(__('Reply to @:u')),
+        moreReply1: @js(__('View :count more reply')), moreReplyN: @js(__('View :count more replies')),
+        commentEditLeft: @js(__('edit :time left')),
+        commentDelT: @js(__('Delete this comment?')), commentDelB: @js(__('Replies to it stay, under a “Comment deleted” note.')), del: @js(__('Delete')),
+        rNeed: @js(__('Pick a reason first.')), rNeedNote: @js(__('Tell us what’s wrong, in a line or two.')),
+    };
+    @php $famaMe = $currentActor ?? null; @endphp
+    window.famaMe = @js($famaMe ? ['type' => $famaMe->getMorphClass(), 'id' => $famaMe->getKey(), 'username' => $famaMe->feedUsername(), 'display_name' => $famaMe->feedDisplayName(), 'avatar_url' => $famaMe->feedAvatarUrl()] : null);
+</script>

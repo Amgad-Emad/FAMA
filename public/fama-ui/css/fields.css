@@ -1,0 +1,81 @@
+/* FAMA — skill custom fields (assets/js/fields.js): the editor in Profile structure, the facts in a skill's tab */
+.fx-fields{margin-top:var(--s5);padding-top:var(--s5);border-top:var(--border)}
+.fx-fields>.fx-h{font-weight:600;font-size:var(--t-meta);color:var(--grey);margin:0}
+.fld{margin-top:var(--s5)}
+/* closed field: one row */
+.fld.fx-closed{margin-top:0;border-top:var(--border)}
+.fx-closed:first-of-type{border-top:0}
+.fx-rowhead{display:flex;align-items:center;gap:var(--s4);padding-block:var(--s3);min-height:64px}
+.fx-rt{flex:1;min-width:0}
+.fx-name{margin:0;font-weight:600;font-size:15px}
+.fx-name small{font-weight:400;color:var(--grey);font-size:var(--t-meta)}
+.fx-val{margin:2px 0 0;color:var(--grey);font-size:var(--t-meta);overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.fx-val .fx-pills{display:inline}
+.fx-val .fx-sw.view span{width:16px;height:16px}
+.fx-val .fx-digi{display:none}
+.fx-empty{font-style:normal}
+.fx-open{min-height:40px;padding-inline:var(--s4);flex:none}
+/* open field: a framed block with its inputs */
+.fld.fx-opened{margin-block:var(--s2);padding:var(--s4);border:1px solid var(--ink);border-radius:var(--s4);background:var(--white)}
+.fx-done{display:flex;justify-content:flex-end;margin-top:var(--s4)}
+.fx-l{display:flex;justify-content:space-between;align-items:center;gap:var(--s3);font-weight:600;font-size:15px;min-height:32px}
+.fx-l p{margin:0}
+.fx-clear{border:0;background:none;color:var(--purple-dk);font:inherit;font-weight:600;font-size:var(--t-meta);min-height:44px;margin-block:-6px;padding-inline:var(--s2);cursor:pointer}
+.fx-clear:hover{color:var(--rose-fg)}
+.fx-l small,.fx-sub small{font-weight:400;color:var(--grey);font-size:var(--t-meta)}
+.fx-help{color:var(--grey);font-size:var(--t-meta);margin:var(--s1) 0 0;max-width:62ch}
+.fx-sub{display:block;font-size:var(--t-meta);font-weight:500;margin:var(--s3) 0 var(--s2)}
+.fx-chips{display:flex;flex-wrap:wrap;gap:var(--s2);margin-top:var(--s3)}
+.fx-row{display:flex;align-items:center;gap:var(--s2);margin-top:var(--s3)}
+label .fx-row{margin-top:0}
+.fld .in.fx-n{width:110px;flex:none}
+.fx-grid .in.fx-n{width:100%;flex:1;min-width:0}
+.fx-unit{color:var(--grey);font-size:var(--t-meta)}
+.fx-out{color:var(--grey);font-size:var(--t-meta);margin-inline-start:var(--s2)}
+.fx-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:var(--s3) var(--s4);margin-top:var(--s1)}
+.fx-grid .fx-sub{margin-top:var(--s2)}
+.fx-meta{color:var(--grey);font-size:var(--t-meta);margin:var(--s2) 0 0}
+.fx-err{color:var(--rose-fg);font-size:var(--t-meta);margin:var(--s2) 0 0}
+.fx-err[hidden]{display:none}
+.fx-old{color:var(--rose-fg)}
+.fx-add{margin-top:var(--s3)}
+.fx-file{margin-inline-start:var(--s3)}
+/* Monk scale swatches */
+.fx-sw{display:flex;flex-wrap:wrap;gap:var(--s2);margin-top:var(--s3)}
+.fx-sw button{width:36px;height:36px;border-radius:var(--radius-pill);border:2px solid var(--white);outline:1px solid var(--line);cursor:pointer;padding:0}
+.fx-sw button[aria-pressed=true]{outline:2px solid var(--ink);outline-offset:1px}
+.fx-sw button:focus-visible{outline:2px solid var(--purple-dk);outline-offset:2px}
+.fx-sw.view{margin:0;gap:4px}
+.fx-sw.view span{width:20px;height:20px;border-radius:var(--radius-pill);outline:1px solid var(--line)}
+/* dialects, reach: one row per item */
+.fx-lv{list-style:none;margin:var(--s3) 0 0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:var(--s2) var(--s5)}
+.fx-lv li{display:grid;grid-template-columns:minmax(0,1fr) 160px;gap:var(--s3);align-items:center}
+.fx-lv .sel{min-height:40px;padding-block:var(--s1)}
+.fx-pairs{list-style:none;margin:var(--s3) 0 0;padding:0;display:grid;gap:var(--s2)}
+.fx-pairs li{display:grid;grid-template-columns:minmax(0,200px) auto minmax(0,200px) 44px;gap:var(--s2);align-items:center}
+/* digitals: four plain shots */
+.fx-digi{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--s3);margin-top:var(--s3);max-width:520px}
+.fx-digi figure{margin:0}
+.fx-digi figcaption{font-size:12px;color:var(--grey);margin-top:var(--s1)}
+.fx-ph{aspect-ratio:3/4;border-radius:var(--s2);border:1px dashed var(--line);background:var(--cream)}
+.fx-ph.on{border:0;background:var(--line)}
+.fx-digi.view{display:flex;gap:6px;margin:0 0 var(--s1);max-width:none}
+.fx-digi.view .fx-ph{width:48px}
+
+/* on the profile: a short list of facts under the specialities */
+.fx-facts{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:var(--s4) var(--s6);margin:var(--s5) 0 0;padding:var(--s5);border:var(--border);border-radius:var(--radius);background:var(--white)}
+.fx-fact dt{font-size:var(--t-meta);color:var(--grey)}
+.fx-fact dd{margin:var(--s1) 0 0;font-weight:500}
+.fx-fact.wide{grid-column:1/-1}
+.fx-dim{color:var(--grey);font-weight:400}
+.fx-gl{display:block;font-size:var(--t-meta);margin-top:var(--s2)}
+.fx-gl:first-child{margin-top:0}
+.fx-pills{display:flex;flex-wrap:wrap;gap:var(--s2);margin-top:var(--s1)}
+.fx-vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@media (max-width:640px){
+  .fx-digi{gap:var(--s2)}
+  .fx-digi figcaption{font-size:11px;line-height:1.3}
+  .fx-pairs li{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr) 44px}
+  .fx-lv li{grid-template-columns:minmax(0,1fr) 140px}
+  .fx-facts{padding:var(--s4)}
+}
