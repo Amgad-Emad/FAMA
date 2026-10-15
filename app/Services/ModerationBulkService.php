@@ -97,10 +97,10 @@ class ModerationBulkService extends Service
         $status = $request->query('status');
 
         return match ($queue) {
-            'talents' => Talent::query()->withTrashed()->with('talentTypes')
+            'talents' => Talent::query()->with('talentTypes')
                 ->when($q, fn ($b) => $b->where(fn ($w) => $w->where('display_name', 'like', "%{$q}%")->orWhere('email', 'like', "%{$q}%")->orWhere('slug', 'like', "%{$q}%")))
                 ->when($status, fn ($b) => $b->where('status', $status)),
-            'brands' => Brand::query()->withTrashed()
+            'brands' => Brand::query()
                 ->when($q, fn ($b) => $b->where(fn ($w) => $w->where('name', 'like', "%{$q}%")->orWhere('email', 'like', "%{$q}%")->orWhere('slug', 'like', "%{$q}%")))
                 ->when($status, fn ($b) => $b->where('status', $status)),
             'reviews' => Review::query()->where('status', 'pending')->with('talent')

@@ -191,6 +191,10 @@ Contracts). The old standalone Professions + Account tabs are folded into it (AD
 | POST | `/admin/moderation/feed/bulk` | `{kind: post\|comment, action: hide\|restore\|delete, ids[]}` → `{done, skipped}` |
 | PATCH | `/admin/moderation/feed/{posts\|comments}/{id}/delete` | staff soft delete (audited) |
 | POST | `/admin/moderation/feed/{posts\|comments}/{id}/notice` | removal email defaults + rendered preview (subject/message/reason overrides); remove accepts `notify` |
+| GET | `/admin/trash/{type}` | trashed rows of talents\|posts\|comments\|reviews\|recognitions(\|brands) + `meta.counts` |
+| POST | `/admin/trash/{type}/{id}/restore` | restore (422 for a comment whose post is trashed) |
+| DELETE | `/admin/trash/{type}/{id}` | delete forever (manage-settings) |
+| POST | `/admin/trash/{type}/bulk` | `{action: restore\|purge, ids[]}` → `{done, skipped}` |
 | Projects | `PATCH /talent/projects/reorder` (`{order: [id,…]}`) | the talent's own display order (drives the public profile); a foreign id → 422 |
 | Projects | `POST /talent/projects/{project}/cover` (`cover` file) · `DELETE /talent/projects/{project}/cover` | single-file `cover` collection via medialibrary (jpg/png/webp, ≤10 MB) |
 | Reviews | `GET /talent/reviews` (+ `/data?status=`, `PATCH {review}/approve`, `PATCH {review}/reject`) | moderation queue |

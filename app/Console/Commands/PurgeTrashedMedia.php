@@ -4,6 +4,8 @@ namespace App\Console\Commands;
 
 use App\Feed\PostPurger;
 use App\Models\Post;
+use App\Models\Talent;
+use App\Services\TrashService;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -51,6 +53,17 @@ class PurgeTrashedMedia extends Command
             }
         });
 
+        // 0b. Talents trashed past the window go for good too — with their
+        //     projects (co-owned ones pass to a co-owner), profile content,
+        //     posts and every file (TrashService, the same path as the admin's
+        //     "Delete forever"). Their projects/content are not trashed rows
+        //     themselves, so the media step below would never reach them.
+        $talents = 0;
+        foreach (Talent::onlyTrashed()->where('deleted_at', '<', $cutoff)->pluck('id') as $talentId) {
+            $talents++;
+            $dry || app(TrashService::class)->purge(null, 'talents', (int) $talentId);
+        }
+
         $types = Media::query()->distinct()->pluck('model_type');
 
         foreach ($types as $type) {
@@ -90,9 +103,9 @@ class PurgeTrashedMedia extends Command
         }
 
         $verb = $dry ? 'Would delete' : 'Deleted';
-        $this->info("{$verb} {$posts} post(s) for good, {$trashed} file(s) of items trashed over {$days} days, and {$orphans} orphaned file(s).");
-        if (! $dry && ($posts || $trashed || $orphans)) {
-            Log::channel('media')->info('media:purge-trashed', ['posts' => $posts, 'trashed' => $trashed, 'orphans' => $orphans, 'days' => $days]);
+        $this->info("{$verb} {$talents} talent(s) and {$posts} post(s) for good, {$trashed} file(s) of items trashed over {$days} days, and {$orphans} orphaned file(s).");
+        if (! $dry && ($talents || $posts || $trashed || $orphans)) {
+            Log::channel('media')->info('media:purge-trashed', ['talents' => $talents, 'posts' => $posts, 'trashed' => $trashed, 'orphans' => $orphans, 'days' => $days]);
         }
 
         return self::SUCCESS;

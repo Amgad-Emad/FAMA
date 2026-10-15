@@ -85,6 +85,15 @@ Route::middleware('can:manage-blocks')->group(function () {
     Route::patch('/blocks/{blockType}/toggle', [BlockCatalogController::class, 'toggle'])->name('blocks.toggle');
 });
 
+// --- Trash: soft-deleted items — restore (moderate-content) / delete forever (manage-settings, checked in the controller)
+Route::middleware('can:moderate-content')->prefix('trash')->name('trash')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Admin\TrashController::class, 'index'])->name('');
+    Route::get('/{type}', [\App\Http\Controllers\Admin\TrashController::class, 'data'])->name('.data');
+    Route::post('/{type}/bulk', [\App\Http\Controllers\Admin\TrashController::class, 'bulk'])->name('.bulk');
+    Route::post('/{type}/{id}/restore', [\App\Http\Controllers\Admin\TrashController::class, 'restore'])->whereNumber('id')->name('.restore');
+    Route::delete('/{type}/{id}', [\App\Http\Controllers\Admin\TrashController::class, 'destroy'])->whereNumber('id')->name('.destroy');
+});
+
 // --- Moderation queues (moderate-content) -----------------------------------
 Route::middleware('can:moderate-content')->prefix('moderation')->name('moderation.')->group(function () {
     Route::get('/', [ModerationController::class, 'index'])->name('index');

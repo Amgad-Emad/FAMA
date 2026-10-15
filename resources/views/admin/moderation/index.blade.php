@@ -2,7 +2,9 @@
     <div x-data="adminModeration(@js($queue))" data-queue="{{ $queue }}" class="space-y-5"
          data-del-one="{{ __('Delete this item?') }}" data-del-many="{{ __('Delete :n items?') }}"
          data-del-body="{{ __('They are soft-deleted: hidden everywhere and restorable for 30 days, after which their photos and files are removed for good.') }}"
-         data-del-ok="{{ __('Delete') }}">
+         data-del-ok="{{ __('Delete') }}"
+         data-purge-one="{{ __('Delete this talent forever?') }}" data-purge-many="{{ __('Delete :n talents forever?') }}" data-purge-ok="{{ __('Delete forever') }}"
+         data-purge-body="{{ __('This can’t be undone. Their posts, comments, projects (unless co-owned — those pass to a co-owner), profile content, files, likes and follows are removed for good.') }}">
         @php
             // Tabs: brand-owned queues only exist with the brands feature (V1 off).
             $tabs = ['talents' => __('Talents'), 'recognitions' => __('Recognitions'), 'reviews' => __('Talent reviews')];
@@ -10,7 +12,8 @@
                 $tabs += ['brands' => __('Brands'), 'brand-reviews' => __('Brand reviews'), 'projects' => __('Projects')];
             }
             $tabs['all-reviews'] = __('All reviews');
-            $tabHints = ['talents' => __('waiting for verification'), 'recognitions' => __('pending'), 'reviews' => __('pending'), 'brands' => __('unverified'), 'brand-reviews' => __('pending'), 'all-reviews' => __('pending')];
+            $tabs['deleted'] = __('Deleted');
+            $tabHints = ['deleted' => __('deleted talents'), 'talents' => __('waiting for verification'), 'recognitions' => __('pending'), 'reviews' => __('pending'), 'brands' => __('unverified'), 'brand-reviews' => __('pending'), 'all-reviews' => __('pending')];
         @endphp
         {{-- Queue switcher + filters, one card --}}
         <div class="rounded-[20px] border border-line bg-surface p-2 sm:p-2.5">
@@ -74,14 +77,22 @@
                             <button type="button" @click="batch('reject')" class="inline-flex h-9 items-center gap-1.5 rounded-pill bg-white/15 px-4 text-[13px] font-semibold text-on-primary hover:bg-white/25">{{ __('Reject') }}</button>
                         </span>
                     </template>
-                    <a :href="exportUrl(true)" class="inline-flex h-9 items-center gap-1.5 rounded-pill bg-white/15 px-4 text-[13px] font-semibold text-on-primary hover:bg-white/25">
+                    <template x-if="tab === 'deleted'">
+                        <span class="flex gap-2">
+                            <button type="button" @click="trashBulk('restore')" class="inline-flex h-9 items-center gap-1.5 rounded-pill bg-white px-4 text-[13px] font-semibold text-ink hover:opacity-90">{{ __('Restore') }}</button>
+                            @can('manage-settings')
+                                <button type="button" @click="trashBulk('purge')" class="inline-flex h-9 items-center gap-1.5 rounded-pill bg-danger px-4 text-[13px] font-semibold text-white hover:opacity-90">{{ __('Delete forever') }}</button>
+                            @endcan
+                        </span>
+                    </template>
+                    <a x-show="tab !== 'deleted'" :href="exportUrl(true)" class="inline-flex h-9 items-center gap-1.5 rounded-pill bg-white/15 px-4 text-[13px] font-semibold text-on-primary hover:bg-white/25">
                         <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v11m0 0-4-4m4 4 4-4M5 19h14"/></svg>{{ __('Export selected') }}</a>
-                    <button type="button" @click="bulkDelete()" class="inline-flex h-9 items-center gap-1.5 rounded-pill bg-danger px-4 text-[13px] font-semibold text-white hover:opacity-90">
+                    <button type="button" x-show="tab !== 'deleted'" @click="bulkDelete()" class="inline-flex h-9 items-center gap-1.5 rounded-pill bg-danger px-4 text-[13px] font-semibold text-white hover:opacity-90">
                         <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M10 11v6m4-6v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>{{ __('Delete') }}</button>
                     <button type="button" @click="selected = []" class="h-9 px-2 text-[13px] font-semibold underline-offset-2 hover:underline">{{ __('Clear selection') }}</button>
                 </span>
             </template>
-            <a :href="exportUrl(false)" x-show="!selected.length" class="ms-auto inline-flex h-9 items-center gap-1.5 rounded-pill border border-line px-4 text-[13px] font-semibold text-ink hover:border-ink">
+            <a :href="exportUrl(false)" x-show="!selected.length && tab !== 'deleted'" class="ms-auto inline-flex h-9 items-center gap-1.5 rounded-pill border border-line px-4 text-[13px] font-semibold text-ink hover:border-ink">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v11m0 0-4-4m4 4 4-4M5 19h14"/></svg>
                 <span x-text="(q || statusFilter) ? '{{ __('Export filtered (CSV)') }}' : '{{ __('Export all (CSV)') }}'"></span></a>
         </div>
@@ -89,12 +100,35 @@
         {{-- Rows --}}
         <div x-show="!loading" class="space-y-2">
             <template x-for="row in rows" :key="row.id">
-                <div @click="openDetail(row)" role="button" tabindex="0" @keydown.enter="openDetail(row)"
+                <div @click="tab !== 'deleted' && openDetail(row)" role="button" tabindex="0" @keydown.enter="tab !== 'deleted' && openDetail(row)"
                      class="flex cursor-pointer flex-wrap items-center gap-3 rounded-[16px] border border-line bg-surface px-4 py-3 text-sm transition hover:border-line-strong hover:shadow-e2 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:px-5"
                      :class="{ 'border-gold-weak ring-1 ring-gold-weak': (tab === 'talents' || tab === 'brands') && !row.is_verified && row.steps_completed && !row.trashed }">
                     <template x-if="canBulk"><input type="checkbox" @click.stop @change="toggle(row.id)" :checked="selected.includes(row.id)" class="h-[18px] w-[18px] shrink-0 rounded" aria-label="{{ __('Select') }}"></template>
                     {{-- Row title. On the global queue it names the entity BEING reviewed
                          (brand for a brand review, talent for a talent review). --}}
+                    {{-- Deleted talents (from the Trash): restore / delete forever --}}
+                    <template x-if="tab === 'deleted'">
+                        <div class="flex min-w-0 flex-1 flex-wrap items-center gap-3.5" @click.stop>
+                            <span class="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-pill bg-elevated text-sm font-semibold text-muted grayscale">
+                                <template x-if="row.avatar"><img :src="row.avatar" alt="" class="h-full w-full object-cover"></template>
+                                <template x-if="!row.avatar"><span x-text="(row.title || '?').split(/[\s@.]+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('')"></span></template>
+                            </span>
+                            <span class="min-w-0 flex-1">
+                                <span class="flex flex-wrap items-center gap-2"><span class="truncate text-[15px] font-semibold text-ink" x-text="row.title"></span>
+                                    <span class="rounded-pill bg-danger-weak px-2 py-0.5 text-xs font-semibold text-danger">{{ __('Deleted') }}</span></span>
+                                <span class="mt-0.5 block truncate text-[13px] text-muted" x-text="row.subtitle + '  ·  {{ __('deleted') }} ' + row.deleted_ago"></span>
+                                <span class="mt-1 inline-block rounded-pill px-2 py-0.5 text-xs font-semibold" :class="row.purge_in_days <= 3 ? 'bg-danger-weak text-danger' : 'bg-elevated text-muted'"
+                                      x-text="'{{ __('Gone for good in') }} ' + row.purge_in_days + ' {{ __('days') }}'"></span>
+                            </span>
+                            <span class="flex items-center gap-2">
+                                <button type="button" @click="trashRestore(row)" class="inline-flex h-9 items-center gap-1.5 rounded-pill bg-primary px-4 text-[13px] font-semibold text-on-primary hover:opacity-90">
+                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12a9 9 0 1 0 3-6.7L3 8m0-5v5h5"/></svg>{{ __('Restore') }}</button>
+                                @can('manage-settings')
+                                    <button type="button" @click="trashPurge(row)" class="inline-flex h-9 items-center rounded-pill border border-line px-4 text-[13px] font-semibold text-danger hover:border-danger hover:bg-danger-weak">{{ __('Delete forever') }}</button>
+                                @endcan
+                            </span>
+                        </div>
+                    </template>
                     {{-- Accounts (talents / brands): avatar + name + who-they-are line + state pills --}}
                     <template x-if="tab === 'talents' || tab === 'brands'">
                         <div class="flex min-w-0 flex-1 items-center gap-3.5">
@@ -122,7 +156,7 @@
                             </span>
                         </div>
                     </template>
-                    <template x-if="tab !== 'talents' && tab !== 'brands'">
+                    <template x-if="tab !== 'talents' && tab !== 'brands' && tab !== 'deleted'">
                         <span class="flex flex-wrap items-center gap-3">
                             <span class="font-medium text-ink"
                                   x-text="tab === 'all-reviews' ? ((row.kind === 'brand' ? row.brand : row.talent) || ('#'+row.id)) : (row.display_name || row.name || row.title || row.talent || ('#'+row.id))"></span>
@@ -162,7 +196,7 @@
                               x-text="row.is_public ? '{{ __('public') }}' : '{{ __('private') }}'"></span>
                     </template>
 
-                    <div class="ms-auto flex flex-wrap items-center gap-2" @click.stop>
+                    <div class="ms-auto flex flex-wrap items-center gap-2" @click.stop x-show="tab !== 'deleted'">
                         {{-- Every queue: open the detail drawer (the whole row is also clickable) --}}
                         <button @click="tab === 'talents' && row.slug && !row.trashed ? openPreview(row) : openDetail(row)" class="inline-flex h-9 items-center gap-1.5 rounded-pill border border-line bg-surface px-3.5 text-[13px] font-semibold text-ink transition hover:border-ink">
                             <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.5 12s3.5-7 9.5-7 9.5 7 9.5 7-3.5 7-9.5 7-9.5-7-9.5-7Z"/><circle cx="12" cy="12" r="2.8"/></svg>{{ __('View') }}</button>

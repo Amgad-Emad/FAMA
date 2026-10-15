@@ -101,6 +101,20 @@ Notable changes to the Fama project. Newest first.
   `media:purge-trashed` PURGES the post for good: likes / saves / mentions / link chips of the post and its comments
   (polymorphic rows no cascade reaches), then a force delete (medialibrary removes files; FKs cascade comments, skill
   tags, seen-marks). Reports stay as moderation history.
+- Trash module (sidebar → System → Trash; `TrashService`, `TrashController`): every soft-deleted talent / post /
+  comment / review / recognition (brands only with the feature), per-type tabs with counts, search, "gone for good in
+  N days", Restore / Delete forever singly and in bulk. Rules: restoring a post brings back the comments deleted with
+  it; a comment whose post is trashed can't come back alone; deleting a talent forever removes their posts, comments,
+  projects (co-owned ones pass to a co-owner via leave), profile content, files, likes, saves, follows, mentions and
+  notifications. Restore = moderate-content; Delete forever = manage-settings. Audited (`trash.restored` /
+  `trash.purged`). Routes `/admin/trash[/{type}[/bulk|/{id}/restore|/{id}]]`.
+- Moderation Talents / Brands lists (and their CSV export) no longer include deleted accounts — a new **Deleted** tab
+  on Moderation lists deleted talents with Restore / Delete forever (single + bulk, through the Trash endpoints).
+- Posts module: All posts / Comments exclude deleted items; a **Deleted** tab (Posts | Comments switch) lists them
+  with Restore / Delete forever, single + bulk, through the Trash endpoints (same rules: a post brings its comments
+  back; a comment of a trashed post waits for its post).
+- `media:purge-trashed` now also deletes FOREVER talents left in the trash past the window (same path as "Delete
+  forever", so their project/content/post files go too — those rows are not trashed themselves).
 - All reviews no longer lists brand reviews while brands are off (their View 404'd → "Request failed").
 - Test flake fixed: GeneratesCoverImages wrote a seed-only temp path that parallel processes raced on.
 - Block catalog as cards: summary (active / retired / placements), search + All / Profile-wide / Skill-specific /

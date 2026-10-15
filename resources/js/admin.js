@@ -311,7 +311,9 @@ document.addEventListener('alpine:init', () => {
                 const params = new URLSearchParams({ page });
                 if (this.q) params.set('q', this.q);
                 if (this.statusFilter) params.set('status', this.statusFilter);
-                const { data, meta } = await get(`/admin/moderation/${this.tab}?${params.toString()}`);
+                // The Deleted tab reads deleted talents from the Trash.
+                const url = this.tab === 'deleted' ? `/admin/trash/talents?${params.toString()}` : `/admin/moderation/${this.tab}?${params.toString()}`;
+                const { data, meta } = await get(url);
                 this.rows = data;
                 this.meta = meta;
             } finally { this.loading = false; }
@@ -321,7 +323,28 @@ document.addEventListener('alpine:init', () => {
             i >= 0 ? this.selected.splice(i, 1) : this.selected.push(id);
         },
         // --- Bulk: select rows, then delete / export (approve / reject on reviews) ---
-        get canBulk() { return ['talents', 'brands', 'reviews', 'recognitions'].includes(this.tab); },
+        get canBulk() { return ['talents', 'brands', 'reviews', 'recognitions', 'deleted'].includes(this.tab); },
+        // --- Deleted tab (Trash endpoints) ---
+        async trashRestore(row) {
+            try { await post(`/admin/trash/talents/${row.id}/restore`, {}); await this.load(this.meta?.pagination?.current_page ?? 1); }
+            catch (e) { if (e instanceof ApiError) window.alert(e.message); }
+        },
+        async trashPurge(row) {
+            const ok = await this.$store.confirm.ask({ title: this.$root.dataset.purgeOne, message: this.$root.dataset.purgeBody, confirmLabel: this.$root.dataset.purgeOk });
+            if (!ok) return;
+            try { await del(`/admin/trash/talents/${row.id}`); await this.load(this.meta?.pagination?.current_page ?? 1); }
+            catch (e) { if (e instanceof ApiError) window.alert(e.message); }
+        },
+        async trashBulk(action) {
+            const n = this.selected.length;
+            if (!n) return;
+            if (action === 'purge') {
+                const ok = await this.$store.confirm.ask({ title: this.$root.dataset.purgeMany.replace(':n', n), message: this.$root.dataset.purgeBody, confirmLabel: this.$root.dataset.purgeOk });
+                if (!ok) return;
+            }
+            try { await post('/admin/trash/talents/bulk', { action, ids: this.selected }); this.selected = []; await this.load(); }
+            catch (e) { if (e instanceof ApiError) window.alert(e.message); }
+        },
         get allSelected() { return this.rows.length > 0 && this.rows.every((r) => this.selected.includes(r.id)); },
         toggleAll() {
             this.selected = this.allSelected ? [] : this.rows.map((r) => r.id);
@@ -987,7 +1010,9 @@ document.addEventListener('alpine:init', () => {
     }));
 
     // --- Posts module (feed moderation) --------------------------------------
-    Alpine.data('adminPosts', ({ queue = 'posts', base = '', reasons = {} } = {}) => ({
+    Alpine.data('adminPosts', ({ queue = 'posts', base = '', reasons = {}, canPurge = false } = {}) => ({
+        canPurge,
+        deletedKind: 'posts',
         tab: queue,
         base,
         reasons,
@@ -1021,7 +1046,9 @@ document.addEventListener('alpine:init', () => {
                 if (this.tab === 'reports') params.set('status', this.status === '' ? 'open' : (this.status === 'all' ? '' : this.status));
                 if (this.tab !== 'reports' && this.state) params.set('state', this.state);
                 if (this.q) params.set('q', this.q);
-                const { data, meta } = await get(`${this.base}/${this.tab}?${params.toString()}`);
+                // The Deleted tab reads the Trash (posts or comments).
+                const url = this.tab === 'deleted' ? `/admin/trash/${this.deletedKind}?${params.toString()}` : `${this.base}/${this.tab}?${params.toString()}`;
+                const { data, meta } = await get(url);
                 this.rows = data;
                 this.pagination = meta?.pagination ?? null;
             } finally { this.loading = false; }
@@ -1048,6 +1075,32 @@ document.addEventListener('alpine:init', () => {
                 if (e instanceof ApiError) window.alert(e.message);
                 return false;
             }
+        },
+        // --- Deleted tab (Trash endpoints) ---
+        async trashRestore(row) {
+            try { await post(`/admin/trash/${this.deletedKind}/${row.id}/restore`, {}); await this.load(); }
+            catch (e) { if (e instanceof ApiError) window.alert(e.message); }
+        },
+        async trashPurge(row) {
+            const ok = await this.$store.confirm.ask({ title: this.$root.dataset.purgeTitle.replace(':n', this.deletedKind === 'posts' ? 'this post' : 'this comment'), message: this.$root.dataset.purgeBody, confirmLabel: 'Delete forever' });
+            if (!ok) return;
+            try { await del(`/admin/trash/${this.deletedKind}/${row.id}`); await this.load(); }
+            catch (e) { if (e instanceof ApiError) window.alert(e.message); }
+        },
+        async trashBulk(action) {
+            const n = this.selected.length;
+            if (!n) return;
+            if (action === 'purge') {
+                const ok = await this.$store.confirm.ask({ title: this.$root.dataset.purgeTitle.replace(':n', n + ' ' + this.deletedKind), message: this.$root.dataset.purgeBody, confirmLabel: 'Delete forever' });
+                if (!ok) return;
+            }
+            try {
+                const { data } = await post(`/admin/trash/${this.deletedKind}/bulk`, { action, ids: this.selected });
+                this.selected = [];
+                this.notice = data.skipped ? `${data.done} done · ${data.skipped} skipped` : `${data.done} done`;
+                setTimeout(() => { this.notice = ''; }, 3500);
+                await this.load();
+            } catch (e) { if (e instanceof ApiError) window.alert(e.message); }
         },
         /** Open the remove composer: suggested email + preview of the real view. */
         async openReason(row) {
@@ -1102,6 +1155,71 @@ document.addEventListener('alpine:init', () => {
                 this.selected = [];
                 this.notice = data.skipped ? `${data.done} done · ${data.skipped} skipped` : `${data.done} done`;
                 setTimeout(() => { this.notice = ''; }, 3500);
+                await this.load();
+            } catch (e) { if (e instanceof ApiError) window.alert(e.message); }
+        },
+    }));
+
+    // --- Trash ---------------------------------------------------------------
+    Alpine.data('adminTrash', ({ type = 'talents', counts = {}, canPurge = false } = {}) => ({
+        type,
+        counts,
+        canPurge,
+        rows: [],
+        meta: null,
+        loading: true,
+        q: '',
+        selected: [],
+        notice: '',
+
+        init() { this.load(); },
+        openType(t) {
+            this.type = t; this.q = ''; this.selected = [];
+            const url = new URL(window.location);
+            url.searchParams.set('type', t);
+            window.history.replaceState(null, '', url);
+            this.load();
+        },
+        async load(page = 1) {
+            this.loading = true;
+            try {
+                const params = new URLSearchParams({ page });
+                if (this.q) params.set('q', this.q);
+                const { data, meta } = await get(`/admin/trash/${this.type}?${params.toString()}`);
+                this.rows = data;
+                this.meta = meta;
+                if (meta?.counts) this.counts = meta.counts;
+            } finally { this.loading = false; }
+        },
+        initials(t) { return String(t || '?').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join(''); },
+        toggle(id) { const i = this.selected.indexOf(id); i >= 0 ? this.selected.splice(i, 1) : this.selected.push(id); },
+        get allSelected() { return this.rows.length > 0 && this.rows.every((r) => this.selected.includes(r.id)); },
+        toggleAll() { this.selected = this.allSelected ? [] : this.rows.map((r) => r.id); },
+        flash(msg) { this.notice = msg; setTimeout(() => { this.notice = ''; }, 3500); },
+        async restore(row) {
+            try { await post(`/admin/trash/${this.type}/${row.id}/restore`, {}); await this.load(this.meta?.pagination?.current_page ?? 1); }
+            catch (e) { if (e instanceof ApiError) window.alert(e.message); }
+        },
+        confirmPurge(n) {
+            const d = this.$root.dataset;
+            return this.$store.confirm.ask({
+                title: n === 1 ? d.purgeOne : d.purgeMany.replace(':n', n),
+                message: this.type === 'talents' ? d.talentBody : d.purgeBody,
+                confirmLabel: 'Delete forever',
+            });
+        },
+        async purge(row) {
+            if (!(await this.confirmPurge(1))) return;
+            try { await del(`/admin/trash/${this.type}/${row.id}`); await this.load(this.meta?.pagination?.current_page ?? 1); }
+            catch (e) { if (e instanceof ApiError) window.alert(e.message); }
+        },
+        async bulk(action) {
+            const n = this.selected.length;
+            if (!n || (action === 'purge' && !(await this.confirmPurge(n)))) return;
+            try {
+                const { data } = await post(`/admin/trash/${this.type}/bulk`, { action, ids: this.selected });
+                this.selected = [];
+                this.flash(data.skipped ? `${data.done} done · ${data.skipped} skipped` : `${data.done} done`);
                 await this.load();
             } catch (e) { if (e instanceof ApiError) window.alert(e.message); }
         },

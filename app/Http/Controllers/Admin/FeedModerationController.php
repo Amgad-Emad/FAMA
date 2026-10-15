@@ -32,7 +32,7 @@ class FeedModerationController extends Controller
     {
         $queue = $request->query('queue', 'posts');
 
-        if (! in_array($queue, ['reports', 'posts', 'comments'], true)) {
+        if (! in_array($queue, ['reports', 'posts', 'comments', 'deleted'], true)) {
             $queue = 'posts';
         }
 
@@ -42,9 +42,10 @@ class FeedModerationController extends Controller
             'reports' => PostReport::query()->whereIn('status', ['open', 'reviewing'])->count(),
             'comments' => Comment::query()->count(),
             'hidden' => Post::query()->where('state', 'hidden')->count(),
+            'deleted' => Post::onlyTrashed()->count() + Comment::onlyTrashed()->count(),
         ];
 
-        return view('admin.feed.index', ['queue' => $queue, 'counts' => $counts]);
+        return view('admin.feed.index', ['queue' => $queue, 'counts' => $counts, 'canPurge' => $request->user()->can('manage-settings')]);
     }
 
     /**
@@ -99,7 +100,8 @@ class FeedModerationController extends Controller
      */
     public function posts(Request $request): JsonResponse
     {
-        $posts = Post::withTrashed()
+        // Deleted posts live in the Deleted tab (Trash), not here.
+        $posts = Post::query()
             ->when(in_array($request->query('state'), ['draft', 'published', 'hidden', 'removed'], true),
                 fn ($query) => $query->where('state', $request->query('state')))
             ->when($request->filled('q'), fn ($query) => $query->where('body', 'like', '%'.$request->query('q').'%'))
@@ -135,7 +137,7 @@ class FeedModerationController extends Controller
      */
     public function comments(Request $request): JsonResponse
     {
-        $comments = Comment::withTrashed()
+        $comments = Comment::query()
             ->when(in_array($request->query('state'), ['published', 'hidden', 'removed'], true),
                 fn ($query) => $query->where('state', $request->query('state')))
             ->when($request->filled('q'), fn ($query) => $query->where('body', 'like', '%'.$request->query('q').'%'))

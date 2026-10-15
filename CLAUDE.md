@@ -1085,6 +1085,8 @@ public profile, auth and error pages. SUPERSEDES the Orchid/Daylight styling not
   soft deletes keep files for `media-library.trash_retention_days` (30) then `media:purge-trashed` (daily) removes
   them and sweeps orphans. Posts: a soft delete cascades to comments (PostPurger via PostObserver); past the window
   the post is purged for good (`PostPurger::purge` — polymorphic likes/mentions/links/bookmarks first, then forceDelete).
+- TRASH: `TrashService` is THE home for restore / delete-forever rules (post restore brings its comments; talent
+  purge takes their whole footprint, hands co-owned projects over). The daily purge calls it for talents past the window.
 - ADMIN BULK: `ModerationBulkService` (delete via each row's audited path; CSV export with formula-injection guard).
   Staff profile preview: `TalentProfileController::isStaff()` lets moderate-content admins open private profiles.
 - LOGIN LANDING: a talent login (and talent registration) ALWAYS lands on `talent.profile.edit` — the visitor's

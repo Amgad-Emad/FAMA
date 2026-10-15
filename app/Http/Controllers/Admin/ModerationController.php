@@ -45,7 +45,7 @@ class ModerationController extends AdminController
      */
     public function index(Request $request): View
     {
-        $queues = ['talents', 'all-reviews', 'reviews', 'recognitions'];
+        $queues = ['talents', 'all-reviews', 'reviews', 'recognitions', 'deleted'];
         // Brand-owned queues only exist when the brands feature is enabled (V1 off).
         if (Features::brands()) {
             $queues = [...$queues, 'brands', 'brand-reviews', 'projects'];
@@ -63,6 +63,8 @@ class ModerationController extends AdminController
             $waiting['brand-reviews'] = BrandReview::where('status', 'pending')->count();
         }
         $waiting['all-reviews'] = $waiting['reviews'] + ($waiting['brand-reviews'] ?? 0);
+        // Deleted talents (restorable / deletable for good) — the Deleted tab.
+        $waiting['deleted'] = Talent::onlyTrashed()->count();
 
         return view('admin.moderation.index', [
             'queue' => in_array($queue, $queues, true) ? $queue : 'talents',
@@ -74,7 +76,8 @@ class ModerationController extends AdminController
 
     public function talents(Request $request): JsonResponse
     {
-        $paginator = Talent::query()->withTrashed()->with('media')
+        // Deleted talents live in the Deleted tab / Trash, not in the queue.
+        $paginator = Talent::query()->with('media')
             ->when($request->query('q'), fn ($query, $q) => $query->where(fn ($w) => $w
                 ->where('display_name', 'like', "%{$q}%")->orWhere('email', 'like', "%{$q}%")->orWhere('slug', 'like', "%{$q}%")))
             ->when($request->query('status'), fn ($query, $status) => $query->where('status', $status))
@@ -399,7 +402,7 @@ class ModerationController extends AdminController
 
     public function brands(Request $request): JsonResponse
     {
-        $paginator = Brand::query()->withTrashed()->with('media')
+        $paginator = Brand::query()->with('media')
             ->when($request->query('q'), fn ($query, $q) => $query->where(fn ($w) => $w
                 ->where('name', 'like', "%{$q}%")->orWhere('email', 'like', "%{$q}%")->orWhere('slug', 'like', "%{$q}%")))
             ->when($request->query('status'), fn ($query, $status) => $query->where('status', $status))

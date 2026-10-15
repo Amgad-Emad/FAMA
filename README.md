@@ -14,7 +14,7 @@ that walks a brand and a talent through booking, quoting, contracting, payment, 
 **UI: the fama-ui design (2026-10-12, ADR-AB).** Talent, feed, public profile, auth and error pages use the
 client's fama-ui kit (`public/fama-ui/`, `<x-fama.layout>`). Talent nav: **Feed · Activity · Profile structure ·
 Projects · Credits** + Preview profile + notifications bell. Profile structure is the talent home (the dashboard
-redirects there). Full Pest suite **848/848 green**.
+redirects there). Full Pest suite **858/858 green**.
 
 Demo logins (password `password`): `talent-demo@fama.test` (every screen populated), `talent-new@fama.test`
 (Private, unverified — the go-Live steps), `brand-demo@fama.test`, `admin-demo@fama.test` (at `/admin/login`).

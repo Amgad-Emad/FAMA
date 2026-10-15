@@ -11,11 +11,13 @@
         'posts' => [__('All posts'), $counts['posts'] ?? null, false],
         'reports' => [__('Reported'), $counts['reports'] ?? null, true],
         'comments' => [__('Comments'), $counts['comments'] ?? null, false],
+        'deleted' => [__('Deleted'), $counts['deleted'] ?? null, false],
     ];
     $reasonLabels = collect(config('feed.report_reasons', []))->mapWithKeys(fn ($r) => [$r => __(ucfirst(str_replace('_', ' ', $r)))])->all();
 @endphp
 <x-admin-layout :title="__('Posts')">
-    <div x-data="adminPosts({ queue: @js($queue), base: @js(route('admin.moderation.feed')), reasons: @js($reasonLabels) })" class="space-y-5"
+    <div x-data="adminPosts({ queue: @js($queue), base: @js(route('admin.moderation.feed')), reasons: @js($reasonLabels), canPurge: @js($canPurge) })" class="space-y-5"
+         data-purge-title="{{ __('Delete :n forever?') }}" data-purge-body="{{ __('This can’t be undone. Comments, likes, saves, mentions and photos / videos go with it.') }}"
          data-del-title="{{ __('Delete :n?') }}" data-del-body="{{ __('Soft-deleted: gone from the feed and restorable for 30 days, after which photos and videos are removed for good.') }}">
 
         {{-- Tabs + filters --}}
@@ -39,7 +41,11 @@
                     <input type="search" x-model="q" @input.debounce.400ms="page = 1; load()" placeholder="{{ __('Search what people wrote…') }}"
                            class="h-11 w-full rounded-pill border-line bg-bg ps-11 pe-4 text-[15px] text-ink placeholder:text-subtle" aria-label="{{ __('Search') }}">
                 </div>
-                <select x-show="tab !== 'reports'" x-model="state" @change="page = 1; load()" class="h-11 rounded-pill border-line bg-bg ps-4 text-[15px] text-ink" aria-label="{{ __('State') }}">
+                <div x-show="tab === 'deleted'" x-cloak class="inline-flex rounded-pill border border-line bg-bg p-1" role="group">
+                    <button type="button" @click="deletedKind = 'posts'; page = 1; selected = []; load()" :class="deletedKind === 'posts' ? 'bg-primary text-on-primary' : 'text-muted hover:text-ink'" class="rounded-pill px-3.5 py-1.5 text-sm font-semibold">{{ __('Posts') }}</button>
+                    <button type="button" @click="deletedKind = 'comments'; page = 1; selected = []; load()" :class="deletedKind === 'comments' ? 'bg-primary text-on-primary' : 'text-muted hover:text-ink'" class="rounded-pill px-3.5 py-1.5 text-sm font-semibold">{{ __('Comments') }}</button>
+                </div>
+                <select x-show="tab !== 'reports' && tab !== 'deleted'" x-model="state" @change="page = 1; load()" class="h-11 rounded-pill border-line bg-bg ps-4 text-[15px] text-ink" aria-label="{{ __('State') }}">
                     <option value="">{{ __('All states') }}</option>
                     <option value="published">{{ __('Published') }}</option>
                     <option value="hidden">{{ __('Hidden') }}</option>
@@ -56,7 +62,7 @@
         </div>
 
         {{-- Bulk bar (posts / comments) --}}
-        <div x-show="tab !== 'reports' && !loading && rows.length" x-cloak
+        <div x-show="tab !== 'reports' && !loading && rows.length" x-cloak data-bulk
              class="sticky top-24 z-10 flex flex-wrap items-center gap-2 rounded-[16px] border px-4 py-2.5 transition"
              :class="selected.length ? 'border-ink bg-primary text-on-primary' : 'border-line bg-surface text-ink'">
             <label class="inline-flex cursor-pointer items-center gap-2.5 pe-2 text-sm font-semibold">
@@ -65,10 +71,16 @@
             </label>
             <template x-if="selected.length">
                 <span class="flex flex-wrap items-center gap-2">
-                    <button type="button" @click="bulk('hide')" class="inline-flex h-9 items-center gap-1.5 rounded-pill bg-white/15 px-4 text-[13px] font-semibold hover:bg-white/25">
+                    <template x-if="tab === 'deleted'">
+                        <span class="flex gap-2">
+                            <button type="button" @click="trashBulk('restore')" class="inline-flex h-9 items-center gap-1.5 rounded-pill bg-white px-4 text-[13px] font-semibold text-ink hover:opacity-90">{{ __('Restore') }}</button>
+                            <button type="button" x-show="canPurge" @click="trashBulk('purge')" class="inline-flex h-9 items-center gap-1.5 rounded-pill bg-danger px-4 text-[13px] font-semibold text-white hover:opacity-90">{{ __('Delete forever') }}</button>
+                        </span>
+                    </template>
+                    <button type="button" x-show="tab !== 'deleted'" @click="bulk('hide')" class="inline-flex h-9 items-center gap-1.5 rounded-pill bg-white/15 px-4 text-[13px] font-semibold hover:bg-white/25">
                         <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3l18 18M10.6 5.1A9.7 9.7 0 0 1 12 5c6 0 9.5 7 9.5 7a17 17 0 0 1-2.6 3.4M6.6 6.6C3.9 8.4 2.5 12 2.5 12s3.5 7 9.5 7a9.6 9.6 0 0 0 5.4-1.6"/></svg>{{ __('Hide') }}</button>
-                    <button type="button" @click="bulk('restore')" class="inline-flex h-9 items-center gap-1.5 rounded-pill bg-white/15 px-4 text-[13px] font-semibold hover:bg-white/25">{{ __('Unhide') }}</button>
-                    <button type="button" @click="bulk('delete')" class="inline-flex h-9 items-center gap-1.5 rounded-pill bg-danger px-4 text-[13px] font-semibold text-white hover:opacity-90">
+                    <button type="button" x-show="tab !== 'deleted'" @click="bulk('restore')" class="inline-flex h-9 items-center gap-1.5 rounded-pill bg-white/15 px-4 text-[13px] font-semibold hover:bg-white/25">{{ __('Unhide') }}</button>
+                    <button type="button" x-show="tab !== 'deleted'" @click="bulk('delete')" class="inline-flex h-9 items-center gap-1.5 rounded-pill bg-danger px-4 text-[13px] font-semibold text-white hover:opacity-90">
                         <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M10 11v6m4-6v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>{{ __('Delete') }}</button>
                     <button type="button" @click="selected = []" class="h-9 px-2 text-[13px] font-semibold hover:underline">{{ __('Clear selection') }}</button>
                 </span>
@@ -79,7 +91,7 @@
         <template x-if="loading"><div><x-admin.skeleton :rows="5" /></div></template>
 
         {{-- Posts & comments --}}
-        <div x-show="!loading && tab !== 'reports'" class="space-y-2">
+        <div x-show="!loading && tab !== 'reports' && tab !== 'deleted'" class="space-y-2">
             <template x-for="row in rows" :key="tab + row.id">
                 <article class="flex items-start gap-3.5 rounded-[16px] border bg-surface px-4 py-4 transition hover:shadow-e2 sm:px-5"
                          :class="row.open_reports ? 'border-danger-weak' : 'border-line'">
@@ -122,6 +134,32 @@
                                 <button type="button" @click="more = false; act(row, 'delete')" class="flex w-full items-center gap-2.5 rounded-[10px] px-3 py-2 text-start text-sm font-medium text-danger hover:bg-danger-weak">{{ __('Delete') }}</button>
                             </div>
                         </div>
+                    </div>
+                </article>
+            </template>
+        </div>
+
+        {{-- Deleted posts / comments (Trash endpoints) --}}
+        <div x-show="!loading && tab === 'deleted'" class="space-y-2">
+            <template x-for="row in rows" :key="'d' + deletedKind + row.id">
+                <article class="flex flex-wrap items-center gap-3.5 rounded-[16px] border border-line bg-surface px-4 py-3.5 sm:px-5">
+                    <input type="checkbox" class="h-[18px] w-[18px] shrink-0 rounded" :checked="selected.includes(row.id)" @change="toggle(row.id)" aria-label="{{ __('Select') }}">
+                    <span class="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-pill bg-elevated text-sm font-semibold text-muted grayscale">
+                        <template x-if="row.avatar"><img :src="row.avatar" alt="" class="h-full w-full object-cover"></template>
+                        <template x-if="!row.avatar"><span x-text="initials(row.subtitle)"></span></template>
+                    </span>
+                    <div class="min-w-0 flex-1">
+                        <p class="line-clamp-2 text-[15px] text-ink" dir="auto" x-text="row.title"></p>
+                        <p class="mt-0.5 text-[13px] text-muted" x-text="row.subtitle + '  ·  {{ __('deleted') }} ' + row.deleted_ago"></p>
+                        <p class="mt-1 flex flex-wrap items-center gap-2 text-xs">
+                            <span class="rounded-pill px-2 py-0.5 font-semibold" :class="row.purge_in_days <= 3 ? 'bg-danger-weak text-danger' : 'bg-elevated text-muted'" x-text="'{{ __('Gone for good in') }} ' + row.purge_in_days + ' {{ __('days') }}'"></span>
+                            <template x-if="row.blocked"><span class="font-semibold text-warn" x-text="row.blocked"></span></template>
+                        </p>
+                    </div>
+                    <div class="flex shrink-0 items-center gap-2">
+                        <button type="button" @click="trashRestore(row)" :disabled="!!row.blocked" class="inline-flex h-9 items-center gap-1.5 rounded-pill bg-primary px-4 text-[13px] font-semibold text-on-primary hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12a9 9 0 1 0 3-6.7L3 8m0-5v5h5"/></svg>{{ __('Restore') }}</button>
+                        <button type="button" x-show="canPurge" @click="trashPurge(row)" class="inline-flex h-9 items-center rounded-pill border border-line px-4 text-[13px] font-semibold text-danger hover:border-danger hover:bg-danger-weak">{{ __('Delete forever') }}</button>
                     </div>
                 </article>
             </template>

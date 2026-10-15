@@ -103,3 +103,15 @@ it('rejects a bad address before removing', function () {
     expect($post->fresh()->state->getValue())->toBe('published');
     Mail::assertNothingQueued();
 });
+
+it('keeps deleted posts and comments out of the lists and offers a Deleted tab', function () {
+    $live = Post::factory()->create();
+    $gone = Post::factory()->create();
+    $gone->delete();
+
+    $ids = collect($this->actingAs($this->admin, 'admin')->getJson('/admin/moderation/feed/posts')->json('data'))->pluck('id');
+    expect($ids)->toContain($live->id)->not->toContain($gone->id);
+
+    $this->get('/admin/moderation/feed?queue=deleted')->assertOk()->assertSee('Deleted');
+    $this->getJson('/admin/trash/posts')->assertOk()->assertJsonPath('data.0.id', $gone->id);
+});
