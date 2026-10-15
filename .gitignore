@@ -26,3 +26,6 @@ Homestead.yaml
 Thumbs.db
 /fama-v1-template
 /fama-v1-template.zip
+
+# medialibrary scratch space (conversions in progress) — never commit
+/storage/media-library

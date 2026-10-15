@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
@@ -81,7 +83,7 @@ class Project extends Model implements HasMedia
      */
     public function setOccurredOnAttribute(mixed $value): void
     {
-        $date = $value === null || $value === '' ? null : \Illuminate\Support\Carbon::parse($value);
+        $date = $value === null || $value === '' ? null : Carbon::parse($value);
 
         $this->attributes['occurred_on'] = $date?->toDateString();
 
@@ -118,9 +120,9 @@ class Project extends Model implements HasMedia
      * internally and therefore slips past preventLazyLoading — any list touching
      * these must eager-load `media` itself.
      *
-     * @return \Illuminate\Support\Collection<int, Media>
+     * @return Collection<int, Media>
      */
-    public function orderedMedia(): \Illuminate\Support\Collection
+    public function orderedMedia(): Collection
     {
         $this->loadMissing('media');
 
@@ -216,9 +218,9 @@ class Project extends Model implements HasMedia
      * an ownership transfer the new home owner keeps their credit line — they
      * must not count as their own co-owner). Reads the loaded relation if any.
      *
-     * @return \Illuminate\Support\Collection<int, ProjectCredit>
+     * @return Collection<int, ProjectCredit>
      */
-    public function coOwnerCredits(): \Illuminate\Support\Collection
+    public function coOwnerCredits(): Collection
     {
         $credits = $this->relationLoaded('ownerCredits') ? $this->ownerCredits : $this->ownerCredits()->get();
 
@@ -226,6 +228,18 @@ class Project extends Model implements HasMedia
             ->reject(fn (ProjectCredit $credit) => (int) $credit->talent_id === (int) $this->talent_id)
             ->unique('talent_id')
             ->values();
+    }
+
+    /**
+     * Co-owner credits whose talent account still exists (not deleted) — the
+     * only ones a project can be handed to. One query.
+     */
+    public function activeCoOwnerCredits(): Collection
+    {
+        $credits = $this->coOwnerCredits();
+        $live = Talent::query()->whereKey($credits->pluck('talent_id'))->pluck('id')->map('intval')->all();
+
+        return $credits->filter(fn (ProjectCredit $c) => in_array((int) $c->talent_id, $live, true))->values();
     }
 
     /**
@@ -246,9 +260,9 @@ class Project extends Model implements HasMedia
      * The owners as Talent models (home owner first). Callers eager-load
      * `talent` and `ownerCredits.talent`.
      *
-     * @return \Illuminate\Support\Collection<int, Talent>
+     * @return Collection<int, Talent>
      */
-    public function owners(): \Illuminate\Support\Collection
+    public function owners(): Collection
     {
         return collect([$this->talent])
             ->concat($this->coOwnerCredits()->map(fn (ProjectCredit $credit) => $credit->talent))

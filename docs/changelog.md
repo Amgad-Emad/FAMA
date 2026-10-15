@@ -113,6 +113,12 @@ Notable changes to the Fama project. Newest first.
 - Posts module: All posts / Comments exclude deleted items; a **Deleted** tab (Posts | Comments switch) lists them
   with Restore / Delete forever, single + bulk, through the Trash endpoints (same rules: a post brings its comments
   back; a comment of a trashed post waits for its post).
+- FIX (seen on fama.so): bulk "Delete forever" on deleted talents failed with "No query results for model Talent"
+  when a talent had a co-owned project. The hand-over looked the leaving (deleted) creator up with a normal query and
+  could pick a co-owner who was deleted too. Now `Project::activeCoOwnerCredits()` picks only live co-owners (none →
+  the project is deleted with the talent), transferTo() tolerates a deleted creator, and Trash bulk actions process
+  each item in isolation: failures are skipped + reported (`error` in the response), items already removed earlier in
+  the batch count as done.
 - `media:purge-trashed` now also deletes FOREVER talents left in the trash past the window (same path as "Delete
   forever", so their project/content/post files go too — those rows are not trashed themselves).
 - All reviews no longer lists brand reviews while brands are off (their View 404'd → "Request failed").

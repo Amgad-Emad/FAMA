@@ -4,10 +4,12 @@ use App\Models\Project;
 use App\Models\ProjectCredit;
 use App\Models\Talent;
 use App\Models\TalentType;
+use App\Models\User;
 use App\Services\ProjectCreditService;
 use App\Services\SkillsService;
 use App\Services\TalentProjectService;
 use Database\Seeders\BlockTypeSeeder;
+use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\SpecialitySeeder;
 use Database\Seeders\TalentTypeSeeder;
 
@@ -187,4 +189,40 @@ it('flags co-owned projects in the list payload so the UI offers Leave instead o
 
     expect($rows['Shared']['has_co_owners'])->toBeTrue()
         ->and($rows['Solo']['has_co_owners'])->toBeFalse();
+});
+
+// ----- Trash: deleting co-owners forever (regression: "No query results for model Talent") -----
+
+it('deletes forever a talent whose project co-owner is also deleted — the project goes with them', function () {
+    $this->seed(RolesAndPermissionsSeeder::class);
+    $admin = User::factory()->create();
+    $admin->assignRole('super-admin');
+    $owner = coTalent('Owner');
+    $peer = coTalent('Peer', ['styling']);
+    $project = coProject($owner);
+    coAccept($project, $peer);
+    $owner->delete();
+    $peer->delete();
+
+    $this->actingAs($admin, 'admin')
+        ->postJson('/admin/trash/talents/bulk', ['action' => 'purge', 'ids' => [$owner->id, $peer->id]])
+        ->assertOk()->assertJsonPath('data.done', 2)->assertJsonPath('data.skipped', 0);
+
+    expect(Talent::withTrashed()->whereKey([$owner->id, $peer->id])->count())->toBe(0)
+        ->and(Project::find($project->id))->toBeNull();
+});
+
+it('hands a deleted-forever talent\'s project to a co-owner who is still active', function () {
+    $this->seed(RolesAndPermissionsSeeder::class);
+    $admin = User::factory()->create();
+    $admin->assignRole('super-admin');
+    $owner = coTalent('Owner');
+    $peer = coTalent('Peer', ['styling']);
+    $project = coProject($owner);
+    coAccept($project, $peer);
+    $owner->delete();
+
+    $this->actingAs($admin, 'admin')->deleteJson("/admin/trash/talents/{$owner->id}")->assertOk();
+
+    expect(Project::find($project->id)?->talent_id)->toBe($peer->id);
 });

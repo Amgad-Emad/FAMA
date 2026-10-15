@@ -45,7 +45,9 @@ return [
             'port' => env('MAIL_PORT', 2525),
             'username' => env('MAIL_USERNAME'),
             'password' => env('MAIL_PASSWORD'),
-            'timeout' => null,
+            // Fail fast when the SMTP server can't be reached (e.g. a host that
+            // blocks outbound 587) instead of hanging the queue worker.
+            'timeout' => (int) env('MAIL_TIMEOUT', 15),
             'local_domain' => env('MAIL_EHLO_DOMAIN', parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
         ],
 

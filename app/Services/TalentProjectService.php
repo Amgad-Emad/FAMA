@@ -162,7 +162,9 @@ class TalentProjectService extends Service
             return $project->fresh();
         }
 
-        $successor = $project->coOwnerCredits()->first();
+        // Only a co-owner whose account still exists can take the project (a
+        // deleted co-owner would make the hand-over fail — or hand it to no one).
+        $successor = $project->activeCoOwnerCredits()->first();
 
         if ($successor === null) {
             throw new InvalidArgumentException(__('You’re the only owner of this project. Delete it instead.'));
@@ -228,7 +230,10 @@ class TalentProjectService extends Service
                 });
 
             // The project left the creator's portfolio: both featured picks are re-checked.
-            $this->featured()->ensure(Talent::findOrFail($from));
+            // The leaving creator may be a deleted account (Trash → delete forever): no pick to repair then.
+            if ($previous = Talent::find($from)) {
+                $this->featured()->ensure($previous);
+            }
             $this->featured()->ensure($heir);
 
             return $project->fresh(['talentTypes', 'specialities']);

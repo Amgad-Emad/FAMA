@@ -72,8 +72,8 @@ class TrashController extends AdminController
         ]);
         abort_if($data['action'] === 'purge' && ! $this->admin()->can('manage-settings'), 403);
 
-        [$done, $skipped] = $this->trash->bulk($this->admin(), $type, $data['action'], array_map('intval', $data['ids']));
+        [$done, $skipped, $error] = $this->trash->bulk($this->admin(), $type, $data['action'], array_map('intval', $data['ids']));
 
-        return response()->success(['done' => $done, 'skipped' => $skipped], __('Done.'));
+        return response()->success(['done' => $done, 'skipped' => $skipped, 'error' => $error], __('Done.'));
     }
 }

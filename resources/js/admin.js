@@ -342,8 +342,12 @@ document.addEventListener('alpine:init', () => {
                 const ok = await this.$store.confirm.ask({ title: this.$root.dataset.purgeMany.replace(':n', n), message: this.$root.dataset.purgeBody, confirmLabel: this.$root.dataset.purgeOk });
                 if (!ok) return;
             }
-            try { await post('/admin/trash/talents/bulk', { action, ids: this.selected }); this.selected = []; await this.load(); }
-            catch (e) { if (e instanceof ApiError) window.alert(e.message); }
+            try {
+                const { data } = await post('/admin/trash/talents/bulk', { action, ids: this.selected });
+                this.selected = [];
+                await this.load();
+                if (data.skipped) window.alert(`${data.done} done · ${data.skipped} skipped${data.error ? ' — ' + data.error : ''}`);
+            } catch (e) { if (e instanceof ApiError) window.alert(e.message); }
         },
         get allSelected() { return this.rows.length > 0 && this.rows.every((r) => this.selected.includes(r.id)); },
         toggleAll() {
@@ -1097,7 +1101,7 @@ document.addEventListener('alpine:init', () => {
             try {
                 const { data } = await post(`/admin/trash/${this.deletedKind}/bulk`, { action, ids: this.selected });
                 this.selected = [];
-                this.notice = data.skipped ? `${data.done} done · ${data.skipped} skipped` : `${data.done} done`;
+                this.notice = data.skipped ? `${data.done} done · ${data.skipped} skipped${data.error ? ' — ' + data.error : ''}` : `${data.done} done`;
                 setTimeout(() => { this.notice = ''; }, 3500);
                 await this.load();
             } catch (e) { if (e instanceof ApiError) window.alert(e.message); }
@@ -1219,7 +1223,7 @@ document.addEventListener('alpine:init', () => {
             try {
                 const { data } = await post(`/admin/trash/${this.type}/bulk`, { action, ids: this.selected });
                 this.selected = [];
-                this.flash(data.skipped ? `${data.done} done · ${data.skipped} skipped` : `${data.done} done`);
+                this.flash(data.skipped ? `${data.done} done · ${data.skipped} skipped${data.error ? ' — ' + data.error : ''}` : `${data.done} done`);
                 await this.load();
             } catch (e) { if (e instanceof ApiError) window.alert(e.message); }
         },

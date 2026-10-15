@@ -165,26 +165,42 @@ class TrashService extends Service
     }
 
     /**
-     * One action on many trashed items. Items that can't (a comment whose post
-     * is trashed) are skipped and counted.
+     * One action on many trashed items. Each item is its own transaction, so
+     * one that can't (a comment whose post is trashed) or that fails is
+     * skipped and counted — it never stops the rest of the batch. Items already
+     * gone (purged earlier in the same batch, e.g. a deleted talent's posts)
+     * count as done.
      *
      * @param  list<int>  $ids
-     * @return array{0: int, 1: int}
+     * @return array{0: int, 1: int, 2: ?string} [done, skipped, first error]
      */
     public function bulk(User $admin, string $type, string $action, array $ids): array
     {
         $done = 0;
         $skipped = 0;
+        $error = null;
+        $class = $this->types()[$type] ?? abort(404);
+
         foreach (array_slice(array_values(array_unique($ids)), 0, 200) as $id) {
+            if ($action === 'purge' && ! $class::withTrashed()->whereKey($id)->exists()) {
+                $done++; // already removed with something purged before it
+
+                continue;
+            }
             try {
                 $action === 'restore' ? $this->restore($admin, $type, (int) $id) : $this->purge($admin, $type, (int) $id);
                 $done++;
-            } catch (InvalidArgumentException) {
+            } catch (InvalidArgumentException $e) {
                 $skipped++;
+                $error ??= $e->getMessage();
+            } catch (\Throwable $e) {
+                // Logged by runInTransaction; reported, never fatal to the batch.
+                $skipped++;
+                $error ??= __('Some items could not be processed — see the logs.');
             }
         }
 
-        return [$done, $skipped];
+        return [$done, $skipped, $error];
     }
 
     /** A comment, its replies and their polymorphic rows, for good. */
@@ -202,7 +218,10 @@ class TrashService extends Service
     private function purgeTalent(?User $admin, Talent $talent): void
     {
         foreach ($talent->projects()->get() as $project) {
-            $project->hasCoOwners() ? $this->projects->leave($project, $talent) : $project->delete();
+            // Hand it over only to a co-owner whose account still exists; otherwise it goes with them.
+            $project->activeCoOwnerCredits()->isNotEmpty()
+                ? $this->projects->leave($project, $talent)
+                : $project->delete();
         }
 
         // Profile content with files: Eloquent deletes so medialibrary removes them.
