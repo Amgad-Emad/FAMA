@@ -1019,7 +1019,7 @@ OUTGOING MAIL (2026-09-22, suite 717 green): ZeptoMail SMTP, fully env-driven (L
 null on 587 = auto-STARTTLS; there is no MAIL_ENCRYPTION). From/Reply-To go through named SENDER PROFILES
 (`config/mail.php` `senders`: system/support/info/contact) via `App\Mail\MailSender::envelope()` /
 `::apply()` — never hardcode an address, never add a global `mail.reply_to` (Laravel appends it, doubling
-Reply-To). Mailables are `ShouldQueue` + `afterCommit()` (assert with `Mail::assertQueued`); `TestMail` is
+Reply-To). Hosts that block SMTP use `MAIL_MAILER=zeptomail` — `App\Mail\Transport\ZeptoMailTransport` (HTTPS API, same token as MAIL_PASSWORD; `MAIL_TIMEOUT` caps SMTP hangs). Mailables are `ShouldQueue` + `afterCommit()` (assert with `Mail::assertQueued`); `TestMail` is
 the deliberate sync exception behind `php artisan mail:test {to} [--sender=] [--queue]`.
 EMAIL DESIGN (2026-09-22, suite 721 green): ONE branded shell for ALL mail — `<x-email.layout>` (+ button/
 callout/panel in components/email), brand hexes/fonts ONLY in `App\Mail\EmailTheme` (mirrored by

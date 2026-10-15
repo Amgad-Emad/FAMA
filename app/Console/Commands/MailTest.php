@@ -83,8 +83,8 @@ class MailTest extends Command
             ['Mailer', $mailer],
             ['Transport', $config['transport'] ?? '—'],
             ['Host', $config['host'] ?? '—'],
-            ['Port', $config['port'] ?? '—'],
-            ['Scheme', $config['scheme'] ?? '(auto)'],
+            ['Port', $config['port'] ?? (($config['transport'] ?? null) === 'zeptomail' ? '443 (HTTPS API)' : '—')],
+            ['Scheme', $config['scheme'] ?? (($config['transport'] ?? null) === 'zeptomail' ? 'https' : '(auto)')],
             ['From', "{$from->name} <{$from->address}>"],
             ['Reply-To', $replyTo ? "{$replyTo->name} <{$replyTo->address}>" : '—'],
         ]);

@@ -51,6 +51,17 @@ return [
             'local_domain' => env('MAIL_EHLO_DOMAIN', parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
         ],
 
+        // ZeptoMail over HTTPS (port 443) — for hosts that block outbound SMTP.
+        // MAIL_MAILER=zeptomail. The token is the same Send Mail token the SMTP
+        // setup uses as MAIL_PASSWORD (set ZEPTOMAIL_TOKEN to override).
+        // Region host: api.zeptomail.com (default), api.zeptomail.eu, api.zeptomail.in …
+        'zeptomail' => [
+            'transport' => 'zeptomail',
+            'token' => env('ZEPTOMAIL_TOKEN', env('MAIL_PASSWORD')),
+            'host' => env('ZEPTOMAIL_HOST', 'api.zeptomail.com'),
+            'timeout' => (int) env('MAIL_TIMEOUT', 15),
+        ],
+
         'ses' => [
             'transport' => 'ses',
         ],

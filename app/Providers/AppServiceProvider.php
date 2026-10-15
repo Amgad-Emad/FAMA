@@ -27,6 +27,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // ZeptoMail HTTPS API transport (MAIL_MAILER=zeptomail) — see App\Mail\Transport\ZeptoMailTransport.
+        \Illuminate\Support\Facades\Mail::extend('zeptomail', fn (array $config) => new \App\Mail\Transport\ZeptoMailTransport(
+            (string) ($config['token'] ?? ''),
+            (string) ($config['host'] ?? 'api.zeptomail.com'),
+            (int) ($config['timeout'] ?? 15),
+        ));
+
         // Listeners in app/Listeners are auto-discovered by their handle() type-hint
         // (Laravel 11+): SyncStateProjections (StateChanged), IncrementProfileViewCount
         // (TalentProfileViewed), LogMediaUploaded (MediaHasBeenAddedEvent),

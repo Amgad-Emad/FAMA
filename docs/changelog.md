@@ -2,6 +2,15 @@
 
 Notable changes to the Fama project. Newest first.
 
+## 2026-10-15 — Mail over HTTPS (ZeptoMail API)
+- New `zeptomail` mailer (`App\Mail\Transport\ZeptoMailTransport`, registered via `Mail::extend` in
+  AppServiceProvider): sends through ZeptoMail's API (`POST https://api.zeptomail.com/v1.1/email`, port 443) for
+  hosts that block outbound SMTP (587/465). Switch with `MAIL_MAILER=zeptomail`; the token defaults to
+  `MAIL_PASSWORD` (`ZEPTOMAIL_TOKEN` overrides, `ZEPTOMAIL_HOST` for the EU/IN regions). Every mailable and
+  notification uses it unchanged; API errors surface as a TransportException (job fails, retryable).
+- SMTP timeout configurable (`MAIL_TIMEOUT`, default 15s) so an unreachable server can't hang the queue worker.
+- `mail:test` shows the API driver's host/port.
+
 ## 2026-10-15 — Site root
 - `/` (route `home`) no longer shows the Laravel welcome page: it redirects to `/feed` when the viewer's frozen
   candidate list has posts, otherwise to login (a signed-in viewer goes to `route('dashboard')`).
