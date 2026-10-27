@@ -1124,6 +1124,10 @@ public profile, auth and error pages. SUPERSEDES the Orchid/Daylight styling not
 - Profile-content SELECT fields (equipment category, gallery media_type, digital shot_type, showreel platform,
   software proficiency) are NOT NULL enums with defaults: `BlockContentController::dropBlankSelects()` omits a
   blank select so create takes the default and edit keeps the stored value (was a 500 — fixed 2026-10-12).
+- ADMIN ON PUBLIC PAGES (2026-10-27, suite 863 green): the admin guard is NOT a feed actor but IS signed in —
+  `x-fama.nav` public mode shows the staff account (Admin panel + Log out) and `window.famaStaff` makes every
+  visitor gate (`famaSignIn`, `asVisitor`, profile follow) toast "read-only for staff" instead of a sign-in prompt.
+  No emoji as UI icons anywhere (use text tags or inline SVG).
 - KNOWN GAPS (see the 2026-10-12 report): prototype-only features
   with no backend (41-skill taxonomy, per-skill practice fields, LinkedIn-style experience, repost, project
   drafts/free-form blocks/video embeds, hiding single credits/recognitions, recognition notifications).

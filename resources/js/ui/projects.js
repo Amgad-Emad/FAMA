@@ -1245,6 +1245,7 @@ document.addEventListener('alpine:init', () => {
          */
         async toggle() {
             if (this.busy) return;
+            if (window.famaStaff) { window.famaToast?.(window.famaStaffNote); return; }
             this.busy = true;
             if (window.famaSignedIn === false) {
                 try { await post(`/follow/talent/${id}`); } catch (e) { /* 401 expected — intent captured */ }

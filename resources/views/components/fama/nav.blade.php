@@ -30,6 +30,11 @@
         $role = collect([$primary?->name, $talent->base_city])->filter()->implode(' · ');
     }
     $isLive = $talent && (string) $talent->status === 'live' && $talent->is_published;
+    // Public mode with a signed-in admin (staff browse the public pages too).
+    $staff = $mode === 'public' ? auth('admin')->user() : null;
+    $staffInitials = $staff
+        ? collect(preg_split('/\s+/', trim((string) $staff->name)))->filter()->take(2)->map(fn ($w) => mb_strtoupper(mb_substr($w, 0, 1)))->implode('')
+        : '';
 @endphp
 
 @if ($mode === 'talent')
@@ -163,7 +168,24 @@
                 <li><a href="{{ route('feed') }}" @if (request()->routeIs('feed')) aria-current="page" @endif>{{ __('Feed') }}</a></li>
             </ul>
             <div class="fx-end">
-                <a class="fx-preview fx-login" href="{{ route('login') }}" @if (request()->routeIs('login')) aria-current="page" @endif>{{ __('Log in') }}</a>
+                @if ($staff)
+                    {{-- A signed-in admin is not a feed actor, but IS signed in: show their
+                         account (back to the admin panel + Log out), never the visitor "Log in". --}}
+                    <a class="fx-preview" href="{{ route('admin.dashboard') }}">{{ __('Admin panel') }}</a>
+                    <div class="fx-me" x-data="{ open: false }" @click.outside="open = false" @keydown.escape.window="open = false">
+                        <button type="button" class="fx-av" @click.stop="open = !open" :aria-expanded="open.toString()" aria-controls="fxStaffPop" aria-label="{{ __('Your account') }}">{{ $staffInitials }}</button>
+                        <ul class="fx-pop" id="fxStaffPop" x-show="open" x-cloak>
+                            <li class="fx-who"><b>{{ $staff->name }}</b><span>{{ __('Fama staff') }}</span></li>
+                            <li>
+                                <form method="POST" action="{{ route('logout') }}">@csrf
+                                    <a href="{{ route('logout') }}" @click.prevent="$el.closest('form').submit()">{{ __('Log out') }}</a>
+                                </form>
+                            </li>
+                        </ul>
+                    </div>
+                @else
+                    <a class="fx-preview fx-login" href="{{ route('login') }}" @if (request()->routeIs('login')) aria-current="page" @endif>{{ __('Log in') }}</a>
+                @endif
             </div>
         </div>
     </header>

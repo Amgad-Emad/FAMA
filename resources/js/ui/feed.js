@@ -38,7 +38,11 @@ document.addEventListener('alpine:init', () => {
             this.open = true;
         },
     });
-    window.famaSignIn = (verb) => Alpine.store('famaSignIn').show(verb);
+    // A signed-in admin is not a visitor: explain the feed is read-only for staff
+    // instead of asking them to sign in again.
+    window.famaSignIn = (verb) => (window.famaStaff
+        ? window.famaToast?.(window.famaStaffNote)
+        : Alpine.store('famaSignIn').show(verb));
 
     /** The centred sign-in dialog bound to $store.famaSignIn. */
     Alpine.data('famaSignInDialog', () => ({

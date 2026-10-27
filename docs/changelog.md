@@ -2,6 +2,14 @@
 
 Notable changes to the Fama project. Newest first.
 
+## 2026-10-27 — Admins on the public feed; no emoji in the admin UI
+- A signed-in admin opening `/feed` (or any fama-ui public page) is shown as signed in: the header carries
+  "Admin panel" + an account menu (name · Fama staff · Log out) instead of "Log in", and the feed hero links to
+  feed moderation / the admin panel instead of "Join as talent". Admins stay read-only (never feed actors):
+  `window.famaStaff` (fama-head) makes like/save/follow/comment show a toast instead of the sign-in dialog.
+- Emoji removed from admin screens: block catalog 🔒 → a "Locked" tag; feed moderation ♥/💬/⚑ → text counts and an
+  SVG flag.
+
 ## 2026-10-15 — Mail over HTTPS (ZeptoMail API)
 - New `zeptomail` mailer (`App\Mail\Transport\ZeptoMailTransport`, registered via `Mail::extend` in
   AppServiceProvider): sends through ZeptoMail's API (`POST https://api.zeptomail.com/v1.1/email`, port 443) for

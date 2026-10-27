@@ -107,12 +107,12 @@
                             <span class="text-subtle">·</span>
                             <span class="text-muted" x-text="row.ago"></span>
                             <span :class="statePill(row)" x-text="stateLabel(row)"></span>
-                            <template x-if="row.open_reports"><span class="inline-flex items-center gap-1 rounded-pill bg-danger-weak px-2 py-0.5 text-xs font-semibold text-danger">⚑ <span x-text="row.open_reports + ' {{ __('open reports') }}'"></span></span></template>
+                            <template x-if="row.open_reports"><span class="inline-flex items-center gap-1 rounded-pill bg-danger-weak px-2 py-0.5 text-xs font-semibold text-danger"><span x-text="row.open_reports + ' {{ __('open reports') }}'"></span></span></template>
                         </p>
                         <p class="mt-1.5 line-clamp-2 text-[15px] leading-relaxed text-ink" dir="auto" x-text="row.excerpt || '{{ __('(no text)') }}'"></p>
                         <p class="mt-2 flex flex-wrap items-center gap-3 text-[13px] text-muted" x-show="tab === 'posts'">
-                            <span>♥ <span x-text="row.likes ?? 0"></span></span>
-                            <span>💬 <span x-text="row.comments ?? 0"></span></span>
+                            <span><span x-text="row.likes ?? 0"></span> {{ __('likes') }}</span>
+                            <span><span x-text="row.comments ?? 0"></span> {{ __('comments') }}</span>
                             <span x-show="row.media_count" x-text="row.media_count + ' {{ __('photos / videos') }}'"></span>
                         </p>
                     </div>
@@ -170,7 +170,7 @@
             <template x-for="row in rows" :key="'r' + row.id">
                 <article class="rounded-[16px] border border-line bg-surface px-5 py-4">
                     <div class="flex flex-wrap items-start gap-3">
-                        <span class="grid h-10 w-10 shrink-0 place-items-center rounded-[12px] bg-danger-weak text-danger">⚑</span>
+                        <span class="grid h-10 w-10 shrink-0 place-items-center rounded-[12px] bg-danger-weak text-danger" aria-hidden="true"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4"/><path d="M5 4h11l-2 4 2 4H5"/></svg></span>
                         <div class="min-w-0 flex-1">
                             <p class="flex flex-wrap items-center gap-2 text-sm">
                                 <span class="rounded-pill bg-danger-weak px-2 py-0.5 text-xs font-semibold text-danger" x-text="reasons[row.reason] || row.reason"></span>

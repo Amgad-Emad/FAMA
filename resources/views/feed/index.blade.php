@@ -7,6 +7,8 @@
      inside the hero. Behaviour = feedStream / feedComposer / $store.famaPeople. --}}
 @php
     $isGuest = $currentActor === null;
+    // Signed-in admins are not feed actors (read-only) but must not be treated as signed out.
+    $staff = $isGuest ? auth('admin')->user() : null;
     $filterKey = $followingOnly ? 'following' : ($activeSkill ?? 'all');
     $me = $currentActor;
     $meName = $me?->feedDisplayName() ?? '';
@@ -20,7 +22,14 @@
     </x-slot:head>
 
     <x-slot:hero>
-        @if ($isGuest)
+        @if ($staff)
+            <x-fama.hero :label="__('Signed in as Fama staff')" :title="__('Feed')" :lead="__('You’re browsing the public feed as :name. Moderate posts and reports from the admin panel.', ['name' => $staff->name])" photo="feed">
+                @if ($staff->can('moderate-content'))
+                    <a class="btn" href="{{ route('admin.moderation.feed') }}">{{ __('Feed moderation') }}</a>
+                @endif
+                <a class="btn btn-2" href="{{ route('admin.dashboard') }}">{{ __('Admin panel') }}</a>
+            </x-fama.hero>
+        @elseif ($isGuest)
             <x-fama.hero :label="__('Creative talent on Fama')" :title="__('Feed')" :lead="__('Work from stylists, models, photographers and more. Join to post your own.')" photo="feed">
                 <a class="btn" href="{{ route('register') }}"><svg class="icon" aria-hidden="true"><use href="#a-user-plus"/></svg>{{ __('Join as talent') }}</a>
                 <a class="btn btn-2" href="{{ route('login') }}"><svg class="icon" aria-hidden="true"><use href="#a-log-in"/></svg>{{ __('Log in') }}</a>

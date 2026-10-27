@@ -69,6 +69,11 @@ export function toast(message, undo = null) {
  * visitor (the caller stops); false for a signed-in viewer (carry on optimistically).
  */
 export async function asVisitor(verb, request) {
+    if (window.famaStaff) {
+        // Signed-in admin: read-only on the feed — say so, send nothing.
+        window.famaToast?.(window.famaStaffNote);
+        return true;
+    }
     if (window.famaSignedIn !== false) return false;
     try {
         await request();

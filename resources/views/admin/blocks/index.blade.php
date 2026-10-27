@@ -101,7 +101,7 @@
                 <div>
                     <span class="flex items-center gap-1.5">
                         <x-input-label :value="__('Key')" />
-                        <span x-show="form.id && form.in_use_count > 0" x-cloak class="text-subtle" title="{{ __('Locked while in use') }}">🔒</span>
+                        <span x-show="form.id && form.in_use_count > 0" x-cloak class="rounded-full border border-line px-1.5 py-px text-[10px] font-medium uppercase tracking-wide text-subtle" title="{{ __('Locked while in use') }}">{{ __('Locked') }}</span>
                     </span>
                     <x-text-input class="mt-1 block w-full font-mono {{ $lockedField }}" x-model="form.key" x-bind:disabled="form.id && form.in_use_count > 0" />
                     <template x-if="errors['key']"><p class="mt-1 text-xs text-danger" x-text="errors['key'][0]"></p></template>
@@ -124,7 +124,7 @@
                 <div>
                     <span class="flex items-center gap-1.5">
                         <x-input-label :value="__('Content source')" />
-                        <span x-show="form.id && form.in_use_count > 0" x-cloak class="text-subtle" title="{{ __('Locked while in use') }}">🔒</span>
+                        <span x-show="form.id && form.in_use_count > 0" x-cloak class="rounded-full border border-line px-1.5 py-px text-[10px] font-medium uppercase tracking-wide text-subtle" title="{{ __('Locked while in use') }}">{{ __('Locked') }}</span>
                     </span>
                     <select class="mt-1 block w-full rounded-md border-line bg-bg {{ $lockedField }}" x-model="form.content_source" x-bind:disabled="form.id && form.in_use_count > 0">
                         <option value="inline">{{ __('inline') }}</option>

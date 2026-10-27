@@ -23,6 +23,10 @@
     // Whether the viewer can act (like/save/follow/comment). Buttons check this
     // BEFORE flipping, so a visitor never sees "Following" flash before sign-in.
     window.famaSignedIn = {{ auth('talent')->check() || auth('brand')->check() ? 'true' : 'false' }};
+    // A signed-in admin browsing public pages: read-only (admins are never feed
+    // actors), so action buttons explain that instead of offering a sign-in.
+    window.famaStaff = {{ auth('admin')->check() && ! auth('talent')->check() && ! auth('brand')->check() ? 'true' : 'false' }};
+    window.famaStaffNote = @js(__('You’re signed in as Fama staff. Liking, saving, following and commenting are for talent accounts.'));
     window.__famaStatusLabels = {!! json_encode($statusLabels, JSON_UNESCAPED_UNICODE) !!};
     window.__famaActorLabels = {!! json_encode(\App\Support\ContractLabels::actorLabels(), JSON_UNESCAPED_UNICODE) !!};
     window.__famaStepLabels = {!! json_encode(\App\Support\ContractLabels::stepLabels(), JSON_UNESCAPED_UNICODE) !!};

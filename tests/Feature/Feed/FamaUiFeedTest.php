@@ -102,3 +102,18 @@ it('marks people the viewer follows in mention suggestions', function () {
 
     expect($row['followed'])->toBeTrue();
 });
+
+it('shows a signed-in admin as signed in on the feed, never the visitor log-in', function () {
+    $admin = \App\Models\User::factory()->create(['name' => 'Staff Person']);
+    Post::factory()->count(2)->create();
+
+    $html = $this->actingAs($admin, 'admin')->get('/feed')->assertOk()->getContent();
+
+    expect($html)
+        ->toContain('Staff Person')
+        ->toContain(route('admin.dashboard'))
+        ->toContain('window.famaStaff = true')
+        ->toContain('Signed in as Fama staff')
+        ->not->toContain('Creative talent on Fama')
+        ->not->toContain('fx-login');
+});
