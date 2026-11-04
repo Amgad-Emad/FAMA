@@ -28,8 +28,8 @@
             <form id="form" method="POST" action="{{ route('register') }}" novalidate
                   x-data="famaAuthForm({ type: @js($type), errors: {{ \Illuminate\Support\Js::from($serverErrors) }}, checks: [
                       { field: 'name', rule: 'required', message: @js(__('Add your full name.')) },
-                      { field: 'email', rule: 'email', message: @js(__('Enter an email address like name@studio.com.')) },
-                      { field: 'password', rule: 'min8', message: @js(__('Use at least 8 characters, and mix in letters, numbers or symbols.')) },
+                      { field: 'email', rule: 'emailDomain', message: @js(__('Enter an email address like name@studio.com.')) },
+                      { field: 'password', rule: 'strong', message: @js(__('Use at least 8 characters, and mix in letters, numbers or symbols.')) },
                       { field: 'password_confirmation', rule: 'match', other: 'password', message: @js(__("The passwords don't match.")) },
                   ] })"
                   @submit="submit($event)">

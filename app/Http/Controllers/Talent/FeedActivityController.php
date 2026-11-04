@@ -15,7 +15,8 @@ use Illuminate\View\View;
  * Liked · Following tabs, the Following tab with its Following / Followers
  * sub-tabs. One shell; every list loads over Ajax from the existing data
  * endpoints (Saved/Liked as full post cards, people as rows) and the tabs
- * switch in place (?view= / ?tab= are kept in the URL for deep links).
+ * switch in place (?view= / ?tab= are kept in the URL for deep links). With
+ * no ?view= it opens on Saved, as the prototype does.
  */
 class FeedActivityController extends Controller
 {
@@ -36,7 +37,7 @@ class FeedActivityController extends Controller
         $talent = $request->user('talent');
         $view = in_array($request->query('view'), ['saved', 'liked', 'following'], true)
             ? $request->query('view')
-            : 'following';
+            : 'saved'; // the prototype opens Activity on Saved (following.html, 1 Nov 2026)
         $tab = $request->query('tab') === 'followers' ? 'followers' : 'following';
 
         return view('talent.feed.activity', [

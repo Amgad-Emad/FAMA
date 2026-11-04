@@ -312,8 +312,6 @@ export const listsMixin = () => ({
     },
     /** Clear the drag state. */
     rowEnd() { this.dragBlock = null; this.dropOn = null; this.dropDeny = null; },
-    /** Profile-wide sections before (0) or after (end) the skill tabs (draft). */
-    setPlace(after) { this.universalPosition = after ? Math.max(1, this.skills.length) : 0; },
 
     // ================= willing to explore (max 6) ======================
     /** The specialities of a skill (from the full catalog). */

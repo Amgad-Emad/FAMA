@@ -12,12 +12,14 @@ that walks a brand and a talent through booking, quoting, contracting, payment, 
 ## Status
 
 **UI: the fama-ui design (2026-10-12, ADR-AB).** Talent, feed, public profile, auth and error pages use the
-client's fama-ui kit (`public/fama-ui/`, `<x-fama.layout>`). Talent nav: **Feed · Activity · Profile structure ·
-Projects · Credits** + Preview profile + notifications bell. Profile structure is the talent home (the dashboard
-redirects there). Full Pest suite **862/862 green**.
+client's fama-ui kit (`public/fama-ui/`, `<x-fama.layout>`), synced to the co-founder's prototype as of 1 Nov
+2026 (ADR-AD). Talent nav: a **side bar** on wide screens (account · Create · Feed · Notifications · Activity ·
+Projects · Credits · Edit profile · View profile), a top bar ≤1100px. A talent signs in to the Feed once the profile
+is done, else to Profile structure; **going Live = three saved steps** (name, a skill with a speciality, city —
+no admin review, ADR-AC). Full Pest suite **897/897 green**.
 
 Demo logins (password `password`): `talent-demo@fama.test` (every screen populated), `talent-new@fama.test`
-(Private, unverified — the go-Live steps), `brand-demo@fama.test`, `admin-demo@fama.test` (at `/admin/login`).
+(Private — the go-Live steps), `brand-demo@fama.test`, `admin-demo@fama.test` (at `/admin/login`).
 Top up an existing dev DB with `php artisan db:seed --class=ScreensDemoSeeder`; if `/feed` looks empty (seeded
 content older than the 30-day ranking windows), run `php artisan demo:freshen`.
 

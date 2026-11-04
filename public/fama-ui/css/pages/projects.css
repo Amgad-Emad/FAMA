@@ -1,4 +1,4 @@
-/* Verbatim from the fama-ui prototype: projects.html <style>. Do not edit — app additions go in the page view. */
+/* Verbatim from the fama-ui prototype: projects.html <style> (live, 24 Oct 2026). App additions go in the "app overrides" section at the bottom. */
 /* Screen: /talent/projects — "Projects" in the Fama V1 Blueprint.
    Every project is tagged with at least one of the talent's skills; those tags decide
    the profile tabs it appears in. Filter by skill. Drag to reorder (only when unfiltered).
@@ -7,8 +7,19 @@
 .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--gutter);margin-top:var(--s5)}
 .pc{background:var(--white);border:var(--border);border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column}
 .pc.dragging{opacity:.4}
-.pc .cover{aspect-ratio:4/3;background:var(--line);display:flex;align-items:center;justify-content:center;color:var(--grey);position:relative}
+.pc .cover{aspect-ratio:4/3;background:var(--line) center/cover no-repeat;display:flex;align-items:center;justify-content:center;color:var(--grey);position:relative}
 .pc .grip{position:absolute;top:var(--s2);inset-inline-start:var(--s2);width:36px;height:36px;border-radius:var(--radius-pill);background:var(--white);display:flex;align-items:center;justify-content:center;cursor:grab;color:var(--ink)}
+/* 24 Oct 2026: the star features a project on the profile; the featured one says so on its cover */
+.pc .feat{position:absolute;top:var(--s2);inset-inline-end:var(--s2);width:40px;height:40px;border-radius:var(--radius-pill);border:0;background:var(--white);color:var(--ink);display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 8px rgba(20,17,15,.12);transition-property:transform,background-color;transition-duration:var(--duration-quick,150ms)}
+.pc .feat:active{transform:scale(.96)}
+.pc .feat:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.pc .feat svg{width:18px;height:17px;fill:#B5AEA5}
+.pc .feat:hover svg{fill:var(--grey)}
+.pc .feat[aria-pressed=true]{background:var(--ink);color:var(--yellow)}
+.pc .feat[aria-pressed=true] svg{fill:var(--yellow)}
+.pc .ptag{position:absolute;top:var(--s2);inset-inline-start:52px;height:36px;display:inline-flex;align-items:center;padding:0 12px;border-radius:var(--radius-pill);background:var(--white);color:var(--ink);font-size:13px;font-weight:600;font-variant-numeric:tabular-nums} /* the year, beside the drag handle */
+.pc .featl{position:absolute;bottom:var(--s2);inset-inline-start:var(--s2);display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:var(--radius-pill);background:var(--ink);color:var(--cream);font-size:13px;font-weight:600}
+.pc .featl svg{width:12px;height:11px;fill:var(--yellow)}
 .pc .body{padding:var(--s5);display:flex;flex-direction:column;gap:var(--s2);flex:1}
 .pc b{font-weight:600;font-size:var(--t-h3)}
 .pc .foot{display:flex;justify-content:space-between;align-items:center;gap:var(--s2);margin-top:auto;padding-top:var(--s3)}
@@ -67,3 +78,11 @@ dialog.dlg.wide{max-width:760px;max-height:calc(100vh - 32px)}
   .results li{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 44px}
   .pf .foot{margin-inline:calc(-1 * var(--s5));padding-inline:var(--s5);margin-bottom:calc(-1 * var(--s5))}
 }
+
+/* app overrides */
+/* the year tag sits beside the drag handle; without a handle (filtered list) it takes the handle's place */
+.pc .ptag.solo{inset-inline-start:var(--s2)}
+.pc .feat[aria-disabled=true]{cursor:default}
+.pc .foot>span:last-child{display:flex;flex:none;gap:2px}
+.pc .foot .waiting{min-width:0}
+.pager{display:flex;justify-content:center;align-items:center;gap:var(--s3);margin-top:var(--s6)}

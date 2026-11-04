@@ -145,7 +145,7 @@ it('shows the views card with the lifetime total and the weekly delta on Profile
         ->assertSee('profileViews', false)
         ->assertSee('1,234')
         ->assertSee('▲ 3')
-        ->assertSee('vs last week')
+        ->assertSee(__('on last week'))
         ->assertDontSee('Pending reviews')
         ->assertDontSee('Blocks · skills');
 });

@@ -97,7 +97,47 @@ html{scroll-behavior:smooth}
    size and showed only its top-left corner. Fill + centre it. */
 .hero .ph.has,.hero.soft .ph.has{background-size:cover;background-position:center;background-repeat:no-repeat;color:transparent}
 
-/* Nav status bar: Private (ink) → Under review (purple) → Ready to go Live (green). */
 .fx-notice{transition:background .4s var(--ease)}
-.fx-notice.is-review{background:var(--purple-dk)}
-.fx-notice.is-ready{background:var(--mint-fg,#0B7059)}
+
+/* Side-bar shell (2026-11-04): shell.css gives the page's first block one gutter below the panel's top via
+   `.fx-nav + main`. Some pages wrap <main> in their Alpine root <div> (Profile structure), so mirror the rule
+   for a wrapper whose first child is the page's <main>. */
+@media (min-width:1101px){
+  html.fx-has-side .fx-nav + div > main:first-child{margin-top:calc(var(--fx-gap) + var(--fx-gut))}
+}
+
+/* Views chart (Profile structure), 4 Nov 2026: the panel eases open/closed instead of snapping —
+   grid-template-rows 0fr→1fr animates to the content's real height — and the bars rise with a
+   soft ease-out (profileViews flips `grown`; per-bar delays stagger the sweep). */
+.vw-more{display:grid;grid-template-rows:0fr;opacity:0;transition:grid-template-rows 420ms cubic-bezier(.22,1,.36,1),opacity 300ms ease}
+.vw-more.is-open{grid-template-rows:1fr;opacity:1}
+.vw-more-in{min-height:0;overflow:hidden}
+.vw-more .vw-sh,.vw-more .vw-plot{transform:translateY(-6px);transition:transform 420ms cubic-bezier(.22,1,.36,1)}
+.vw-more.is-open .vw-sh,.vw-more.is-open .vw-plot{transform:none}
+.vw-bars button span{transition:height 700ms cubic-bezier(.22,1,.36,1),background var(--fast) var(--ease)}
+.vw-bars.is-snap button span{transition:none}
+@media (prefers-reduced-motion:reduce){.vw-more,.vw-more .vw-sh,.vw-more .vw-plot,.vw-bars button span{transition:none}}
+
+/* Hover feel, 4 Nov 2026: the prototype's hovers flipped instantly (ds.css .btn had no transition).
+   Every control now eases its colours. `:where()` keeps specificity at 0, so any component that
+   declares its own transition (switches, chevrons, bars) still wins. Opacity/transform are left out
+   of the global list on purpose — GSAP tweens those per frame on the profile/project pages, and a
+   CSS transition on the same property makes the tween lag. */
+:where(button,a,summary,select,[role=button],[role=tab],.btn,.chip,.fx-link,.vw-link){
+  transition:color 220ms cubic-bezier(.22,1,.36,1),background-color 220ms cubic-bezier(.22,1,.36,1),
+    border-color 220ms cubic-bezier(.22,1,.36,1),box-shadow 260ms cubic-bezier(.22,1,.36,1),
+    text-decoration-color 220ms ease,fill 220ms ease,stroke 220ms ease;
+}
+/* Buttons get a soft lift on hover and a press on click (springy ease-out, never on disabled). */
+.btn{transition:color 220ms cubic-bezier(.22,1,.36,1),background-color 220ms cubic-bezier(.22,1,.36,1),
+  border-color 220ms cubic-bezier(.22,1,.36,1),box-shadow 280ms cubic-bezier(.22,1,.36,1),
+  transform 280ms cubic-bezier(.34,1.56,.64,1),opacity 220ms ease}
+.btn:not(:disabled):not([aria-disabled=true]):not(.btn-text):hover{transform:translateY(-1px);box-shadow:0 6px 16px -8px rgba(20,17,15,.35)}
+.btn:not(:disabled):not([aria-disabled=true]):active{transform:translateY(0) scale(.97);box-shadow:none;transition-duration:90ms}
+.btn:not(.btn-2):not(.btn-text):not(.btn-danger):not(:disabled):hover{background:#2b2622;border-color:#2b2622}
+.btn .icon{transition:transform 280ms cubic-bezier(.34,1.56,.64,1)}
+.btn:not(:disabled):hover .icon{transform:scale(1.08)}
+@media (prefers-reduced-motion:reduce){
+  :where(button,a,summary,select,[role=button],[role=tab],.btn,.chip,.fx-link,.vw-link),.btn,.btn .icon{transition:none}
+  .btn:hover,.btn:active,.btn:hover .icon{transform:none}
+}

@@ -35,6 +35,7 @@
         postedToday: @js(__('Posted today')), postedYesterday: @js(__('Posted yesterday')), postedDays: @js(__('Posted :count days ago')),
         followsYou: @js(__('Follows you')),
         markedAll: @js(__('All marked as read')),
+        genericError: @js(__('Something went wrong. Try again.')),
         now: @js(__('now')),
         image: @js(__('Image')),
         allSkills: @js(__('All skills')),

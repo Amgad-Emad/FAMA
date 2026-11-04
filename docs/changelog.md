@@ -2,6 +2,43 @@
 
 Notable changes to the Fama project. Newest first.
 
+## 2026-11-04 — Motion: views chart eases open, buttons ease on hover
+- Profile structure views card: the chart panel eases open/closed (grid-rows 0fr→1fr, inert while
+  closed) and the bars rise on every open and range switch (`snap` makes the reset to 0 instant so a
+  replay is visible; the height transition was missing from views.css).
+- Every control eases its colour/border/shadow on hover (`:where()` rule in app-bridge.css, zero
+  specificity); `.btn` also lifts 1px with a soft shadow and presses on click. Opacity/transform stay
+  out of the global rule so GSAP tweens on the profile/project pages don't lag. Reduced-motion: off.
+
+## 2026-11-04 — Fix: talents (and brands) could not log out
+- `POST /logout` sat in Breeze's plain `auth` group, which checks only the default guard (`admin`), so a
+  talent's logout was bounced to /login before the controller ran: the session and remember-me cookie
+  survived and clicking the logo signed them straight back in. The route now uses
+  `auth:talent,brand,admin`. Regression test in `tests/Feature/Auth/AuthenticationTest.php`.
+
+## 2026-11-04 — UI synced to the co-founder's prototype (ADR-AD)
+- Talent shell: side bar on wide screens (folded rail by default, Create menu, Notifications hover popover);
+  top bar ≤1100px reordered (Feed · Projects · Edit profile · Credits · Activity), phone menu over the page;
+  visitor header gains Join. One `famaNotifs` store feeds both bars.
+- Public profile: hero with the featured project, filled orchid tabs, profile-wide sections after the tabs,
+  not-live page, GSAP motion. Project page = editorial case study; the editor edits on the page itself.
+- Year tag from the title year else `projects.year` (`ProjectTitle::forProject`) — supersedes ADR-AA's date rule.
+- Notifications page: cards with one action per kind + All/Unread/Mentions counts (`meta.counts`,
+  `NotificationInboxService`; resource adds `kind`, `excerpt`, `followed_back`). Activity opens on Saved and
+  follow rows show the three latest project pictures.
+- Toast stays while hovered (Alt+Z = Undo); auth phone band; banner photos replaced; client-side password
+  strength on register/reset.
+
+## 2026-11-04 — Going Live is three saved steps; Profile structure on the latest prototype (ADR-AC)
+- Go Live = display name · a skill with a speciality · city, and a profile goes Live by itself when they are
+  saved (`SyncGoLiveState`); admin verification is no longer a gate (badge only). Stand out (7 advisory steps)
+  lists a Live profile in the Creatives Index; profile done = all ten (`ProfileCompletionService`).
+- Login and `/` send a talent to the Feed once the profile is done, else to Profile structure.
+- Profile structure: the two-list path card + the tracker floating under the nav (`resources/js/ui/profile-gate.js`,
+  SAVED data via `GET /talent/profile/state`), the views card folds the chart behind "See chart", the save bar
+  shows only with changes (and briefly after a save) and warns when a save would take the profile out of Live;
+  the dead "Before / After your work" control is gone. "You're Live" e-mail replaces "we're checking it".
+
 ## 2026-10-27 — Admins on the public feed; no emoji in the admin UI
 - A signed-in admin opening `/feed` (or any fama-ui public page) is shown as signed in: the header carries
   "Admin panel" + an account menu (name · Fama staff · Log out) instead of "Log in", and the feed hero links to

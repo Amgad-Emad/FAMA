@@ -47,15 +47,50 @@ it('renders the project page as a story with results, public credits and more wo
 
     $this->get(route('talent.work', ['slug' => $owner->slug, 'project' => $project->id]))
         ->assertOk()
-        ->assertSee('class="st"', false)
+        ->assertSee('class="ed is-short"', false)   // the editorial case study (project-page.css)
+        ->assertSee('fama-ui/css/project-page.css', false)
         ->assertSee('Maison Nour')
-        ->assertSee('r r-percent', false)
-        ->assertSee('r r-change', false)
+        ->assertSee('data-kind="percent"', false)
+        ->assertSee('data-kind="change"', false)
+        ->assertSee('THE TEAM')
+        ->assertSee('famaProjectPage(', false)
         ->assertSee('Hana Mostafa')          // off-platform: listed at once
         ->assertDontSee('Key stylist')       // pending: appears nowhere
         ->assertSee('Studio portraits')      // more from this talent
         ->assertSee('famaProjectFollow(', false)
         ->assertDontSee('Edit project');
+});
+
+it('splits "Name — 2026" into the headline and the year tag', function () {
+    $owner = uiTalent('Lina Haddad');
+    $project = uiProject($owner, ['title' => ['en' => 'Desert Light — 2026']]);
+
+    $this->get(route('talent.work', ['slug' => $owner->slug, 'project' => $project->id]))
+        ->assertOk()
+        ->assertSee('<span class="ytag">2026</span>', false)
+        ->assertSee('<span class="vh">, 2026</span>', false)
+        ->assertDontSee('h1-sub', false);
+});
+
+it('renders the editor as the project page, with the docked bar and Settings', function () {
+    $owner = uiTalent('Lina Haddad');
+    $project = uiProject($owner, ['client_name' => 'Maison Nour']);
+
+    $this->actingAs($owner, 'talent')->get(route('talent.projects.edit', $project))
+        ->assertOk()
+        ->assertSee('fama-ui/css/project-page.css', false)
+        ->assertSee('fama-ui/css/project-editor.css', false)
+        ->assertSee('famaProjectEdit(', false)
+        ->assertSee('class="pe-head"', false)
+        ->assertSee('x-teleport=".fx-nav > .fx-in"', false)
+        ->assertSee('cover pe-cover', false)
+        ->assertSee('colo pe-colo', false)
+        ->assertSee('class="pe-panel"', false);
+
+    $this->actingAs($owner, 'talent')->get(route('talent.projects.new'))
+        ->assertOk()
+        ->assertSee('famaProjectEdit(', false)
+        ->assertSee('Publish');
 });
 
 it('shows the owner an Edit button and the preview strip', function () {

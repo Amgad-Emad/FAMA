@@ -1,4 +1,8 @@
-/** The views card on Profile structure — port of the prototype's views.js on real data. */
+/**
+ * The views card on Profile structure — port of the prototype's views.js on
+ * real data. 24 Oct 2026: the card is a heading, the number and one line; the
+ * chart opens on request (and only then fetches its series).
+ */
 import { get } from '../http';
 import { fmt } from './profile-helpers';
 
@@ -17,9 +21,16 @@ document.addEventListener('alpine:init', () => {
         error: false,
         cache: {},
         grown: false,
+        snap: false,
+        open: false,
 
-        /** Load the default range. */
-        init() { this.load('30d'); },
+        /** Open / close the chart; the first open loads the default range. */
+        toggle() {
+            this.open = !this.open;
+            if (!this.open) return;
+            if (this.cache[this.range]) this.apply(this.cache[this.range]);
+            else if (!this.loading) this.load(this.range);
+        },
         /** Switch range (cached per preset). */
         async load(range) {
             this.range = range;
@@ -37,15 +48,21 @@ document.addEventListener('alpine:init', () => {
             }
         },
         /**
-         * Take a series payload and replay the grow-in: the bars render at 0
+         * Take a series payload and replay the grow-in: the bars snap to 0
          * height, then rise to their value on the next frame (CSS transition).
          * setTimeout backs up rAF, which never fires in a hidden tab.
          */
         apply(d) {
+            // `snap` turns the height transition off so the reset to 0 is instant —
+            // otherwise a replay (reopen, cached range) animates down then back up
+            // and the bars never visibly rise.
+            this.snap = true;
             this.grown = false;
             this.series = d.series || [];
             this.total = d.total || 0;
             this.$nextTick(() => {
+                void this.$refs.area?.offsetHeight; // commit the 0 height before re-enabling the transition
+                this.snap = false;
                 let done = false;
                 const grow = () => { if (!done) { done = true; this.grown = true; } };
                 requestAnimationFrame(() => requestAnimationFrame(grow));

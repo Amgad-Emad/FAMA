@@ -620,7 +620,7 @@ migrate:fresh --seed exits 0):
   `contract_flow` log); morph alias `contract_template` (MUST stay in App\Support\MorphMap). Default "Fama
   Standard" template seeded + linked to Standard Booking. WATCH OUT: any new model that hits an activity/
   morph column needs a MorphMap alias or writes throw ClassMorphViolationException.
-- **Mandatory admin verification before public (2026-08-02, ADR-U).** `is_verified` is the go-live gate
+- **Mandatory admin verification before public (2026-08-02, ADR-U) — TALENT HALF SUPERSEDED 2026-11-04 by ADR-AC (verification is a non-gating badge; brands unchanged).** `is_verified` is the go-live gate
   for BOTH entities. Talents gained `is_verified` (migration `2026_08_02_000100`); `ToLive` now needs
   `display_name` AND `is_verified`; brands get a guarded `ToPublished` (needs `is_verified`). Self-serve
   publish (`TalentProfileService::publish`, brand `AccountController::publish`) pre-checks with a friendly
@@ -997,7 +997,7 @@ credit loop verified live in both directions). **The client's three structure sp
   stamps `order_column` = max+1 itself, no manual ordering). `Project::orderedMedia()` +
   `lead_image_url` (cover → first media item).
 - **DATE**: `projects.occurred_on` (migration `2026_08_22_000600`, indexed with `talent_id`) is
-  **RECORDED, NOT DISPLAYED** — it orders work by recency and answers "shot recently", and appears
+  **RECORDED, NOT DISPLAYED** (SUPERSEDED 2026-11-04, ADR-AD: the YEAR now shows as the tag via `ProjectTitle::forProject`; the full date still never shows) — it orders work by recency and answers "shot recently", and appears
   NOWHERE public, so an older strong project is not discounted for its age.
 - **WATCH OUT — `year` is now a DERIVED PROJECTION and was REMOVED from `$fillable`.** It is written
   only by `Project::setOccurredOnAttribute()` (a MUTATOR, not a model event, so it survives
@@ -1050,7 +1050,7 @@ public profile, auth and error pages. SUPERSEDES the Orchid/Daylight styling not
   (6) Tailwind classes (e.g. `hidden`) do nothing on fama-ui pages — an SVG sprite "hidden" that way renders as a
   300×150 box; hide sprites with width/height 0 + position:absolute. (7) The prototype defines `i-msg` twice: the
   sprite's `i-msg` is the posts.js chat bubble; preview.html's square-plus is `i-msg-plus`.
-- Talent nav: Feed · Activity · Profile structure · Projects · Credits (+ Preview, bell → `GET /notifications/all`
+- Talent nav (SUPERSEDED 2026-11-04 by the side bar — see the sync block below): Feed · Activity · Profile structure · Projects · Credits (+ Preview, bell → `GET /notifications/all`
   page `notifications.page`). `talent.dashboard` REDIRECTS to `talent.profile.edit` (dashboard view deleted).
 - SITE ROOT: `/` → `/feed` when the viewer's candidate list is non-empty, else login (signed-in → dashboard);
   `FeedController::home` (2026-10-15, suite 789 green).
@@ -1089,7 +1089,7 @@ public profile, auth and error pages. SUPERSEDES the Orchid/Daylight styling not
   purge takes their whole footprint, hands co-owned projects over). The daily purge calls it for talents past the window.
 - ADMIN BULK: `ModerationBulkService` (delete via each row's audited path; CSV export with formula-injection guard).
   Staff profile preview: `TalentProfileController::isStaff()` lets moderate-content admins open private profiles.
-- LOGIN LANDING: a talent login (and talent registration) ALWAYS lands on `talent.profile.edit` — the visitor's
+- LOGIN LANDING (SUPERSEDED 2026-11-04, ADR-AC — see the sync block below: done profile → Feed, else Profile structure; registration still Profile structure). Old rule: a talent login (and talent registration) ALWAYS lands on `talent.profile.edit` — the visitor's
   pending feed action is still replayed by the Login event, but `feed.return_to` is discarded (copy says "we'll
   finish it as soon as you're in", never "bring you back"). Brand/admin keep route('dashboard').
 - PRODUCT RULES (stakeholder, must not change): no dashboard; NO PRIMARY SKILL — order = tab order, first opens
@@ -1131,4 +1131,39 @@ public profile, auth and error pages. SUPERSEDES the Orchid/Daylight styling not
 - KNOWN GAPS (see the 2026-10-12 report): prototype-only features
   with no backend (41-skill taxonomy, per-skill practice fields, LinkedIn-style experience, repost, project
   drafts/free-form blocks/video embeds, hiding single credits/recognitions, recognition notifications).
+
+PROTOTYPE SYNC TO 1 NOV 2026 (2026-11-04, ADR-AC + ADR-AD; suite 897 green, build green, migrate:fresh --seed
+exits 0). The co-founder's prototype (https://fama-ui.vercel.app) is THE UI; they date every change in a source
+comment — sync by mirroring the site and listing dated comments newer than the last sync (method in ADR-AD).
+- SHELL: signed-in talent = SIDE BAR ≥1101px (`html.fx-has-side`, folded rail by default, set before paint in
+  `<x-fama.layout>`; `localStorage['fama-side-folded']`), the page is a rounded panel. Pieces in
+  `components/fama/nav.blade.php` + partials `components/fama/partials/{nav-account,nav-notifs}`; behaviour
+  `famaSide` / `famaNav` in resources/js/ui/shell.js; notifications for BOTH bars = ONE store
+  `Alpine.store('famaNotifs')` (pages sync the badge through it, never via a component's $data). Create menu →
+  `talent.projects.new` / `feed?new=post` (feedComposer opens on `?new=post|photo` and strips it). Top bar
+  ≤1100px order: Feed · Projects · Edit profile · Credits · Activity. Nav label is "Edit profile". The Private
+  notice shows only while `! is_published` and never on Edit profile (its own floating tracker replaces it).
+  WATCH OUT: shell.css margins key off `.fx-nav + main` / `.fx-nav + .fx-hero-wrap` — nothing may sit between
+  the header and the page's first block (the owner's `.pv-strip` is the one allowed exception).
+- GO LIVE (ADR-AC): `ProfileCompletionService` is THE home — Go Live = display name · a speciality · city, and a
+  profile goes Live BY ITSELF when they are saved (`App\Actions\Talent\SyncGoLiveState` via `syncAfterWrite()`);
+  Stand out (7, advisory) — `show` lists a Live profile in the Creatives Index (`isListed()`); `isProfileDone()` =
+  all ten → login and `/` land on the Feed (`homeRoute()`). Unpublished/Suspended are holds a save never undoes.
+  `is_verified` = badge only. Any new write path that can complete/break a Go Live step must call `syncAfterWrite()`.
+- LOGOUT (fixed 2026-11-04): `POST /logout` is `auth:talent,brand,admin`. NEVER put a shared-auth route
+  behind plain `auth`/`guest` — they check only the default guard (`admin`). The other Breeze `auth`
+  routes (verify-email, confirm-password, password update) still have that shape.
+- YEAR TAG: `App\Support\ProjectTitle::forProject()` (title year, else `projects.year`) — the one home.
+- Public profile: featured-project hero, profile-wide sections ALWAYS after the tabs (universal_position retired
+  in the UI; endpoint kept), not-live page for private profiles (still 404). GSAP 3.12.5 + ScrollTrigger from
+  cdnjs on the profile and project pages (`public/fama-ui/js/{profile,project}-motion.js`).
+- Project page = editorial case study (`project-page.css`); the editor IS the project page
+  (`project-editor.css`, `famaProjectEdit`); its bar docks before `<main id="page">` on wide screens and is
+  teleported into `.fx-nav > .fx-in` on narrow ones.
+- Notifications page = cards (`NotificationInboxService`, `meta.counts`, resource `kind/excerpt/followed_back`);
+  Activity opens on Saved. Toast stays while hovered; Alt+Z = Undo.
+- OPEN for stakeholders: AR translations for the ~200 new strings (Arabic is paused in the prototype too); the
+  prototype's locked link on a Private profile (app keeps "no link while Private"); Discovery not yet limited
+  to `isListed()` (one line, when `features.discover` turns on). Not ported (no backend): free-form project
+  blocks, repost, LinkedIn-style experience, per-skill practice fields, hiding single credits/recognitions.
 

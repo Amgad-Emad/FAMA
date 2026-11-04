@@ -20,4 +20,5 @@ h4.xp-t{font-size:16px}
 .xp-r:not(:last-child)::after{content:"";position:absolute;inset-inline-start:4px;top:22px;bottom:4px;width:2px;background:var(--line)}
 .xp-ed{flex:none;color:var(--grey);margin-top:-6px;border:0;background:none}
 .xp-ed:hover{color:var(--ink)}
-@media (max-width:760px){.xp-g{grid-template-columns:40px minmax(0,1fr);gap:var(--s3)}.xp-logo{width:40px;height:40px;font-size:13px}}
+.xp-logo svg{width:22px;height:22px;color:var(--purple-dk)}
+@media (max-width:760px){.xp-g{grid-template-columns:40px minmax(0,1fr);gap:var(--s3)}.xp-logo{width:40px;height:40px;font-size:13px}.xp-logo svg{width:18px;height:18px}}

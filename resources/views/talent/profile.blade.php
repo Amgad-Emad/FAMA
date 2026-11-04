@@ -1,12 +1,16 @@
 {{--
     Public talent profile — GET /{slug} (fama-ui "preview.html" on real data).
-    Contra-style top (who they are on the left, the featured project on the
-    right), the bio + point of view, then the skill tabs (ADR-R: the active tab
-    renders here, the rest load lazily through `profileTabs`) and the
-    profile-wide sections (above or below the tabs — universal_position).
-    The owner sees the Preview strip (and can preview while Private); guests
-    get the sign-in prompt for Follow / Recognise. Behaviour: `publicProfile`
-    (resources/js/ui/profile.js) + `profileTabs` / `talentFollow` (dashboard.js).
+    The hero answers a brand's questions in the order they ask them (24 Oct
+    2026): who is this, what do they do and where, are they free, which crafts,
+    in their words, who have they worked for, how much work is here, then what
+    to do (Follow / Recognise / share) — beside the FEATURED PROJECT cover
+    (FeaturedProjectService). Then the skill tabs (ADR-R: the active tab renders
+    here, the rest load lazily through `profileTabs`), then what is true for
+    every skill ONCE, after the tabs ("About {name}": the profile-wide sections
+    + point of view). The owner sees the Preview strip (and can preview while
+    Private); guests get the sign-in prompt for Follow / Recognise. Behaviour:
+    `publicProfile` (resources/js/ui/profile.js) + `profileTabs` / `talentFollow`
+    (dashboard.js); motion: public/fama-ui/js/profile-motion.js (GSAP).
 --}}
 @php
     $skills = $talent->talentTypes
@@ -71,9 +75,14 @@
         'vimeo' => 'Vimeo', 'website' => __('Website'), 'other' => __('Link'),
     ];
 
-    $universalAfterTabs = ((int) ($talent->meta['universal_position'] ?? 0)) > 0;
-    $universalAbove = $universalBlocks->isNotEmpty() && (! $universalAfterTabs || $tabSkills->isEmpty());
-    $universalBelow = $universalBlocks->isNotEmpty() && ! $universalAbove;
+    // "Worked with …" + the Brands number: the distinct brands the talent lists
+    // (brand collabs — the app's Experience), first three named, the rest counted.
+    $firms = $talent->brandCollabs->sortBy('position')
+        ->map(fn ($c) => trim((string) $c->brand_name))->filter()->unique()->values();
+
+    // The featured project's name and a year the talent typed into its title
+    // ("Name — 2026"); the recorded date itself stays private (ADR-AA).
+    $featuredTitle = $featured ? \App\Support\ProjectTitle::forProject($featured) : null;
 
     $strings = [
         'copied' => __('Link copied'), 'yourLink' => __('Your link'), 'shareTitle' => __(':name on Fama'),
@@ -107,15 +116,35 @@
     <div class="ct-id">
       <span class="ct-av" aria-hidden="true" @if ($avatar) style="background-image:url('{{ $avatar }}');color:transparent" @endif>{{ $initials }}@if ($talent->is_available)<i class="ct-on"></i>@endif</span>
       <h1 dir="auto">{{ $name }}</h1>
-      <p class="ct-who" dir="auto">{{ $talent->headline ?: $primaryType?->name }}<span class="ct-place ct-handle" dir="ltr">{{ '@'.$talent->slug }}</span>@if ($place)<span class="ct-place"><svg class="icon" aria-hidden="true"><use href="#i-pin"/></svg>{{ $place }}</span>@endif</p>
-      @if ($talent->socialHandles->isNotEmpty())
-        <ul class="ct-links">
-          @foreach ($talent->socialHandles as $social)
-            @php $label = in_array($social->platform, ['website', 'other'], true) ? preg_replace('#^https?://(www\.)?#i', '', rtrim((string) $social->url, '/')) : ($socialLabels[$social->platform] ?? $social->platform); @endphp
-            <li><a href="{{ $social->url }}" rel="me noopener nofollow" target="_blank" aria-label="{{ $label }}" title="{{ $label }}">@include('talent.partials.social-icon', ['platform' => $social->platform])</a></li>
-          @endforeach
-        </ul>
+      <p class="ct-who" dir="auto">{{ $talent->headline ?: $primaryType?->name }}@if ($place)<span class="ct-place"><svg class="icon" aria-hidden="true"><use href="#i-pin"/></svg>{{ $place }}</span>@endif</p>
+      <div class="ct-tags">
+        <div class="ct-chips">
+          {{-- Availability is information, never a gate (ADR-L/Z) — the yellow
+               signal; the last-changed date rides on the chip so a stale switch
+               never passes for current. --}}
+          <span @class(['on' => $talent->is_available]) @if ($talent->availability_changed_at) title="{{ __('Changed :when', ['when' => $talent->availability_changed_at->diffForHumans()]) }}" @endif>{{ $talent->is_available ? __('Open for work') : __('Not open for work') }}</span>
+          @if ($talent->will_travel)<span>{{ __('Will travel') }}</span>@endif
+          @if ($hasRate)<span>{{ __('From') }} {{ $talent->rate_currency }} {{ $rateAmount }} / {{ $rateUnitLabels[$talent->rate_unit] ?? $talent->rate_unit }}</span>@endif
+          @if ($externalUrl)<span><a href="{{ $externalUrl }}" target="_blank" rel="noopener nofollow" style="color:inherit;text-decoration:none">{{ preg_replace('#^https?://(www\.)?#i', '', rtrim($externalUrl, '/')) }}</a></span>@endif
+        </div>
+        @if ($skills->isNotEmpty())
+          {{-- Each craft opens its tab and brings the work into view (profileTabs.goSkill). --}}
+          <ul class="ct-skills" aria-label="{{ __('Skills') }}">
+            @foreach ($skills as $skill)
+              <li><a href="?skill={{ $skill->slug }}" data-goskill="{{ $skill->slug }}" @click.prevent="$dispatch('fama-goskill', @js($skill->slug))">{{ $skill->name }}</a></li>
+            @endforeach
+          </ul>
+        @endif
+      </div>
+      @if ($talent->bio)<p class="ct-bio" dir="auto">{{ $talent->bio }}</p>@endif
+      @if ($firms->isNotEmpty())
+        <p class="ct-with"><span>{{ __('Worked with') }}</span> {{ $firms->take(3)->implode(', ') }}@if ($firms->count() > 3) {{ __('and :n more', ['n' => $firms->count() - 3]) }}@endif</p>
       @endif
+      <dl class="ct-stats">
+        <div><dt>{{ __('Projects') }}</dt><dd>{{ number_format($projectsCount) }}</dd></div>
+        <div><dt>{{ __('Brands') }}</dt><dd>{{ number_format($firms->count()) }}</dd></div>
+        <div><dt>{{ __('Recognitions') }}</dt><dd>{{ number_format($recognitionsCount) }}</dd></div>
+      </dl>
       <div class="ct-acts">
         {{-- Follow: your own profile explains itself; a guest is asked to sign in;
              anyone signed in (talent or brand) follows for real. --}}
@@ -153,56 +182,45 @@
         @if ($isLive)
           <button type="button" class="btn btn-2 ionly" @click="share()" aria-label="{{ __('Share profile') }}" title="{{ __('Share profile') }}"><svg class="icon" aria-hidden="true"><use href="#i-link"/></svg><span class="vh">{{ __('Share profile') }}</span></button>
         @endif
-      </div>
-      <dl class="ct-stats">
-        <div><dt>{{ __('Projects') }}</dt><dd>{{ number_format($projectsCount) }}</dd></div>
-        <div><dt>{{ __('Recognitions') }}</dt><dd>{{ number_format($recognitionsCount) }}</dd></div>
-        <div><dt>{{ __('Skills') }}</dt><dd>{{ number_format($skills->count()) }}</dd></div>
-      </dl>
-      <div class="ct-chips">
-        {{-- Availability is information, never a gate (ADR-L/Z); the last-changed
-             date rides on the chip so a stale switch never passes for current. --}}
-        <span @class(['on' => $talent->is_available]) @if ($talent->availability_changed_at) title="{{ __('Changed :when', ['when' => $talent->availability_changed_at->diffForHumans()]) }}" @endif>{{ $talent->is_available ? __('Open for work') : __('Not open for work') }}</span>
-        @if ($talent->will_travel)<span>{{ __('Will travel') }}</span>@endif
-        @if ($hasRate)<span>{{ __('From') }} {{ $talent->rate_currency }} {{ $rateAmount }} / {{ $rateUnitLabels[$talent->rate_unit] ?? $talent->rate_unit }}</span>@endif
-        @if ($externalUrl)<span><a href="{{ $externalUrl }}" target="_blank" rel="noopener nofollow" style="color:inherit;text-decoration:none">{{ preg_replace('#^https?://(www\.)?#i', '', rtrim($externalUrl, '/')) }}</a></span>@endif
+        @if ($talent->socialHandles->isNotEmpty())
+          <ul class="ct-links">
+            @foreach ($talent->socialHandles as $social)
+              @php $label = in_array($social->platform, ['website', 'other'], true) ? preg_replace('#^https?://(www\.)?#i', '', rtrim((string) $social->url, '/')) : ($socialLabels[$social->platform] ?? $social->platform); @endphp
+              <li><a href="{{ $social->url }}" rel="me noopener nofollow" target="_blank" aria-label="{{ $label }}" title="{{ $label }}">@include('talent.partials.social-icon', ['platform' => $social->platform])</a></li>
+            @endforeach
+          </ul>
+        @endif
       </div>
     </div>
     @if ($featured)
-      <a class="ct-cover{{ $featured->lead_image_url ? '' : ' noimg' }}" href="{{ route('talent.work', ['slug' => $talent->slug, 'project' => $featured->id]) }}" @if ($featured->lead_image_url) style="background-image:url('{{ $featured->lead_image_url }}')" @endif>
-        <span class="ct-feat"><span class="ct-badge"><svg viewBox="10 80 760 690" aria-hidden="true"><polygon points="314.63 635.59 16.74 747.68 217.29 533.15 86.97 370.29 403.26 356.02 701.63 87.21 636.51 355.76 760 356.91 574.68 534.04 422.33 756.79 314.63 635.59"/></svg>{{ __('Featured project') }}</span>
-          <span class="ct-ft"><b>{{ $featured->title }}</b>@if (filled($featured->client_name))<small>{{ $featured->client_name }}</small>@endif</span><span class="ct-go" aria-hidden="true"><svg class="icon"><use href="#i-arrow"/></svg></span></span>
-      </a>
+      {{-- The featured project: the talent's pick, else the automatic one. It is
+           chosen in Projects / Profile structure, never from the profile itself. --}}
+      <div class="ct-coverwrap">
+        @if ($featuredTitle['year'] !== '')<span class="ptag">{{ $featuredTitle['year'] }}</span>@endif
+        <a class="ct-cover{{ $featured->lead_image_url ? '' : ' noimg' }}" href="{{ route('talent.work', ['slug' => $talent->slug, 'project' => $featured->id]) }}" @if ($featured->lead_image_url) style="background-image:url('{{ $featured->lead_image_url }}')" @endif>
+          <span class="ct-feat"><span class="ct-badge"><svg viewBox="10 80 760 690" aria-hidden="true"><polygon points="314.63 635.59 16.74 747.68 217.29 533.15 86.97 370.29 403.26 356.02 701.63 87.21 636.51 355.76 760 356.91 574.68 534.04 422.33 756.79 314.63 635.59"/></svg>{{ __('Featured project') }}</span>
+            <span class="ct-ft"><b>{{ $featuredTitle['name'] }}</b>@if (filled($featured->client_name))<small>{{ $featured->client_name }}</small>@endif</span><span class="ct-go" aria-hidden="true"><svg class="icon"><use href="#i-arrow"/></svg></span></span>
+        </a>
+      </div>
     @else
       <div class="ct-cover empty" aria-hidden="true"></div>
     @endif
   </section>
 
-  @if ($talent->bio || $talent->worldview)
-    <section class="ct-about" aria-label="{{ __('About') }}">
-      @if ($talent->bio)<p class="bio" dir="auto">{{ $talent->bio }}</p>@else<span></span>@endif
-      @if ($talent->worldview)<div class="pov"><h2>{{ __('Point of view') }}</h2><p dir="auto">“{{ $talent->worldview }}”</p></div>@endif
-    </section>
-  @endif
-
-  @if ($universalAbove)
-    <div id="universal-blocks">
-      @include('talent.partials.universal-blocks', $blockVars + ['blocks' => $universalBlocks])
-    </div>
-  @endif
-
   @if ($tabSkills->isNotEmpty())
-    <div id="skillArea" x-data="profileTabs({ active: @js($activeSkill?->slug), tabs: @js($tabSkills->pluck('slug')), labels: @js($tabSkills->pluck('name', 'slug')), urls: @js($tabUrls) })">
+    <div id="skillArea" x-data="profileTabs({ active: @js($activeSkill?->slug), tabs: @js($tabSkills->pluck('slug')), labels: @js($tabSkills->pluck('name', 'slug')), urls: @js($tabUrls) })"
+         @fama-goskill.window="goSkill($event.detail)">
       @if ($tabSkills->count() > 1)
+        {{-- Scrolls with the page (30 Oct 2026); the open tab is filled in orchid
+             and carries the FAMA star; names in the display face. --}}
         <nav class="stabs" aria-label="{{ __('Skills') }}"><div class="row" role="tablist" aria-label="{{ __('Skills') }}" x-ref="tablist">
           @foreach ($tabSkills as $skill)
-            @php $isActive = $skill->is($activeSkill); @endphp
-            <a role="tab" id="skill-tab-{{ $skill->slug }}" href="?skill={{ $skill->slug }}" aria-controls="skill-tabpanel"
+            @php $isActive = $skill->is($activeSkill); $n = $talent->portfolioProjects($skill->id)->count(); @endphp
+            <a role="tab" id="skill-tab-{{ $skill->slug }}" href="?skill={{ $skill->slug }}" aria-controls="skill-tabpanel" data-skill="{{ $skill->slug }}"
                @click.prevent="show('{{ $skill->slug }}')" @keydown="onTabKey($event, {{ $loop->index }})"
                :aria-selected="active === '{{ $skill->slug }}' ? 'true' : 'false'"
                :tabindex="active === '{{ $skill->slug }}' ? 0 : -1"
-               :aria-current="active === '{{ $skill->slug }}' ? 'page' : null"
-               @if ($isActive) aria-selected="true" aria-current="page" @else aria-selected="false" tabindex="-1" @endif>{{ $skill->name }}<span class="n">{{ $talent->portfolioProjects($skill->id)->count() }}</span></a>
+               @if ($isActive) aria-selected="true" @else aria-selected="false" tabindex="-1" @endif><svg class="tstar" viewBox="10 80 760 690" aria-hidden="true"><polygon points="314.63 635.59 16.74 747.68 217.29 533.15 86.97 370.29 403.26 356.02 701.63 87.21 636.51 355.76 760 356.91 574.68 534.04 422.33 756.79 314.63 635.59"/></svg>{{ $skill->name }}<span class="n"><span class="vh">, </span>{{ $n }}<span class="vh"> {{ trans_choice('{1} project|[0,*] projects', $n) }}</span></span></a>
           @endforeach
         </div></nav>
         <h2 class="vh" x-text="labels[active]">{{ $activeSkill->name }}</h2>
@@ -218,16 +236,15 @@
           </div>
         </div>
       @endif
-
-      @if ($universalBelow)
-        <div id="universal-blocks">
-          @include('talent.partials.universal-blocks', $blockVars + ['blocks' => $universalBlocks])
-        </div>
-      @endif
     </div>
   @endif
 
-  @if ($universalBlocks->isEmpty() && $tabSkills->isEmpty())
+  {{-- What is true for every skill shows ONCE, after the tabs (24 Oct 2026) —
+       the profile-wide sections + point of view under "About {name}". The
+       partial renders nothing when none of it has content for this viewer. --}}
+  @include('talent.partials.universal-blocks', $blockVars + ['blocks' => $universalBlocks, 'name' => $name])
+
+  @if ($universalBlocks->isEmpty() && $tabSkills->isEmpty() && blank($talent->worldview))
     <section class="notlive"><h2 class="h1">{{ __('This profile is still being set up.') }}</h2><p>{{ __('Check back soon.') }}</p>
       <a class="btn" style="margin-top:var(--s5)" href="{{ route('feed') }}">{{ __('Browse the feed') }}</a></section>
   @endif
@@ -259,4 +276,13 @@
     <p><span x-text="lbItem[1]"></span> <span class="lb-n" x-text="lb.items.length > 1 ? @js(__(':i of :n')).replace(':i', lb.i + 1).replace(':n', lb.items.length) : ''"></span></p>
   </dialog>
 </main>
+
+    {{-- Profile motion (24 Oct 2026): GSAP 3.12.5 + ScrollTrigger from cdnjs, as
+         the prototype loads them. Everything is visible without JS and under
+         reduced motion — GSAP only animates from a hidden start it sets itself. --}}
+    <x-slot:scripts>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+        <script src="{{ \App\Support\FamaAsset::url('fama-ui/js/profile-motion.js') }}"></script>
+    </x-slot:scripts>
 </x-fama.layout>

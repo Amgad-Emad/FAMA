@@ -82,7 +82,10 @@ class FollowManagementService extends Service
             ->where("{$meColumn}_type", $actor->getMorphClass())
             ->where("{$meColumn}_id", $actor->getKey())
             ->with([$otherColumn => fn (MorphTo $morph) => $morph->morphWith([
-                Talent::class => ['talentTypes', 'media'],
+                // `projects` = the three latest, for the row's work strip (per-parent
+                // limit, one query + one media query for the whole page).
+                Talent::class => ['talentTypes', 'media', 'projects' => fn ($projects) => $projects
+                    ->reorder()->orderByDesc('occurred_on')->orderByDesc('id')->limit(3)->with('media')],
                 Brand::class => ['media'],
             ])]);
 
@@ -291,6 +294,10 @@ class FollowManagementService extends Service
                 // fama-ui Activity status line ("Posted 3 days ago") — the
                 // column is already on the hydrated row, no extra query.
                 'last_posted_at' => $other->last_posted_at?->toIso8601String(),
+                // fama-ui Activity row: their three latest pieces of work (project
+                // lead images). Projects without a picture are skipped — the strip
+                // only renders when there is something to show.
+                'work' => $this->workStrip($other),
             ];
         }
 
@@ -302,6 +309,27 @@ class FollowManagementService extends Service
             'quiet_since' => null,
             'last_posted_at' => null,
         ];
+    }
+
+    /**
+     * Up to three lead-image URLs from the talent's latest projects (eager-
+     * loaded in page() — never queried per row). Empty while the profile is
+     * not public, so a private portfolio never shows through a follow row.
+     *
+     * @return list<string>
+     */
+    private function workStrip(Talent $talent): array
+    {
+        if (! $talent->is_published || ! $talent->relationLoaded('projects')) {
+            return [];
+        }
+
+        return $talent->projects
+            ->map(fn ($project) => $project->lead_image_url)
+            ->filter()
+            ->take(3)
+            ->values()
+            ->all();
     }
 
     /**

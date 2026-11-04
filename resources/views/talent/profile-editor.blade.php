@@ -1,12 +1,14 @@
 {{--
     Profile structure (GET /talent/profile) — the fama-ui "profile-structure.html"
-    screen on real data. The old dashboard is folded in (completion steps while
-    Private + the views card). EVERY edit — identity, availability, links,
+    screen on real data. The old dashboard is folded in: the profile path (Go Live
+    then Stand out — ADR-AC, drawn by ./profile-gate.js from SAVED data, with the
+    tracker floating under the nav) and the views card (the chart opens on request). EVERY edit — identity, availability, links,
     skills (order = tab order; the first opens first), specialities, sections,
     willing to explore, pricing — collects in a draft; the bottom bar saves it
     through the existing endpoints or discards it (toast with Undo), and leaving
-    with unsaved changes warns. Only the photo uploads immediately. A Private
-    profile shows no link anywhere on this page.
+    with unsaved changes warns. Only the photo uploads immediately. A profile goes
+    Live by itself once its Go Live steps are SAVED; a Private profile shows no
+    link anywhere on this page (product rule).
     Behaviour: `profileStructure` (resources/js/ui/profile-structure*.js) + `profileViews`.
 --}}
 @php
@@ -19,7 +21,7 @@
         'base_city' => (string) $talent->base_city,
         'base_country' => (string) $talent->base_country,
     ];
-    $publish = ['is_published' => (bool) $talent->is_published, 'status' => $talent->status->getValue(), 'is_verified' => (bool) $talent->is_verified];
+    $publish = ['is_published' => (bool) $talent->is_published, 'status' => $talent->status->getValue()];
     $rate = [
         'rate_unit' => (string) ($talent->rate_unit ?? ''),
         'rate_amount' => $talent->rate_amount !== null ? (string) $talent->rate_amount : '',
@@ -35,29 +37,65 @@
         ? ($deltaUp ? '▲' : '▼').' '.number_format(abs($weekly['delta_pct'])).'%'
         : ($weekly['current_week'] > 0 ? '▲ '.number_format($weekly['current_week']) : '–');
 
-    $steps = [
-        // `focus` = the field an Edit/Add link glides to on this page.
-        ['key' => 'photo', 'label' => __('Profile photo'), 'help' => __('A clear photo of you. Brands are looking for a person.'), 'href' => '#core', 'focus' => 'fPhoto'],
-        ['key' => 'name', 'label' => __('Display name'), 'help' => __('The name brands see in search results.'), 'href' => '#core', 'focus' => 'fDisplay'],
-        ['key' => 'place', 'label' => __('City and country'), 'help' => __('Brands filter by where you are.'), 'href' => '#core', 'focus' => 'fCountry'],
-        ['key' => 'bio', 'label' => __('A short bio'), 'help' => __('A line or two about your work.'), 'href' => '#core', 'focus' => 'fBio'],
+    // The profile path (ADR-AC — prototype profile.js FAMA_INDEX_REQ / _REC).
+    // Order = ProfileCompletionService::GO_LIVE / STAND_OUT. Steps on this page
+    // land on their field (profile-gate.js `go` map); the rest link away.
+    $goLive = [
+        ['key' => 'name', 'label' => __('Display name'), 'help' => __('The name brands see in search results.'), 'href' => '#core'],
         ['key' => 'skill', 'label' => __('A skill and a speciality'), 'help' => __('What brands search for.'), 'href' => '#skills'],
-        ['key' => 'project', 'label' => __('One project'), 'help' => __('At least one project, with its photos or video.'), 'href' => route('talent.projects')],
+        ['key' => 'place', 'label' => __('Your city'), 'help' => __('Brands filter by where you are.'), 'href' => '#core'],
+    ];
+    $standOut = [
+        ['key' => 'show', 'label' => __('Something to show'), 'help' => __('A project, three photos or a showreel. This puts you in the Creatives Index.'), 'href' => route('talent.projects')],
+        ['key' => 'projects3', 'label' => __('Three projects'), 'help' => __('One project shows you can do it. Three show a style.'), 'href' => route('talent.projects')],
+        ['key' => 'headline', 'label' => __('A headline'), 'help' => __('One line under your name in search, like “Art director & stylist”.'), 'href' => '#core'],
+        ['key' => 'photo', 'label' => __('A profile photo'), 'help' => __('Profiles with a photo get opened more.'), 'href' => '#core'],
+        ['key' => 'brands', 'label' => __('Experience'), 'help' => __('The brands and teams you have worked with.'), 'href' => '#brands'],
+        ['key' => 'links', 'label' => __('Your Instagram or website'), 'help' => __('Brands look at where else your work lives.'), 'href' => '#social'],
+        ['key' => 'bio', 'label' => __('A short bio'), 'help' => __('A few lines on how you work.'), 'href' => '#core'],
+    ];
+    $gate = [
+        'barLabel' => __('Profile steps'), 'doneSuffix' => __(', done'), 'ofN' => __(':n of :m'),
+        'trackA' => __('Go Live :a done, Stand out :b done'),
+        'msLive' => __('Live'), 'msIndex' => __('Index'), 'msReady' => __('Ready'),
+        'inIndex' => __('In the Creatives Index'), 'getsIndex' => __('Gets you into the Creatives Index'),
+        'edit' => __('Edit'), 'add' => __('Add'),
+        'standOut' => __('Stand out'), 'oneToIndex' => __('1 step to the Creatives Index'), 'nextColon' => __('Next:'),
+        'allSteps' => __('All steps'), 'fold' => __('Fold steps'), 'yourProfile' => __('Your profile'),
+        'moreOne' => __(':n more step to go Live'), 'moreMany' => __(':n more steps to go Live'),
+        'liveStand' => __('You’re Live. Now stand out'), 'liveNext' => __('You’re Live. Next, the Creatives Index'),
+        'leadLive' => __('Two parts. Go Live takes a minute, and then your link works. Stand out starts with something to show, which puts you in the Creatives Index where brands search. The rest gets you picked.'),
+        'leadListed' => __('Your link works and brands find you in the Creatives Index. Fama recommends these next: they are what gets a profile picked.'),
+        'leadNotListed' => __('Your link works and you can share it. Add something to show and brands find you in the Creatives Index too.'),
+        'onlyYou' => __('Only you see this'),
+        'p1Title' => __('Go Live'), 'p1Sub' => __('Your link works and you can share it.'),
+        'p2Title' => __('Stand out'), 'p2Sub' => __('Not needed to go Live. Something to show gets you into the Creatives Index; the rest gets you picked.'),
+        'readyH' => __('Your profile is ready'), 'readySub' => __('Live, and standing out. Nice work.'), 'readySr' => __('Your profile is ready.'),
+        'headWent' => __('You’re Live. Your link works'), 'headListed' => __('You’re in the Creatives Index'), 'headNice' => __('Nice. :n to go'),
+        'headLast' => __('Last step to go Live'), 'headMore' => __(':n more steps to go Live'), 'headGetListed' => __('Next: the Creatives Index'), 'headStand' => __('Stand out · :n to go'),
+        'shortWent' => __('You’re Live'), 'shortListed' => __('In the Index!'), 'shortNice' => __('Nice!'), 'shortLive' => __(':n to go Live'), 'shortGet' => __('Get listed'), 'shortStand' => __('Stand out'),
+        'sub1' => __('Part 1 of 2 · Go Live'), 'sub2Listed' => __('Part 2 of 2 · Recommended by Fama'), 'sub2Not' => __('Part 2 of 2 · Live, not in the Creatives Index yet'),
+        'nextL' => __('Next: '), 'pop1' => __('1 · Go Live'), 'pop2' => __('2 · Stand out'),
+        'srWent' => __('You are Live. Your link works.'), 'srListed' => __('You are in the Creatives Index. Brands can find you now.'), 'srN' => __(':n of :m done'),
     ];
 
     $strings = [
-        'steps' => $steps,
+        'goLive' => $goLive, 'standOut' => $standOut, 'gate' => $gate,
+        'partNames' => ['core' => __('Core details'), 'now' => __('Availability'), 'social' => __('Social links'), 'skills' => __('Skills'), 'sections' => __('Sections'), 'explore' => __('Willing to explore'), 'brands' => __('Experience')] + (\App\Support\Features::enabled('pricing') ? ['pricing' => __('Pricing rate')] : []),
         'sbClean' => __('All changes saved'), 'sbCleanN' => __('Your profile is up to date.'), 'sbSavedNow' => __('Saved just now'),
-        'sbDirtyOne' => __('You have unsaved changes in 1 part'), 'sbDirtyMany' => __('You have unsaved changes in :n parts'),
+        'sbDirtyOneIn' => __('Unsaved changes in :name'), 'sbDirtyManyIn' => __('Unsaved changes in :n sections'), 'sbShort' => __('Unsaved changes'),
         'sbDirtyN' => __('Save to update your profile, or discard to undo them.'),
         'sbBad' => __('Fix the highlighted field before saving'), 'sbBadN' => __('Your profile needs a display name and a valid username.'),
+        'sbBadName' => __('Add a display name to save'), 'sbBadNameN' => __('Your profile needs one, and brands see it first.'),
+        'sbNoNameN' => __('Add it back to save. Your profile stays as it is until then.'),
+        'sbBadUser' => __('Fix your username to save'), 'sbBadUserN' => __('Use letters, numbers and dashes only.'),
+        'sbRisk' => __('Saving this takes your profile out of Live'), 'sbRiskN' => __('Your city is empty. Add it back to stay Live.'),
         'tSaved' => __('Changes saved'), 'saveFailed' => __('Some changes couldn’t be saved. Try again.'), 'tPhoto' => __('Profile photo updated'), 'tDiscarded' => __('Changes discarded'), 'tRemoved' => __(':name removed'), 'tAdded' => __(':name added'),
         'tMoved' => __(':name moved to :group'), 'tLive' => __('Your profile is Live'), 'tPrivate' => __('Your profile is Private'),
         'photo' => __('Profile photo'), 'photoType' => __('Use a JPG, PNG or WebP photo.'), 'photoBig' => __('That photo is over 5 MB. Choose a smaller one.'),
         'photoRmTitle' => __('Remove profile photo?'), 'photoRmHelp' => __('Your photo will be removed and replaced with your initials.'),
         'uploadFailed' => __('Upload failed'), 'remove' => __('Remove'),
-        'copyOffN' => __('Complete your profile to go Live. Then you can share your link.'), 'copiedA' => __('Link copied to the clipboard'),
-        'privTitle' => __('Make your profile Private?'), 'privHelp' => __('Only you will be able to see it, and your link stops working for everyone else until you go Live again.'), 'privOk' => __('Make private'),
+        'copiedA' => __('Link copied to the clipboard'),
         'travelOn' => __('Brands see you’ll take jobs outside :city.'), 'travelOff' => __('Brands see only that you’re based in :city.'), 'yourCity' => __('your city'),
         'website' => __('Website'), 'other' => __('Other'),
         'skMoved' => __(':name is now tab :n'),
@@ -94,7 +132,6 @@
         catalog: @js($catalog),
         contentKeys: @js($contentKeys),
         countries: @js(\App\Support\Locations::countries()),
-        universalPosition: {{ (int) ($talent->meta['universal_position'] ?? 0) }},
         interests: @js($interests),
         collabs: @js($collabs),
         hasPricing: {{ \App\Support\Features::enabled('pricing') ? 'true' : 'false' }},
@@ -112,9 +149,10 @@
       <h1 x-text="savedName || '—'">{{ $talent->display_name ?: '—' }}</h1>
     </div>
     <div class="pub">
-      {{-- Live only: a Private profile shows no link at all — just its status. --}}
+      {{-- Live only: a Private profile shows no link at all — just its status (product rule;
+           the prototype shows it locked — see the 2026-11-04 report). --}}
       <template x-if="isPublished">
-        <button type="button" class="linkbtn" :class="{ copied }" @click="copyLink()" aria-describedby="copyNote" :aria-label="@js(__('Copy your profile link')) + ', ' + linkLabel">
+        <button type="button" class="linkbtn" id="copyLink" :class="{ copied }" @click="copyLink()" aria-describedby="copyNote" :aria-label="@js(__('Copy your profile link')) + ', ' + linkLabel">
           <span id="pubState" dir="ltr" x-text="linkLabel"></span>
           <span class="lb-ic"><svg class="icon" aria-hidden="true"><use :href="copied ? '#i-check' : '#i-copy'" href="#i-copy"/></svg><span id="copyTx" x-text="copied ? @js(__('Copied')) : @js(__('Copy'))"></span></span>
         </button>
@@ -122,94 +160,70 @@
       <span class="vh" id="copyNote" aria-live="polite" x-text="note"></span>
       <span class="stat">
         <span class="pill" :class="isPublished ? 'p-live' : 'p-off'" x-text="isPublished ? @js(__('Live')) : @js(__('Private'))">{{ $talent->is_published ? __('Live') : __('Private') }}</span>
+        <span class="pill p-idx" x-show="isListed" x-cloak>{{ __('In the Index') }}</span>
         <button type="button" class="tipbtn" aria-describedby="pubTip" aria-label="{{ __('What Live and Private mean') }}"><svg class="icon" aria-hidden="true"><use href="#i-info"/></svg></button>
+        {{-- Three states, and every line that is true is lit. --}}
         <span class="tip" role="tooltip" id="pubTip">
-          <p :class="{ cur: isPublished }"><b>{{ __('Live') }}</b> {{ __('Anyone can open your profile, and brands find you in the Creatives Index.') }}</p>
-          <p :class="{ cur: !isPublished }"><b>{{ __('Private') }}</b> {{ __('Only you can see it. Complete your profile to go Live, then share your link.') }}</p>
+          <p :class="{ cur: !isPublished }"><b>{{ __('Private') }}</b> {{ __('Only you can see it. Finish Go Live and your link works.') }}</p>
+          <p :class="{ cur: isPublished }"><b>{{ __('Live') }}</b> {{ __('Anyone with your link can open your profile.') }}</p>
+          <p :class="{ cur: isListed }"><b>{{ __('In the Creatives Index') }}</b> <span x-text="isListed ? @js(__('Brands find you when they search.')) : @js(__('Brands find you when they search. Add something to show to get there.'))"></span></p>
         </span>
       </span>
-      <button type="button" class="btn btn-text pub-act" x-show="isPublished" x-cloak @click="setPublished(false)" :disabled="publishing">{{ __('Make private') }}</button>
+      {{-- App states the prototype has no screen for: a profile HELD private (Unpublished) goes
+           Live by hand; a suspended one can't. Every other profile goes Live by itself. --}}
+      <button type="button" class="btn btn-text pub-act" x-show="isHeld && path.can_go_live" x-cloak @click="setPublished(true)" :disabled="publishing">{{ __('Go Live') }}</button>
+      <p class="vw-err pub-note" x-show="publishError || isSuspended" x-cloak x-text="publishError || @js(__('Fama has taken your profile down. Contact support to restore it.'))"></p>
     </div>
   </div>
   <div class="band" role="presentation"></div>
 </section>
 
-{{-- The dashboard lives here now: the steps to go Live while Private, and the views. --}}
-<section class="vw" id="gate" aria-label="{{ __('Creatives Index') }}" x-show="!isPublished" x-cloak>
-  <div class="vw-head">
-    <div>
-      <span class="vw-label">{{ __('Creatives Index') }}</span>
-      <h2 class="vw-h" x-text="stepsLeft === 0 ? @js(__('Ready to go Live')) : (stepsLeft === 1 ? @js(__('1 more step to go Live')) : @js(__(':n more steps to go Live')).replace(':n', stepsLeft))"></h2>
-      <p class="vw-lead">{{ __('Only you can see your profile for now. Complete these and it goes Live: anyone can open your link, and brands find you in the Creatives Index.') }}</p>
-    </div>
-    <span class="vw-only"><svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg>{{ __('Only you see this') }}</span>
-  </div>
-  {{-- Every step done: the six rows fold into one card about the last step — Fama's check. --}}
-  <div class="vw-check" :class="{ ok: isVerified }" x-show="allStepsDone && !showSteps" x-cloak>
-    <span class="vw-check-ic" aria-hidden="true">
-      <svg class="icon" x-show="!isVerified"><use href="#i-award"/></svg>
-      <svg class="icon" x-show="isVerified" x-cloak><use href="#i-check"/></svg>
-    </span>
-    <div class="vw-check-txt">
-      <span class="vw-check-k" x-text="@js(__('All :n steps done')).replace(':n', gateSteps.length)"></span>
-      <h3>{{ __('Checked by Fama') }}</h3>
-      <p x-text="isVerified ? @js(__('Your profile has been checked. Go Live whenever you’re ready.')) : @js(__('Our team reviews every new profile once. You can keep editing meanwhile.'))"></p>
-      <button type="button" class="vw-link" @click="showSteps = true">{{ __('Review your steps') }}<svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></button>
-    </div>
-  </div>
-  <ul class="vw-todo" x-show="!allStepsDone || showSteps">
-    <template x-for="s in gateSteps" :key="s.key">
-      <li :class="{ ok: s.done }">
-        <span class="tick"><svg class="icon" aria-hidden="true" x-show="s.done"><use href="#i-check"/></svg></span>
-        <span class="txt"><b x-text="s.label"></b><p x-show="!s.done" x-text="s.help"></p></span>
-        <a class="vw-link" :href="s.href" @click="goStep($event, s)"><span x-text="s.done ? @js(__('Edit')) : @js(__('Add'))"></span><span class="vh" x-text="' ' + s.label"></span><svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
-      </li>
-    </template>
-    {{-- App step (not in the prototype): Fama verifies every profile once before it can go Live (ADR-U). --}}
-    <li :class="{ ok: isVerified }">
-      <span class="tick"><svg class="icon" aria-hidden="true" x-show="isVerified"><use href="#i-check"/></svg></span>
-      <span class="txt"><b>{{ __('Checked by Fama') }}</b><p x-show="!isVerified">{{ __('Our team reviews every new profile once. You can keep editing meanwhile.') }}</p></span>
-    </li>
-  </ul>
-  <div class="vw-go">
-    <button type="button" class="btn" @click="setPublished(true)" :disabled="publishing || !isVerified">{{ __('Go Live') }}</button>
-  </div>
-  <p class="vw-err" x-show="publishError" x-text="publishError"></p>
-  <p class="vw-note" x-text="isVerified ? @js(__('You choose when it goes Live. You can make it Private again at any time.')) : @js(__('Go Live unlocks once our team has checked your profile.'))"></p>
-</section>
+{{-- The dashboard lives here: the path (Go Live, then Stand out — drawn by profile-gate.js
+     from SAVED data; folds to one line once Live, gone once everything is done) and the views. --}}
+<section class="vw" id="gate" aria-label="{{ __('Creatives Index') }}" x-ref="gate" hidden></section>
 
 <section class="vw" id="views" aria-label="{{ __('Profile views') }}" x-data="profileViews({ strings: @js($viewStrings) })">
+  {{-- 24 Oct 2026: the card is a heading, the number and one line; the chart opens on request. --}}
   <div class="vw-head">
     <div>
-      <span class="vw-label">{{ __('Profile views · all time') }}</span>
+      <h2 class="vw-label">{{ __('Profile views · all time') }}</h2>
       <span class="vw-n">{{ number_format($views['total']) }}</span>
-      <span class="vw-d"><b>{{ $deltaText }}</b> {{ __('vs last week') }}</span>
+      <span class="vw-d">{{ __('This week') }} <b>{{ $deltaText }}</b> {{ __('on last week') }}</span>
     </div>
-    <span class="vw-only"><svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg>{{ __('Only you see this') }}</span>
-  </div>
-  <div class="vw-sh">
-    <p class="vw-sum" x-text="sumText"></p>
-    <div class="vw-seg" role="group" aria-label="{{ __('Period') }}">
-      @foreach (['7d' => __('7 days'), '30d' => __('30 days'), '90d' => __('90 days'), 'all' => __('All time')] as $r => $label)
-        <button type="button" @click="load('{{ $r }}')" :aria-pressed="(range === '{{ $r }}').toString()">{{ $label }}</button>
-      @endforeach
+    <div class="vw-hr">
+      <span class="vw-only"><svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg>{{ __('Only you see this') }}</span>
+      <button type="button" class="vw-link vw-open" @click="toggle()" :aria-expanded="open.toString()" aria-controls="vwMore"><span x-text="open ? @js(__('Hide chart')) : @js(__('See chart'))">{{ __('See chart') }}</span><svg class="icon" aria-hidden="true"><use href="#i-down"/></svg></button>
     </div>
   </div>
-  <div class="vw-plot" :class="{ 'is-loading': loading }">
-    <div class="vw-yax" aria-hidden="true"><template x-for="(tk, i) in yTicks" :key="i"><span x-text="tk"></span></template></div>
-    <div class="vw-area" x-ref="area">
-      <div class="vw-grid"><i></i><i></i><i></i><i></i></div>
-      <div class="vw-bars">
-        <template x-for="(b, i) in series" :key="b.date">
-          <button type="button" :aria-label="b.label + ': ' + b.views.toLocaleString('en-GB') + ' ' + @js(__('views'))"
-                  @mouseenter="tip($event, i)" @focus="tip($event, i)" @mouseleave="untip()" @blur="untip()"><span :style="'height:' + (grown ? height(b.views) : 0) + '%;transition-delay:' + delay(i) + 'ms'"></span></button>
-        </template>
+  {{-- 4 Nov 2026: the chart eases open/closed (grid-rows 0fr→1fr — no fixed height) and its bars
+       rise on every open; inert while closed so nothing inside takes focus. --}}
+  <div class="vw-more" id="vwMore" :class="{ 'is-open': open }" :inert="!open" :aria-hidden="(!open).toString()">
+   <div class="vw-more-in">
+    <div class="vw-sh">
+      <p class="vw-sum" x-text="sumText"></p>
+      <div class="vw-seg" role="group" aria-label="{{ __('Period') }}">
+        @foreach (['7d' => __('7 days'), '30d' => __('30 days'), '90d' => __('90 days'), 'all' => __('All time')] as $r => $label)
+          <button type="button" @click="load('{{ $r }}')" :aria-pressed="(range === '{{ $r }}').toString()">{{ $label }}</button>
+        @endforeach
       </div>
-      <div class="vw-tip" x-ref="tip" role="status"></div>
     </div>
-    <div class="vw-xax" aria-hidden="true"><template x-for="i in xPicks" :key="i"><span x-text="series[i] ? series[i].label : ''"></span></template></div>
+    <div class="vw-plot" :class="{ 'is-loading': loading }">
+      <div class="vw-yax" aria-hidden="true"><template x-for="(tk, i) in yTicks" :key="i"><span x-text="tk"></span></template></div>
+      <div class="vw-area" x-ref="area">
+        <div class="vw-grid"><i></i><i></i><i></i><i></i></div>
+        <div class="vw-bars" :class="{ 'is-snap': snap }">
+          <template x-for="(b, i) in series" :key="b.date">
+            <button type="button" :aria-label="b.label + ': ' + b.views.toLocaleString('en-GB') + ' ' + @js(__('views'))"
+                    @mouseenter="tip($event, i)" @focus="tip($event, i)" @mouseleave="untip()" @blur="untip()"><span :style="'height:' + (grown ? height(b.views) : 0) + '%;transition-delay:' + delay(i) + 'ms'"></span></button>
+          </template>
+        </div>
+        <div class="vw-tip" x-ref="tip" role="status"></div>
+      </div>
+      <div class="vw-xax" aria-hidden="true"><template x-for="i in xPicks" :key="i"><span x-text="series[i] ? series[i].label : ''"></span></template></div>
+    </div>
+    <p class="vw-err" x-show="error" x-cloak>{{ __('Couldn’t load your views. Try again in a moment.') }}</p>
+   </div>
   </div>
-  <p class="vw-err" x-show="error" x-cloak>{{ __('Couldn’t load your views. Try again in a moment.') }}</p>
 </section>
 
 <div class="layout">
@@ -240,7 +254,7 @@
           </div>
         </div>
         <div class="two f">
-          <label class="f" :class="{ bad: nameBad }">
+          <label class="f" :class="{ bad: nameBad, risk: liveRisk.includes('display') }">
             <span><span>{{ __('Display name') }}</span><small>{{ __('Needed to go Live') }}</small></span>
             <input class="in" id="fDisplay" maxlength="255" autocomplete="name" x-model="core.display_name" @input="errors.display_name = null">
             <p class="help" :class="{ err: nameBad }" x-text="errors.display_name ? errors.display_name[0] : (nameBad ? @js(__('Add a display name. Your profile needs one to go Live.')) : @js(__('The name people see on your profile.')))"></p>
@@ -270,7 +284,7 @@
                           :label="__('Country')" :placeholder="__('Choose a country')" :search-placeholder="__('Search countries')"
                           @combo-pick="onCountryPicked($event.detail)" />
             <p class="help err" x-show="errors.base_country" x-cloak x-text="errors.base_country?.[0]"></p></div>
-          <div class="f" :class="{ bad: errors.base_city }"><span id="lCity">{{ __('City') }}</span>
+          <div class="f" :class="{ bad: errors.base_city, risk: liveRisk.includes('city') }"><span id="lCity">{{ __('City') }}</span>
             <x-fama.combo id="fCity" model="core.base_city" items="cityOptions" :allow-custom="true" icon="pin"
                           :label="__('City')" :placeholder="__('Choose a city')" :search-placeholder="__('Search cities')"
                           disabled="!countryCode" x-effect="loadCities(countryCode)" />
@@ -413,13 +427,8 @@
         <p class="pdesc">{{ __('What shows on each tab of your profile. Choose a section to fill it in, drag to reorder, or switch it off to hide it. Hidden sections keep their content.') }}</p></div>
     </div>
     <div class="pbody">
-      <div class="place" x-show="blocksInScope(null).length" style="margin-top:0">
-        <span class="lbl" style="margin:0">{{ __('Show profile-wide sections') }}</span>
-        <div class="seg" role="group" aria-label="{{ __('Show profile-wide sections') }}">
-          <button type="button" :aria-pressed="(universalPosition === 0).toString()" @click="setPlace(false)">{{ __('Before your work') }}</button>
-          <button type="button" :aria-pressed="(universalPosition > 0).toString()" @click="setPlace(true)">{{ __('After your work') }}</button>
-        </div>
-      </div>
+      {{-- No "Before / After your work" control: every profile shows its profile-wide
+           sections after the skill tabs (prototype place:'below'). --}}
       <template x-for="g in scopeGroups" :key="g.key">
         <div class="group">
           <h3><button type="button" class="ghead" @click="toggleGroup(g.key)" :aria-expanded="(!!openGroups[g.key]).toString()">
@@ -500,7 +509,7 @@
       <template x-if="uniBlock('brand_collabs')">
         <label class="showsw"><span>{{ __('Show on profile') }}</span><button type="button" class="switch" role="switch" :aria-checked="uniBlock('brand_collabs').is_visible.toString()" @click="toggleVisible(uniBlock('brand_collabs'))" aria-label="{{ __('Show on profile') }}: {{ __('Experience') }}"><i></i></button></label>
       </template>
-      <a class="btn btn-2" href="{{ $brandsUrl }}"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg><span>{{ __('Add brand') }}</span></a>
+      <a class="btn btn-2" id="addBrand" href="{{ $brandsUrl }}"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg><span>{{ __('Add brand') }}</span></a>
     </div>
     <div class="pbody" id="body-brands">
       <div id="exp">
@@ -544,12 +553,14 @@
 </div>
 </main>
 
-<div class="savebar off" id="savebar" :class="{ dirty: dirtyCount > 0, bad: dirtyCount > 0 && badField, off: !barShown }" :aria-hidden="(!barShown).toString()">
+{{-- 24 Oct 2026: the bar only shows while there is something to save, and for a moment after a save;
+     ringed yellow when saving the draft would take the profile out of Live. --}}
+<div class="savebar is-away" id="savebar" :class="{ dirty: dirtyCount > 0, bad: dirtyCount > 0 && badField, risk: atRisk, 'is-away': !barShown }" :aria-hidden="(!barShown).toString()">
   <div class="in-bar">
-    <p class="msg" role="status" aria-live="polite"><span class="dot" aria-hidden="true"></span><span><span x-text="sbTitle">{{ __('All changes saved') }}</span><small x-text="sbNote">{{ __('Your profile is up to date.') }}</small></span></p>
+    <p class="msg" role="status" aria-live="polite"><span class="dot" aria-hidden="true"></span><span><span id="sbTitle" x-text="sbTitle">{{ __('All changes saved') }}</span><small x-text="sbNote">{{ __('Your profile is up to date.') }}</small></span></p>
     <div class="acts" x-show="dirtyCount > 0" x-cloak>
-      <button type="button" class="btn btn-2" @click="discardAll()">{{ __('Discard') }}</button>
-      <button type="button" class="btn btn-save" @click="saveAll()" :disabled="saving" x-text="saving ? @js(__('Saving…')) : @js(__('Save changes'))">{{ __('Save changes') }}</button>
+      <button type="button" class="btn btn-2" id="sbDiscard" @click="discardAll()">{{ __('Discard') }}</button>
+      <button type="button" class="btn btn-save" id="sbSave" @click="saveAll()" :disabled="saving" x-text="saving ? @js(__('Saving…')) : (narrow ? @js(__('Save')) : @js(__('Save changes')))">{{ __('Save changes') }}</button>
     </div>
   </div>
 </div>

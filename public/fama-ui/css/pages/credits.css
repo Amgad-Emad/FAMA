@@ -1,4 +1,4 @@
-/* Verbatim from the fama-ui prototype: credits.html <style>. Do not edit — app additions go in the page view. */
+/* Verbatim from the fama-ui prototype: credits.html <style> (live). Do not edit — app additions go in the page view. */
 /* Screen: /talent/credits — the collaborator's side of journey 3 in the Fama V1 Blueprint.
    Nothing appears on anyone's profile without their confirmation. */
 .cr{display:grid;grid-template-columns:120px minmax(0,1fr) auto;gap:var(--s5);align-items:center;padding-block:var(--s5);border-top:var(--border)}
@@ -9,7 +9,7 @@
 .cr a.pt:hover b{color:var(--purple-dk)}
 .cr .by{margin-top:var(--s1)}
 .cr .role{display:flex;flex-wrap:wrap;gap:var(--s2);margin-top:var(--s3)}
-.cr .acts{display:flex;gap:var(--s2)}
+.cr .acts{display:flex;flex-wrap:wrap;gap:var(--s2)}
 .cr.is-hidden .ph,.cr.is-hidden b{opacity:.55}
 .note{margin-top:var(--s3);font-size:var(--t-meta);color:var(--grey)}
 .count{background:var(--ink);color:var(--cream);border-radius:var(--radius-pill);font-size:14px;font-weight:600;padding:0 var(--s2);margin-inline-start:var(--s2);vertical-align:middle}

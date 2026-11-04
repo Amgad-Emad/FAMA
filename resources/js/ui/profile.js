@@ -45,8 +45,12 @@ document.addEventListener('alpine:init', () => {
         },
         /** Your own profile: the visitor buttons explain themselves instead. */
         ownNote() { toast(this.S.ownNote); },
-        /** Guests: follow / recognise open the sign-in prompt. */
+        /**
+         * Guests: follow / recognise open the sign-in prompt. Fama staff are
+         * signed in but are not talent — they get the read-only note instead.
+         */
         signIn(act) {
+            if (window.famaStaff) { toast(window.famaStaffNote); return; }
             this.sign = { open: true, act };
             this.$nextTick(() => {
                 const d = this.$refs.signDlg;

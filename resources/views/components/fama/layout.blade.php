@@ -8,8 +8,8 @@
 
     Props:
       title  — the <title> (" · Fama" appended).
-      mode   — 'talent' (signed-in talent nav), 'public' (visitor nav: Feed +
-               Log in), 'auth' (sign-in pages: logo + "Browse the feed"),
+      mode   — 'talent' (signed-in talent: side bar on wide screens, top bar
+               ≤1100px), 'public' (visitor nav: Feed + Log in + Join), 'auth' (sign-in pages: logo + "Browse the feed"),
                'bare' (no nav/footer). Default: talent when a talent is signed
                in, else public.
       css    — extra fama-ui sheets for the page: posts|views|fields|exp|auth.
@@ -32,6 +32,11 @@
     <link rel="icon" href="{{ asset('fama-ui/img/fama-emblem.svg') }}" type="image/svg+xml">
     {{ $head ?? '' }}
     @include('partials.fama-head')
+    @if ($mode === 'talent' && auth('talent')->check())
+        {{-- The wide-screen side bar (shell.css html.fx-has-side): set before paint so the page never
+             jumps; folded by default, an opened bar is remembered in this browser. --}}
+        <script>(function(){var d=document.documentElement,f=true;try{f=localStorage.getItem('fama-side-folded')!=='0'}catch(e){}d.classList.add('fx-has-side');d.classList.toggle('fx-folded',f);})();</script>
+    @endif
     <link rel="stylesheet" href="{{ \App\Support\FamaAsset::url('fama-ui/css/shell.css') }}">
     <link rel="stylesheet" href="{{ \App\Support\FamaAsset::url('fama-ui/css/ds.css') }}">
     @foreach ((array) $css as $sheet)

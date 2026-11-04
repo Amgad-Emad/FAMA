@@ -84,7 +84,7 @@ once after login. Rate limits (per actor, else IP): posts 10/h, comments 10/min,
 | GET | `/mentions/search?q=` | composer autocomplete, 8 grouped |
 | POST | `/links/preview` | instant chip parse + queued enrichment (ADR-F4) |
 | POST | `/posts/{post}/report`, `/comments/{comment}/report` | once per target per actor; `reason` ∈ config `feed.report_reasons` (7 keys), `note` required for `other` |
-| GET | `/notifications?filter=unread\|mention` · POST `/notifications/read` · GET `/notifications/unread-count` | actor inbox, localized at read |
+| GET | `/notifications?filter=unread\|mention` · POST `/notifications/read` · GET `/notifications/unread-count` | actor inbox, localized at read; each item carries `kind` (mention·credit·comment·follow·like·system), `excerpt` (comment/reply/mention text, may be null) and `followed_back` (follow kind); `meta.counts` = `{all, unread, mentions}` |
 | GET | `/notifications/all` | the notifications PAGE (fama-ui shell; list loads from `/notifications`) |
 | POST / DELETE | `/posts/{post}/bookmark` | save/unsave (5X; private collections, ADR-F9) |
 | GET | `/feed/suggestions/talents`, `/feed/suggestions/brands` | rail suggestions, offset cursor (5Z) |
@@ -165,7 +165,8 @@ Contracts). The old standalone Professions + Account tabs are folded into it (AD
 | Home | `GET /talent/dashboard/views?range=7d\|30d\|90d\|all` | bucketed view series for the KPI chart ('all' = since profile creation; bad range → 422) |
 | Profile | `GET /talent/profile` · `PATCH /talent/profile` | editor shell · update core fields (incl. `slug`, shown as **Username**) |
 | Pricing rate | `PATCH /talent/profile/pricing` | set/clear the indicative rate (`rate_unit`/`rate_amount`/`rate_currency`; all-or-nothing) |
-| Publish | `PATCH /talent/profile/publish` | publish/unpublish toggle (`{publish: bool}`) |
+| Publish | `PATCH /talent/profile/publish` | publish/unpublish by hand (`{publish: bool}`); a profile goes Live by itself once its Go Live steps are saved (ADR-AC) — this is for a profile held private; not ready → 422 |
+| Profile path | `GET /talent/profile/state` | saved Go Live / Stand out steps + `can_go_live`, `is_published`, `listed`, `profile_done`, `status` |
 | Sections | `PATCH /talent/profile/sections/universal-position` | universal section's slot among the skills (`{position: int}`; 0 = above the tabs, else below) |
 | Blocks | `GET /talent/profile/blocks` · `GET /talent/profile/block-picker?talent_type_id=` | list blocks (each carries `talent_type_id`) · **per-scope** eligibility picker (ADR-Q) |
 | Blocks | `POST /talent/profile/blocks` (`{block_type_id, talent_type_id?}`) · `PATCH …/{block}` · `PATCH …/reorder` (`{talent_type_id?, order}`) · `PATCH …/{block}/move` (`{talent_type_id?}`) · `PATCH …/{block}/visibility` · `DELETE …/{block}` | add-to-scope · fill (`content`/`settings`/`layout` only — block names are admin-governed, `title` is ignored) · reorder-within-scope · **move between scopes** · show/hide · remove |

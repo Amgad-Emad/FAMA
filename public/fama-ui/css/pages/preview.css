@@ -54,50 +54,78 @@ dialog.signdlg{max-width:440px}
 .social a:hover{border-color:var(--ink);color:var(--purple-dk)}
 .soc-ic{width:20px;height:20px;flex:none}
 
-/* skill tabs — sticky under the top bar; active tab filled in orchid (dark step for AA) */
-.stabs{position:sticky;top:72px;z-index:20;background:var(--cream);margin-top:var(--s8);border-bottom:var(--border)}
+/* skill tabs — scroll with the page (30 Oct 2026: no longer sticky); active tab filled in orchid (dark step for AA) */
+.stabs{background:var(--cream);margin-top:var(--s8);border-bottom:var(--border)}
 .stabs .row{display:flex;gap:var(--s6);overflow-x:auto;scrollbar-width:none}
 .stabs a{flex:none;min-height:52px;display:inline-flex;align-items:center;gap:var(--s2);border-bottom:2px solid transparent;margin-bottom:-1px;font-weight:600;color:var(--grey);text-decoration:none;white-space:nowrap}
 .stabs a:hover{color:var(--ink)}
-.stabs a[aria-current]{color:var(--ink);border-bottom-color:var(--purple-dk)}
-.stabs .n{font-size:12px;font-weight:600;min-width:20px;padding:0 6px;border-radius:var(--radius-pill);background:var(--line);color:var(--grey);text-align:center}
-.stabs a[aria-current] .n{background:var(--ink);color:var(--cream)}
+.stabs a[aria-selected=true]{color:var(--ink);border-bottom-color:var(--purple-dk)}
+/* 24 Oct 2026: the skill names in the display face, and the FAMA star on the open one */
+.stabs a{font-family:var(--font-display);font-size:19px;letter-spacing:.01em}
+@media (max-width:760px){.stabs a{font-size:16px;position:relative}.stabs .row{gap:var(--s4)}}
+.stabs .tstar{width:13px;height:12px;fill:var(--yellow);stroke:var(--ink);stroke-width:36;stroke-linejoin:round;flex:none;display:none}
+.stabs a[aria-selected=true] .tstar{display:block}
+.stabs .n{font-family:var(--font-body,inherit);font-size:12px;font-weight:600;min-width:20px;padding:0 6px;border-radius:var(--radius-pill);background:var(--line);color:#4F4A45;text-align:center;letter-spacing:0}
+.stabs a[aria-selected=true] .n{background:var(--ink);color:var(--cream)}
 .stabs a:focus-visible{outline:2px solid var(--purple-dk);outline-offset:-2px;border-radius:var(--s1)}
 .specs{margin-top:var(--s6)}
 
 /* sections */
 .blk{margin-top:var(--s8)}
 /* Contra-style top (9 Oct 2026) */
-.ct-top{display:grid;grid-template-columns:minmax(0,420px) minmax(0,1fr);gap:var(--s7);align-items:stretch;margin-top:var(--s6)}
+.ct-top{display:grid;grid-template-columns:minmax(0,440px) minmax(0,1fr);gap:var(--s7);align-items:start;margin-top:var(--s6)}
 .ct-id{display:flex;flex-direction:column;align-items:flex-start;padding-block:var(--s4)}
-.ct-av{position:relative;width:104px;height:104px;border-radius:var(--radius-pill);background:var(--purple) center/cover;color:var(--white);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:600;font-size:36px}
-.ct-on{position:absolute;right:5px;bottom:5px;width:18px;height:18px;border-radius:var(--radius-pill);background:#2BB673;border:3px solid var(--cream)}
+.ct-av{position:relative;width:80px;height:80px;border-radius:var(--radius-pill);background:var(--purple) center/cover;color:var(--white);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:600;font-size:28px}
+.ct-on{position:absolute;right:2px;bottom:2px;width:16px;height:16px;border-radius:var(--radius-pill);background:#2BB673;border:3px solid var(--cream)}
 .ct-id h1{font-family:var(--font-display);font-weight:600;font-size:44px;line-height:1.05;margin-top:var(--s4)}
 .ct-who{color:var(--grey);margin-top:var(--s2);font-size:17px;display:flex;flex-wrap:wrap;align-items:center;gap:var(--s1) var(--s4)}
 .ct-place{display:inline-flex;align-items:center;gap:6px;font-size:15px}
 .ct-place .icon{width:16px;height:16px}
-.ct-links{list-style:none;margin:var(--s4) 0 0;padding:0;display:flex;flex-wrap:wrap;gap:var(--s2)}
+.ct-links{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:var(--s2);flex-basis:100%}
 .ct-links a{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;padding:0;border:var(--border);border-radius:var(--radius-pill);background:var(--white);color:var(--ink);font-size:14px;font-weight:600;text-decoration:none}
 .ct-links a:hover{border-color:var(--ink)}
 .ct-links .soc-ic{width:18px;height:18px}
-.ct-acts{display:flex;gap:var(--s2);margin-top:var(--s5);flex-wrap:wrap}
-.ct-stats{display:grid;grid-template-columns:repeat(3,auto);margin:var(--s5) 0 0;border:var(--border);border-radius:var(--s4);background:var(--white)}
-.ct-stats div{padding:var(--s3) var(--s5);text-align:center}
-.ct-stats div+div{border-inline-start:var(--border)}
+.ct-acts{display:flex;gap:var(--s2);margin-top:var(--s5);flex-wrap:wrap;align-items:center}
+.signalt{margin:var(--s4) 0 0;font-size:14px;color:var(--grey)}
+.ct-stats{display:flex;gap:var(--s6);margin:var(--s4) 0 0}
+.ct-stats div{padding:0}
+
 .ct-stats dd{margin:0;font-family:var(--font-display);font-weight:600;font-size:22px;line-height:1.1;order:-1}
 .ct-stats dt{font-size:12px;color:var(--grey)}
 .ct-stats div{display:flex;flex-direction:column}
 .ct-chips{display:flex;gap:var(--s2);flex-wrap:wrap;margin-top:var(--s4)}
 .ct-chips span{display:inline-flex;align-items:center;gap:6px;border:var(--border);background:var(--white);border-radius:var(--s3);padding:var(--s2) var(--s3);font-size:14px;font-weight:600}
-.ct-chips .on::before{content:"";width:8px;height:8px;border-radius:var(--radius-pill);background:var(--mint-fg)}
+.ct-chips .on::before{content:"";width:8px;height:8px;border-radius:var(--radius-pill);background:var(--ink)}
+.ct-chips .on{background:var(--yellow);border-color:var(--yellow)} /* 24 Oct 2026: availability is the yellow signal */
+.ct-skills{display:flex;flex-wrap:wrap;gap:var(--s2);list-style:none;margin:var(--s4) 0 0;padding:0}
+.ct-skills a{display:inline-flex;align-items:center;min-height:36px;padding:0 var(--s3);border-radius:var(--radius-pill);background:var(--lavender,#F3EAF8);color:var(--purple-dk);font-weight:600;font-size:14px;text-decoration:none;transition:background-color var(--duration-quick,150ms) ease-out}
+.ct-skills a:hover{background:var(--lavender-line,#E9DAF2)}
+.ct-skills a:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.ct-with{margin:var(--s3) 0 0;font-size:15px;line-height:1.5;color:var(--ink);max-width:44ch}
+.ct-with span{color:var(--grey)}
+.ct-bio{margin:var(--s3) 0 0;font-size:17px;line-height:1.5;color:var(--ink);max-width:40ch;text-wrap:pretty}
+#page p,#page li{text-wrap:pretty}
+.povq{margin:var(--s4) 0 0;max-width:62ch;font-size:20px;line-height:1.5}
+.wide-sections>.h1{margin:0}
+@media (max-width:760px){.ct-stats{gap:var(--s5)}.ct-links a{width:44px;height:44px}}
 .ct-cover{position:relative;border-radius:var(--radius);background:#CBBBA8 url("../../img/banners/profile.jpg") center/cover no-repeat;min-height:340px;overflow:hidden}
 .ct-cover{display:block;text-decoration:none;color:var(--white);background-size:cover;background-position:center;transition:transform var(--slow) var(--ease)}
 .ct-cover.empty{background:var(--lavender,#F3EAF8)}
-.ct-feat{position:absolute;inset:auto var(--s4) var(--s4);display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto;gap:2px var(--s4);align-items:center;padding:var(--s3) var(--s4);border-radius:var(--s4);background:rgba(20,17,15,.55);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+/* the featured project, with its frosted bar (24 Oct 2026) */
+.ct-tags{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s2);margin-top:var(--s4)}
+.ct-tags .ct-chips,.ct-tags .ct-skills{margin:0}
+/* 24 Oct 2026: the hero fits one screen: the cover is as tall as the screen allows (below the nav and strip), never taller,
+   so its featured-project bar is always in view */
+/* the year of a project, as a tag on its picture (24 Oct 2026) */
+.ptag{position:absolute;top:var(--s3);inset-inline-start:var(--s3);z-index:2;display:inline-flex;align-items:center;height:26px;padding:0 10px;border-radius:var(--radius-pill);background:rgba(255,255,255,.94);color:var(--ink);font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:.02em;pointer-events:none;box-shadow:0 1px 4px rgba(20,17,15,.12)}
+.ct-coverwrap>.ptag{top:var(--s4);inset-inline-start:var(--s4);height:30px;padding:0 12px;font-size:13px}
+.ct-coverwrap{position:relative;min-width:0;height:clamp(340px,calc(100svh - 260px),620px)}
+.ct-coverwrap .ct-cover{height:100%;min-height:0}
+.ct-feat{position:absolute;inset:auto var(--s4) var(--s4);display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto;gap:2px var(--s4);align-items:center;padding:var(--s3) var(--s4);border-radius:var(--s4);background:rgba(20,17,15,.72);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
 .ct-badge{grid-column:1/-1;display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--yellow);letter-spacing:.02em}
 .ct-badge svg{width:14px;height:13px;fill:var(--yellow)}
 .ct-ft b{display:block;font-weight:600;font-size:17px}
-.ct-ft small{display:block;font-size:13px;color:rgba(255,255,255,.8)}
+.ct-ft small{display:block;font-size:13px;color:rgba(255,255,255,.9)}
 .ct-go{width:40px;height:40px;border-radius:var(--radius-pill);background:var(--white);color:var(--ink);display:flex;align-items:center;justify-content:center;transition:transform var(--fast) var(--ease)}
 .ct-go .icon{width:18px;height:18px}
 .ct-cover:hover .ct-go{transform:translateX(3px)}
@@ -114,7 +142,7 @@ dialog.signdlg{max-width:440px}
 /* the work: a tight grid, the title shows on hover and focus */
 #skillBody .specs-row{margin-top:var(--s5)}
 #skillBody .blk:first-of-type{margin-top:var(--s4)}
-#skillBody .blk-projects>.pv-sh{display:none}
+#skillBody .blk-projects>.pv-sh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap} /* the tab already names it; screen readers still get the heading */
 #skillBody .blk-projects{margin-top:var(--s4)}
 #skillBody .projs{grid-template-columns:repeat(4,minmax(0,1fr));gap:2px;margin-top:0}
 .proj{position:relative;overflow:hidden}
@@ -127,17 +155,19 @@ dialog.signdlg{max-width:440px}
 .proj b,.proj .meta{z-index:1}
 .proj:hover::after,.proj:focus-visible::after,.proj:hover b,.proj:hover .meta,.proj:focus-visible b,.proj:focus-visible .meta{opacity:1;transform:none}
 .proj:hover b{color:var(--white)}
-/* phones have no hover (11 Oct 2026, Muhammad's review): each project is its own card, the title and client always under the picture */
-@media (max-width:760px),(hover:none){
-  #skillBody .projs{grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s5) var(--s3)}
+/* each project is its own card, the title and client always under the picture: on phones since 11 Oct 2026
+   (Muhammad's review), and on desktop too since 24 Oct 2026, so a brand scanning the grid reads the clients without hovering */
+@media all{
+  #skillBody .projs{grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--s6) var(--s4)}
   .proj{overflow:visible;text-decoration:none;display:flex;flex-direction:column;gap:2px}
-  .proj .ph{aspect-ratio:1;border-radius:var(--s3);margin-bottom:var(--s2)}
+  .proj .ph{aspect-ratio:4/3;border-radius:var(--s3);margin-bottom:var(--s2);transition:transform var(--slow) var(--ease)}
+  .proj:hover .ph{transform:scale(.985)}
   .proj::after{display:none}
-  .proj b,.proj .meta{position:static;opacity:1;transform:none;padding:0;color:var(--ink);font-weight:600;font-size:14px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-  .proj .meta{color:var(--grey);font-weight:400;font-size:12px;-webkit-line-clamp:1}
+  .proj b,.proj .meta{position:static;opacity:1;transform:none;padding:0;color:var(--ink);font-weight:600;font-size:15px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .proj .meta{color:var(--grey);font-weight:400;font-size:13px;-webkit-line-clamp:1}
   .proj:hover b{color:var(--purple-dk)}
 }
-@media (min-width:761px) and (hover:none){#skillBody .projs{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:760px){#skillBody .projs{gap:var(--s5) var(--s3)}.proj .ph{aspect-ratio:1}.proj b,.proj .meta{font-size:14px}.proj .meta{font-size:12px}}
 .ct-about{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:var(--s7);margin-top:var(--s7);padding-top:var(--s6);border-top:var(--border)}
 .ct-about .bio{font-size:20px;line-height:1.55;margin:0}
 .ct-about .pov{margin:0}
@@ -146,10 +176,12 @@ dialog.signdlg{max-width:440px}
 @media (max-width:960px){
   .ct-top{grid-template-columns:minmax(0,1fr);gap:var(--s5)}
   .ct-cover{min-height:220px;order:-1}
+  .ct-coverwrap{order:-1;height:auto}
+  /* 31 Oct 2026: the wrap's height:100% rule collapsed the cover to nothing here; give it its own shape */
+  .ct-coverwrap .ct-cover{height:auto;min-height:0;aspect-ratio:4/3}
   #skillBody .projs{grid-template-columns:repeat(2,minmax(0,1fr))}
   .stabs{flex-wrap:wrap;gap:var(--s2)}
   .ct-where{width:100%;padding-bottom:var(--s3)}
-  .proj b,.proj .meta{opacity:1;transform:none}.proj::after{opacity:1}
 }
 /* two columns (9 Oct 2026) */
 .pv-cols{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:var(--s7);margin-top:var(--s7);align-items:start}
@@ -167,6 +199,7 @@ dialog.signdlg{max-width:440px}
 .side-xp{list-style:none;margin:0;padding:0}
 .side-xp li{display:grid;grid-template-columns:36px minmax(0,1fr) auto;gap:var(--s3);align-items:center;padding:var(--s3) 0;border-top:var(--border)}
 .side-xp li:first-child{border-top:0;padding-top:0}
+.side-xp .lg svg{width:18px;height:18px;color:var(--purple-dk)}
 .side-xp .lg{width:36px;height:36px;border-radius:10px;background:var(--cream);border:var(--border);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600}
 .side-xp b{display:block;font-weight:600;font-size:15px;line-height:1.3}
 .side-xp small{display:block;color:var(--grey);font-size:13px}
@@ -211,7 +244,8 @@ dialog.sheet .sheet-b{padding:var(--s5) var(--s6);overflow:auto;max-height:calc(
 .look .strip{display:grid;grid-template-columns:2fr 1fr;grid-template-rows:1fr 1fr;gap:4px;aspect-ratio:4/3}
 .look .strip .ph:first-child{grid-row:span 2}
 .look b{display:block;margin-top:var(--s2);font-weight:600}
-.dig{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--s3);margin-top:var(--s5)}
+.dig{display:grid;grid-template-columns:repeat(4,minmax(0,160px));gap:var(--s3);margin-top:var(--s4)} /* a casting set reads as a row of four, not a wall */
+@media (max-width:760px){.dig{grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--s2)}.dig b{font-size:13px}}
 .dig .ph{aspect-ratio:3/4}
 .dig b{display:block;margin-top:var(--s2);font-weight:600;font-size:15px}
 .projs{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:var(--s4);margin-top:var(--s5)}
@@ -291,15 +325,15 @@ dialog.lb .x{position:fixed;top:var(--s5);inset-inline-end:var(--s5)}
   .stabs{top:64px;margin-inline:calc(-1 * var(--s4));padding-inline:var(--s4)}
   .gal{grid-template-columns:repeat(2,minmax(0,1fr))}
   .gal .first{grid-row:auto}
-  .dig{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .dig{grid-template-columns:repeat(4,minmax(0,1fr))}
   .lb-stage{gap:var(--s2)}
   .signin{width:min(300px,calc(100vw - 32px))}
   .acts .btn{padding-inline:var(--s3);white-space:normal;text-align:center}
 }
 
 
-/* ---- app bridge (not in the prototype) ---- */
-/* the featured project has no picture yet: the lavender ground, with its bar */
+/* app overrides (not in the prototype) ------------------------------------------------ */
+/* the featured project has no picture yet: the lavender ground, with its bar (never the stock banner) */
 .ct-cover.noimg{background:var(--lavender,#F3EAF8)}
-/* the @username beside the headline */
-.ct-handle{font-size:15px}
+/* an anchor to the active skill tab lands below the fixed top bar */
+#skillArea{scroll-margin-top:var(--s7)}

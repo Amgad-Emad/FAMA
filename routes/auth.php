@@ -53,7 +53,12 @@ Route::middleware('auth')->group(function () {
     Route::post('confirm-password', [ConfirmablePasswordController::class, 'store']);
 
     Route::put('password', [PasswordController::class, 'update'])->name('password.update');
-
-    Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
-        ->name('logout');
 });
+
+// Logout must run for WHICHEVER guard holds the session. Inside the plain `auth`
+// group it only passed for the default (admin) guard, so a talent's logout was
+// bounced to /login before the controller ran and the session (and its
+// remember-me cookie) survived — clicking the logo signed them straight back in.
+Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
+    ->middleware('auth:talent,brand,admin')
+    ->name('logout');

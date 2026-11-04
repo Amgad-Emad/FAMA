@@ -63,6 +63,10 @@ class SkillsService extends Service
      */
     public function removeType(Talent $talent, TalentType $type): void
     {
+        // Removing a skill drops its specialities — possibly the last one, which
+        // is a Go Live step (ADR-AC). Capture readiness before the write.
+        $wasReady = app(ProfileCompletionService::class)->canGoLive($talent);
+
         $this->runInTransaction(function () use ($talent, $type): void {
             // Preserve project content — drop this skill's tag from the talent's
             // projects (ADR-X) and re-home each one on its first remaining tag.
@@ -104,6 +108,8 @@ class SkillsService extends Service
                 'specialities_detached' => $specialities->count(),
             ]);
         }, ['talent_id' => $talent->id, 'type' => $type->slug]);
+
+        app(ProfileCompletionService::class)->syncAfterWrite($talent, $wasReady);
     }
 
     /**
@@ -199,6 +205,10 @@ class SkillsService extends Service
      */
     public function setSpecialities(Talent $talent, TalentType $type, array $specialityIds): void
     {
+        // A skill with a speciality is a Go Live step (ADR-AC): capture readiness
+        // before the write so clearing the last one takes the profile out of Live.
+        $wasReady = app(ProfileCompletionService::class)->canGoLive($talent);
+
         $this->runInTransaction(function () use ($talent, $type, $specialityIds): void {
             if (! $talent->talentTypes()->whereKey($type->id)->exists()) {
                 throw new InvalidArgumentException("Talent does not work as [{$type->slug}].");
@@ -236,7 +246,7 @@ class SkillsService extends Service
             }
         }, ['talent_id' => $talent->id, 'type' => $type->slug]);
 
-        app(ProfileCompletionService::class)->notifyIfComplete($talent);
+        app(ProfileCompletionService::class)->syncAfterWrite($talent, $wasReady);
     }
 
     /**

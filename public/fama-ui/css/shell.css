@@ -1,3 +1,37 @@
+/* 24 Oct 2026: the shared motion-token scale (transitions.dev, via the transitions-polish skill). Lives in shell.css because every app page loads it (profile-structure does not load ds.css) */
+:root {
+  /* Durations */
+  --duration-stagger: 40ms;  /* per-item stagger offset */
+  --duration-micro: 80ms;  /* tooltip/path delay, shake segment, large stagger */
+  --duration-quick: 150ms;  /* modal/dropdown close, text swap, tooltip appear */
+  --duration-fast: 250ms;  /* icon swap, dropdown/modal open, tabs sliding, page slide */
+  --duration-medium: 350ms;  /* panel close, toast close */
+  --duration-slow: 400ms;  /* panel open, skeleton content reveal, input clear */
+  --duration-very-slow: 500ms;  /* emphasis moments, badge appear, text reveal, success check */
+  /* Easings */
+  --ease-smooth-out: cubic-bezier(0.22, 1, 0.36, 1);  /* modal/dropdown/panel open + close, page slide, resize, position change */
+  --ease-in-out: ease-in-out;  /* icon swap, text swap, text reveal, skeleton reveal */
+  --ease-out: ease-out;  /* tooltip open / close */
+  --ease-linear: linear;  /* shimmer, skeleton pulse, spinner */
+  --ease-bounce: cubic-bezier(0.34, 1.36, 0.64, 1);  /* badge pop open */
+  --ease-bounce-strong: cubic-bezier(0.34, 3.85, 0.64, 1);  /* bouncy hover-out (avatar return) */
+  /* Distances */
+  --distance-micro: 4px;  /* text swap */
+  --distance-small: 6px;  /* error shake (small segment) */
+  --distance-base: 8px;  /* badge diagonal reveal, page slide, error shake (large segment) */
+  --distance-medium: 12px;  /* text reveal */
+  --distance-large: 30px;  /* check badge appear */
+  /* Scales */
+  --scale-large: 0.96;  /* modal open / close */
+  --scale-medium: 0.97;  /* dropdown open */
+  --scale-small: 0.98;  /* tooltip open */
+  --scale-tiny: 0.99;  /* dropdown close */
+  /* Blur */
+  --blur-small: 2px;  /* panel reveal, icon swap, text swap, skeleton reveal, number pop-in */
+  --blur-medium: 3px;  /* page slide, text reveal */
+  --blur-large: 8px;  /* success check open */
+}
+html{overflow-x:clip} /* decorative bleeds never widen the page on a phone */
 /* FAMA — shared header and footer. Loaded on every page, next to that page's own CSS.
    Everything is scoped under .fx-* and carries its own copy of the tokens (tokens.css),
    so it looks the same whatever stylesheet the page underneath still uses. */
@@ -16,6 +50,8 @@
 .fx-nav *,.fx-foot *{box-sizing:border-box}
 .fx-nav a,.fx-foot a{color:inherit;text-decoration:none}
 .fx-nav :focus-visible{outline:2px solid var(--purple);outline-offset:2px;border-radius:var(--s1)}
+.fx-nav .fx-av:focus-visible,.fx-nav .fx-bell:focus-visible,.fx-nav .fx-burger:focus-visible,.fx-nav .fx-preview:focus-visible{outline-color:var(--ink);border-radius:var(--radius-pill)}
+.fx-av[aria-expanded=true]{background:var(--ink);color:var(--cream)}
 .fx-wrap{max-width:calc(var(--content) + 2 * var(--s5));margin-inline:auto;padding-inline:var(--s5)}
 .fx-icon{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;flex:none;display:block}
 [dir=rtl] .fx-flip{transform:scaleX(-1)}
@@ -37,9 +73,14 @@
 .fx-av{width:40px;height:40px;border-radius:var(--radius-pill);background:var(--line);border:0;display:inline-flex;align-items:center;justify-content:center;font:inherit;font-weight:600;font-size:14px;color:var(--ink);cursor:pointer;padding:0}
 .fx-pop{position:absolute;top:calc(100% + var(--s2));inset-inline-end:0;min-width:220px;background:var(--white);border:var(--border);border-radius:var(--radius);padding:var(--s2);margin:0;list-style:none}
 .fx-pop[hidden]{display:none}
-.fx-pop .fx-who{padding:var(--s2) var(--s3) var(--s3);border-bottom:var(--border);margin-bottom:var(--s2)}
-.fx-pop .fx-who b{display:block;font-weight:600}
-.fx-pop .fx-who span{font-size:14px;color:var(--grey)}
+.fx-acct{display:flex;align-items:center;gap:var(--s3);padding:var(--s2) var(--s3) var(--s3)}
+.fx-av-s{width:40px;height:40px;flex:none;cursor:default;background:var(--line)}
+.fx-acct .fx-who{display:flex;flex-direction:column;min-width:0;line-height:1.3}
+.fx-acct .fx-who b{font-weight:600;font-size:15px}
+.fx-acct .fx-who span{font-size:13px;color:var(--grey)}
+.fx-out{color:var(--grey)!important;border-top:var(--border);margin-top:var(--s1)}
+.fx-pop .fx-out{border-radius:0 0 var(--s3) var(--s3)}
+.fx-pop .fx-out:hover,.fx-pop .fx-out:focus-visible{color:var(--ink)!important}
 .fx-pop a{display:block;padding:10px var(--s3);border-radius:var(--s3);font-size:15px}
 .fx-pop a:hover,.fx-pop a:focus-visible{background:var(--cream)}
 /* sign-in pages: the way to the feed */
@@ -53,7 +94,7 @@
 .fx-bellw{position:relative}
 .fx-bell{position:relative;width:40px;height:40px;border-radius:var(--radius-pill);border:var(--border);background:var(--white);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0;color:var(--ink)}
 .fx-bell:hover{border-color:var(--ink)}
-.fx-count{position:absolute;top:-4px;inset-inline-end:-4px;min-width:20px;height:20px;padding:0 5px;border-radius:var(--radius-pill);background:var(--ink);color:var(--cream);font-size:12px;font-weight:600;line-height:20px;text-align:center;border:2px solid var(--cream);box-sizing:content-box}
+.fx-count{position:absolute;top:-3px;inset-inline-end:-3px;min-width:16px;height:16px;padding:0 4px;border-radius:var(--radius-pill);background:var(--ink);color:var(--cream);font-size:11px;font-weight:600;line-height:16px;font-variant-numeric:tabular-nums;text-align:center;border:2px solid var(--cream);box-sizing:content-box}
 .fx-count[hidden]{display:none}
 .fx-npop{position:absolute;top:calc(100% + var(--s2));inset-inline-end:-56px;width:380px;max-width:calc(100vw - 32px);background:var(--white);border:var(--border);border-radius:var(--radius);padding:var(--s2);z-index:50}
 .fx-npop[hidden]{display:none}
@@ -62,7 +103,7 @@
 .fx-nh button{border:0;background:none;color:var(--purple-dk);font:inherit;font-size:14px;font-weight:600;cursor:pointer;padding:var(--s1)}
 .fx-nh button:hover{color:var(--ink)}
 .fx-nlist{list-style:none;margin:0;padding:0;max-height:min(420px,60vh);overflow:auto}
-.fx-n{display:flex;gap:var(--s3);align-items:flex-start;padding:var(--s3);border-radius:var(--s3);font-size:14px;line-height:1.4;color:var(--ink)}
+.fx-n{text-decoration:none;display:flex;gap:var(--s3);align-items:flex-start;padding:var(--s3);border-radius:var(--s3);font-size:14px;line-height:1.4;color:var(--ink)}
 .fx-n:hover,.fx-n:focus-visible{background:var(--cream)}
 .fx-n b{font-weight:600}
 .fx-nic{flex:none;width:36px;height:36px;border-radius:var(--radius-pill);background:var(--line);display:flex;align-items:center;justify-content:center;color:var(--ink)}
@@ -79,7 +120,30 @@
 .fx-burger{display:none;width:40px;height:40px;border-radius:var(--radius-pill);border:var(--border);background:var(--white);align-items:center;justify-content:center;cursor:pointer;padding:0;color:var(--ink)}
 
 /* phone and tablet: the links move into a panel under the bar */
-.fx-drawer{border-top:var(--border);padding-block:var(--s3) var(--s5)}
+.fx-dwrap{position:absolute;left:0;right:0;top:100%;z-index:45}
+.fx-drawer{background:var(--cream);border-top:var(--border);padding-block:var(--s2) var(--s5);box-shadow:0 18px 32px -12px rgba(20,17,15,.22);max-height:calc(100vh - 64px);overflow:auto;overscroll-behavior:contain;
+  animation:fxDrop var(--duration-fast) var(--ease-smooth-out)}
+/* menu panel: opens 250ms from 8px up, closes faster (150ms) and shorter */
+@keyframes fxDrop{from{opacity:0;transform:translateY(calc(-1 * var(--distance-base)))}}
+@keyframes fxLift{to{opacity:0;transform:translateY(calc(-1 * var(--distance-micro)))}}
+.fx-drawer.is-closing{animation:fxLift var(--duration-quick) var(--ease-smooth-out) forwards}
+/* dropdowns (account, notifications): open from 0.97, close to 0.99, origin at their button */
+.fx-pop,.fx-npop{transform-origin:top right;animation:fxPop var(--duration-fast) var(--ease-smooth-out)}
+[dir=rtl] .fx-pop,[dir=rtl] .fx-npop{transform-origin:top left}
+@keyframes fxPop{from{opacity:0;transform:scale(var(--scale-medium))}}
+@keyframes fxPopOut{to{opacity:0;transform:scale(var(--scale-tiny))}}
+.fx-pop.is-closing,.fx-npop.is-closing{animation:fxPopOut var(--duration-quick) var(--ease-smooth-out) forwards}
+/* burger ↔ close: an icon swap, 250ms ease-in-out, from scale .25 and 2px blur */
+.fx-burger svg.is-swap{animation:fxSwap var(--duration-fast) var(--ease-in-out)}
+@keyframes fxSwap{from{opacity:0;transform:scale(.25);filter:blur(var(--blur-small))}}
+.fx-av{transition-property:background-color,color;transition-duration:var(--duration-quick);transition-timing-function:var(--ease-out)}
+.fx-dacc{margin-top:var(--s3);padding-top:var(--s2);display:grid;gap:0}
+.fx-dacc{border-top:var(--border)}
+.fx-dacc .fx-acct{padding-inline:0}
+.fx-drawer .fx-out{padding-top:var(--s3)}
+.fx-drawer .fx-dlink{justify-content:flex-start;gap:var(--s2);border-bottom:0;font-size:16px;min-height:44px;padding-block:var(--s2)}
+.fx-drawer .fx-dlink .fx-icon{width:18px;height:18px}
+@media (prefers-reduced-motion:reduce){.fx-drawer,.fx-drawer.is-closing,.fx-pop,.fx-npop,.fx-pop.is-closing,.fx-npop.is-closing,.fx-burger svg.is-swap{animation:none}.fx-av{transition:none}}
 .fx-drawer[hidden]{display:none}
 .fx-drawer ul{list-style:none;margin:0;padding:0}
 .fx-drawer a{display:flex;justify-content:space-between;align-items:center;padding:var(--s3) 0;font-size:17px;font-weight:500;border-bottom:var(--border)}
@@ -89,13 +153,15 @@
 @media (max-width:1100px){
   .fx-links:not(.fx-keep){display:none}
   .fx-burger{display:inline-flex}
+  .fx-me{display:none} /* the account lives in the menu here, so there is one menu, not two */
 }
 @media (max-width:760px){
   .fx-wrap{padding-inline:var(--s4)}
   .fx-nav .fx-in{min-height:64px;gap:var(--s3)}
   .fx-logo img{height:30px}
   .fx-preview .fx-lbl,.fx-preview .fx-flip{display:none}
-  .fx-preview{padding:var(--s2) var(--s3)}
+  .fx-preview{padding:0;width:44px;height:44px;justify-content:center;border-radius:var(--radius-pill)}
+  .fx-bell,.fx-burger{width:44px;height:44px}
 }
 
 /* footer */
@@ -142,8 +208,8 @@
   .fx-hero .fx-hb{padding:24px}
   .fx-hero h1{font-size:34px}
   .fx-hero .fx-band{height:32px}
-  .fx-hero.fx-photo{padding-top:110px}
-  .fx-star{right:16px;bottom:auto}
+  .fx-hero.fx-photo{padding-top:196px}
+  .fx-star{top:-128px;right:-84px;bottom:auto;margin:0;clip-path:inset(128px 84px 0 0 round 0 20px 0 0)}
   .fx-hero.fx-photo .fx-hb{padding-right:24px;min-height:0}
 }
 
@@ -166,3 +232,178 @@
 .fx-review .fx-roff{opacity:.4}
 .fx-review :focus-visible{outline:2px solid var(--ink);outline-offset:2px}
 @media (max-width:760px){.fx-review .fx-rtag{display:none}}
+
+/* 24 Oct 2026 (make-interfaces-feel-better pass on the header) */
+.fx-links a{transition-property:color,border-color;transition-duration:var(--duration-quick);transition-timing-function:var(--ease-out)}
+.fx-preview .fx-icon{stroke-width:2} /* beside 600-weight text */
+.fx-preview,.fx-bell,.fx-burger,.fx-av{transition-property:transform,background-color,color,border-color;transition-duration:var(--duration-quick);transition-timing-function:var(--ease-out)}
+.fx-preview:active,.fx-bell:active,.fx-burger:active,.fx-av:active{transform:scale(.96)}
+@media (prefers-reduced-motion:reduce){.fx-links a,.fx-preview,.fx-bell,.fx-burger,.fx-av{transition:none}.fx-preview:active,.fx-bell:active,.fx-burger:active,.fx-av:active{transform:none}}
+
+/* nav, 30 Oct 2026 */
+.fx-links a[aria-current]{font-weight:600}
+.fx-nav{transition:box-shadow var(--duration-quick,150ms) ease-out}
+.fx-nav.fx-lifted{box-shadow:0 6px 18px -10px rgba(20,17,15,.28)}
+.fx-count{top:-3px;inset-inline-end:-3px;min-width:16px;height:16px;padding:0 4px;font-size:10px;line-height:16px;border:0;box-sizing:border-box;box-shadow:0 0 0 2px var(--cream)} /* 1 Nov 2026: no border, so the digit is never cut off at the bottom */
+.fx-acct-link{display:block;color:inherit;text-decoration:none;border-radius:var(--s2)}
+.fx-acct-link:hover{background:var(--lavender,#F3EAF8)}
+.fx-acct-go{display:block;margin-top:var(--s2);font-size:13px;font-weight:600;color:var(--purple-dk)}
+.fx-nav .fx-join{display:inline-flex;align-items:center;min-height:40px;padding:0 var(--s4);border-radius:var(--radius);background:var(--ink);color:var(--cream);font-weight:600;font-size:15px;text-decoration:none;margin-inline-start:var(--s2)}
+.fx-nav .fx-join:hover{background:#000}
+@media (max-width:760px){.fx-join{min-height:44px}}
+
+/* 30 Oct 2026: side bar on wide screens, after Contra and Upwork. No top bar: the bar holds the account,
+   New project and the links in three groups, and the page sits in a rounded panel beside it.
+   Open (240px) it reads like Contra; folded (80px, the default) like Upwork, an icon over a short name. */
+.fx-side{display:none}
+.fx-sl{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fx-drawer a .fx-icon{display:none}
+@media (min-width:1101px){
+  /* App shell (31 Oct 2026). The page is a panel beside the bar, inset from the screen by one gap (--fx-gap, 8px)
+     on the top, right and bottom, with all four corners rounded. Inside it, the content keeps one even margin
+     (--fx-gut, 48px) from the panel's left, right and top edges, up to 1440px wide, then centres. */
+  html.fx-has-side{--fx-side:240px;--fx-rail:#F2F0E7;--content:1440px;--fx-gap:8px;--fx-gut:clamp(32px,3.3vw,48px);--fx-top:0px}
+  /* 1 Nov 2026: 13-inch laptops (1280–1440px) get a slightly tighter margin (42–48px); still the same on every side */
+  html.fx-has-side.fx-folded{--fx-side:80px}
+  html.fx-has-side body{padding-inline:var(--fx-side) var(--fx-gap);padding-top:var(--fx-top);padding-bottom:var(--fx-gap);background:var(--cream,#FBFAF2);overflow-x:clip}
+  html.fx-has-side .wrap{max-width:calc(var(--content) + 2 * var(--fx-gut));padding-inline:var(--fx-gut)}
+  html.fx-has-side .fx-hero-wrap{padding-inline:var(--fx-gut)}
+  html.fx-has-side .fx-hero{max-width:var(--content)} /* the banner is as wide as the page under it */
+  /* the panel's frame: the bar's colour all round it, so the page scrolls in and out under a rounded edge */
+  html.fx-has-side body::after{content:"";position:fixed;z-index:39;pointer-events:none;
+    inset-block:calc(var(--fx-top) + var(--fx-gap)) var(--fx-gap);inset-inline:var(--fx-side) var(--fx-gap);
+    border:1px solid #E6E2D8;border-radius:16px;box-shadow:0 0 0 64px var(--fx-rail)}
+  html.fx-side-anim body{transition:padding-inline-start var(--duration-fast,250ms) var(--ease-smooth-out,cubic-bezier(.22,1,.36,1))}
+  html.fx-side-anim body::after{transition:inset-inline-start var(--duration-fast,250ms) var(--ease-smooth-out,cubic-bezier(.22,1,.36,1))}
+  /* the top bar is gone here; the header stays (empty) so the profile tracker still floats from the panel's top */
+  html.fx-has-side .fx-nav{background:none;border:0;top:calc(var(--fx-top) + var(--fx-gap))}
+  html.fx-has-side .fx-nav > .fx-in,html.fx-has-side .fx-nav .fx-dwrap{display:none}
+  html.fx-has-side .fx-nav .fx-notice.gt-float{margin-inline:1px;border-radius:16px 16px 0 0}
+  /* the first block of the page: one gutter below the panel's top edge */
+  html.fx-has-side .fx-nav + main,html.fx-has-side .fx-nav + .pv-strip + main,html.fx-has-side .fx-nav + .fx-hero-wrap > .fx-hero{margin-top:calc(var(--fx-gap) + var(--fx-gut))}
+  /* the last block: one gutter above the panel's bottom edge */
+  html.fx-has-side .fx-foot{margin-top:calc(var(--fx-gut) * 2)}
+  html.fx-has-side .fx-foot .fx-in{padding-bottom:var(--fx-gut)}
+  html.fx-has-side .fx-foot{--content:1440px} /* the footer sets its own width; match the page */
+  html.fx-has-side .fx-foot .fx-wrap{max-width:calc(var(--content) + 2 * var(--fx-gut));padding-inline:var(--fx-gut)}
+  html.fx-has-side .savebar{inset-inline:var(--fx-side) var(--fx-gap);bottom:calc(var(--fx-gap) + var(--s5,24px))}
+  /* Preview's "This is how everyone sees your profile": an alert bar across the very top of the site, above the bar
+     and the panel, outside the page's own layout. Everything else moves down by its height (--fx-top). */
+  html.fx-has-side:has(.pv-strip:not([hidden])){--fx-top:44px}
+  html.fx-has-side .pv-strip{position:fixed;z-index:42;inset-block-start:0;inset-inline:0;height:var(--fx-top);margin:0}
+  html.fx-has-side .pv-strip .wrap{max-width:none;height:100%;min-height:0;padding-block:0;padding-inline:20px}
+  html.fx-has-side .fx-side{inset-block-start:var(--fx-top)}
+  .fx-side{
+    --cream:#FBFAF2; --white:#FFFFFF; --ink:#14110F; --grey:#6B6560; --line:#E6E2D8; --purple:#AD50D3; --purple-dk:#8A2FA8; --lavender:#F3EAF8;
+    display:flex;flex-direction:column;gap:6px;position:fixed;z-index:41;inset-block:0;inset-inline-start:0;width:var(--fx-side);
+    background:var(--fx-rail);padding:14px 14px 20px;overflow-x:hidden;overflow-y:auto;scrollbar-width:none;
+    font-family:"Sofia Sans",sans-serif;font-size:15px;line-height:1.3;color:var(--ink);-webkit-font-smoothing:antialiased}
+  html.fx-side-anim .fx-side{transition:width var(--duration-fast,250ms) var(--ease-smooth-out,cubic-bezier(.22,1,.36,1))}
+  .fx-side *{box-sizing:border-box}
+  .fx-side a{color:inherit;text-decoration:none}
+  .fx-side :focus-visible{outline:2px solid var(--purple);outline-offset:2px}
+  .fx-side .fx-icon{width:20px;height:20px}
+  /* head: logo and the fold button */
+  .fx-shead{position:relative;display:flex;align-items:center;justify-content:space-between;height:44px;padding-inline-start:8px;margin-bottom:8px}
+  .fx-slogo img{display:block;height:32px;width:auto;max-width:none}
+  .fx-fold{width:36px;height:36px;border:0;border-radius:10px;background:none;color:var(--grey);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0;
+    transition:background-color var(--duration-quick,150ms) ease-out,color var(--duration-quick,150ms) ease-out}
+  .fx-fold:hover{background:var(--white);color:var(--ink)}
+  /* account */
+  .fx-sme{display:flex;align-items:center;gap:10px;width:100%;min-height:48px;padding:4px 8px;border:0;border-radius:12px;background:none;font:inherit;font-weight:600;color:var(--ink);cursor:pointer;text-align:start;
+    transition:background-color var(--duration-quick,150ms) ease-out}
+  .fx-sme:hover,.fx-sme[aria-expanded=true]{background:var(--white)}
+  .fx-sme .fx-av{width:36px;height:36px;font-size:13px}
+  .fx-sme .fx-chev{width:16px;height:16px;color:var(--grey);flex:none}
+  /* New project */
+  .fx-snew{display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;margin:4px 0 10px;border-radius:999px;background:var(--ink);color:var(--cream)!important;font-weight:600;
+    transition:transform var(--duration-quick,150ms) ease-out,background-color var(--duration-quick,150ms) ease-out}
+  .fx-snew{width:100%;border:0;font:inherit;font-weight:600;cursor:pointer}
+  .fx-snew:hover,.fx-snew[aria-expanded=true]{background:#000}
+  .fx-snew:active{transform:scale(.97)}
+  /* links */
+  .fx-snav{display:grid;gap:2px}
+  .fx-slinks{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+  .fx-slinks a{display:flex;align-items:center;gap:12px;min-height:44px;padding:0 10px;border:1px solid transparent;border-radius:12px;font-weight:500;color:var(--ink);
+    transition:background-color var(--duration-quick,150ms) ease-out,border-color var(--duration-quick,150ms) ease-out}
+  .fx-slinks a .fx-icon{color:var(--grey)}
+  .fx-slinks a:hover{background:rgba(20,17,15,.05)}
+  .fx-slinks a[aria-current]{background:var(--lavender);font-weight:600} /* 1 Nov 2026: a tinted row in the list, not a card that stands apart */
+  .fx-slinks a[aria-current] .fx-icon{color:var(--purple-dk)}
+  .fx-si{position:relative;display:inline-flex;flex:none}
+  .fx-si .fx-count{top:-6px;inset-inline-end:-9px;box-shadow:0 0 0 2px var(--fx-rail)}
+  .fx-sgroup{display:flex;align-items:center;gap:10px;margin:16px 0 4px;padding-inline:10px;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--grey);white-space:nowrap}
+  .fx-sgroup::after{content:"";flex:1;height:1px;background:var(--line)}
+  /* account menu, beside the bar */
+  .fx-spop{position:fixed;z-index:60;inset-inline-start:calc(var(--fx-side) - 6px);width:280px;padding:8px;background:var(--white);border:1px solid var(--line);border-radius:20px;
+    box-shadow:0 18px 40px -12px rgba(20,17,15,.22);transform-origin:top left;animation:fxPop var(--duration-fast,250ms) var(--ease-smooth-out,cubic-bezier(.22,1,.36,1))}
+  .fx-spop[hidden]{display:none}
+  .fx-spop.is-closing{animation:fxPopOut var(--duration-quick,150ms) var(--ease-smooth-out,cubic-bezier(.22,1,.36,1)) forwards}
+  .fx-spop-h{border-bottom:1px solid var(--line);margin-bottom:6px}
+  .fx-spop a{display:flex;align-items:center;gap:12px;min-height:44px;padding:0 12px;border-radius:12px;font-size:15px}
+  .fx-spop a .fx-icon{color:var(--grey)}
+  .fx-spop a:hover,.fx-spop a:focus-visible{background:var(--cream)}
+  .fx-newpop{width:300px}
+  .fx-newpop a{min-height:56px;padding:8px 12px;align-items:center}
+  .fx-newpop a span{display:grid;gap:1px;line-height:1.3}
+  .fx-newpop a b{font-weight:600;font-size:15px}
+  .fx-newpop a small{font-size:13px;color:var(--grey)}
+  .fx-spop .fx-sout{border-top:1px solid var(--line);border-radius:0 0 12px 12px;margin-top:6px;color:var(--grey)}
+
+  /* notifications beside the bar (hover) */
+  .fx-snpop{position:fixed;z-index:60;top:0;inset-inline-start:calc(var(--fx-side) + 4px);width:380px;box-shadow:0 18px 40px -12px rgba(20,17,15,.22);transform-origin:top left;
+    --cream:#FBFAF2; --white:#FFFFFF; --ink:#14110F; --grey:#6B6560; --line:#E6E2D8; --purple:#AD50D3; --purple-dk:#8A2FA8;
+    --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --radius:20px; --radius-pill:999px; --border:1px solid var(--line);
+    font-family:"Sofia Sans",sans-serif;line-height:1.5;color:var(--ink);-webkit-font-smoothing:antialiased}
+  .fx-snpop a{text-decoration:none;color:inherit}
+  .fx-snpop .fx-nmore{color:var(--purple-dk)}
+  /* folded: Upwork's rail, an icon over a short name; group names become thin rules */
+  html.fx-folded .fx-side{padding-inline:6px}
+  html.fx-folded .fx-shead{justify-content:center;padding:0}
+  .fx-smark{display:none!important}
+  html.fx-folded .fx-sfull{display:none}
+  html.fx-folded .fx-smark{display:block!important;height:40px}
+  html.fx-folded .fx-fold{position:absolute;inset:0;margin:auto;width:44px;height:44px;background:var(--white);opacity:0}
+  html.fx-folded .fx-shead:hover .fx-fold,html.fx-folded .fx-fold:focus-visible{opacity:1}
+  html.fx-folded .fx-fold .fx-icon{transform:scaleX(-1)}
+  html.fx-folded .fx-sme{justify-content:center;padding:4px 0}
+  html.fx-folded .fx-sme .fx-av{width:44px;height:44px;font-size:15px} /* the same size as New project under it */
+  html.fx-folded .fx-sme .fx-sl,html.fx-folded .fx-sme .fx-chev,html.fx-folded .fx-snew .fx-sl{display:none}
+  html.fx-folded .fx-snew{width:44px;margin-inline:auto}
+  html.fx-folded .fx-slinks a{flex-direction:column;justify-content:center;gap:4px;min-height:60px;padding:6px 0;font-size:11px;letter-spacing:-.01em;text-align:center}
+  html.fx-folded .fx-slinks .fx-sl{max-width:100%}
+  html.fx-folded .fx-sgroup{font-size:0;margin:8px 10px;padding:0;gap:0}
+  /* tooltip for the fold button */
+  .fx-fold::after{content:attr(data-tip);position:absolute;top:calc(100% + 6px);inset-inline-start:0;padding:6px 10px;border-radius:8px;background:var(--ink);color:var(--cream);font-size:13px;white-space:nowrap;pointer-events:none;opacity:0;
+    transition:opacity var(--duration-quick,150ms) ease-out}
+  .fx-fold:hover::after{opacity:1;transition-delay:var(--duration-micro,80ms)}
+  html.fx-folded .fx-side{overflow:visible}
+}
+@media (prefers-reduced-motion:reduce){.fx-side,.fx-spop,html.fx-has-side body,html.fx-has-side body::after{transition:none!important;animation:none!important}}
+@media (max-width:1100px){
+  .fx-drawer a .fx-icon{display:block;width:20px;height:20px;color:var(--grey)}
+  .fx-drawer ul a{justify-content:flex-start;gap:var(--s3)}
+  .fx-drawer ul a[aria-current]::after{margin-inline-start:auto}
+  .fx-drawer ul a[aria-current] .fx-icon{color:var(--purple-dk)}
+}
+
+/* 31 Oct 2026: phone pass. Every control a thumb uses gets at least a 44px target (Apple HIG / WCAG 2.5.5).
+   Where the drawing has to stay small (switches, the look's numbered dots, small icon buttons), an invisible
+   ::before grows the target instead of the drawing. `html` in front outranks the copies of ds.css inlined in pages. */
+@media (max-width:760px){
+  html .btn{min-height:44px}
+  html .chip,html .seg button{min-height:40px}
+  html .pw button{min-height:44px}
+  html .csend{width:44px;height:44px}
+  html .c .acts button{min-height:44px}
+  html .fx-browse{min-height:44px}
+  html .fx-logo{display:flex;align-items:center;min-height:44px}
+  html .pc .foot .btn{min-height:44px}
+  html .moreR{min-height:44px}
+  html .row2 .link{display:inline-flex;align-items:center;min-height:44px}
+  html .switch,html .tipbtn,html .iconbtn{position:relative}
+  html .switch::before,html .tipbtn::before,html button.dot::before,html .iconbtn::before{
+    content:"";position:absolute;inset:50% auto auto 50%;width:44px;height:44px;transform:translate(-50%,-50%)}
+  html .switch::before{width:56px}
+  html .fx-digi figcaption{font-size:12px}
+}

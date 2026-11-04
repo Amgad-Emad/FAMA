@@ -9,6 +9,12 @@
 > `public/fama-ui/css/pages/`; behaviour in `resources/js/ui/`. WATCH OUT: ds.css has
 > `[hidden]{display:none!important}` — never pair `hidden` with `x-show` (use `x-cloak`). The two systems
 > below now cover only brand/admin/contract surfaces (core) and legacy feed tokens (Daylight).
+>
+> **2026-11-04 — synced to the 1 Nov prototype (ADR-AD).** shell.css adds the motion-token scale (`--duration-*`,
+> `--ease-*`, `--distance-*`) and the talent **side bar** (`html.fx-has-side`, `.fx-side`, folded `html.fx-folded`,
+> panel inset `--fx-gap` 8px, gutter `--fx-gut` 32–48px, content 1440). Anything absolutely/fixed positioned on a
+> talent page must respect `--fx-side`. New shared sheets: `project-page.css`, `project-editor.css`; phones get
+> ≥44px targets (shell.css 31 Oct pass).
 
 Fama runs **two token systems**, both keyed on the same `data-theme` (light/dark) and `dir`
 (LTR/RTL) switches:

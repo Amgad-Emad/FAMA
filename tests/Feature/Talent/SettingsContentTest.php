@@ -27,7 +27,7 @@ it('retires the generic projects content editor — the type 404s and the page r
 });
 
 it('publishes and unpublishes from the profile editor', function () {
-    $talent = Talent::factory()->draft()->create(['display_name' => 'Pub']);
+    $talent = Talent::factory()->draft()->goLiveReady()->create(['display_name' => 'Pub']);
 
     $this->actingAs($talent, 'talent')->patchJson(route('talent.profile.publish'), ['publish' => true])
         ->assertOk()->assertJsonPath('data.is_published', true);
@@ -37,7 +37,7 @@ it('publishes and unpublishes from the profile editor', function () {
     expect($talent->fresh()->is_published)->toBeFalse();
 });
 
-it('refuses to publish a profile with no display name (422)', function () {
+it('refuses to publish a profile that has not done the Go Live steps (422)', function () {
     $talent = Talent::factory()->draft()->create(['display_name' => null]);
 
     $this->actingAs($talent, 'talent')->patchJson(route('talent.profile.publish'), ['publish' => true])

@@ -95,7 +95,7 @@ class ModerationController extends AdminController
             'country' => $t->base_country,
             'email' => $t->email,
             'avatar_url' => $t->avatar_url,
-            // All six profile steps done (ProfileCompletionService) — flags "ready for review".
+            // Go Live steps done and gone Live (ProfileCompletionService, ADR-AC) — flags "ready for a check".
             'steps_completed' => $t->steps_completed_at !== null,
             'joined' => $t->created_at?->diffForHumans(),
         ]));

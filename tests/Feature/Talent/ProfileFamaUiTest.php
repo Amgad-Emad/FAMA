@@ -80,35 +80,52 @@ it('shows an empty section to the owner only', function () {
     $this->actingAs($talent, 'talent')->get('/'.$talent->slug)->assertOk()->assertSee(__('Nothing here yet.'));
 });
 
-it('reports the completion steps from real data', function () {
-    $talent = Talent::factory()->create(['display_name' => 'Nour', 'base_city' => 'Cairo', 'base_country' => null, 'bio' => ['en' => '']]);
+it('reports the Go Live and Stand out steps from real data (ADR-AC)', function () {
+    $talent = Talent::factory()->create(['display_name' => 'Nour', 'base_city' => '', 'headline' => ['en' => ''], 'bio' => ['en' => '']]);
     $service = app(ProfileCompletionService::class);
 
-    expect($service->steps($talent))->toBe([
-        'photo' => false, 'name' => true, 'place' => false, 'bio' => false, 'skill' => false, 'project' => false,
-    ]);
+    expect($service->goLiveSteps($talent))->toBe(['name' => true, 'skill' => false, 'place' => false])
+        ->and($service->standOutSteps($talent))->toBe([
+            'show' => false, 'projects3' => false, 'headline' => false, 'photo' => false,
+            'brands' => false, 'links' => false, 'bio' => false,
+        ])
+        ->and($service->canGoLive($talent))->toBeFalse();
 
     $type = TalentType::where('slug', 'photography')->firstOrFail();
     $talent->talentTypes()->attach($type->id, ['is_primary' => true, 'position' => 0]);
     $speciality = Speciality::factory()->create(['talent_type_id' => $type->id]);
     $talent->specialities()->attach($speciality->id);
-    $talent->update(['base_country' => 'Egypt', 'bio' => ['en' => 'Ten years in fashion.']]);
+    $talent->update(['base_city' => 'Cairo', 'bio' => ['en' => 'Ten years in fashion.'], 'headline' => ['en' => 'Photographer']]);
     Project::factory()->for($talent)->create(['talent_type_id' => $type->id]);
 
-    expect($service->steps($talent->fresh()))->toMatchArray([
-        'place' => true, 'bio' => true, 'skill' => true, 'project' => true,
-    ]);
+    $fresh = $talent->fresh();
+    expect($service->canGoLive($fresh))->toBeTrue()
+        ->and($service->standOutSteps($fresh))->toMatchArray(['show' => true, 'projects3' => false, 'headline' => true, 'bio' => true])
+        ->and($service->isProfileDone($fresh))->toBeFalse();
 });
 
-it('shows the steps to go Live (with the verification step) on Profile structure while Private', function () {
-    $talent = Talent::factory()->create(['is_published' => false, 'is_verified' => false]);
+it('shows the two-part path (no verification step) on Profile structure while Private', function () {
+    $talent = Talent::factory()->draft()->create(['is_verified' => false]);
 
     $this->actingAs($talent, 'talent')->get(route('talent.profile.edit'))
         ->assertOk()
         ->assertSee('id="gate"', false)
         ->assertSee(__('Creatives Index'))
-        ->assertSee(__('Checked by Fama'))
-        ->assertSee(__('Go Live'));
+        ->assertSee(e(__('Something to show')), false)
+        ->assertDontSee(__('Checked by Fama'));
+});
+
+it('serves the saved profile path as JSON for the editor', function () {
+    $talent = Talent::factory()->draft()->goLiveReady()->create();
+    app(App\Actions\Talent\SyncGoLiveState::class)($talent);
+
+    $this->actingAs($talent, 'talent')->getJson(route('talent.profile.state'))
+        ->assertOk()
+        ->assertJsonPath('data.can_go_live', true)
+        ->assertJsonPath('data.is_published', true)
+        ->assertJsonPath('data.listed', false)
+        ->assertJsonPath('data.profile_done', false)
+        ->assertJsonPath('data.steps.skill', true);
 });
 
 it('redirects the old dashboard after login straight on to Profile structure', function () {
@@ -174,8 +191,7 @@ it('shows no profile link on Profile structure while Private, and the link while
         ->toContain('<template x-if="isPublished">');
 
     $this->actingAs($live, 'talent')->get(route('talent.profile.edit'))->assertOk()
-        ->assertSee('x-text="linkLabel"', false)
-        ->assertSee(__('Make private'));
+        ->assertSee('x-text="linkLabel"', false);
 });
 
 it('offers no share button on the owner preview of a private profile', function () {

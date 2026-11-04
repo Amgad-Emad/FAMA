@@ -38,3 +38,14 @@ test('users can logout', function () {
     $this->assertGuest();
     $response->assertRedirect('/');
 });
+
+test('a talent can log out — the route is not gated on the default (admin) guard', function () {
+    $talent = \App\Models\Talent::factory()->create();
+
+    $response = $this->actingAs($talent, 'talent')->post('/logout');
+
+    // Before the fix the plain `auth` middleware bounced this to /login without
+    // running the controller, so the talent stayed signed in.
+    $response->assertRedirect('/');
+    $this->assertGuest('talent');
+});

@@ -30,16 +30,23 @@ class TalentProfileService extends Service
      */
     public function updateCore(Talent $talent, array $data): Talent
     {
-        return $this->runInTransaction(function () use ($talent, $data): Talent {
+        // Name and city are Go Live steps: capture readiness BEFORE the write so
+        // a save that empties one takes the profile out of Live (ADR-AC).
+        $wasReady = $this->completion()->canGoLive($talent);
+
+        $talent = $this->runInTransaction(function () use ($talent, $data): Talent {
             $talent->fill(Arr::only($data, [
                 'display_name', 'headline', 'bio', 'worldview', 'slug',
                 'base_city', 'base_country',
             ]));
             $talent->save();
-            $this->completion()->notifyIfComplete($talent);
 
             return $talent;
         }, ['talent_id' => $talent->id]);
+
+        $this->completion()->syncAfterWrite($talent, $wasReady);
+
+        return $talent;
     }
 
     /**
@@ -99,12 +106,6 @@ class TalentProfileService extends Service
         }, ['talent_id' => $talent->id], channel: 'media');
     }
 
-    /**
-     * Publish the profile (Draft/Unpublished → Live; guarded by ToLive).
-     *
-     * A profile cannot go public until an admin has verified it. The pre-check
-     * gives the talent a clear message; the ToLive guard is the hard backstop.
-     */
     /**
      * The NOW strip (ADR-Z): the two time-sensitive toggles.
      *
@@ -176,19 +177,32 @@ class TalentProfileService extends Service
         }, ['talent_id' => $talent->id, 'count' => count($handles)]);
     }
 
+    /**
+     * Publish the profile by hand (Draft/Unpublished → Live; guarded by ToLive).
+     *
+     * Since ADR-AC a profile goes Live by itself once its Go Live steps are
+     * saved; this stays for a profile HELD private (Unpublished — e.g. after an
+     * admin Unpublish or a reinstatement), which the automatic sync never undoes.
+     * Admin verification is no longer required. The pre-check gives the talent a
+     * clear message; the ToLive guard (display name) is the hard backstop.
+     */
     public function publish(Talent $talent): Talent
     {
-        if (! $talent->is_verified) {
+        if (! $this->completion()->canGoLive($talent)) {
             throw new \InvalidArgumentException(
-                __('Your profile is awaiting verification by our team. You can publish once it is approved.')
+                __('Finish the Go Live steps first: a display name, a skill with a speciality, and your city.')
             );
         }
 
-        return $this->runInTransaction(function () use ($talent): Talent {
+        $talent = $this->runInTransaction(function () use ($talent): Talent {
             $talent->status->transitionTo(Live::class);
 
             return $talent->refresh();
         }, ['talent_id' => $talent->id]);
+
+        $this->completion()->notifyIfComplete($talent);
+
+        return $talent;
     }
 
     /**
@@ -261,7 +275,7 @@ class TalentProfileService extends Service
         }, $context);
     }
 
-    /** The profile-steps checker (sends the "steps done" email once). */
+    /** The profile path (Go Live / Stand out) — syncs Live and sends the "you're Live" e-mail once. */
     private function completion(): ProfileCompletionService
     {
         return app(ProfileCompletionService::class);

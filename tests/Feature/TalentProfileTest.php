@@ -21,7 +21,7 @@ it('shows a published talent profile by slug', function () {
         ->assertSee('Jane Doe');
 });
 
-it('renders the Instagram-style header (avatar, @username, primary skill, stats, CTAs)', function () {
+it('renders the profile hero (avatar, name, first skill, stats, CTAs)', function () {
     $talent = Talent::factory()->create([
         'slug' => 'nadia',
         'display_name' => 'Nadia K',
@@ -37,12 +37,12 @@ it('renders the Instagram-style header (avatar, @username, primary skill, stats,
     $this->get('/nadia')
         ->assertOk()
         ->assertSee('Nadia K')                 // display name
-        ->assertSee('@nadia')                  // @username (slug)
         ->assertSee('NK')                      // circular avatar initials fallback (no cover image)
         ->assertSee('Photography')             // primary skill secondary line
-        ->assertSee('Projects')                // stat labels (fama-ui: Projects · Recognitions · Skills)
+        ->assertSee('Projects')                // stat labels (fama-ui: Projects · Brands · Recognitions)
+        ->assertSee(__('Brands'))
         ->assertSee(__('Recognitions'))
-        ->assertSee(__('Skills'))
+        ->assertSee(__('Skills'))              // the skill chips' list label
         ->assertSee('Editorial photographer.') // bio
         ->assertSee(__('Message'))             // primary CTA (replaces "Contact" — ADR-P)
         ->assertDontSee(__('Contact'))

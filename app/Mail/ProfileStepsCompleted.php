@@ -10,10 +10,10 @@ use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
 /**
- * Sent once, the first time a talent finishes the six profile steps while Fama
- * has not checked them yet: "you're done — our team checks it next".
- * Triggered by ProfileCompletionService::notifyIfComplete(). Queued after
- * commit, sent as the 'system' sender profile.
+ * Sent once, the first time a talent's Go Live steps are done and the profile
+ * goes Live (ADR-AC — no review step): "you're Live, your link works; next,
+ * something to show". Triggered by ProfileCompletionService::notifyIfComplete().
+ * Queued after commit, sent as the 'system' sender profile.
  */
 class ProfileStepsCompleted extends Mailable implements ShouldQueue
 {
@@ -27,7 +27,7 @@ class ProfileStepsCompleted extends Mailable implements ShouldQueue
     /** Subject + the 'system' sender profile (config/mail.php). */
     public function envelope(): Envelope
     {
-        return MailSender::envelope(__('Your profile is complete — we’re checking it now'), 'system');
+        return MailSender::envelope(__('You’re Live on Fama'), 'system');
     }
 
     /** The branded view. */

@@ -3,7 +3,8 @@
      replies + "View more replies"; replies go one level deep and start with
      the person's @username; comments can be liked; authors edit for 15
      minutes (a countdown shows) and delete any time; a deleted comment with
-     replies stays as "Comment deleted"; a failed send shows Retry.
+     replies stays as "Comment deleted"; a failed send shows Retry. Visitors
+     read the thread without a comment box.
      Behaviour = postFrame (card) + commentThread (thread). --}}
 @php
     $authorName = $post->author?->feedDisplayName() ?? 'Fama';
@@ -46,9 +47,13 @@
         <section class="thread" id="comments" aria-label="{{ trans_choice(':count comment|:count comments', $post->comments_count, ['count' => $post->comments_count]) }}"
                  x-data="commentThread({ postId: {{ $post->id }}, count: {{ (int) $post->comments_count }}, isGuest: @js($isGuest) })">
             <h2 class="thread-h">{{ __('Comments') }}<span x-text="count.toLocaleString()">{{ number_format($post->comments_count) }}</span></h2>
-            <ul class="cm" style="margin-top:0">
-                @include('feed.partials.comment-composer', ['parent' => null])
-            </ul>
+            {{-- A visitor gets no comment box (prototype: GUEST ? "" : composer); Reply / Like on a
+                 comment opens the sign-in dialog instead. --}}
+            @unless ($isGuest)
+                <ul class="cm" style="margin-top:0">
+                    @include('feed.partials.comment-composer', ['parent' => null])
+                </ul>
+            @endunless
             <ul class="cm">
                 <template x-for="c in comments" :key="c.id">
                     @include('feed.partials.comment-row', ['v' => 'c'])

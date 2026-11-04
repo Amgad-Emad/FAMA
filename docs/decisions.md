@@ -332,7 +332,7 @@
     (`talent.verified` / `brand.verified`).
   - Already-public rows are **grandfathered** (backfill `is_verified=true` for live talents / published
     brands) so the gate only bites future transitions.
-- **Status:** Accepted (2026-08-02).
+- **Status:** Accepted (2026-08-02). **Talent half superseded by ADR-AC (2026-11-04)** — brands unchanged.
 - **Consequences:** A newly-registered account is `unverified` and cannot publish until a moderator acts —
   the `created/draft` (talents) and `is_verified=false` (brands) moderation queues are now a real approval
   funnel, not a passive count. Factory defaults for the published/live states are `is_verified=true` (with
@@ -613,3 +613,71 @@
 - **Consequences:** Daylight (`daylight.css`) no longer styles the feed (kept for the contrast gate and any
   remaining surface). Brand/admin/contract surfaces stay on the Tailwind system until they get a design.
   Arabic is paused in the prototype — new copy is English-only via `__()`.
+
+## ADR-AC — Going Live is three saved steps; admin verification no longer gates talents
+- **Date:** 2026-11-04 — per the co-founder prototype (`profile.js` FAMA_INDEX_REQ / FAMA_INDEX_REC /
+  FAMA_PROFILE_DONE), stakeholder-confirmed. **Supersedes ADR-U's talent gate** (brands keep ADR-U).
+- **Context:** The prototype's profile path has no review step: "nobody needs to approve any of it". ADR-U
+  made `is_verified` a hard prerequisite for a talent going Live, so a finished profile sat Private waiting
+  for a moderator.
+- **Decision:** `App\Services\ProfileCompletionService` is THE home of the path.
+  - **Go Live** = display name · a skill AND a speciality · a city (`goLiveSteps()` / `canGoLive()`). A
+    profile goes Live **by itself** when these are saved — `App\Actions\Talent\SyncGoLiveState`, called via
+    `syncAfterWrite()` from `TalentProfileService::updateCore` and `SkillsService::setSpecialities/removeType`.
+    Created/Draft → Live when ready; Live → Draft when a save breaks a step (edge-triggered: `$wasReady`
+    captured before the write, so profiles Live before this rule are grandfathered). **Unpublished and
+    Suspended are deliberate holds and are never undone by a save**; an Unpublished talent goes Live by hand
+    (`PATCH /talent/profile/publish`, pre-checked with `canGoLive()` → 422).
+  - `ToLive` keeps only the display-name backstop — so an admin's Publish stays an override.
+  - **Stand out** (advisory, never gates) = show (a project, three gallery photos or a showreel) · three
+    projects · headline · photo · experience (brand collabs) · links (any social handle) · bio. `show` lists a
+    Live profile in the **Creatives Index** (`isListed()`). **Profile done** (`isProfileDone()`) = all ten.
+  - **Landing:** a talent's login and the site root go to the Feed when the profile is done, else Profile
+    structure (`homeRoute()`); registration still lands on Profile structure.
+  - `is_verified` + the admin **Verify** action are kept as a non-gating "checked by Fama" badge (no data
+    dropped); the admin Publish button no longer waits for it on talents.
+  - The one-time e-mail (`ProfileStepsCompleted`, guarded by `steps_completed_at`) now says "You're Live" and
+    fires the first time the Go Live steps are done AND the profile is Live.
+  - Migration `2026_11_04_000100` stamps `steps_completed_at` on every already-Live talent (no surprise
+    e-mails) and publishes Draft/Created talents whose Go Live steps were already saved.
+- **Consequences:** The `created/draft` + unverified moderation queues are a "worth a look" list, not an
+  approval funnel. Discovery (`TalentSearch`) still lists every published talent; restricting it to
+  `isListed()` is a one-line follow-up for when `features.discover` is switched on. The editor's steps follow
+  SAVED data only (`GET /talent/profile/state`), and the save bar warns before a save that would take the
+  profile out of Live.
+- **Open:** the prototype shows a Private profile's link locked; the app keeps the ADR-AB "no link while
+  Private" rule until stakeholders say otherwise.
+
+## ADR-AD — Synced to the prototype as of 1 Nov 2026 (shell side bar, project page edited in place, year tag)
+- **Status:** Accepted (2026-11-04, co-founder prototype at fama-ui.vercel.app; stakeholder asked for an identical UI).
+- **Context:** The prototype moved on after ADR-AB (12 Oct): 49 dated changes on 24 Oct, 25 on 30 Oct–1 Nov. The
+  co-founder dates every change in a source comment, which is the changelog we sync from.
+- **Decision:**
+  - **Shell (30 Oct–1 Nov):** a signed-in talent gets a **side bar** on screens ≥1101px — no top bar; the page is a
+    rounded panel inset by `--fx-gap`. Folded to an icon rail by default; an opened bar is remembered per browser
+    (`localStorage['fama-side-folded']`, html classes set before paint in `<x-fama.layout>`). Account menu, a
+    **Create** menu (New project → `talent.projects.new`, New post → `/feed?new=post`, which opens the composer;
+    `?new=photo` focuses the media drop), Feed · Notifications (hover popover after 120ms) · Activity, *Your work*
+    (Projects · Credits), *Your profile* (Edit profile · View profile). ≤1100px keeps the top bar, links ordered by
+    use: Feed · Projects · Edit profile · Credits · Activity; the phone menu opens over the page and carries the
+    account. Visitors get **Join**. Notifications for both bars live in ONE Alpine store (`famaNotifs`).
+  - **Label:** "Profile structure" reads **"Edit profile"** in navigation (the page title stays Profile structure).
+  - **Year tag (supersedes ADR-AA's "date never displayed"):** the prototype shows a year tag on project
+    pictures and its editor's Date field "sorts your projects, and shows as the year tag". `App\Support\ProjectTitle`
+    is the ONE home: a year typed into the title ("Name — 2026") wins, else the recorded `projects.year`. The
+    full date is still never shown.
+  - **Project page** is an editorial case study (`project-page.css`); the **editor is the project page itself**
+    (`project-editor.css`) — WYSIWYG blocks, the bar docks at the top of the panel on wide screens and replaces
+    the site header on narrow ones. Create-then-autosave, Results, credits and co-owner rules are unchanged.
+  - **Public profile:** hero = identity + the featured project's cover (fits one screen); profile-wide sections
+    always render AFTER the skill tabs (`meta.universal_position` and its editor control are retired — the
+    endpoint stays); private profiles show a not-live page (still a 404, names nobody); GSAP 3.12.5 motion.
+  - **Activity opens on Saved; Notifications** are cards with one action per kind and All/Unread/Mentions counts.
+  - **Toast** stays while hovered/focused (6s otherwise); Alt+Z presses Undo.
+- **Not ported (no backend):** free-form project blocks (chapters, quotes, captions, before/after, tagged
+  looks, embeds), repost, LinkedIn-style experience, per-skill practice fields, hiding single credits/recognitions,
+  NDA clients, project likes. The prototype's fake data (featured.js stock, FAMA_PROFILE) is never shipped.
+- **Sync method:** mirror the site, extract each page's `<style>` into `public/fama-ui/css/pages/<page>.css`
+  verbatim (app tweaks in a marked `/* app overrides */` block at the bottom), copy shared sheets verbatim, and
+  list dated comments newer than the last sync to find what moved.
+

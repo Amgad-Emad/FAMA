@@ -32,4 +32,7 @@
     window.__famaStepLabels = {!! json_encode(\App\Support\ContractLabels::stepLabels(), JSON_UNESCAPED_UNICODE) !!};
     window.__famaCategoryLabels = {!! json_encode(['model' => __('Modeling'), 'crew' => __('Crew'), 'creative' => __('Creative'), 'all' => __('All categories')], JSON_UNESCAPED_UNICODE) !!};
     window.__famaFlowLabels = {};
+    @if (auth('talent')->check())
+    window.famaNotifUrls = @js(['unread' => route('notifications.unread'), 'list' => route('notifications'), 'read' => route('notifications.read')]);
+    @endif
 </script>

@@ -14,8 +14,8 @@ it('updates core identity fields', function () {
     expect($talent->fresh()->base_city)->toBe('Alexandria');
 });
 
-it('publishes (stamping is_published + published_at) then unpublishes', function () {
-    $talent = Talent::factory()->draft()->create(['display_name' => 'Pub']);
+it('publishes by hand (stamping is_published + published_at) then unpublishes', function () {
+    $talent = Talent::factory()->draft()->goLiveReady()->create(['display_name' => 'Pub']);
     $service = app(TalentProfileService::class);
 
     $service->publish($talent);
@@ -29,35 +29,29 @@ it('publishes (stamping is_published + published_at) then unpublishes', function
     expect($talent->fresh()->is_published)->toBeFalse();
 });
 
-it('refuses to publish a profile without a display name (ToLive guard)', function () {
-    $talent = Talent::factory()->draft()->create(['display_name' => null]);
-
-    expect(fn () => app(TalentProfileService::class)->publish($talent))
-        ->toThrow(CouldNotPerformTransition::class);
-});
-
-it('refuses to publish an unverified profile (awaiting admin approval)', function () {
-    $talent = Talent::factory()->draft()->unverified()->create(['display_name' => 'Pending']);
+it('refuses a hand publish until the Go Live steps are done (domain error)', function () {
+    $talent = Talent::factory()->draft()->create(['display_name' => 'Not yet']);
 
     expect(fn () => app(TalentProfileService::class)->publish($talent))
         ->toThrow(InvalidArgumentException::class);
-
-    expect($talent->fresh()->is_published)->toBeFalse();
     expect($talent->fresh()->status->getValue())->toBe('draft');
 });
 
-it('lets a talent publish once an admin verifies it', function () {
-    $this->seed(Database\Seeders\RolesAndPermissionsSeeder::class);
-    $talent = Talent::factory()->draft()->unverified()->create(['display_name' => 'Ready']);
-    $admin = App\Models\User::factory()->create();
-    $admin->assignRole('super-admin');
+it('keeps the ToLive backstop: never Live without a display name', function () {
+    $talent = Talent::factory()->draft()->create(['display_name' => null]);
 
-    app(App\Services\TalentModerationService::class)->verify($admin, $talent);
-    expect($talent->fresh()->is_verified)->toBeTrue();
+    expect(fn () => $talent->status->transitionTo(App\States\TalentProfile\Live::class))
+        ->toThrow(CouldNotPerformTransition::class);
+});
 
-    app(TalentProfileService::class)->publish($talent->fresh());
-    expect($talent->fresh()->status->getValue())->toBe('live');
-    expect($talent->fresh()->is_published)->toBeTrue();
+it('lets an unverified profile publish — verification is no longer a gate (ADR-AC)', function () {
+    $talent = Talent::factory()->draft()->unverified()->goLiveReady()->create(['display_name' => 'Ready']);
+
+    app(TalentProfileService::class)->publish($talent);
+
+    expect($talent->fresh()->status->getValue())->toBe('live')
+        ->and($talent->fresh()->is_published)->toBeTrue()
+        ->and($talent->fresh()->is_verified)->toBeFalse();
 });
 
 it('moderates reviews (approve + reject) syncing is_approved', function () {

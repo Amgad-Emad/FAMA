@@ -13,7 +13,7 @@
 .vw-sh{display:flex;justify-content:space-between;align-items:center;gap:var(--s4);flex-wrap:wrap;margin-top:var(--s6);padding-top:var(--s5);border-top:var(--border)}
 .vw-sum{font-size:var(--t-meta);color:var(--grey)}
 .vw-seg{display:inline-flex;gap:var(--s1);border:var(--border);border-radius:var(--radius-pill);padding:var(--s1)}
-.vw-seg button{border:0;background:none;border-radius:var(--radius-pill);padding:6px var(--s3);font-size:13px;font-weight:500;color:var(--grey);cursor:pointer;white-space:nowrap;min-height:32px}
+.vw-seg button{border:0;background:none;border-radius:var(--radius-pill);padding:6px var(--s3);font-size:13px;font-weight:500;color:var(--grey);cursor:pointer;white-space:nowrap;min-height:40px}
 .vw-seg button:hover{color:var(--ink)}
 .vw-seg button[aria-pressed=true]{background:var(--ink);color:var(--cream)}
 .vw-plot{position:relative;margin-top:var(--s5);display:grid;grid-template-columns:auto 1fr;column-gap:var(--s3)}
@@ -24,23 +24,21 @@
 .vw-grid i:last-child{border-top-color:var(--grey)}
 .vw-bars{position:absolute;inset:0;display:flex;align-items:flex-end;gap:2px}
 .vw-bars button{flex:1;height:100%;border:0;padding:0;background:none;display:flex;align-items:flex-end;cursor:default}
-.vw-bars button span{display:block;width:100%;background:var(--purple);border-radius:4px 4px 0 0;min-height:2px;transition:height .7s cubic-bezier(.22,1,.36,1),background var(--fast) var(--ease)}
+.vw-bars button span{display:block;width:100%;background:var(--purple);border-radius:4px 4px 0 0;min-height:2px;transition:background var(--fast) var(--ease)}
 .vw-bars button:hover span,.vw-bars button:focus-visible span{background:var(--purple-dk)}
 .vw-bars button:focus-visible{outline:none}
 .vw-bars button:focus-visible span{outline:2px solid var(--ink);outline-offset:2px}
 .vw-xax{grid-column:2;display:flex;justify-content:space-between;margin-top:var(--s2);font-size:13px;color:var(--grey)}
 .vw-xax span{white-space:nowrap}
-.vw-plot{transition:opacity .25s var(--ease)}
-.vw-plot.is-loading{opacity:.55}
-.vw-yax span{transition:opacity .3s var(--ease)}
-@media (prefers-reduced-motion:reduce){.vw-bars button span{transition:background var(--fast) var(--ease);transition-delay:0s!important}}
 .vw-tip{position:absolute;z-index:2;pointer-events:none;background:var(--ink);color:var(--cream);border-radius:var(--s3);padding:6px var(--s3);font-size:13px;white-space:nowrap;transform:translate(-50%,calc(-100% - 8px));opacity:0;transition:opacity var(--fast)}
 .vw-tip b{font-weight:600}
 .vw-link{display:inline-flex;align-items:center;gap:var(--s1);border:0;background:none;padding:0;min-height:44px;color:var(--purple-dk);font:inherit;font-weight:600;text-decoration:none;cursor:pointer;margin-top:var(--s3)}
 .vw-link .icon{width:16px;height:16px}
+.vw-table{width:100%;border-collapse:collapse;margin-top:var(--s3);font-size:var(--t-meta)}
+.vw-table th,.vw-table td{text-align:start;padding:var(--s2) 0;border-bottom:var(--border)}
+.vw-table th{font-weight:600}
 .vw-todo{list-style:none;margin:var(--s5) 0 0;padding:0;border-top:var(--border)}
 .vw-todo li{display:flex;align-items:center;gap:var(--s4);padding:var(--s3) 0;border-bottom:var(--border)}
-.vw-todo li:last-child{border-bottom:0}
 .vw-todo .tick{width:28px;height:28px;border-radius:var(--radius-pill);border:2px solid var(--line);display:flex;align-items:center;justify-content:center;flex:none}
 .vw-todo .ok .tick{background:var(--purple);border-color:var(--purple);color:var(--white)}
 .vw-todo .tick .icon{width:16px;height:16px;stroke-width:2.5}
@@ -52,21 +50,303 @@
 .vw-note{font-size:var(--t-meta);color:var(--grey);margin-top:var(--s4)}
 @media (max-width:760px){
   .vw{padding:var(--s5)}
-  .vw-seg{display:flex;width:100%}.vw-seg button{flex:1}
+  .vw-seg{display:flex;width:100%}.vw-seg button{flex:1;min-height:44px}
   .vw-yax,.vw-area{height:160px}
   .vw-xax span:nth-child(2),.vw-xax span:nth-child(4){display:none}
 }
 
-/* All steps done: one card about Fama's check (replaces the step rows). */
-.vw-check{margin:var(--s5) 0;display:flex;gap:var(--s5);align-items:flex-start;padding:var(--s6) var(--s5);border-radius:var(--radius);background:linear-gradient(135deg,#F6EEFB 0%,var(--white) 70%);border:1px solid #E7D6F2}
-.vw-check-ic{width:64px;height:64px;flex:none;border-radius:var(--radius-pill);background:var(--white);border:2px solid var(--purple);color:var(--purple-dk);display:flex;align-items:center;justify-content:center;animation:vw-pulse 2.4s var(--ease) infinite}
-.vw-check-ic .icon{width:28px;height:28px}
-.vw-check.ok .vw-check-ic{background:var(--purple);color:var(--white);animation:none}
-.vw-check-txt{flex:1;min-width:0}
-.vw-check-k{display:block;font-size:var(--t-meta);font-weight:600;color:var(--purple-dk);text-transform:uppercase;letter-spacing:.06em}
-.vw-check h3{font-family:var(--font-display);font-size:clamp(24px,3vw,30px);line-height:1.15;margin:var(--s1) 0 var(--s2)}
-.vw-check p{color:var(--grey);margin:0;max-width:52ch}
-.vw-check .vw-link{margin-top:var(--s3)}
-@keyframes vw-pulse{0%,100%{box-shadow:0 0 0 0 rgba(173,80,211,.28)}50%{box-shadow:0 0 0 10px rgba(173,80,211,0)}}
-@media (prefers-reduced-motion:reduce){.vw-check-ic{animation:none}}
-@media (max-width:760px){.vw-check{flex-direction:column;gap:var(--s4);padding:var(--s5) var(--s4)}}
+/* 23 Oct 2026: the steps in the black notice, which sticks under the nav while the talent scrolls.
+   The progress is the reward: a ring with the count, one segment per step, and a small win when one is done. */
+.fx-notice.gt{position:relative}
+.gt-in{display:flex;align-items:center;justify-content:space-between;gap:var(--s4);padding-top:var(--s3)}
+.gt-sum{display:inline-flex;align-items:center;gap:var(--s3);border:0;background:none;color:inherit;font:inherit;padding:0;min-height:44px;cursor:pointer;text-align:start;min-width:0}
+.gt-sum>.icon{width:18px;height:18px;flex:none;opacity:.8;transition:transform var(--fast) var(--ease)}
+.gt-sum[aria-expanded=true]>.icon{transform:rotate(180deg)}
+.gt-ring{position:relative;width:44px;height:44px;flex:none;display:grid;place-items:center}
+.gt-ring svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
+.gt-ring circle{fill:none;stroke:rgba(251,250,242,.16);stroke-width:4}
+.gt-ring circle.fg{stroke:var(--purple);stroke-linecap:round;transition:stroke-dashoffset .7s var(--ease)}
+.gt-ring b{position:relative;font-family:var(--font-display);font-weight:600;font-size:15px;letter-spacing:.02em}
+.gt-star{position:absolute;inset:-6px;width:56px;height:56px;fill:var(--yellow);opacity:0;pointer-events:none}
+.gt-t{display:flex;flex-direction:column;min-width:0;line-height:1.25}
+.gt-h{font-family:var(--font-display);font-weight:600;font-size:18px;letter-spacing:.01em;white-space:nowrap}
+.gt-hs{display:none}
+.gt-sub{font-size:13px;color:rgba(251,250,242,.65)}
+.gt-next{display:inline-flex;align-items:center;gap:var(--s2);border:0;background:var(--cream);color:var(--ink);font:inherit;font-size:15px;font-weight:600;padding:0 var(--s4);min-height:40px;border-radius:var(--radius-pill);cursor:pointer;white-space:nowrap;min-width:0;text-decoration:none;transition:transform var(--fast) var(--ease)}
+.gt-next:hover{transform:translateY(-1px)}
+.gt-next .icon{width:16px;height:16px;flex:none}
+.gt-nl{font-weight:400;color:var(--grey)}
+.gt-nn{overflow:hidden;text-overflow:ellipsis}
+.gt-seg{display:flex;gap:6px;padding-block:var(--s3)}
+.gt-seg i{flex:1;height:8px;border-radius:var(--radius-pill);background:rgba(251,250,242,.16);transition:background .4s var(--ease)}
+.gt-seg i.ok{background:var(--purple)}
+.gt-seg i.cur{background:rgba(251,250,242,.16);box-shadow:inset 0 0 0 1.5px var(--cream);animation:gtCur 1.6s ease-in-out infinite}
+@keyframes gtCur{50%{box-shadow:inset 0 0 0 1.5px rgba(251,250,242,.35)}}
+.gt-done .gt-seg i{background:var(--yellow)}
+.gt-done .gt-ring circle.fg{stroke:var(--yellow)}
+/* the win: the new segment pops, the star bursts from the ring, the line says so */
+.gt-seg i.new{animation:gtPop .7s cubic-bezier(.3,1.6,.5,1)}
+@keyframes gtPop{0%{transform:scaleY(.4);background:var(--cream)}40%{transform:scaleY(1.9);background:var(--yellow)}100%{transform:none}}
+.gt-win .gt-star{animation:gtStar 1s ease-out}
+@keyframes gtStar{0%{opacity:0;transform:scale(.3) rotate(-30deg)}30%{opacity:1}100%{opacity:0;transform:scale(1.6) rotate(20deg)}}
+.gt-win .gt-ring b{animation:gtBump .6s cubic-bezier(.3,1.6,.5,1)}
+@keyframes gtBump{40%{transform:scale(1.35)}}
+.gt-win .gt-h{color:var(--yellow)}
+.gt-pop{position:absolute;inset:100% 0 auto;background:var(--ink);border-top:1px solid rgba(251,250,242,.12);box-shadow:0 16px 32px rgba(20,17,15,.25);max-height:calc(100vh - 200px);overflow:auto}
+.gt-pop ul{list-style:none;margin:0 auto;padding-block:var(--s2)}
+.gt-step{display:flex;align-items:center;gap:var(--s3);width:100%;border:0;background:none;color:var(--cream);font:inherit;font-size:15px;padding:var(--s2) 0;min-height:48px;text-align:start;cursor:pointer;text-decoration:none}
+.gt-step>span:not(.tick){flex:1}
+.gt-step>.icon{width:16px;height:16px;opacity:.6}
+.gt-step:hover>span:not(.tick){text-decoration:underline;text-underline-offset:3px}
+.gt-step .tick{width:24px;height:24px;border-radius:var(--radius-pill);border:2px solid rgba(251,250,242,.35);display:flex;align-items:center;justify-content:center;flex:none}
+.gt-step .tick .icon{width:14px;height:14px;stroke-width:2.5}
+.gt-pop .ok .gt-step{color:rgba(251,250,242,.6)}
+.gt-pop .ok .tick{background:var(--purple);border-color:var(--purple);color:var(--white)}
+.gt-pop .cur .gt-step{font-weight:600}
+.gt-pop .cur .tick{border-color:var(--cream)}
+/* the field a step lands on flashes once, so the eye finds it */
+@keyframes gtFlash{0%,60%{box-shadow:0 0 0 4px var(--lavender,#E9DDF3);background:var(--lavender,#E9DDF3)}100%{box-shadow:0 0 0 4px transparent;background:transparent}}
+.gt-flash{animation:gtFlash 1.8s var(--ease);border-radius:var(--s3)}
+@media (max-width:760px){
+  .gt-in{gap:var(--s2);padding-top:var(--s2)}
+  .gt-sum{gap:var(--s2)}
+  .gt-ring{width:38px;height:38px}.gt-ring b{font-size:13px}
+  .gt-h{font-size:15px}.gt-sub,.gt-hl{display:none}.gt-hs{display:inline}
+  .gt-nl{display:none}
+  .gt-next{font-size:14px;padding:0 var(--s3);min-height:36px;max-width:55vw}
+  .gt-seg{gap:4px;padding-block:var(--s2) var(--s3)}.gt-seg i{height:6px}
+}
+@media (prefers-reduced-motion:reduce){
+  .gt-flash{animation:none;outline:3px solid var(--purple);outline-offset:4px}
+  .gt-seg i,.gt-ring circle.fg{transition:none}.gt-seg i.cur,.gt-seg i.new,.gt-win .gt-star,.gt-win .gt-ring b{animation:none}
+}
+
+/* 24 Oct 2026: the path in two parts, Go Live then Stand out */
+.jr-part{margin-top:var(--s4);border:var(--border);border-radius:var(--s4);padding:var(--s4) var(--s5)}
+.jr-part .vw-todo{margin-top:var(--s3);border-top:0}
+.jr-part .vw-todo li:last-child{border-bottom:0}
+.jr-ph{display:flex;align-items:center;gap:var(--s3)}
+.jr-ph>div{flex:1;min-width:0}
+.jr-ph h3{font-family:var(--font-display);font-weight:600;font-size:20px;line-height:1.2;margin:0}
+.jr-ph p{font-size:var(--t-meta);color:var(--grey)}
+.jr-num{width:32px;height:32px;flex:none;border-radius:var(--radius-pill);background:var(--ink);color:var(--cream);display:grid;place-items:center;font-family:var(--font-display);font-weight:600;font-size:15px}
+.jr-num .icon{width:16px;height:16px;stroke-width:2.5}
+.jr-c{font-family:var(--font-display);font-weight:600;font-size:18px;white-space:nowrap}
+.jr-part.is-now{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink)}
+.jr-part.is-later{background:var(--lavender,#F3EAF8);border-color:var(--lavender-line,#E9DAF2)}
+.jr-part.is-later .jr-num{background:var(--white);color:var(--purple-dk);border:1px solid var(--lavender-line,#E9DAF2)}
+.jr-part.is-later .vw-todo li{border-bottom-color:var(--lavender-line,#E9DAF2)}
+.jr-part.is-done{background:var(--cream)}
+.jr-part.is-done .jr-num{background:var(--purple);color:var(--white)}
+.jr-got{margin-top:var(--s2);padding-inline-start:44px;font-size:var(--t-meta);color:var(--grey)}
+/* tracker: both parts side by side, a star where the profile goes Live */
+.gt-seg{align-items:center}
+.gt-p1,.gt-p2{display:flex;gap:6px}
+.gt-p1{flex:3}.gt-p2{flex:7}
+.gt-key{display:flex;flex:1}.gt-key i{flex:1}
+.gt-mark{flex:none;width:16px;height:16px;display:grid;place-items:center}
+.gt-mark .gt-star{position:static;inset:auto;width:16px;height:16px;opacity:1;fill:rgba(251,250,242,.3)}
+.fx-notice.gt:not(.gt-soft) .gt-p2 i{opacity:.45}
+.gt-soft .gt-mark .gt-star,.gt-live .gt-mark .gt-star{fill:var(--yellow)}
+.gt-ph{display:flex;justify-content:space-between;margin:var(--s3) 0 0;font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:rgba(251,250,242,.6)}
+.gt-pop ul{padding-block:var(--s1)}
+/* once Live the tracker calms down: lavender, ink text */
+.fx-notice.gt-soft{background:var(--lavender,#F3EAF8);color:var(--ink);border-bottom:1px solid var(--lavender-line,#E9DAF2)}
+.gt-soft .gt-ring circle{stroke:var(--white)}
+.gt-soft .gt-sub{color:var(--grey)}
+.gt-soft .gt-next{background:var(--ink);color:var(--cream)}
+.gt-soft .gt-nl{color:rgba(251,250,242,.7)}
+.gt-soft .gt-seg i{background:var(--white)}
+.gt-soft .gt-seg i.ok{background:var(--purple)}
+.gt-soft .gt-seg i.cur{background:var(--white);box-shadow:inset 0 0 0 1.5px var(--ink)}
+.gt-soft .gt-pop{background:var(--white);color:var(--ink);border-top-color:var(--line)}
+.gt-soft .gt-step{color:var(--ink)}
+.gt-soft .gt-pop .ok .gt-step{color:var(--grey)}
+.gt-soft .gt-step .tick{border-color:var(--line)}
+.gt-soft .gt-pop .cur .tick{border-color:var(--ink)}
+.gt-soft .gt-ph{color:var(--grey)}
+.gt-soft :focus-visible{outline-color:var(--ink)}
+/* the moment they go Live */
+.fx-notice.gt-live .gt-h{color:var(--yellow);font-size:22px}
+.gt-live .gt-p1 i,.gt-live .gt-p2 i{background:var(--yellow);opacity:1}
+.gt-live .gt-ring circle.fg{stroke:var(--yellow)}
+.gt-ring>.icon{position:relative;width:18px;height:18px;stroke-width:2.5;color:var(--yellow)}
+.gt-live .gt-mark .gt-star{animation:gtStar2 1.2s cubic-bezier(.3,1.6,.5,1)}
+@keyframes gtStar2{0%{transform:scale(.4) rotate(-40deg)}50%{transform:scale(2.2) rotate(15deg)}100%{transform:none}}
+@media (max-width:760px){
+  .vw{padding:var(--s5)}
+  .jr-part{padding:var(--s3) var(--s4)}
+  .jr-got{padding-inline-start:0}
+  .gt-p1,.gt-p2{gap:3px}.gt-seg{gap:4px}
+  .gt-mark,.gt-mark .gt-star{width:12px;height:12px}
+}
+@media (prefers-reduced-motion:reduce){.gt-live .gt-mark .gt-star{animation:none}}
+
+/* 24 Oct 2026: Live and the Creatives Index are two moments. The index step is first in Stand out */
+.gt-mi{width:16px;height:16px}
+.gt-mi .icon{width:14px;height:14px;stroke-width:2.5;opacity:.45}
+.gt-soft .gt-mi .icon{opacity:.7}
+.jr-tag{display:inline-block;margin-inline-start:var(--s2);vertical-align:2px;font-size:12px;font-weight:600;line-height:1;padding:4px 8px;border-radius:var(--radius-pill);background:var(--ink);color:var(--cream);white-space:nowrap}
+.vw-todo .ok .jr-tag{background:var(--purple);color:var(--white)}
+@media (max-width:760px){.jr-tag{margin:6px 0 0;display:table}.gt-mi,.gt-mi .icon{width:12px;height:12px}}
+
+/* 24 Oct 2026: on wider screens the steps of each part sit side by side, as cards; on a phone they stay a list */
+@media (min-width:761px){
+  .jr-part .vw-todo{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:var(--s2);margin-top:var(--s3)}
+  .jr-part .vw-todo li{position:relative;flex-direction:row;align-items:center;gap:var(--s3);padding:var(--s2) var(--s3);cursor:pointer;transition:border-color var(--fast) var(--ease);border:var(--border);border-radius:var(--s3);background:var(--white)}
+  .jr-part .vw-todo .tick{width:24px;height:24px}
+  .jr-part .vw-todo .tick .icon{width:14px;height:14px}
+  .jr-part .vw-todo p{line-height:1.35}
+  .jr-part .vw-todo li:last-child{border-bottom:var(--border)}
+  .jr-part.is-later .vw-todo li{border-color:var(--lavender-line,#E9DAF2)}
+  .jr-part .vw-todo li.ok{background:var(--cream)}
+  .jr-part .vw-todo .txt{flex:1}
+  .jr-part .vw-todo .vw-link{min-height:32px;flex:none;font-size:0;gap:0}
+  .jr-part .vw-todo .vw-link .icon{width:18px;height:18px}
+  .jr-part .vw-todo .vw-link::after{content:"";position:absolute;inset:0;border-radius:inherit}
+  .jr-part .vw-todo li:hover{border-color:var(--ink)}
+  .jr-part .vw-todo li:has(.vw-link:focus-visible){outline:2px solid var(--ink);outline-offset:2px}
+  .jr-part .vw-todo .vw-link:focus-visible{outline:none}
+  .jr-part .vw-todo p{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .jr-part .vw-todo li.jr-key{grid-column:span 2}
+  .jr-part .vw-todo li.jr-key.ok{border-color:var(--line);box-shadow:none}
+  .jr-tag{display:table;margin:6px 0 0}
+}
+
+/* 24 Oct 2026: the steps read as a sequence: a big number on each, the next one in purple, arrows between them on wide screens */
+.jr-steps{counter-reset:none}
+.jr-n{flex:none;min-width:36px;font-family:var(--font-display);font-weight:600;font-size:28px;line-height:1;color:#8E867C;letter-spacing:.01em}
+.jr-steps .ok .jr-n{min-width:0;width:28px;height:28px;border-radius:var(--radius-pill);background:var(--purple);color:var(--white);display:grid;place-items:center;margin-inline-end:8px}
+.jr-steps .ok .jr-n .icon{width:16px;height:16px;stroke-width:2.5}
+.jr-steps .jr-next .jr-n{color:var(--purple-dk)}
+.jr-steps .jr-next{border-color:var(--purple)!important;box-shadow:0 0 0 1px var(--purple)!important}
+.jr-part.is-later .jr-n{color:#86709A}
+@media (min-width:761px){
+  .jr-part .jr-steps{grid-template-columns:repeat(var(--cols),minmax(0,1fr));column-gap:28px}
+  .jr-part .jr-steps li::before{content:"";position:absolute;top:50%;inset-inline-end:-22px;width:16px;height:16px;margin-top:-8px;pointer-events:none;
+    background:currentColor;color:#C9C2B6;
+    -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12h14'/%3E%3Cpath d='m12 5 7 7-7 7'/%3E%3C/svg%3E") center/contain no-repeat;
+            mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12h14'/%3E%3Cpath d='m12 5 7 7-7 7'/%3E%3C/svg%3E") center/contain no-repeat}
+  .jr-part .jr-steps li.ok::before{color:var(--purple)}
+  .jr-part .jr-steps li:last-child::before{display:none}
+  /* Stand out wraps after its third card (the first one is two columns wide) */
+  .jr-part .jr-steps[style*="--cols:4"] li:nth-child(3)::before{display:none}
+  [dir=rtl] .jr-part .jr-steps li::before{transform:scaleX(-1)}
+}
+@media (max-width:760px){
+  .jr-steps .jr-next{border:1px solid var(--purple)!important;border-radius:var(--s3);padding-inline:var(--s3);margin-block:var(--s1)}
+  .jr-n{min-width:32px;font-size:24px}
+}
+
+/* 24 Oct 2026, later: the track. Each segment is a way to its step; milestones are labelled and turn solid when reached */
+.gt-track{display:flex;align-items:center;gap:4px;padding-block:var(--s2) var(--s3)}
+.gt-s{flex:1;position:relative;height:6px;min-width:6px;border:0;padding:0;border-radius:var(--radius-pill);background:rgba(251,250,242,.18);cursor:pointer;
+  transition-property:background-color,transform,box-shadow;transition-duration:.25s;transition-timing-function:var(--ease)}
+.gt-s::before{content:"";position:absolute;inset:-12px -2px} /* hit area */
+.gt-s:hover{transform:scaleY(1.7)}
+.gt-s:focus-visible{outline:2px solid var(--cream);outline-offset:3px}
+.gt-s.ok{background:var(--purple)}
+.gt-s.cur{background:transparent;box-shadow:inset 0 0 0 1.5px var(--cream)}
+.gt-s.new{animation:gtPop .7s cubic-bezier(.3,1.6,.5,1)}
+.gt-ms{flex:none;display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 8px 0 6px;margin-inline:4px;border-radius:var(--radius-pill);
+  border:1px dashed rgba(251,250,242,.35);color:rgba(251,250,242,.6);font-size:12px;font-weight:600;line-height:1;white-space:nowrap;
+  transition-property:background-color,color,border-color;transition-duration:.3s}
+.gt-ms .icon,.gt-ms .gt-msi{width:12px;height:12px;flex:none}
+.gt-ms .icon{stroke-width:2.5}
+.gt-msi{fill:currentColor}
+.gt-ms.on{background:var(--yellow);border:1px solid var(--yellow);color:var(--ink)}
+.gt-ring b{font-variant-numeric:tabular-nums}
+.gt-next{transition-property:transform;transition-duration:.15s}
+.gt-next:active{transform:scale(.96)}
+.gt-seg i.cur{animation:none}
+/* lavender, once Live */
+.gt-soft .gt-s{background:var(--white)}
+.gt-soft .gt-s.ok{background:var(--purple)}
+.gt-soft .gt-s.cur{background:var(--white);box-shadow:inset 0 0 0 1.5px var(--ink)}
+.gt-soft .gt-s:focus-visible{outline-color:var(--ink)}
+.gt-soft .gt-ms{border-color:rgba(20,17,15,.25);color:var(--grey)}
+.gt-soft .gt-ms.on{border-color:var(--yellow);color:var(--ink)}
+/* the moments */
+.gt-live .gt-s{background:var(--yellow)}
+.gt-live .gt-ms.on .gt-msi{animation:gtStar2 1.2s cubic-bezier(.3,1.6,.5,1)}
+@media (max-width:760px){
+  .gt-track{gap:3px}
+  .gt-s{height:5px}
+  .gt-ms{height:18px;padding:0 4px;margin-inline:2px}
+  .gt-msl{display:none}
+}
+@media (prefers-reduced-motion:reduce){.gt-s,.gt-ms{transition:none}.gt-s:hover{transform:none}.gt-s.new,.gt-live .gt-ms.on .gt-msi{animation:none}}
+
+@media (max-width:760px){.gt-s::before{inset:-16px -2px}}
+
+/* 24 Oct 2026 (critique): once Live, the steps fold to one line so the page gets to editing sooner */
+.vw.jr-compact{padding:var(--s4) var(--s5)}
+.jr-row{display:flex;align-items:center;gap:var(--s3) var(--s4);flex-wrap:wrap}
+.jr-rt{font-family:var(--font-display);font-weight:600;font-size:20px;line-height:1.2;margin:0;display:flex;align-items:baseline;gap:var(--s2)}
+.jr-rt .jr-c{font-size:16px;color:var(--grey);font-variant-numeric:tabular-nums}
+.jr-chips{display:flex;gap:var(--s1)}
+.jr-chips .gt-ms{border-color:var(--line);color:var(--grey);margin:0}
+.jr-chips .gt-ms.on{border-color:var(--yellow);color:var(--ink)}
+.jr-go{margin-inline-start:auto;max-width:100%}
+.jr-go .jr-gl{font-weight:400;color:var(--grey)}
+.jr-go .icon{width:16px;height:16px}
+.jr-more{margin-top:0;min-height:40px}
+.jr-more .icon{transition:transform var(--fast) var(--ease)}
+.jr-more[aria-expanded=true] .icon{transform:rotate(180deg)}
+.vw-note .jr-more{margin-inline-start:var(--s2);vertical-align:middle}
+@media (max-width:760px){
+  .vw.jr-compact{padding:var(--s4)}
+  .jr-go{margin-inline-start:0;flex:1 1 100%;justify-content:center;min-height:44px}
+  .jr-more{min-height:44px}
+}
+
+/* the views card, folded */
+h2.vw-label{margin:0;font-size:var(--t-label)}
+.vw-hr{display:flex;flex-direction:column;align-items:flex-end;gap:var(--s2)}
+.vw-open{margin-top:0;min-height:40px}
+.vw-open .icon{transition:transform var(--fast) var(--ease)}
+.vw-open[aria-expanded=true] .icon{transform:rotate(180deg)}
+@media (max-width:760px){.vw-hr{align-items:flex-start;flex-direction:row;flex-wrap:wrap;width:100%;justify-content:space-between}.vw-open{min-height:44px}}
+/* Next can be a link (to Projects); the nav's link colour must not reach it */
+.fx-notice a.gt-next{color:var(--ink)}
+.fx-notice.gt-soft a.gt-next{color:var(--cream)}
+
+/* 24 Oct 2026 (header review): the tracker floats under the nav instead of adding to its height, and it only
+   shows once the steps card has scrolled away, so the same next step is never on screen twice */
+.fx-notice.gt-float{position:absolute;left:0;right:0;top:100%;box-shadow:0 14px 28px -14px rgba(20,17,15,.35);
+  transition:opacity var(--duration-fast) var(--ease-smooth-out),transform var(--duration-fast) var(--ease-smooth-out),visibility 0s}
+.fx-notice.gt-float.gt-away{opacity:0;transform:translateY(calc(-1 * var(--distance-base)));visibility:hidden;pointer-events:none;
+  transition:opacity var(--duration-quick) var(--ease-smooth-out),transform var(--duration-quick) var(--ease-smooth-out),visibility 0s var(--duration-quick)}
+html.fx-menu-open .fx-notice.gt-float{visibility:hidden}
+/* one row on wide screens: where you are, the path, the next step */
+.gt-in{flex-wrap:wrap;padding-block:var(--s2)}
+.gt-in .gt-track{flex:1 1 280px;min-width:0;padding:0}
+.gt-sum{flex:none}
+.gt-next{flex:none}
+@media (max-width:1100px){.gt-msl{display:none}.gt-ms{padding:0 5px;margin-inline:2px}}
+@media (max-width:760px){
+  .gt-in{column-gap:var(--s2);row-gap:0;padding-block:var(--s2) 0}
+  .gt-in .gt-track{order:3;flex:1 1 100%;padding-block:var(--s2) var(--s3)}
+}
+@media (prefers-reduced-motion:reduce){.fx-notice.gt-float,.fx-notice.gt-float.gt-away{transition:none}}
+/* one colour: lavender in every stage. Yellow is too pale on lavender for text or segments, so the win keeps ink text on a yellow marker and purple segments */
+.fx-notice.gt-soft.gt-live .gt-h,.gt-soft .gt-win .gt-h{color:var(--ink)}
+.gt-soft.gt-live .gt-h>span,.gt-soft .gt-win .gt-h>span{background:var(--yellow);border-radius:6px;padding:0 6px;margin-inline:-6px;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+.gt-soft.gt-live .gt-s{background:var(--purple)}
+.gt-soft.gt-live .gt-ring circle.fg{stroke:var(--purple)}
+.gt-soft .gt-ring>.icon{color:var(--purple-dk)}
+.gt-soft .gt-sub{color:#4F4A45}
+/* the ring check sits inside .gt-ring, so it must not take the ring track rotation */
+.gt-ring>.icon{transform:none;inset:auto}
+/* done steps in the later part keep a white check on the purple dot */
+.jr-part.is-later .ok .jr-n{color:var(--white)}
+/* one numbering system: the steps carry the numbers (01, 02...). The parts are named, not numbered, and every step number is the same colour; the next step shows by its border */
+.jr-part:not(.is-done) .jr-num{display:none}
+.jr-steps .jr-n,.jr-steps .jr-next .jr-n,.jr-part.is-later .jr-n{color:#8E867C}
+/* 24 Oct 2026 (critique 2): phones give the tracker's room back while the talent types; Next is a full 44px target;
+   the step list labels are sentence case like the rest of the page */
+@media (max-width:760px){
+  html.fx-typing .fx-notice.gt-float{opacity:0;visibility:hidden;pointer-events:none;transform:translateY(calc(-1 * var(--distance-base)))}
+  .fx-notice .gt-next{min-height:44px}
+}
+.gt-ph{text-transform:none;letter-spacing:0}

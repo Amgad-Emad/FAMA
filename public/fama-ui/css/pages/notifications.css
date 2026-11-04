@@ -1,10 +1,30 @@
 /* Screen: notifications — everything from the bell, grouped by when it happened.
-   Mentions (post and comment) are the ones the posting flow promises; the rest share the list. */
+   1 Nov 2026: in the Activity page's chunky language. Pill filters with counts, and each notification is its own card
+   with one clear action for what it is (reply, review the credit, follow back…). The whole card opens it too. */
 .nbar{display:flex;justify-content:space-between;align-items:center;gap:var(--s4);flex-wrap:wrap}
-.ngrp+.ngrp{margin-top:var(--s6)}
-.ngrp h2{font-weight:600;font-size:var(--t-meta);color:var(--grey);margin:0 0 var(--s2)}
-.ngrp ul{list-style:none;margin:0;padding:0}
-.ngrp .fx-n{font-size:15px;padding:var(--s4) var(--s3)}
-.ngrp li+li{border-top:var(--border)}
-.ngrp .fx-nex{white-space:normal}
-.ngrp .fx-nic{width:40px;height:40px}
+.ngrp+.ngrp{margin-top:var(--s7)}
+.ngrp h2{font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--grey);margin:0 0 var(--s3)}
+.ngrp ul{list-style:none;margin:0;padding:0;display:grid;gap:var(--s3)}
+.nc{position:relative;display:grid;grid-template-columns:48px minmax(0,1fr) auto;gap:var(--s4);align-items:center;padding:var(--s5);background:var(--white);border:var(--border);border-radius:var(--radius);
+  transition:border-color var(--duration-quick,150ms) ease-out,box-shadow var(--duration-quick,150ms) ease-out}
+.nc:hover{border-color:#CFC9BE;box-shadow:0 6px 18px -12px rgba(20,17,15,.25)}
+.nc.unread{background:linear-gradient(90deg,var(--lavender,#F3EAF8),var(--white) 55%);border-color:#E3D3EE}
+.nc .ic{width:48px;height:48px;border-radius:var(--radius-pill);background:var(--line);display:flex;align-items:center;justify-content:center;color:var(--ink)}
+.nc.unread .ic{background:var(--ink);color:var(--cream)}
+.nc .ic svg{width:20px;height:20px}
+.nc .tx{min-width:0;display:grid;gap:4px}
+.nc .tx a{color:var(--ink);text-decoration:none;font-size:16px;line-height:1.4}
+.nc .tx a::after{content:"";position:absolute;inset:0;border-radius:inherit} /* the whole card opens it */
+.nc .tx a:focus-visible{outline:none}
+.nc:has(.tx a:focus-visible){outline:2px solid var(--purple-dk);outline-offset:2px}
+.nc .tx b{font-weight:600}
+.nc .ex{color:var(--grey);font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nc .ago{display:flex;align-items:center;gap:var(--s2);color:var(--grey);font-size:13px}
+.nc .ago i{width:8px;height:8px;border-radius:var(--radius-pill);background:var(--purple)}
+.nc .act{position:relative;z-index:1;flex:none} /* above the card's link */
+@media (max-width:760px){
+  .nc{grid-template-columns:40px minmax(0,1fr);padding:var(--s4);gap:var(--s3);align-items:start}
+  .nc .ic{width:40px;height:40px}
+  .nc .act{grid-column:2;justify-self:start}
+  .nc .ex{white-space:normal}
+}

@@ -95,9 +95,9 @@ class ProfileEditorController extends TalentController
             // (comp_card) must not offer a dead "Edit content" link. `projects`
             // is editable on its own page (ADR-X), not the content page.
             'contentKeys' => [...ContentRegistry::keys(), 'reviews', 'projects', 'recognitions', 'interests'],
-            // The fama-ui page folds the old dashboard in (2026-10-12): the steps
-            // to a complete profile (shown while Private) and the views card.
-            'completion' => $this->completion->steps($talent),
+            // The fama-ui page folds the old dashboard in: the profile path
+            // (Go Live then Stand out, ADR-AC — from SAVED data) and the views card.
+            'completion' => $this->completion->state($talent),
             'views' => [
                 'total' => (int) $talent->view_count,
                 'weekly' => $this->viewStats->weeklyComparison($talent),
@@ -305,6 +305,11 @@ class ProfileEditorController extends TalentController
     /**
      * Publish / unpublish the profile from the editor (moved from Account).
      */
+    /**
+     * Publish / unpublish by hand. Since ADR-AC a profile goes Live by itself
+     * when its Go Live steps are saved; this endpoint remains for a profile held
+     * private (Unpublished) to go Live again. Not-ready → 422 (domain error).
+     */
     public function publish(Request $request): JsonResponse
     {
         $publish = $request->boolean('publish');
@@ -317,6 +322,18 @@ class ProfileEditorController extends TalentController
             'is_published' => (bool) $talent->is_published,
             'status' => $talent->status->getValue(),
         ], $publish ? __('Profile published.') : __('Profile unpublished.'));
+    }
+
+    /**
+     * The profile path from SAVED data (GET /talent/profile/state): every Go
+     * Live / Stand out step, Live, listed (Creatives Index), done and status.
+     * The editor re-reads it after each save — the steps never follow the draft.
+     */
+    public function state(): JsonResponse
+    {
+        $talent = $this->talent()->fresh();
+
+        return response()->success($this->completion->state($talent));
     }
 
     public function blocks(): JsonResponse

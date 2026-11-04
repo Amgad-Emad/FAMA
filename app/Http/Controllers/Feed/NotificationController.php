@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Feed;
 
 use App\Http\Resources\Feed\NotificationResource;
+use App\Services\NotificationInboxService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Notifications\DatabaseNotification;
 
 /**
  * The actor's notification inbox (feed-spec §9): paginated 20, localized at
@@ -17,27 +19,27 @@ class NotificationController extends FeedBaseController
     /**
      * The inbox, newest first. ?filter=unread narrows to unread rows and
      * ?filter=mention to post/comment mentions (the fama-ui page's
-     * All / Unread / Mentions segments).
+     * All / Unread / Mentions pills, whose counts ride in meta.counts).
+     * Follow rows carry whether the viewer already follows them back.
      */
-    public function index(Request $request): JsonResponse
+    public function index(Request $request, NotificationInboxService $inbox): JsonResponse
     {
         $actor = $this->currentActor->resolve();
+        $page = $inbox->page($actor, $request->string('filter')->value() ?: null);
+        $followedBack = $inbox->followedBack($actor, $page->getCollection());
 
-        $page = $actor->notifications()
-            ->when($request->query('filter') === 'unread', fn ($query) => $query->whereNull('read_at'))
-            ->when($request->query('filter') === 'mention', fn ($query) => $query->where('type', 'like', '%Mentioned%'))
-            ->paginate(20)
-            ->withQueryString();
+        $rows = $page->getCollection()->map(function (DatabaseNotification $notification) use ($followedBack) {
+            $actorKey = ($notification->data['actor']['type'] ?? '').':'.($notification->data['actor']['id'] ?? '');
 
-        return response()->paginated(
-            $page,
-            NotificationResource::collection($page->getCollection()),
-        );
+            return new NotificationResource($notification, $followedBack[$actorKey] ?? null);
+        })->values();
+
+        return response()->paginated($page, $rows, null, ['counts' => $inbox->counts($actor)]);
     }
 
     /**
-     * The full notifications page (fama-ui) — a shell; the list loads over Ajax
-     * from index().
+     * The full notifications page (fama-ui) — a shell; the list (and the pill
+     * counts) load over Ajax from index().
      */
     public function page(): View
     {

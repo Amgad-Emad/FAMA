@@ -46,34 +46,34 @@ it('persists the universal section position from the editor pill bar', function 
         ->assertStatus(422);
 });
 
-it('renders the universal region above the skill tabs by default', function () {
+it('renders the profile-wide region once, after the skill tabs (fama-ui 24 Oct 2026)', function () {
     $talent = talentWithSections();
+    $talent->update(['worldview' => ['en' => 'Light first, then the clothes.']]);
 
     $html = $this->get('/'.$talent->slug)->assertOk()->getContent();
 
-    expect(strpos($html, 'id="universal-blocks"'))->toBeLessThan(strpos($html, 'x-ref="panel"'));
+    expect(strpos($html, 'id="universal-blocks"'))->not->toBeFalse()
+        ->toBeGreaterThan(strpos($html, 'x-ref="panel"'));
+    expect(substr_count($html, 'id="universal-blocks"'))->toBe(1);
 });
 
-it('renders the universal region below the skill tabs when reordered', function () {
+it('keeps the profile-wide region after the tabs even when placed first in the editor', function () {
     $talent = talentWithSections();
-    $talent->update(['meta' => ['universal_position' => 1]]);
+    $talent->update(['worldview' => ['en' => 'Light first.'], 'meta' => ['universal_position' => 0]]);
 
     $html = $this->get('/'.$talent->slug)->assertOk()->getContent();
 
     expect(strpos($html, 'id="universal-blocks"'))->toBeGreaterThan(strpos($html, 'x-ref="panel"'));
 });
 
-it('shows the profile-wide placement control in the editor sections panel', function () {
+it('no longer offers the profile-wide placement control (the prototype fixes it after the tabs)', function () {
     $talent = Talent::factory()->create();
 
     $this->actingAs($talent, 'talent')->get(route('talent.profile.edit'))
         ->assertOk()
         ->assertSee('id="sections"', false)
-        ->assertSee(__('Show profile-wide sections'))
-        ->assertSee('setPlace(false)', false)
-        ->assertSee('setPlace(true)', false)
-        ->assertSee(__('Before your work'))
-        ->assertSee(__('After your work'));
+        ->assertDontSee('setPlace(', false)
+        ->assertDontSee(__('Before your work'));
 });
 
 it('shows the share-profile button on the public header', function () {

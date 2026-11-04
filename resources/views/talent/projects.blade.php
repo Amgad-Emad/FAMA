@@ -37,28 +37,15 @@
         'featureA' => __('Feature :p on your profile'),
         'featuredA' => __('Featured on your profile. Feature another project to change it.'),
         'featuredOnly' => __('Your only project is always featured.'),
-        'featuredT' => __(':p is now your featured project'),
+        'featuredT' => __(':p is your featured project'),
+        'featuredL' => __('Featured on your profile: :p'),
+        'featureT' => __('Feature on my profile'),
         'failed' => __('Something went wrong. Try again.'),
     ];
 @endphp
 <x-fama.layout :title="__('Projects')">
     <x-slot:styles>
         <link rel="stylesheet" href="{{ \App\Support\FamaAsset::url('fama-ui/css/pages/projects.css') }}">
-        <style>
-            /* App additions: real cover images on the prototype's grey card cover. */
-            .pc .cover.has{background-size:cover;background-position:center}
-            /* Featured project (the profile cover) */
-            .pc .cover{position:relative}
-            .feat-badge{position:absolute;top:var(--s3);inset-inline-end:var(--s3);display:inline-flex;align-items:center;gap:6px;padding:5px var(--s3) 5px 8px;border-radius:var(--radius-pill);background:rgba(255,255,255,.92);backdrop-filter:blur(6px);font-size:12px;font-weight:600;color:var(--ink);box-shadow:0 2px 10px rgba(20,17,15,.12)}
-            .feat-badge svg{width:15px;height:15px;fill:var(--yellow);stroke:var(--ink);stroke-width:40;stroke-linejoin:round}
-            .featbtn svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:44;stroke-linejoin:round;transition:fill .2s var(--ease),transform .25s var(--ease)}
-            .featbtn:hover svg{transform:rotate(-8deg) scale(1.08)}
-            .featbtn.on{color:var(--ink);cursor:default}
-            .featbtn.on svg{fill:var(--yellow);transform:none}
-            .pc .foot>span:last-child{display:flex;flex:none;gap:2px}
-            .pc .foot .waiting{min-width:0}
-            .pager{display:flex;justify-content:center;align-items:center;gap:var(--s3);margin-top:var(--s6)}
-        </style>
     </x-slot:styles>
 
     <x-slot:hero>
@@ -102,13 +89,17 @@
                     <article class="pc" :class="{ dragging: dragId === p.id }" :draggable="canReorder.toString()"
                              @dragstart="onDragStart($event, p)" @dragover="canReorder && dragId !== null && $event.preventDefault()"
                              @drop.prevent="onDrop(p)" @dragend="dragId = null">
-                        <div class="cover" :class="{ has: !!p.cover_image_url }" :style="p.cover_image_url ? { backgroundImage: 'url(' + p.cover_image_url + ')' } : {}">
+                        <div class="cover" :style="coverOf(p) ? { backgroundImage: 'url(' + coverOf(p) + ')' } : {}">
                             <span class="grip" x-show="canReorder" :title="fmt(strings.dragA, { p: titleOf(p) })" aria-hidden="true"><svg class="icon sm"><use href="#i-grip"/></svg></span>
-                            <svg class="icon" x-show="!p.cover_image_url"><use href="#i-image"/></svg>
-                            <span class="feat-badge" x-show="p.is_featured" x-cloak x-transition.opacity><svg viewBox="10 80 760 690" aria-hidden="true"><polygon points="314.63 635.59 16.74 747.68 217.29 533.15 86.97 370.29 403.26 356.02 701.63 87.21 636.51 355.76 760 356.91 574.68 534.04 422.33 756.79 314.63 635.59"/></svg>{{ __('Featured') }}</span>
+                            <svg class="icon" x-show="!coverOf(p)"><use href="#i-image"/></svg>
+                            <span class="ptag" :class="{ solo: !canReorder }" x-show="yearOf(p)" x-cloak x-text="yearOf(p)"></span>
+                            {{-- The star (24 Oct 2026): features a project on the profile. Never switched off — feature another to change it. --}}
+                            <template x-if="p.can_feature"><button type="button" class="feat" @click="feature(p)" :aria-pressed="(!!p.is_featured).toString()" :aria-disabled="(!!p.is_featured).toString()"
+                                    :aria-label="featureLabel(p)" :title="featureTitle(p)"><svg viewBox="10 80 760 690" aria-hidden="true"><polygon points="314.63 635.59 16.74 747.68 217.29 533.15 86.97 370.29 403.26 356.02 701.63 87.21 636.51 355.76 760 356.91 574.68 534.04 422.33 756.79 314.63 635.59"/></svg></button></template>
+                            <span class="featl" x-show="p.is_featured" x-cloak><svg viewBox="10 80 760 690" aria-hidden="true"><polygon points="314.63 635.59 16.74 747.68 217.29 533.15 86.97 370.29 403.26 356.02 701.63 87.21 636.51 355.76 760 356.91 574.68 534.04 422.33 756.79 314.63 635.59"/></svg>{{ __('Featured on your profile') }}</span>
                         </div>
                         <div class="body">
-                            <a :href="viewUrl(p)" style="text-decoration:none"><b x-text="titleOf(p)"></b></a>
+                            <a :href="viewUrl(p)" style="text-decoration:none"><b x-text="nameOf(p)"></b></a>
                             <span class="meta" x-text="[p.client_name, p.role?.en].filter(Boolean).join(' · ')"></span>
                             <template x-if="others(p).length">
                                 <span class="owners" :title="fmt(strings.coowned, { names: names(others(p)) })">
@@ -125,9 +116,6 @@
                             <div class="foot">
                                 <span class="waiting" x-text="waitingCount(p) ? fmt(strings.waiting, { n: waitingCount(p) }) : ''"></span>
                                 <span>
-                                    {{-- Featured = the profile cover. Never switched off: feature another to change it. --}}
-                                    <template x-if="p.can_feature"><button class="iconbtn plain featbtn" type="button" :class="{ on: p.is_featured }" @click="feature(p)"
-                                        :aria-pressed="(!!p.is_featured).toString()" :aria-disabled="(!!p.is_featured).toString()" :title="featureTitle(p)" :aria-label="featureTitle(p)"><svg viewBox="10 80 760 690" aria-hidden="true"><polygon points="314.63 635.59 16.74 747.68 217.29 533.15 86.97 370.29 403.26 356.02 701.63 87.21 636.51 355.76 760 356.91 574.68 534.04 422.33 756.79 314.63 635.59"/></svg></button></template>
                                     <a class="iconbtn plain" :href="editUrl(p)" :aria-label="fmt(strings.editA, { p: titleOf(p) })"><svg class="icon"><use href="#i-edit"/></svg></a>
                                     {{-- Only a sole owner may delete; with other owners, you leave instead. --}}
                                     <template x-if="p.has_co_owners"><button class="iconbtn plain del" type="button" @click="leaveOwn(p)" :aria-label="fmt(strings.leaveA, { p: titleOf(p) })" :title="fmt(strings.leaveA, { p: titleOf(p) })"><svg class="icon"><use href="#i-leave"/></svg></button></template>
@@ -141,7 +129,7 @@
                 {{-- Work other people credited you on, that you confirmed (ADR-AA) --}}
                 <template x-for="c in creditedShown" :key="'c' + c.id">
                     <article class="pc">
-                        <div class="cover" :class="{ has: !!c.project?.cover_image_url }" :style="c.project?.cover_image_url ? { backgroundImage: 'url(' + c.project.cover_image_url + ')' } : {}">
+                        <div class="cover" :style="c.project?.cover_image_url ? { backgroundImage: 'url(' + c.project.cover_image_url + ')' } : {}">
                             <svg class="icon" x-show="!c.project?.cover_image_url"><use href="#i-image"/></svg>
                         </div>
                         <div class="body">

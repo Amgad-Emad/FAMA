@@ -124,6 +124,9 @@ return [
     // window collapse into one record; a refollow inside it won't re-notify.
     'notifications' => [
         'aggregate_minutes' => 60,
+        // Characters of the comment/post body stored as the one-line excerpt the
+        // notifications page shows under a comment, reply or mention.
+        'excerpt_length' => 140,
     ],
 
     // Content limits enforced by validation (feed-spec §4, §7, §8).

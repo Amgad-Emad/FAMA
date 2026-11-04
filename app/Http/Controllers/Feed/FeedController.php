@@ -12,6 +12,7 @@ use App\Models\TalentType;
 use App\Services\DiscoverTalentsService;
 use App\Services\FeedService;
 use App\Services\FollowService;
+use App\Services\ProfileCompletionService;
 use App\Support\FeedComposer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -28,14 +29,20 @@ use Illuminate\View\View;
 class FeedController extends FeedBaseController
 {
     /**
-     * The site root: the feed when it has something to show this viewer,
-     * otherwise login (a signed-in viewer goes to their home instead). Reads
-     * the same cached frozen candidate list /feed slices, so "empty" here
-     * means /feed would render empty too.
+     * The site root. A signed-in talent follows the login landing rule (Feed
+     * once the profile is done, else Profile structure — ADR-AC). Everyone
+     * else: the feed when it has something to show this viewer, otherwise
+     * login (a signed-in brand goes to their home instead). Reads the same
+     * cached frozen candidate list /feed slices, so "empty" here means /feed
+     * would render empty too.
      */
-    public function home(Request $request, FeedService $feed): RedirectResponse
+    public function home(Request $request, FeedService $feed, ProfileCompletionService $completion): RedirectResponse
     {
         $viewer = $this->currentActor->resolve();
+
+        if ($viewer instanceof Talent) {
+            return redirect()->route($completion->homeRoute($viewer));
+        }
 
         if ($feed->candidateIds($viewer, $this->sessionSeed($request)) !== []) {
             return redirect()->route('feed');

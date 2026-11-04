@@ -37,6 +37,7 @@ Route::post('/profile/avatar', [ProfileEditorController::class, 'updateAvatar'])
 Route::delete('/profile/avatar', [ProfileEditorController::class, 'removeAvatar'])->name('profile.avatar.destroy');
 Route::patch('/profile/pricing', [ProfileEditorController::class, 'updatePricingRate'])->name('profile.pricing')->middleware('feature:pricing');
 Route::patch('/profile/publish', [ProfileEditorController::class, 'publish'])->name('profile.publish');
+Route::get('/profile/state', [ProfileEditorController::class, 'state'])->name('profile.state');
 Route::patch('/profile/sections/universal-position', [ProfileEditorController::class, 'updateSectionOrder'])->name('profile.sections.universal');
 Route::get('/profile/blocks', [ProfileEditorController::class, 'blocks'])->name('profile.blocks');
 Route::get('/profile/block-picker', [ProfileEditorController::class, 'picker'])->name('profile.picker');

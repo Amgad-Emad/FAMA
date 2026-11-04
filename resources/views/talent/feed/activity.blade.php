@@ -1,8 +1,10 @@
 {{-- /talent/feed/activity — "Activity" (port of following.html): the talent's
      private feed collections. Saved and Liked show full post cards (the same
      canonical card as the feed); Following / Followers are rows with "Follows
-     you" and "Posted N days ago" / "Quiet since…", Unfollow with a 5-second
-     Undo, Follow back where it isn't mutual. Tabs switch in place.
+     you" and "Posted N days ago" / "Quiet since…", their three latest pieces of
+     work (project lead images), Unfollow with a 5-second
+     Undo, Follow back where it isn't mutual. Tabs switch in place; with no
+     ?view= the page opens on Saved.
      Behaviour = famaActivity (ui/feed-pages.js). --}}
 @php
     // The feed partials (lang bridge, composer, cards) read the acting talent.
@@ -84,6 +86,12 @@
                                         <button type="button" class="btn btn-2" @click="unfollow(p)" :aria-label="@js(__('Unfollow :name')).replace(':name', p.display_name)">{{ __('Following') }}</button>
                                     </template>
                                 </div>
+                                {{-- Their three latest pieces of work; no strip when there is nothing to show. --}}
+                                <template x-if="(p.work ?? []).length">
+                                    <div class="work" aria-hidden="true">
+                                        <template x-for="(src, i) in p.work" :key="i"><span :style="{ backgroundImage: `url('${src}')` }"></span></template>
+                                    </div>
+                                </template>
                             </li>
                         </template>
                     </ul>

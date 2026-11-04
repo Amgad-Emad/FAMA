@@ -209,6 +209,18 @@ serves the Phase 1A queries/views.
 (`TalentPolicy`, `ProfileBlockPolicy`, `ReviewPolicy`, `PortfolioItemPolicy`), all via
 `BasePolicy::owns`.
 
+### Prototype sync, 2026-11-04 (ADR-AC, ADR-AD)
+- **Shell:** `components/fama/nav` renders the talent side bar (≥1101px) + top bar (≤1100px); `famaSide` /
+  `famaNav` (resources/js/ui/shell.js) share `Alpine.store('famaNotifs')` (unread count, latest list, read/readAll).
+- **Go Live:** `ProfileCompletionService` (goLiveSteps · standOutSteps · canGoLive · isListed · isProfileDone ·
+  homeRoute · state · syncAfterWrite) + `App\Actions\Talent\SyncGoLiveState` (Created/Draft → Live when ready;
+  Live → Draft when a save breaks a step). `GET /talent/profile/state` feeds the editor's steps from SAVED data.
+- **Landing:** `AuthenticatedSessionController` + `FeedController::home` use `homeRoute()` for talents.
+- **Notifications page:** `NotificationInboxService` (filters, one aggregate counts query, kind map, bulk
+  follow-back lookup) behind `NotificationController::index`.
+- **Titles:** `App\Support\ProjectTitle` (name · sub · year tag) shared by the profile grid, featured cover and
+  project page.
+
 ## Talent dashboard (Phase 1C)
 
 The authenticated talent-guard dashboard (`routes/talent.php`, controllers in

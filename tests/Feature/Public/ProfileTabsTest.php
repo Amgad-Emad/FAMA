@@ -64,8 +64,8 @@ it('renders identity + universal blocks + a tab per skill, with the primary tab 
 
     $res = $this->get('/multi')->assertOk();
 
-    // Identity + universal block (reviews) render at the top.
-    $res->assertSee('Multi')->assertSee('@multi')->assertSee('UniversalReviewBody');
+    // Identity + the universal block (reviews, in the profile-wide region).
+    $res->assertSee('Multi')->assertSee('UniversalReviewBody');
     // Both skills appear as tab buttons.
     $res->assertSee('Modeling')->assertSee('Photography');
     // The PRIMARY (model) tab is active by default → its content is server-rendered…

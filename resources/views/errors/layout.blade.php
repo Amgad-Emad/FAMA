@@ -46,7 +46,7 @@
             </ul>
             <div class="fx-end">
                 @if ($isTalent)
-                    <a class="fx-preview fx-login" href="{{ $ctaUrl }}">{{ __('Profile structure') }}</a>
+                    <a class="fx-preview fx-login" href="{{ $ctaUrl }}">{{ __('Edit profile') }}</a>
                 @else
                     <a class="fx-preview fx-login" href="{{ $href('login', '/login') }}">{{ __('Log in') }}</a>
                 @endif

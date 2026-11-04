@@ -5,9 +5,12 @@ namespace App\Http\Controllers\Auth;
 use App\Feed\PendingIntent;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Models\Talent;
+use App\Services\ProfileCompletionService;
 use App\Support\Auth\Guards;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
 /**
@@ -16,6 +19,9 @@ use Illuminate\View\View;
  */
 class AuthenticatedSessionController extends Controller
 {
+    /** @param  ProfileCompletionService  $completion  decides a talent's landing page */
+    public function __construct(private readonly ProfileCompletionService $completion) {}
+
     /**
      * Display the login view. A guest bounced here from a feed write (follow,
      * like, comment, save) sees what will be finished once they log in.
@@ -40,14 +46,20 @@ class AuthenticatedSessionController extends Controller
         // a talent login), which would bounce the user straight back to login.
         $request->session()->forget('url.intended');
 
-        // A talent ALWAYS lands on Profile structure — the talent home (product
-        // rule, 2026-10-12: no dashboard). A visitor's pending feed action
-        // (follow / like / comment / save) has already been replayed by the
-        // Login event, so the old "return to the post" slot is dropped.
+        // A talent lands on the Feed once their profile is done (every Go Live
+        // and Stand out step), otherwise on Profile structure, where the next
+        // step is (ADR-AC, 2026-11-04 — prototype FAMA_HOME). A visitor's
+        // pending feed action (follow / like / comment / save) has already been
+        // replayed by the Login event, so the old "return to the post" slot is
+        // dropped.
         $request->session()->forget('feed.return_to');
 
         if ($request->role() === \App\Enums\UserRole::Talent) {
-            return redirect()->route('talent.profile.edit');
+            $talent = Auth::guard('talent')->user();
+
+            return redirect()->route($talent instanceof Talent
+                ? $this->completion->homeRoute($talent)
+                : 'talent.profile.edit');
         }
 
         // route('dashboard') dispatches to the active guard's dashboard.

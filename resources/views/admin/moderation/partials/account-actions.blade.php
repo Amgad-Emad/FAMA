@@ -10,7 +10,7 @@
     $item = 'flex w-full items-center gap-2.5 rounded-[10px] px-3 py-2 text-start text-sm font-medium transition hover:bg-elevated';
 @endphp
 
-{{-- Primary: Verify (one-way go-live sign-off) --}}
+{{-- Primary: Verify (one-way; a go-live gate for brands, a non-gating "checked by Fama" badge for talents — ADR-AC) --}}
 <button x-show="!{{ $o }}.is_verified && !{{ $o }}.trashed && {{ $o }}.status !== 'suspended'" type="button"
         @click="openNotice({{ $o }}, '{{ $kind }}', 'verify')"
         class="{{ $primary }} bg-primary text-on-primary hover:opacity-90">
@@ -26,8 +26,9 @@
     {{ __('Suspend') }}
 </button>
 
-{{-- Primary: Publish (only once verified, not suspended) --}}
-<button x-show="!{{ $o }}.trashed && !{{ $o }}.is_published && {{ $o }}.status !== 'suspended' && {{ $o }}.is_verified" type="button"
+{{-- Primary: Publish (not suspended). Brands only once verified (ADR-U);
+     talents need no verification since ADR-AC — Verify is a non-gating badge. --}}
+<button x-show="!{{ $o }}.trashed && !{{ $o }}.is_published && {{ $o }}.status !== 'suspended' && ({{ $o }}.is_verified || '{{ $kind }}' === 'talents')" type="button"
         @click="$confirm({ title: '{{ __('Publish this account?') }}', message: '{{ __('The account becomes visible to the public.') }}', confirmLabel: '{{ __('Publish') }}', tone: 'accent' }).then(ok => ok && action({{ $o }},'publish'))"
         class="{{ $primary }} bg-success text-white hover:opacity-90">
     <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm-9-9h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>

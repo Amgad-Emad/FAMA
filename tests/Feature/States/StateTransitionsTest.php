@@ -9,14 +9,14 @@ use Spatie\ModelStates\Exceptions\CouldNotPerformTransition;
 
 // ----- Talent profile --------------------------------------------------------
 
-it('talent profile: draft → live is allowed, live → draft is illegal', function () {
+it('talent profile: draft → live and back are both allowed (ADR-AC: a save that breaks a Go Live step leaves Live)', function () {
     $talent = Talent::factory()->draft()->create(['display_name' => 'X']);
 
     $talent->status->transitionTo(States\TalentProfile\Live::class);
     expect($talent->status->getValue())->toBe('live');
 
-    expect(fn () => $talent->status->transitionTo(States\TalentProfile\Draft::class))
-        ->toThrow(CouldNotPerformTransition::class);
+    $talent->status->transitionTo(States\TalentProfile\Draft::class);
+    expect($talent->status->getValue())->toBe('draft');
 });
 
 it('talent profile: created → live is illegal (must pass through draft)', function () {

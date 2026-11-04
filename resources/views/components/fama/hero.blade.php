@@ -3,13 +3,15 @@
     lavender tone + a photo clipped to the brand star on the right is the talent
     page default. `photo` is a banner key under public/fama-ui/img/banners
     (feed|activity|notifications|projects|credits|profile-structure|profile|…);
-    the star is drawn by public/fama-ui/js/hero.js. Slot = the action buttons.
+    the star is drawn by public/fama-ui/js/hero.js. The photo URL carries the
+    file's mtime (FamaAsset) so a replaced banner photo is never served stale
+    (the prototype bumps a manual ?v=). Slot = the action buttons.
 --}}
 @props(['label' => null, 'title', 'lead' => null, 'photo' => null, 'tone' => 'soft'])
 
 <div class="fx-hero-wrap">
     <section {{ $attributes->class(['fx-hero', 'fx-soft' => $tone === 'soft', 'fx-photo' => (bool) $photo]) }}
-             @if ($photo) data-fx-star="{{ asset('fama-ui/img/banners/'.$photo.'.jpg') }}" data-fx-focus="{{ $photo }}" @endif>
+             @if ($photo) data-fx-star="{{ \App\Support\FamaAsset::url('fama-ui/img/banners/'.$photo.'.jpg') }}" data-fx-focus="{{ $photo }}" @endif>
         <div class="fx-hb">
             <div>
                 @if ($label)<span class="fx-hl">{{ $label }}</span>@endif

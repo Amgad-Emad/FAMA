@@ -29,7 +29,10 @@ document.addEventListener('alpine:init', () => {
      *
      * opts.errors — {field: message} from the server (first message per field).
      * opts.checks — ordered [{field, rule, message, other?}] where rule is
-     *               required | email | min8 | match (match compares to `other`).
+     *               required | email (log in: anything@anything) | emailDomain
+     *               (register / reset: needs a dotted domain) | min8 | strong
+     *               (strength ≥ 3, as the prototype's register) | match
+     *               (match compares to `other`).
      * opts.type   — register's picked account type (drives the name label).
      */
     window.Alpine.data('famaAuthForm', (opts = {}) => ({
@@ -52,7 +55,9 @@ document.addEventListener('alpine:init', () => {
                 let bad = false;
                 if (c.rule === 'required') bad = v.trim() === '';
                 if (c.rule === 'email') bad = !/^[^@\s]+@[^@\s]+$/.test(v.trim());
+                if (c.rule === 'emailDomain') bad = !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v.trim());
                 if (c.rule === 'min8') bad = v.length < 8;
+                if (c.rule === 'strong') bad = passwordStrength(v) < 3;
                 if (c.rule === 'match') bad = v === '' || v !== value(c.other);
                 if (bad) errors[c.field] = c.message;
             });

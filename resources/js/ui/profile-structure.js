@@ -11,6 +11,10 @@
  *                      changes warns. Only the photo uploads immediately (a file
  *                      is not a draft — the prototype treats it the same way).
  *   profileViews     — the views card (./profile-views.js).
+ * The profile path (Go Live → Stand out, ADR-AC) is ./profile-gate.js: it
+ * follows what is SAVED (GET /talent/profile/state after every save), never
+ * the draft — a half-typed edit must not tell anyone they are no longer Live.
+ * If saving the draft WOULD take the profile out of Live, the bar says so first.
  * The list editors (links, skills, picker, sections, explore) are a mixin in
  * ./profile-structure-lists.js.
  *
@@ -23,6 +27,7 @@ import { tr, clone, fmt, toast, ask } from './profile-helpers';
 import { PLATFORMS, socialIcon, isWeb, urlOf } from './social';
 import { listsMixin, merge } from './profile-structure-lists';
 import './profile-views';
+import { famaGate } from './profile-gate';
 
 /** First validation message of an ApiError (or its message). */
 const firstError = (e) => Object.values(e?.errors || {})[0]?.[0] || e?.message || '';
@@ -43,8 +48,6 @@ document.addEventListener('alpine:init', () => {
         countries: initial.countries || [],
         cityCache: {},
         cityLoads: {},
-        // Gate card: the folded "Checked by Fama" card can be expanded back into the steps.
-        showSteps: false,
 
         // ----- the draft ----------------------------------------------------
         core: clone(initial.core),
@@ -54,7 +57,6 @@ document.addEventListener('alpine:init', () => {
         skills: initial.skills,
         specialities: initial.specialities || {},
         blocks: initial.blocks,
-        universalPosition: initial.universalPosition ?? 0,
         interests: (initial.interests || []).map((w) => ({ id: w.id, talent_type_id: w.talent_type_id, speciality_id: w.speciality_id, note: w.note || '' })),
 
         // ----- the last saved state (set in init) --------------------------
@@ -66,12 +68,12 @@ document.addEventListener('alpine:init', () => {
         contentKeys: initial.contentKeys || [],
         collabs: initial.collabs || [],
         hasPricing: !!initial.hasPricing,
-        completion: initial.completion || {},
+        // The profile path from SAVED data: { steps, can_go_live, is_published, listed, profile_done, status }.
+        path: initial.completion || { steps: {} },
         avatarUrl: initial.avatarUrl || null,
         uploadingAvatar: false,
         avatarError: '',
         isPublished: !!initial.publish.is_published,
-        isVerified: !!initial.publish.is_verified,
         publishing: false,
         publishError: '',
         copied: false,
@@ -99,6 +101,8 @@ document.addEventListener('alpine:init', () => {
         flashTimer: null,
         badField: null,
         badNote: '',
+        // Phones keep the bar to one row (a short title and a short button).
+        narrow: window.matchMedia('(max-width:760px)').matches,
         _k: 1000,
         _tmp: 0,
         picker: { open: false, title: '', help: '', ok: '', exclude: [], current: null, q: '', resolve: null },
@@ -122,10 +126,22 @@ document.addEventListener('alpine:init', () => {
                 if (this.platOpen !== null && !e.target.closest('.platmenu,.platbtn')) this.platOpen = null;
             });
             if (window.location.hash === '#display') this.focusField('fDisplay');
-            // Keep the nav's status bar in step (Private → Under review → Ready) as steps are finished.
-            this.$watch(() => [this.allStepsDone, this.isVerified].join(), () => {
-                window.dispatchEvent(new CustomEvent('fama-gate', { detail: { complete: this.allStepsDone, verified: this.isVerified } }));
-            });
+            window.matchMedia('(max-width:760px)').addEventListener('change', (e) => { this.narrow = e.matches; });
+            // The path card + the tracker under the nav (follows SAVED data only).
+            const gateEl = document.getElementById('gate');
+            if (gateEl) {
+                const gate = famaGate(gateEl, {
+                    req: this.S.goLive || [],
+                    rec: this.S.standOut || [],
+                    indexKey: 'show',
+                    S: this.S.gate || {},
+                    go: { name: '#fDisplay', place: '#fCity', skill: '#skills', photo: '#fPhoto', headline: '#fHeadline', bio: '#fBio', links: '#social .pin-card', brands: '#addBrand' },
+                    done: (k) => !!(this.path.steps || {})[k],
+                    // Going Live hands over the link: the copy button lights up in the hero.
+                    onState: (st) => { if (st.wentLive) this.flashLink(); },
+                });
+                this.gateRefresh = () => gate.refresh();
+            }
         },
 
         // ================= draft bookkeeping ================================
@@ -133,7 +149,7 @@ document.addEventListener('alpine:init', () => {
         draftState() {
             return clone({
                 core: this.core, links: this.links, rate: this.rate, now: this.now, skills: this.skills,
-                specialities: this.specialities, blocks: this.blocks, universalPosition: this.universalPosition, interests: this.interests,
+                specialities: this.specialities, blocks: this.blocks, interests: this.interests,
             });
         },
         /** Put a state back into the draft (Discard, Undo). */
@@ -167,7 +183,7 @@ document.addEventListener('alpine:init', () => {
             const j = JSON.stringify;
             const baseBlocks = this.blockMap(B.blocks);
             const switchKeys = ['interests', 'brand_collabs'];
-            const sectionsDirty = B.universalPosition !== this.universalPosition || this.blocks.some((b) => {
+            const sectionsDirty = this.blocks.some((b) => {
                 const was = baseBlocks[b.id];
                 if (!was) return false;
                 const a = this.blockSig(b); const o = this.blockSig(was);
@@ -196,16 +212,48 @@ document.addEventListener('alpine:init', () => {
         get barShown() { return this.dirtyCount > 0 || this.savedFlash; },
         /** How many parts have unsaved changes. */
         get dirtyCount() { return Object.values(this.dirty).filter(Boolean).length; },
+        /**
+         * Required fields the draft has emptied while the SAVED profile has them
+         * (24 Oct 2026): an emptied display name can't be saved; an emptied city
+         * would take a Live profile out of Live.
+         */
+        get liveRisk() {
+            const B = this.base;
+            if (!B) return [];
+            const had = (v) => String(v || '').trim() !== '';
+            const out = [];
+            if (had(B.core.display_name) && !had(this.core.display_name)) out.push('display');
+            if (this.isPublished && had(B.core.base_city) && !had(this.core.base_city)) out.push('city');
+            return out;
+        },
+        /** The draft would take the profile out of Live (the bar gets a yellow ring). */
+        get atRisk() { return this.dirtyCount > 0 && !this.badField && this.liveRisk.length > 0; },
+        /** Names of the parts with unsaved changes (their panel headings). */
+        get dirtyNames() { return Object.keys(this.dirty).filter((k) => this.dirty[k]).map((k) => (this.S.partNames || {})[k] || k); },
         /** The save bar's first line. */
         get sbTitle() {
-            if (this.dirtyCount && this.badField) return this.S.sbBad;
-            if (this.dirtyCount) return this.dirtyCount === 1 ? this.S.sbDirtyOne : fmt(this.S.sbDirtyMany, { n: this.dirtyCount });
+            if (this.dirtyCount && this.badField) {
+                return this.badField === 'fDisplay' ? this.S.sbBadName : this.badField === 'fUser' ? this.S.sbBadUser : this.S.sbBad;
+            }
+            if (this.dirtyCount) {
+                if (this.liveRisk.includes('display')) return this.S.sbBadName;
+                if (this.liveRisk.length) return this.S.sbRisk;
+                if (this.narrow) return this.S.sbShort;
+                const n = this.dirtyNames;
+                return n.length === 1 ? fmt(this.S.sbDirtyOneIn, { name: n[0] }) : fmt(this.S.sbDirtyManyIn, { n: n.length });
+            }
             return this.S.sbClean;
         },
         /** The save bar's second line. */
         get sbNote() {
-            if (this.dirtyCount && this.badField) return this.badNote || this.S.sbBadN;
-            if (this.dirtyCount) return this.S.sbDirtyN;
+            if (this.dirtyCount && this.badField) {
+                return this.badNote || (this.badField === 'fDisplay' ? this.S.sbBadNameN : this.badField === 'fUser' ? this.S.sbBadUserN : this.S.sbBadN);
+            }
+            if (this.dirtyCount) {
+                if (this.liveRisk.includes('display')) return this.S.sbNoNameN;
+                if (this.liveRisk.length) return this.S.sbRiskN;
+                return this.S.sbDirtyN;
+            }
             return this.savedAt ? this.S.sbSavedNow : this.S.sbCleanN;
         },
 
@@ -285,12 +333,6 @@ document.addEventListener('alpine:init', () => {
                 }
                 if (d.sections || d.explore || d.brands) await this.saveBlocks();
                 if (d.skills) await this.saveSkills();
-                if (this.universalPosition !== this.base.universalPosition || (this.universalPosition > 0 && d.skills)) {
-                    const position = this.universalPosition > 0 ? Math.max(1, this.skills.length) : 0;
-                    const { data } = await patch('/talent/profile/sections/universal-position', { position });
-                    this.universalPosition = data.universal_position;
-                    this.base.universalPosition = this.universalPosition;
-                }
                 if (d.explore) await this.saveInterests();
                 this.savedAt = Date.now();
                 this.flashSaved();
@@ -299,7 +341,36 @@ document.addEventListener('alpine:init', () => {
                 this.fail('server', e instanceof ApiError ? e : { message: this.S.saveFailed });
             } finally {
                 this.saving = false;
+                // The steps (and Live itself) follow what is now SAVED.
+                this.refreshState();
             }
+        },
+        /**
+         * Re-read the profile path from the server (GET /talent/profile/state):
+         * the steps, Live and the Creatives Index follow SAVED data only. Redraws
+         * the card + tracker and tells the nav (`fama-gate`).
+         */
+        async refreshState() {
+            try {
+                const { data } = await get('/talent/profile/state');
+                this.path = data;
+                this.isPublished = !!data.is_published;
+            } catch (e) {
+                return; // keep the last known path; the next save retries
+            }
+            if (this.gateRefresh) this.gateRefresh();
+            window.dispatchEvent(new CustomEvent('fama-gate', {
+                detail: { complete: !!this.path.can_go_live, verified: true, live: this.isPublished, listed: !!this.path.listed, done: !!this.path.profile_done },
+            }));
+        },
+        /** Light up the copy-link button once (the profile just went Live). */
+        flashLink() {
+            this.$nextTick(() => {
+                const lk = document.getElementById('copyLink');
+                if (!lk) return;
+                lk.classList.remove('gt-flash'); void lk.offsetWidth; lk.classList.add('gt-flash');
+                setTimeout(() => lk.classList.remove('gt-flash'), 1800);
+            });
         },
         /** Sections: visibility, scope moves, then each scope's order. */
         async saveBlocks() {
@@ -358,7 +429,6 @@ document.addEventListener('alpine:init', () => {
             this.specialities = payload.specialities;
             this.base.skills = clone(this.skills);
             this.base.specialities = clone(this.specialities);
-            this.completion.skill = this.skills.some((s) => (this.specialities[String(s.id)]?.selected || []).length > 0);
             // Added skills seeded their sections; removed ones took theirs away.
             const { data } = await get('/talent/profile/blocks');
             this.blocks = data;
@@ -426,13 +496,6 @@ document.addEventListener('alpine:init', () => {
             await this.loadCities(item.code);
             if (this.countryCode === item.code && !(this.cityCache[item.code] || []).includes(city)) this.core.base_city = '';
         },
-        /** Gate step link: glide to the field on this page; other pages navigate. */
-        goStep(e, step) {
-            if (!String(step.href || '').startsWith('#')) return;
-            e.preventDefault();
-            if (step.focus) this.focusField(step.focus);
-            else document.querySelector(step.href)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        },
         /** Scroll to and focus a field by id. */
         focusField(id) {
             this.$nextTick(() => {
@@ -485,6 +548,7 @@ document.addEventListener('alpine:init', () => {
                 const { data } = await post('/talent/profile/avatar', body);
                 this.avatarUrl = data.avatar_url;
                 toast(this.S.tPhoto);
+                this.refreshState();
             } catch (e) {
                 this.avatarError = e instanceof ApiError ? (e.errors?.avatar?.[0] || e.message) : this.S.uploadFailed;
             } finally {
@@ -500,6 +564,7 @@ document.addEventListener('alpine:init', () => {
                 const { data } = await del('/talent/profile/avatar');
                 this.avatarUrl = data.avatar_url;
                 toast(fmt(this.S.tRemoved, { name: this.S.photo }));
+                this.refreshState();
             } catch (e) {
                 this.avatarError = e instanceof ApiError ? e.message : this.S.uploadFailed;
             } finally {
@@ -510,6 +575,12 @@ document.addEventListener('alpine:init', () => {
         // ================= Live / Private ==================================
         /** "fama.test/username" — the SAVED address (only ever shown while Live). */
         get linkLabel() { return `${this.host}/${this.base?.core.slug || ''}`; },
+        /** Listed in the Creatives Index (Live + something to show). */
+        get isListed() { return !!this.path.listed; },
+        /** Held private on purpose (Unpublished): the Go Live steps alone don't bring it back. */
+        get isHeld() { return !this.isPublished && this.path.status === 'unpublished'; },
+        /** Taken down by Fama (Suspended). */
+        get isSuspended() { return this.path.status === 'suspended'; },
         /** Copy the profile link (rendered only while Live). */
         async copyLink() {
             if (!this.isPublished) return;
@@ -518,43 +589,25 @@ document.addEventListener('alpine:init', () => {
             this.note = this.S.copiedA;
             setTimeout(() => { this.copied = false; this.note = ''; }, 2000);
         },
-        /** Go Live / back to Private (publishing is not a draft: it is the profile's state). */
+        /**
+         * Go Live by hand — only for a profile HELD private (Unpublished). Every
+         * other profile goes Live by itself once its Go Live steps are saved.
+         */
         async setPublished(on) {
             if (this.publishing) return;
-            if (!on) {
-                const ok = await ask({ title: this.S.privTitle, message: this.S.privHelp, confirmLabel: this.S.privOk });
-                if (!ok) return;
-            }
             this.publishing = true;
             this.publishError = '';
             try {
                 const { data } = await patch('/talent/profile/publish', { publish: on });
                 this.isPublished = !!data.is_published;
                 toast(this.isPublished ? this.S.tLive : this.S.tPrivate);
+                this.refreshState();
             } catch (e) {
                 if (e instanceof ApiError) this.publishError = e.message;
             } finally {
                 this.publishing = false;
             }
         },
-        /** The steps to go Live, from the SAVED state. */
-        get gateSteps() {
-            const B = this.base;
-            if (!B) return [];
-            const done = {
-                photo: !!this.avatarUrl,
-                name: !!String(B.core.display_name || '').trim(),
-                place: !!(B.core.base_city && B.core.base_country),
-                bio: !!String(B.core.bio?.en || '').trim(),
-                skill: B.skills.some((s) => (B.specialities[String(s.id)]?.selected || []).length > 0),
-                project: !!this.completion.project,
-            };
-            return (this.S.steps || []).map((s) => ({ ...s, done: done[s.key] }));
-        },
-        /** Steps still to do, the verification included. */
-        /** Every profile step is done (only Fama's check can remain). */
-        get allStepsDone() { const g = this.gateSteps; return g.length > 0 && g.every((s) => s.done); },
-                get stepsLeft() { return this.gateSteps.filter((s) => !s.done).length + (this.isVerified ? 0 : 1); },
 
         // ================= availability ====================================
         /** Flip one availability switch (draft). */

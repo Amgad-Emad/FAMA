@@ -88,7 +88,7 @@ it('renders the Activity page with live tab counts and both sides of the follow 
     $this->actingAs($me->fresh(), 'talent')
         ->get(route('talent.feed.activity'))
         ->assertOk()
-        ->assertViewHas('view', 'following')
+        ->assertViewHas('view', 'saved') // opens on Saved, as the prototype does
         ->assertViewHas('counts', fn (array $c) => $c['following'] === 1 && $c['saved'] === 0)
         ->assertSee('famaActivity(', false);
 });

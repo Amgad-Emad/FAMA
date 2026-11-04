@@ -14,7 +14,7 @@
 /* photo (6 Oct 2026): the studio photo fills the lower part; the logo star sits on the seam */
 .au-show{position:relative}
 .au-show .au-in{position:relative;z-index:2}
-.au-photo{height:260px;flex:none;background:#CBBBA8 url("../img/banners/signin.jpg") center/cover no-repeat}
+.au-photo{height:260px;flex:none;background:#CBBBA8 url("../img/banners/signin.jpg?v=2") center/cover no-repeat}
 .au-show .hstar{position:absolute;z-index:1;height:150px;right:28px;bottom:190px;fill:var(--yellow)}
 .pane{background:var(--white);border:var(--border);border-radius:var(--radius);padding:var(--s7);display:flex;flex-direction:column;justify-content:center}
 .pane .h2{margin-top:var(--s1)}
@@ -43,4 +43,13 @@
   .au-photo{height:150px}
   .au-show .hstar{height:90px;bottom:110px;right:16px}
   .pane{padding:var(--s5)}
+}
+/* 31 Oct 2026, phones: the form is what people came for, so the showcase shrinks to a short purple band above it
+   (no photo, no star) and the first field shows without scrolling */
+@media (max-width:760px){
+  .auth{margin-top:var(--s4);gap:var(--s4)}
+  .au-photo,.au-show .hstar{display:none}
+  .au-show .au-in{padding:var(--s5) var(--s5) var(--s4);gap:var(--s2)}
+  .au-show h1{font-size:40px}
+  .au-show p{font-size:16px;margin-top:var(--s2)}
 }

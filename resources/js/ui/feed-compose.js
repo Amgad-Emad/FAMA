@@ -188,6 +188,15 @@ document.addEventListener('alpine:init', () => {
         init() {
             this.$watch('body', () => { this.dirty = true; this.detectUrls(); });
             this.$root.addEventListener('mention-picked', (e) => this.picked.push(e.detail.actor));
+            // The side bar's Create menu lands on /feed?new=post (or ?new=photo, which focuses the
+            // media drop): open the composer, then drop the flag so a reload or Back doesn't reopen it.
+            const url = new URL(window.location.href);
+            const wanted = url.searchParams.get('new');
+            if (wanted === 'post' || wanted === 'photo') {
+                url.searchParams.delete('new');
+                window.history.replaceState(window.history.state, '', url.toString());
+                this.$nextTick(() => this.open(wanted === 'photo' ? { mode: 'photo' } : {}));
+            }
         },
 
         /** A fresh post (mode photo/video focuses the media drop; project → share). */
@@ -424,8 +433,12 @@ document.addEventListener('alpine:init', () => {
             return fmt(n === 1 ? L('moreReply1', 'View :count more reply') : L('moreReplyN', 'View :count more replies'), { count: n.toLocaleString() });
         },
 
-        /** Reply under the top-level comment, starting with the person's @username. */
+        /**
+         * Reply under the top-level comment, starting with the person's @username.
+         * A visitor gets the sign-in dialog instead (prototype: Reply → signInPrompt).
+         */
         startReply(c, top) {
+            if (this.isGuest) { window.famaSignIn('comment'); return; }
             this.replyingTo = top.id;
             this.replyUser = c.author?.username ?? '';
             this.replyName = c.author?.display_name ?? '';

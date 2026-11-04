@@ -11,6 +11,7 @@ use App\Services\FollowService;
 use App\Support\Features;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Response;
 use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
@@ -24,12 +25,21 @@ use Illuminate\View\View;
 class TalentProfileController extends Controller
 {
     /**
-     * Show a published talent's public profile by slug (404 otherwise). The active
-     * tab comes from `?skill=` (when that skill has visible blocks) or the primary.
+     * Show a published talent's public profile by slug. The active tab comes from
+     * `?skill=` (when that skill has visible blocks) or the first skill.
+     *
+     * A profile that is not Live yet answers visitors with the prototype's
+     * not-live page ("This profile is still being set up.") — still a 404 status,
+     * and nothing about the talent in it, so a private profile stays private.
+     * An unknown slug is a plain 404.
      */
-    public function show(string $slug, CurrentActor $currentActor, FollowService $follows): View
+    public function show(string $slug, CurrentActor $currentActor, FollowService $follows): View|Response
     {
-        $talent = $this->publishedProfile($slug);
+        $talent = $this->loadProfile($slug);
+
+        if (! $this->isVisibleTo($talent)) {
+            return response()->view('talent.not-live', [], 404);
+        }
 
         // The owner previewing their own profile is not a view (and an
         // unpublished profile is only ever seen by its owner).
@@ -79,23 +89,39 @@ class TalentProfileController extends Controller
     }
 
     /**
-     * Load a published talent with everything the profile renders (eager, no N+1).
+     * Load a published talent with everything the profile renders (eager, no N+1);
+     * 404 when the slug is unknown or the profile is not visible to this viewer.
      */
     private function publishedProfile(string $slug): Talent
     {
-        $talent = Talent::query()
+        $talent = $this->loadProfile($slug);
+
+        abort_unless($this->isVisibleTo($talent), 404);
+
+        return $talent;
+    }
+
+    /**
+     * Load a talent by slug with everything the profile renders (404 if unknown).
+     */
+    private function loadProfile(string $slug): Talent
+    {
+        return Talent::query()
             ->where('slug', $slug)
             ->with($this->eagerLoads())
             ->firstOrFail();
+    }
 
-        // Unpublished profiles 404 for everyone except their owner, who gets
-        // the Preview (fama-ui preview.html: "Your profile is private. This is
-        // how people will see it once it's public.").
-        // Staff with moderate-content see it too — moderation previews a profile
-        // BEFORE verifying it, i.e. exactly while it is still private.
-        abort_unless($talent->is_published || $this->isOwner($talent) || $this->isStaff(), 404);
-
-        return $talent;
+    /**
+     * Whether the current viewer may see this profile. Unpublished profiles are
+     * hidden from everyone except their owner, who gets the Preview (fama-ui
+     * preview.html: "Your profile is private. This is how people will see it
+     * once it's public."), and staff with moderate-content — moderation
+     * previews a profile BEFORE verifying it, i.e. exactly while it is private.
+     */
+    private function isVisibleTo(Talent $talent): bool
+    {
+        return $talent->is_published || $this->isOwner($talent) || $this->isStaff();
     }
 
     /**

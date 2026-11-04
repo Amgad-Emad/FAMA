@@ -6,7 +6,7 @@
   'use strict';
   var PTS = '314.63 635.59 16.74 747.68 217.29 533.15 86.97 370.29 403.26 356.02 701.63 87.21 636.51 355.76 760 356.91 574.68 534.04 422.33 756.79',
       X0 = 16.74, Y0 = 87.21, VW = 743.26, VH = 669.58,
-      BAND = 2.55, GAP = 26, TEXT = 340, SPACE = 32,
+      BAND = 2.55, GAP = 26, TEXT = 340, SPACE = 32, MOB = 342,
       FOCUS = { feed: [.52, .45], activity: [.5, .45], notifications: [.55, .5], projects: [.42, .5], credits: [.5, .35], 'profile-structure': [.55, .4] },
       NS = 'http://www.w3.org/2000/svg', n = 0;
 
@@ -17,7 +17,8 @@
     svg.setAttribute('class', 'fx-star'); svg.setAttribute('aria-hidden', 'true');
     svg.setAttribute('viewBox', X0 + ' ' + Y0 + ' ' + VW + ' ' + VH); svg.setAttribute('preserveAspectRatio', 'xMidYMid slice');
     svg.innerHTML = '<defs><clipPath id="' + id + '"><polygon points="' + PTS + '"/></clipPath></defs>' +
-      '<image href="' + src + '" preserveAspectRatio="none" clip-path="url(#' + id + ')"/>' +
+      /* a clipping mask: the photo always covers the whole star (slice), never stretched */
+      '<image href="' + src + '" preserveAspectRatio="xMidYMid slice" clip-path="url(#' + id + ')"/>' +
       '<polygon points="' + PTS + '" fill="none" stroke="#FFEB73" stroke-width="3" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>';
     sec.appendChild(svg);
     var img = svg.querySelector('image');
@@ -30,7 +31,9 @@
     }
     function fit() {
       var W, H, w;
-      if (window.innerWidth <= 760) { hb.style.paddingRight = ''; W = sec.offsetWidth; place(Math.min(120 * BAND, W - 32), 120); return; }
+      /* 23 Oct 2026 (live prototype): on a phone the star keeps its own shape — big, running off the top
+         right corner on purpose (see .fx-star in shell.css) — instead of being squeezed into a strip. */
+      if (window.innerWidth <= 760) { hb.style.paddingRight = ''; place(MOB * VW / VH, MOB); return; }
       for (var i = 0; i < 4; i++) {
         W = sec.offsetWidth; H = sec.offsetHeight;
         w = Math.min(H * BAND, W - parseFloat(getComputedStyle(hb).paddingLeft) - minText - SPACE - GAP);

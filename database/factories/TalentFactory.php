@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Speciality;
 use App\Models\Talent;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
@@ -68,10 +69,27 @@ class TalentFactory extends Factory
     }
 
     /**
-     * Not yet approved by an admin — cannot go public (fails the ToLive guard).
+     * Not yet checked by an admin. Since ADR-AC this is only a badge — it no
+     * longer stops a profile going Live.
      */
     public function unverified(): static
     {
         return $this->state(fn (): array => ['is_verified' => false]);
+    }
+
+    /**
+     * Every Go Live step saved (ADR-AC): a display name, a city (from the
+     * definition) and one skill with one speciality attached.
+     */
+    public function goLiveReady(): static
+    {
+        return $this->afterCreating(function (Talent $talent): void {
+            if (blank($talent->display_name)) {
+                $talent->update(['display_name' => fake()->name()]);
+            }
+            $speciality = Speciality::factory()->create();
+            $talent->talentTypes()->attach($speciality->talent_type_id, ['is_primary' => true, 'position' => 0]);
+            $talent->specialities()->attach($speciality->id, ['position' => 0]);
+        });
     }
 }

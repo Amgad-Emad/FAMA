@@ -1,9 +1,12 @@
 /**
  * fama-ui feed pages beyond the stream:
  *
- * famaNotifications — notifications.html: All / Unread / Mentions (server-side
- *                     ?filter=), grouped Today / This week / Earlier, Mark all
- *                     as read (the header bell's badge follows), Show older.
+ * famaNotifications — notifications.html: All / Unread / Mentions pills with
+ *                     counts (server-side ?filter=, counts in meta.counts),
+ *                     grouped Today / This week / Earlier, one card per row with
+ *                     the action its kind calls for (Follow back toggles in
+ *                     place), Mark all as read (the bell's badge follows),
+ *                     Show older.
  * famaActivity      — following.html: Saved · Liked (full post cards over
  *                     ?format=html) · Following, with Following / Followers
  *                     rows, search, skill field, sort, Unfollow + Undo, Follow back.
@@ -16,22 +19,22 @@ document.addEventListener('alpine:init', () => {
 
     // ----- notifications -----------------------------------------------------
 
-    Alpine.data('famaNotifications', ({ listUrl, readUrl, unreadUrl, groups = ['Today', 'This week', 'Earlier'] }) => ({
+    Alpine.data('famaNotifications', ({ listUrl, readUrl, groups = ['Today', 'This week', 'Earlier'], actions = {} }) => ({
         show: 'all',
         items: [],
         page: 1,
         lastPage: 1,
         loaded: false,
-        unread: 0,
+        counts: { all: 0, unread: 0, mention: 0 },
+        actions,
         ago,
 
-        /** First page + the unread count. */
+        /** First page (its meta carries the pill counts). */
         init() {
             this.load();
-            get(unreadUrl).then((r) => { this.unread = r.data?.count ?? 0; }).catch(() => {});
         },
 
-        /** Load a page for the current segment (more = append the next page). */
+        /** Load a page for the current pill (more = append the next page). */
         async load(more = false) {
             const page = more ? this.page + 1 : 1;
             try {
@@ -40,6 +43,10 @@ document.addEventListener('alpine:init', () => {
                 this.items = more ? [...this.items, ...data] : data;
                 this.page = meta?.pagination?.current_page ?? page;
                 this.lastPage = meta?.pagination?.last_page ?? page;
+                if (meta?.counts) {
+                    this.counts = { ...this.counts, ...meta.counts };
+                    this.syncBell();
+                }
             } catch (error) {
                 console.warn('notifications: load failed', error);
             } finally {
@@ -47,12 +54,21 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
-        /** Switch segment. */
+        /** Switch pill; focus stays on the chosen tab (prototype). */
         setShow(value) {
             if (value === this.show) return;
             this.show = value;
             this.loaded = false;
             this.load();
+            this.$nextTick(() => this.$root.querySelector('#show [aria-selected="true"]')?.focus());
+        },
+
+        /** Arrow keys walk the pills (roving tabindex). */
+        stepShow(dir) {
+            const order = ['all', 'unread', 'mention'];
+            const rtl = document.documentElement.dir === 'rtl' ? -1 : 1;
+            const i = (order.indexOf(this.show) + dir * rtl + order.length) % order.length;
+            this.setShow(order[i]);
         },
 
         /** Rows grouped by calendar day: Today · This week · Earlier. */
@@ -65,13 +81,44 @@ document.addEventListener('alpine:init', () => {
                 .filter((g) => g.items.length);
         },
 
+        /** "Following" on a follow card once followed back. */
+        followingLabel: () => L('following', 'Following'),
+
+        /** The one action for a notification's kind: [label, primary?]. */
+        action(n) {
+            return this.actions[n.kind] ?? this.actions.system ?? ['Open', false];
+        },
+
         /** Mark one read (navigation follows). */
         markRead(n) {
             if (n.read_at) return;
             n.read_at = new Date().toISOString();
-            this.unread = Math.max(0, this.unread - 1);
+            this.counts.unread = Math.max(0, this.counts.unread - 1);
             this.syncBell();
             post(readUrl, { ids: [n.id] }).catch(() => {});
+        },
+
+        /**
+         * Follow back (or undo it) from a new-follower card, optimistic, with a
+         * toast naming them; reading the card marks it read (prototype).
+         */
+        async toggleFollow(n) {
+            const who = this.who(n);
+            const was = !!n.followed_back;
+            this.markRead(n);
+            n.busy = true;
+            n.followed_back = !was;
+            try {
+                const url = `/follow/${n.actor.type}/${n.actor.id}`;
+                if (was) await del(url); else await post(url);
+                toast(fmt(was ? L('unfollowed', 'Unfollowed :name') : L('followedNow', 'You follow :name now'), { name: who }));
+            } catch (error) {
+                n.followed_back = was;
+                console.warn('notifications: follow failed', error);
+                toast(error?.message || L('genericError', 'Something went wrong. Try again.'));
+            } finally {
+                n.busy = false;
+            }
         },
 
         /** Mark everything read. */
@@ -80,7 +127,7 @@ document.addEventListener('alpine:init', () => {
                 await post(readUrl, {});
                 this.items.forEach((n) => { n.read_at = n.read_at || new Date().toISOString(); });
                 if (this.show === 'unread') this.items = [];
-                this.unread = 0;
+                this.counts.unread = 0;
                 this.syncBell();
                 toast(L('markedAll', 'All marked as read'));
             } catch (error) {
@@ -88,11 +135,9 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
-        /** Keep the header bell's badge in step with this page. */
+        /** Keep the side bar's and the top bar's badges in step with this page. */
         syncBell() {
-            const nav = document.querySelector('.fx-nav[x-data]');
-            const state = nav ? Alpine.$data(nav) : null;
-            if (state && 'unread' in state) state.unread = this.unread;
+            Alpine.store('famaNotifs').unread = this.counts.unread;
         },
 
         icon: (n) => window.famaNotifIcon?.(n) ?? 'fx-i-check',
@@ -102,7 +147,7 @@ document.addEventListener('alpine:init', () => {
 
     // ----- Activity ------------------------------------------------------------
 
-    Alpine.data('famaActivity', ({ view = 'following', who = 'following', counts = {}, collectionUrl, followsUrl, skills = {} }) => ({
+    Alpine.data('famaActivity', ({ view = 'saved', who = 'following', counts = {}, collectionUrl, followsUrl, skills = {} }) => ({
         view,
         who,
         counts: { saved: 0, liked: 0, following: 0, followers: 0, ...counts },

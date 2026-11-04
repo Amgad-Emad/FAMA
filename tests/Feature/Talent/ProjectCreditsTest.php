@@ -301,7 +301,7 @@ it('files credited work in the universal region when the credit names a skill th
 
 // ----- Date: recorded, not displayed -----------------------------------------
 
-it('records the date, keeps year in sync, and never renders it', function () {
+it('records the date, keeps year in sync, and shows the year as the tag', function () {
     $owner = creditTalent('Owner');
 
     $this->actingAs($owner, 'talent')->postJson(route('talent.projects.store'), [
@@ -316,11 +316,13 @@ it('records the date, keeps year in sync, and never renders it', function () {
         // `year` is a derived projection kept for existing readers.
         ->and($project->year)->toBe(2023);
 
-    // A strong project from years ago must not be discounted for its age, so
-    // the date appears nowhere on the page.
+    // 2026-11-04 (co-founder prototype, supersedes ADR-AA's "never displayed"):
+    // the YEAR shows as the tag; the full date still appears nowhere.
     $this->get(route('talent.work', ['slug' => $owner->slug, 'project' => $project->id]))
         ->assertOk()
-        ->assertDontSee('2023');
+        ->assertSee('<span class="ytag">2023</span>', false)
+        ->assertDontSee('18 Apr')
+        ->assertDontSee('2023-04-18');
 });
 
 // ----- Client: hidden when empty ---------------------------------------------

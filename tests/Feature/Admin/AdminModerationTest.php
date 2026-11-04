@@ -54,7 +54,7 @@ it('verifies (one-way) and suspends a brand', function () {
     expect($brand->fresh()->status->getValue())->toBe('suspended');
 });
 
-it('verifies a talent (one-way, audited) — the go-live gate', function () {
+it('verifies a talent (one-way, audited) — a non-gating badge since ADR-AC', function () {
     $talent = Talent::factory()->draft()->unverified()->create();
 
     $this->actingAs($this->admin, 'admin')

@@ -686,8 +686,12 @@ document.addEventListener('alpine:init', () => {
             this.slide = Math.min(this.media.length - 1, Math.round(Math.abs(track.scrollLeft) / width));
         },
 
-        /** Post page: the Comment action focuses the thread's box. */
+        /**
+         * Post page: the Comment action focuses the thread's box. A visitor has no
+         * box (prototype post.html), so it opens the sign-in dialog instead.
+         */
         focusComment() {
+            if (this.isGuest) { window.famaSignIn('comment'); return; }
             document.getElementById('taroot')?.focus();
         },
     }));

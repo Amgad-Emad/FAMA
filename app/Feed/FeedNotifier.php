@@ -8,6 +8,7 @@ use App\Models\Post;
 use App\Notifications\Feed;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Throwable;
 
 /**
@@ -73,6 +74,7 @@ class FeedNotifier
                     'params' => ['name' => $commenter->feedDisplayName()],
                     'url' => $this->anchor($comment),
                     'actor' => $this->actorPayload($commenter),
+                    'excerpt' => $this->excerpt($comment),
                 ]));
             }
 
@@ -88,6 +90,7 @@ class FeedNotifier
                         'params' => ['name' => $commenter->feedDisplayName()],
                         'url' => $this->anchor($comment),
                         'actor' => $this->actorPayload($commenter),
+                        'excerpt' => $this->excerpt($comment),
                     ]));
                 }
             }
@@ -217,8 +220,21 @@ class FeedNotifier
                 'params' => ['name' => $author->feedDisplayName()],
                 'url' => $this->anchor($body),
                 'actor' => $this->actorPayload($author),
+                'excerpt' => $this->excerpt($body),
             ]));
         }
+    }
+
+    /**
+     * One line of what was said (the notifications page shows it under the
+     * message, prototype `ex`): the raw body squished to a single line and
+     * capped — plain text, escaped at render. Null for an empty body.
+     */
+    private function excerpt(Post|Comment $body): ?string
+    {
+        $text = Str::of((string) $body->body)->squish()->limit((int) config('feed.notifications.excerpt_length', 140))->value();
+
+        return $text !== '' ? $text : null;
     }
 
     /**

@@ -18,7 +18,7 @@
             <p class="sub">{{ __("Enter your email and we'll send you a link to choose a new password.") }}</p>
             <form id="form" method="POST" action="{{ route('password.email') }}" novalidate
                   x-data="famaAuthForm({ errors: {{ \Illuminate\Support\Js::from($serverErrors) }}, checks: [
-                      { field: 'email', rule: 'email', message: @js(__('Enter an email address like name@studio.com.')) },
+                      { field: 'email', rule: 'emailDomain', message: @js(__('Enter an email address like name@studio.com.')) },
                   ] })"
                   @submit="submit($event)">
                 @csrf

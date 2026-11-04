@@ -146,8 +146,10 @@ document.addEventListener('alpine:init', () => {
             if (!this.tabs.includes(slug) || !this.$refs.panel) return;
             if (slug === this.active && this.cache[slug] !== undefined) return;
 
-            // Preserve the current panel before switching away.
+            // Preserve the current panel before switching away. The direction
+            // (1 = a tab further along was picked) drives the motion layer's slide.
             if (this.active) this.cache[this.active] = this.$refs.panel.innerHTML;
+            const dir = this.tabs.indexOf(slug) >= this.tabs.indexOf(this.active) ? 1 : -1;
             this.active = slug;
 
             if (push) {
@@ -157,7 +159,7 @@ document.addEventListener('alpine:init', () => {
             }
 
             if (this.cache[slug] !== undefined) {
-                this.swapPanel(this.cache[slug]);
+                this.swapPanel(this.cache[slug], dir);
                 return;
             }
 
@@ -165,7 +167,7 @@ document.addEventListener('alpine:init', () => {
             try {
                 const { data } = await get(this.urls[slug]);
                 this.cache[slug] = data.html;
-                this.swapPanel(data.html);
+                this.swapPanel(data.html, dir);
             } catch (e) {
                 /* keep the current panel on failure */
             } finally {
@@ -177,13 +179,36 @@ document.addEventListener('alpine:init', () => {
         // 0 and 1 makes the transition play without requestAnimationFrame (which is
         // paused in background tabs); reduced-motion zeroes the duration via CSS, so
         // it always ends fully visible.
-        swapPanel(html) {
+        //
+        // When the profile's GSAP motion layer is loaded (public/fama-ui/js/
+        // profile-motion.js) it owns the transition instead: the new tab slides in
+        // from the side of the tab that was picked. Cached HTML may carry the
+        // motion layer's hidden start (data-fx + inline opacity) for parts that
+        // never reached the screen, so those marks are cleared first or they
+        // would stay invisible forever.
+        swapPanel(html, dir = 1) {
             const p = this.$refs.panel;
             if (!p) return;
             p.style.opacity = '0';
             p.innerHTML = html;
+            p.querySelectorAll('[data-fx]').forEach((el) => {
+                delete el.dataset.fx;
+                el.style.opacity = '';
+                el.style.transform = '';
+            });
             void p.offsetHeight; // reflow
             p.style.opacity = '';
+            window.famaProfileMotion?.tab(dir);
+        },
+
+        // A skill chip in the profile hero (outside this component) opens that
+        // skill's tab and brings the work area into view, focusing the tab
+        // without a second jump. A skill with no tab still scrolls to the work.
+        goSkill(slug) {
+            if (this.tabs.includes(slug)) this.show(slug);
+            const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            this.$root.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+            document.getElementById(`skill-tab-${slug}`)?.focus({ preventScroll: true });
         },
     }));
 

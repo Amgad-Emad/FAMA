@@ -60,11 +60,11 @@ it('renders number, percent bar and rise/fall with the compare line on the proje
 
     $this->get(route('talent.work', ['slug' => $this->talent->slug, 'project' => $project->id]))
         ->assertOk()
-        ->assertSee('r r-number', false)
-        ->assertSee('r r-percent', false)
+        ->assertSee('data-kind="number"', false)
+        ->assertSee('data-kind="percent"', false)
         ->assertSee('style="width:68%"', false)
-        ->assertSee('r r-change"', false)
-        ->assertSee('r r-change down', false)
+        ->assertSee('class="up" data-kind="change"', false)
+        ->assertSee('class="up down" data-kind="change"', false)
         ->assertSee('<small>vs last season</small>', false)
         ->assertSee('<small>vs SS25</small>', false);
 });
