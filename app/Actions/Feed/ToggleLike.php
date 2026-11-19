@@ -7,6 +7,7 @@ use App\Feed\FeedNotifier;
 use App\Models\Comment;
 use App\Models\Like;
 use App\Models\Post;
+use App\Models\Project;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 
@@ -19,9 +20,7 @@ use Illuminate\Support\Facades\DB;
  */
 class ToggleLike
 {
-    public function __construct(private readonly FeedNotifier $notifier)
-    {
-    }
+    public function __construct(private readonly FeedNotifier $notifier) {}
 
     /**
      * Like (or un-like) the target as the actor. Returns the resulting state
@@ -29,11 +28,12 @@ class ToggleLike
      *
      * @return array{liked: bool, likes_count: int}
      */
-    public function __invoke(Actor $actor, Post|Comment $target, bool $onlyLike = false, bool $onlyUnlike = false): array
+    public function __invoke(Actor $actor, Post|Comment|Project $target, bool $onlyLike = false, bool $onlyUnlike = false): array
     {
         $result = $this->toggle($actor, $target, $onlyLike, $onlyUnlike);
 
-        if ($result['created']) {
+        // Project likes (ADR-AJ) carry no notification type yet — only posts and comments notify.
+        if ($result['created'] && ! $target instanceof Project) {
             $this->notifier->liked($actor, $target);
         }
 
@@ -45,7 +45,7 @@ class ToggleLike
      *
      * @return array{liked: bool, likes_count: int, created: bool}
      */
-    private function toggle(Actor $actor, Post|Comment $target, bool $onlyLike, bool $onlyUnlike): array
+    private function toggle(Actor $actor, Post|Comment|Project $target, bool $onlyLike, bool $onlyUnlike): array
     {
         return DB::transaction(function () use ($actor, $target, $onlyLike, $onlyUnlike): array {
             $keys = [
@@ -89,7 +89,7 @@ class ToggleLike
      *
      * @return array{liked: bool, likes_count: int, created: bool}
      */
-    private function result(Post|Comment $target, bool $liked, bool $created = false): array
+    private function result(Post|Comment|Project $target, bool $liked, bool $created = false): array
     {
         return [
             'liked' => $liked,

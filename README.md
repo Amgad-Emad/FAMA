@@ -13,10 +13,12 @@ that walks a brand and a talent through booking, quoting, contracting, payment, 
 
 **UI: the fama-ui design (2026-10-12, ADR-AB).** Talent, feed, public profile, auth and error pages use the
 client's fama-ui kit (`public/fama-ui/`, `<x-fama.layout>`), synced to the co-founder's prototype as of 1 Nov
-2026 (ADR-AD). Talent nav: a **side bar** on wide screens (account · Create · Feed · Notifications · Activity ·
-Projects · Credits · Edit profile · View profile), a top bar ≤1100px. A talent signs in to the Feed once the profile
-is done, else to Profile structure; **going Live = three saved steps** (name, a skill with a speciality, city —
-no admin review, ADR-AC). Full Pest suite **897/897 green**.
+2026 and the 12–13 Nov review (ADR-AD, ADR-AE). Talent nav: a **side bar** on wide screens, portfolio first
+(account · Create · Your work: Projects · Credits · Your profile: Edit profile · View profile · Community: Feed ·
+Notifications · Activity), a top bar ≤1100px. A talent signs in to **Projects** once the profile is done, else to
+Profile structure; **going Live = three saved steps** (name, a skill with a speciality, city — no admin review,
+ADR-AC). Skills: the prototype's **41 skills / 195 specialities** (`database/data/skill-catalog.php`, ADR-AF).
+Full Pest suite **939/939 green**.
 
 Demo logins (password `password`): `talent-demo@fama.test` (every screen populated), `talent-new@fama.test`
 (Private — the go-Live steps), `brand-demo@fama.test`, `admin-demo@fama.test` (at `/admin/login`).
@@ -32,7 +34,10 @@ content older than the 30-day ranking windows), run `php artisan demo:freshen`.
   dashboard (**Home · Profile structure · Profile content · Projects · Reviews · Contracts**), where the
   **Profile editor** is the single profile surface (identity, Skills, Username, publish, pricing rate,
   blocks) and **Projects** (`/talent/projects`) owns the portfolio of work — every project tagged with
-  **at least one skill** (ADR-X), which is what places it in the public profile's tabs. The dashboard
+  **at least one skill** (ADR-X), which is what places it in the public profile's tabs. A project is
+  written as **free-form blocks** in a WYSIWYG editor (chapters, quotes, images, Photos, before/after,
+  tagged looks, video, social posts, Results, Credits — ADR-AN) and its public page lays itself out
+  from them, as the prototype's project page does. The dashboard
   home carries a public/private visibility switch and a views KPI with a week-over-week delta that
   expands into a range-filterable chart (back to the profile's creation date).
 - **Brand** — core + satellites, **projects**, the brand contract room, brand discovery, plus the

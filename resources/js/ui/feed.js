@@ -84,6 +84,49 @@ document.addEventListener('alpine:init', () => {
     }));
 
     /** The report sheet: pick a reason, add a note ("other" requires one), send. */
+    // Share to your feed (ADR-AM): one dialog; a card opens it with what it shares.
+    Alpine.data('famaRepostDialog', () => ({
+        id: null,
+        preview: {},
+        body: '',
+        busy: false,
+        error: '',
+        from: null,
+
+        /** Open for {id, name, handle, text, media}. */
+        show(detail) {
+            Object.assign(this, { id: detail.id, preview: detail, body: '', busy: false, error: '' });
+            this.from = document.activeElement;
+            this.$refs.d.showModal();
+            this.$nextTick(() => this.$refs.text?.focus());
+        },
+
+        /** Restore focus when it closes. */
+        closed() {
+            this.from?.focus?.();
+        },
+
+        /** Post the repost; the feed puts it on top, other pages just confirm. */
+        async submit() {
+            if (this.busy) return;
+            this.busy = true;
+            this.error = '';
+            try {
+                const { data } = await post(`/posts/${this.id}/repost`, { body: this.body });
+                this.$refs.d.close();
+                toast(L('rpDone', 'Shared to your feed'));
+                try {
+                    const { data: frag } = await get(`/posts/${data.id}/fragment`);
+                    window.dispatchEvent(new CustomEvent('post-created', { detail: { html: frag.html } }));
+                } catch (e) { /* the toast already confirmed it */ }
+            } catch (e) {
+                if (!gate(e, 'post')) this.error = e?.errors ? Object.values(e.errors).flat().join(' ') : (e?.message || L('failed', 'Something went wrong. Try again.'));
+            } finally {
+                this.busy = false;
+            }
+        },
+    }));
+
     Alpine.data('famaReportDialog', () => ({
         type: 'post',
         id: null,
@@ -425,6 +468,8 @@ document.addEventListener('alpine:init', () => {
         draft: '',
         posting: false,
         commentError: '',
+        replyTo: null,     // the comment id whose reply box is open (one at a time)
+        replyDraft: '',
         moreOpen: false,
         shareOpen: false,
         reported: false,
@@ -569,6 +614,93 @@ document.addEventListener('alpine:init', () => {
             this.sendComment();
         },
 
+        /**
+         * Reply to a comment, right in the feed (13 Nov 2026 review): the box opens
+         * under that comment, starting with the person's @username, caret at the end.
+         */
+        openReply(c) {
+            this.replyTo = c.id;
+            this.replyDraft = c.author?.username ? `@${c.author.username} ` : '';
+            this.commentError = '';
+            this.$nextTick(() => {
+                const input = this.$root.querySelector('.crform input');
+                if (!input) return;
+                input.focus();
+                input.setSelectionRange(input.value.length, input.value.length);
+            });
+        },
+
+        /** Close the reply box and give focus back to that comment's Reply link. */
+        cancelReply(c) {
+            this.replyTo = null;
+            this.replyDraft = '';
+            this.$nextTick(() => {
+                this.$root.querySelector(`.pcomments .creply[data-cid="${c.id}"]`)?.focus();
+            });
+        },
+
+        /** The reply's text — empty when it is only the pre-filled @username. */
+        replyBody(c) {
+            const body = this.replyDraft.trim();
+            return body === `@${c.author?.username ?? ''}` ? '' : body;
+        },
+
+        /** "2 replies" (the thread's accessible name). */
+        repliesLabel(c) {
+            const n = c.replies?.length ?? 0;
+            return fmt(n === 1 ? L('reply1', ':count reply') : L('replyN', ':count replies'), { count: n });
+        },
+
+        /** Post a reply under its comment (pending until the server confirms; Retry on failure). */
+        async sendReply(c, retryBody = null) {
+            const body = retryBody ?? this.replyBody(c);
+            if (!body || this.posting) return;
+            if (body.length > 2200) { this.commentError = L('commentMax', 'Up to 2,200 characters.'); return; }
+            this.posting = true;
+            this.commentError = '';
+            if (!Array.isArray(c.replies)) c.replies = [];
+            c.replies.push({
+                id: 'tmp-' + Date.now(), is_pending: true, is_failed: false, body,
+                body_html: body.replace(/&/g, '&amp;').replace(/</g, '&lt;'),
+                author: window.famaMe ?? null, created_at: new Date().toISOString(),
+            });
+            const row = c.replies[c.replies.length - 1];
+            this.replyTo = null;
+            this.replyDraft = '';
+            const restore = () => {
+                c.replies = c.replies.filter((r) => r !== row);
+                this.replyTo = c.id;
+                this.replyDraft = body;
+            };
+            try {
+                const { data } = await post(`/posts/${this.id}/comments`, { body, parent_id: c.id });
+                Object.assign(row, data, { is_pending: false });
+                c.replies_count = (c.replies_count ?? 0) + 1;
+                this.commentsCount += 1;
+            } catch (error) {
+                if (gate(error, 'comment')) {
+                    restore();
+                } else if (error instanceof ApiError && error.status === 429) {
+                    restore();
+                    this.commentError = L('commentSlow', "You're commenting fast. Wait a moment and try again.");
+                } else if (error instanceof ApiError && error.status === 422) {
+                    restore();
+                    this.commentError = error.errors ? Object.values(error.errors).flat().join(' ') : error.message;
+                } else {
+                    row.is_pending = false;
+                    row.is_failed = true;
+                }
+            } finally {
+                this.posting = false;
+            }
+        },
+
+        /** Re-send a failed reply. */
+        retryReply(c, row) {
+            c.replies = c.replies.filter((r) => r !== row);
+            this.sendReply(c, row.body);
+        },
+
         /** More menu (a guest gets the sign-in prompt — the only item is Report). */
         toggleMore() {
             if (this.isGuest) { window.famaSignIn('report'); return; }
@@ -664,6 +796,13 @@ document.addEventListener('alpine:init', () => {
             this.shareOpen = false;
             try { await navigator.clipboard.writeText(this.permalink); } catch { /* insecure context */ }
             toast(L('copied', 'Link copied') + ': ' + this.permalink.replace(/^https?:\/\//, ''));
+        },
+
+        /** Share to your feed: open the shared dialog with what this card shares. */
+        openRepost() {
+            this.shareOpen = false;
+            if (this.isGuest) { window.famaSignIn('share'); return; }
+            window.dispatchEvent(new CustomEvent('open-repost', { detail: this.repost }));
         },
 
         /** The OS share sheet. */

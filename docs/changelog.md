@@ -2,6 +2,58 @@
 
 Notable changes to the Fama project. Newest first.
 
+## 2026-11-17 — Free-form project blocks (ADR-AN)
+- The project editor is the prototype's block editor: text, headings (chapters), quotes, images, Photos, before/after,
+  looks with tagged pieces, YouTube/Vimeo video, social posts, Results and Credits — added anywhere ("+" between
+  blocks, "/" in an empty line), moved by grip or arrows, each with More (add below · turn into · duplicate · delete).
+  Pictures upload from the device or are picked from the project's own.
+- The project page lays itself out from the blocks: chapters, the pinned "Cases" gallery, picture-beside-text
+  spreads, tagged looks, the before/after slider, a click-to-play video, posts side by side.
+- Settings gains "Keep the client confidential". Publish now also asks for a cover or something to look at.
+- Every existing project was converted in place; the demo's Zeina Swim project shows a full case study.
+- Decisions: ADR-F2 (project shares) confirmed; verification never auto-publishes; Delete/Leave stay in Settings.
+
+## 2026-11-17 — Repost (ADR-AM)
+- "Share to your feed" in every post's Share menu: optional words + a preview; the repost card links back to the
+  original (or says it's gone). Also on the mobile API.
+
+## 2026-11-17 — Project likes (ADR-AJ) · Experience roles (ADR-AK)
+- Projects take ♡ Like (cover + Made by), replacing Follow there; visitors sign in and the like completes.
+- Experience = roles (title, company, employment type, place, dates/current, highlights, skills) with an
+  Add/Edit role dialog on Edit profile; grouped by company with durations on the profile.
+- The 32 new skills start with a Projects-only tab, as the prototype's skills do.
+
+## 2026-11-17 — Skill icons for all 41 · hide one credit or recognition (ADR-AI)
+- One shared glyph map `resources/data/skill-icons.json` (Blade `<x-skill-icon>` + dashboard.js) covering every skill.
+- Credits page: Hide/Show (with Undo) on each confirmed credit and each recognition; hidden ones leave the profile.
+
+## 2026-11-17 — About your practice (ADR-AG) · locked link while Private (ADR-AH)
+- Per-skill custom fields from the prototype (height, measurements, sizes, comfort, kit, skin tones, dialects,
+  platforms + reach, language pairs, licence…): edited in each skill section, saved with the Save bar
+  (`PUT /talent/profile/practice`), shown as "About the practice" in the skill tab. `talents.practice` (JSON).
+- Comp Card numbers copied into the new fields; the old block stays silent once they are set.
+- Private profiles show the link locked (dashed, lock, "Locked") and Share greyed, as the prototype does.
+
+## 2026-11-17 — Prototype images mirrored
+- `public/fama-ui/img/stock/` now holds the prototype's 29 sample photos + `SOURCES.md` (Unsplash licence, ids
+  listed). Logos, banners, pattern and the other stock images were already byte-identical to fama-ui.vercel.app.
+
+## 2026-11-17 — Skills catalog = the prototype's 41 skills (ADR-AF)
+- 41 skills and 195 specialities, identical to fama-ui `skills.js` (`database/data/skill-catalog.php`,
+  `SyncSkillCatalog`, migration `2026_11_17_000100`). Existing skills renamed in place; "Hair & makeup" split into
+  Makeup + Hair (holders keep both); dropped specialities retired, not deleted.
+- `projects` + `showreel` blocks open to the on-camera (`model`) category; skill pickers and filters list
+  alphabetically.
+
+## 2026-11-17 — Prototype review of 12–13 Nov (ADR-AE)
+- Shared projects list their team as equals ("By A and B" + one "Made by" band); hiring UI removed from the
+  project page; owners get "See it as a visitor" (`?visitor=1`).
+- Side bar portfolio first (Your work · Your profile · Community), icons-only folded rail with tooltips; a done
+  profile lands on Projects.
+- Feed comments take replies (Reply → @username box + Cancel, threaded); post media leads the text.
+- Projects cards: cover opens the project, Edit is the only button. Edit profile: "Make primary" replaces skill
+  reordering, two-group tracker, solid status pills. Public profile: point of view in the hero, lavender strip.
+
 ## 2026-11-04 — Motion: views chart eases open, buttons ease on hover
 - Profile structure views card: the chart panel eases open/closed (grid-rows 0fr→1fr, inert while
   closed) and the bars rise on every open and range switch (`snap` makes the reset to 0 instant so a

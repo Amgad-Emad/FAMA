@@ -75,7 +75,7 @@ class InterestController extends TalentController
 
         return [
             'interests' => TalentInterestResource::collection($talent->interests),
-            'skills' => TalentType::query()->orderBy('id')->get()->map(fn (TalentType $type) => [
+            'skills' => TalentType::query()->alphabetical()->get()->map(fn (TalentType $type) => [
                 'id' => (int) $type->id,
                 'slug' => $type->slug,
                 'name' => $type->getTranslation('name', app()->getLocale(), false) ?: $type->getTranslation('name', 'en', false),

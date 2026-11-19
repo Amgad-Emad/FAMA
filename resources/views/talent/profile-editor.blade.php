@@ -57,7 +57,7 @@
     $gate = [
         'barLabel' => __('Profile steps'), 'doneSuffix' => __(', done'), 'ofN' => __(':n of :m'),
         'trackA' => __('Go Live :a done, Stand out :b done'),
-        'msLive' => __('Live'), 'msIndex' => __('Index'), 'msReady' => __('Ready'),
+        'grpLive' => __('1 · Go Live'), 'grpStand' => __('2 · Stand out'),
         'inIndex' => __('In the Creatives Index'), 'getsIndex' => __('Gets you into the Creatives Index'),
         'edit' => __('Edit'), 'add' => __('Add'),
         'standOut' => __('Stand out'), 'oneToIndex' => __('1 step to the Creatives Index'), 'nextColon' => __('Next:'),
@@ -98,7 +98,15 @@
         'copiedA' => __('Link copied to the clipboard'),
         'travelOn' => __('Brands see you’ll take jobs outside :city.'), 'travelOff' => __('Brands see only that you’re based in :city.'), 'yourCity' => __('your city'),
         'website' => __('Website'), 'other' => __('Other'),
-        'skMoved' => __(':name is now tab :n'),
+        'skPrimary' => __(':name is now your primary skill'),
+        'fxCount' => __(':n of :m added'),
+        'roleAdded' => __(':r added'),
+        'roleUpdated' => __(':r updated'),
+        'roleRemoved' => __(':r removed'),
+        'roleNeedY' => __('Add the year you started.'),
+        'roleOrder' => __("The end date can't be before the start date."),
+        'copyOffN' => __('Finish Go Live first. Then you can share your link.'),
+        'fxCleared' => __(':name cleared'),
         'addTitle' => __('Add a skill'), 'addHelp' => __('It gets its own tab, with default sections you can change.'), 'addOk' => __('Add skill'),
         'rmTitle' => __('Remove :name?'), 'rmHelp' => __('Its tab and sections come off your profile. The content inside them is kept, so you can add the skill back later.'), 'rmOk' => __('Remove skill'),
         'pw' => __('Profile-wide'), 'offA' => __(':name is hidden from your profile. It keeps its content.'),
@@ -106,8 +114,6 @@
         'wtePickT' => __('Choose a skill to explore'), 'wtePickH' => __('Any skill, including one you have no work in yet.'), 'wtePickOk' => __('Choose skill'),
     ];
     $viewStrings = ['sum' => __(':n views in this period'), 'nViews' => __(':n views')];
-    $brandBlock = $talent->profileBlocks->first(fn ($b) => $b->blockType->key === 'brand_collabs');
-    $brandsUrl = route('talent.content', ['section' => $brandBlock?->talent_type_id ? optional($talent->talentTypes->firstWhere('id', $brandBlock->talent_type_id))->slug ?? 'universal' : 'universal']).'#block-brand_collabs';
 @endphp
 
 <x-fama.layout :title="__('Profile structure')" mode="talent" :css="['fields', 'views', 'exp']">
@@ -133,10 +139,11 @@
         contentKeys: @js($contentKeys),
         countries: @js(\App\Support\Locations::countries()),
         interests: @js($interests),
-        collabs: @js($collabs),
+        experience: @js($experience),
         hasPricing: {{ \App\Support\Features::enabled('pricing') ? 'true' : 'false' }},
         rate: @js($rate),
         reviewsOn: {{ \App\Support\Features::enabled('reviews') ? 'true' : 'false' }},
+        practice: @js($practice),
     })">
 
 <main class="wrap">
@@ -149,14 +156,14 @@
       <h1 x-text="savedName || '—'">{{ $talent->display_name ?: '—' }}</h1>
     </div>
     <div class="pub">
-      {{-- Live only: a Private profile shows no link at all — just its status (product rule;
-           the prototype shows it locked — see the 2026-11-04 report). --}}
-      <template x-if="isPublished">
-        <button type="button" class="linkbtn" id="copyLink" :class="{ copied }" @click="copyLink()" aria-describedby="copyNote" :aria-label="@js(__('Copy your profile link')) + ', ' + linkLabel">
-          <span id="pubState" dir="ltr" x-text="linkLabel"></span>
-          <span class="lb-ic"><svg class="icon" aria-hidden="true"><use :href="copied ? '#i-check' : '#i-copy'" href="#i-copy"/></svg><span id="copyTx" x-text="copied ? @js(__('Copied')) : @js(__('Copy'))"></span></span>
-        </button>
-      </template>
+      {{-- The profile link. Private: shown LOCKED — dashed, a lock, "Locked"; a press says to
+           finish Go Live (prototype 9 Oct 2026, ADR-AH — supersedes the "no link" rule). --}}
+      <button type="button" class="linkbtn" id="copyLink" :class="{ copied, off: !isPublished }" @click="copyLink()" aria-describedby="copyNote"
+              :aria-disabled="(!isPublished).toString()" :title="isPublished ? '' : @js(__('Your link can be shared once your profile is Live'))"
+              :aria-label="isPublished ? @js(__('Copy your profile link')) + ', ' + linkLabel : @js(__('Your link can be shared once your profile is Live'))">
+        <span id="pubState" dir="ltr" x-text="linkLabel"></span>
+        <span class="lb-ic"><svg class="icon" aria-hidden="true"><use :href="!isPublished ? '#i-lock' : (copied ? '#i-check' : '#i-copy')" href="#i-copy"/></svg><span id="copyTx" x-text="!isPublished ? @js(__('Locked')) : (copied ? @js(__('Copied')) : @js(__('Copy')))"></span></span>
+      </button>
       <span class="vh" id="copyNote" aria-live="polite" x-text="note"></span>
       <span class="stat">
         <span class="pill" :class="isPublished ? 'p-live' : 'p-off'" x-text="isPublished ? @js(__('Live')) : @js(__('Private'))">{{ $talent->is_published ? __('Live') : __('Private') }}</span>
@@ -379,28 +386,23 @@
     </div>
   </section>
 
-  {{-- ═══ Skills — the order of the profile tabs; the first opens first (no separate primary) ═══ --}}
+  {{-- ═══ Skills — the order of the profile tabs. 13 Nov 2026 review: no reordering (drag and arrows
+       are gone); one primary skill, which opens first. "Make primary" moves a skill to the front
+       (is_primary stays derived from position 0 — SkillsService::syncPrimaryFromOrder). ═══ --}}
   <section class="sec panel" id="skills" :class="{ changed: dirty.skills }">
     <div class="phead">
       <div class="ptitle"><div class="hrow"><h2 class="h3x">{{ __('Skills') }}</h2><span class="dirty" x-show="dirty.skills" x-cloak>{{ __('Unsaved') }}</span></div>
-        <p class="pdesc">{{ __('Each skill is a tab on your profile, in this order. The first one opens first. Drag to reorder.') }}</p></div>
+        <p class="pdesc">{{ __('Each skill is a tab on your profile. Your primary skill opens first.') }}</p></div>
       <button class="btn btn-2" type="button" id="addSkill" @click="addSkill()" :disabled="!canAddSkill"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg><span>{{ __('Add skill') }}</span></button>
     </div>
     <div id="skillList">
       <template x-for="(s, i) in skills" :key="s.id">
-        <div class="sk skill" :data-s="s.id"
-             :class="{ 'is-new': s.id === newSkillId, dragging: skDrag === s.id, 'drop-before': skDropOn === s.id && !skDropAfter, 'drop-after': skDropOn === s.id && skDropAfter }"
-             @dragover.prevent="skOver($event, s)" @drop.prevent="skDrop(s)">
+        <div class="sk skill" :data-s="s.id" :class="{ 'is-new': s.id === newSkillId }">
           <div class="shead">
-            <button type="button" class="grip" draggable="true" data-grip @dragstart="skStart($event, s)" @dragend="skEnd()"
-                    @keydown.up.prevent="moveSkill(s.id, i - 1)" @keydown.down.prevent="moveSkill(s.id, i + 1)"
-                    :aria-label="@js(__('Reorder :name. Use the arrow keys, or drag.')).replace(':name', skName(s))"><svg class="icon" aria-hidden="true"><use href="#i-grip"/></svg></button>
-            <div class="stitle"><b><span x-text="skName(s)"></span><span class="order" x-show="i === 0">{{ __('Opens first') }}</span></b></div>
+            <div class="stitle"><b><span x-text="skName(s)"></span><span class="order" x-show="i === 0">{{ __('Primary') }}</span></b></div>
             <span class="skacts">
-              <button type="button" class="iconbtn mv" data-mv="-1" @click="moveSkill(s.id, i - 1, '[data-mv=&quot;-1&quot;]:not(:disabled)')" :disabled="i === 0"
-                      :aria-label="@js(__('Move :name up')).replace(':name', skName(s))"><svg class="icon" aria-hidden="true"><use href="#i-up"/></svg></button>
-              <button type="button" class="iconbtn mv" data-mv="1" @click="moveSkill(s.id, i + 1, '[data-mv=&quot;1&quot;]:not(:disabled)')" :disabled="i === skills.length - 1"
-                      :aria-label="@js(__('Move :name down')).replace(':name', skName(s))"><svg class="icon" aria-hidden="true"><use href="#i-down"/></svg></button>
+              <button type="button" class="btn btn-2 skprim" x-show="i > 0" @click="makePrimary(s)"
+                      :aria-label="@js(__('Make :name your primary skill')).replace(':name', skName(s))"><svg class="icon" aria-hidden="true"><use href="#i-star"/></svg><span>{{ __('Make primary') }}</span></button>
               <button type="button" class="btn btn-2 skrm" @click="removeSkill(s)" :disabled="skills.length < 2"
                       :aria-label="@js(__('Remove :name')).replace(':name', skName(s))"><svg class="icon" aria-hidden="true"><use href="#i-trash"/></svg><span>{{ __('Remove') }}</span></button>
             </span>
@@ -412,6 +414,14 @@
                 <button type="button" class="chip" :aria-pressed="specialityPicked(s.id, sp.id).toString()" @click="toggleSpeciality(s.id, sp.id)" x-text="tr(sp.name) || sp.slug"></button>
               </template>
             </div>
+            {{-- About your practice (ADR-AG): the skill's custom fields, true of every job. Values live
+                 once per profile, so a field two skills share is the same field in both. --}}
+            <template x-if="fxFor(s).length">
+              <details class="fxd" open>
+                <summary><svg class="icon" aria-hidden="true"><use href="#i-chev"/></svg>{{ __('About your practice') }} <small x-text="fxCount(s)"></small></summary>
+                <div class="fx-fields" :data-s="s.slug" x-init="mountFields($el, s)"></div>
+              </details>
+            </template>
           </div>
         </div>
       </template>
@@ -500,35 +510,49 @@
     </div>
   </section>
 
-  {{-- ═══ Experience — the talent's brand collabs (the app has no roles model;
-       see the report). Read here, edited on the profile-content page. ═══ --}}
+  {{-- ═══ Experience — LinkedIn-style roles (ADR-AK, prototype FAMA_EXP): title, company, employment,
+       place, dates, highlights, skills. Part of the draft; the dialog only edits the draft. ═══ --}}
   <section class="sec panel" id="brands" :class="{ 'is-off': uniBlock('brand_collabs') && !uniBlock('brand_collabs').is_visible, changed: dirty.brands }">
     <div class="phead">
       <div class="ptitle"><div class="hrow"><h2 class="h3x">{{ __('Experience') }}</h2><span class="tag tag-hidden hidtag" x-show="uniBlock('brand_collabs') && !uniBlock('brand_collabs').is_visible" x-cloak>{{ __('Hidden from your profile') }}</span><span class="dirty" x-show="dirty.brands" x-cloak>{{ __('Unsaved') }}</span></div>
-        <p class="pdesc">{{ __('Brands you\'ve worked with, with the project and year. It shows on your profile after your work.') }}</p></div>
+        <p class="pdesc">{{ __('Your roles at companies and brands, newest first. It shows on your profile after your work.') }}</p></div>
       <template x-if="uniBlock('brand_collabs')">
         <label class="showsw"><span>{{ __('Show on profile') }}</span><button type="button" class="switch" role="switch" :aria-checked="uniBlock('brand_collabs').is_visible.toString()" @click="toggleVisible(uniBlock('brand_collabs'))" aria-label="{{ __('Show on profile') }}: {{ __('Experience') }}"><i></i></button></label>
       </template>
-      <a class="btn btn-2" id="addBrand" href="{{ $brandsUrl }}"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg><span>{{ __('Add brand') }}</span></a>
+      <button class="btn btn-2" type="button" id="addBrand" @click="openRole(null)"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg><span>{{ __('Add role') }}</span></button>
     </div>
     <div class="pbody" id="body-brands">
-      <div id="exp">
-        <ol class="xp" x-show="collabs.length">
-          <template x-for="c in collabs" :key="c.id">
-            <li class="xp-g one">
-              <span class="xp-logo" aria-hidden="true"><template x-if="c.logo"><img :src="c.logo" alt=""></template><template x-if="!c.logo"><span x-text="initialsOf(c.name)"></span></template></span>
-              <div class="xp-b"><div class="xp-top"><div>
-                <h3 class="xp-t" x-text="c.name"></h3>
-                <p class="xp-m" x-show="c.project" x-text="c.project"></p>
-                <p class="xp-d" x-show="c.year" x-text="c.year"></p>
-              </div><a class="iconbtn plain xp-ed" href="{{ $brandsUrl }}" :aria-label="@js(__('Edit :name')).replace(':name', c.name)"><svg class="icon" aria-hidden="true"><use href="#i-pen"/></svg></a></div></div>
-            </li>
-          </template>
-        </ol>
-        <p class="empty" x-show="!collabs.length">{{ __('Nothing here yet. Add the companies and brands you\'ve worked with.') }}</p>
+      <div id="exp" @click="onExpClick($event)">
+        <div x-show="roles.some((r) => r.n || r.t)" x-html="xpHtml()"></div>
+        <p class="empty" x-show="!roles.some((r) => r.n || r.t)">{{ __('Nothing here yet. Add the companies and brands you\'ve worked with, and your roles there.') }}</p>
       </div>
     </div>
   </section>
+
+  <dialog id="dlgRole" x-ref="roleDlg" aria-labelledby="roleT" @close="$nextTick(() => (roleAt == null ? document.getElementById('addBrand') : document.querySelector(`#exp [data-edit-role='${roleAt}']`))?.focus())">
+    <form method="dialog" class="dlg role" novalidate @submit.prevent="saveRole()">
+      <div class="role-h"><h2 id="roleT" x-text="roleAt == null ? @js(__('Add a role')) : @js(__('Edit role'))"></h2><button type="button" class="iconbtn plain" @click="$refs.roleDlg.close()" aria-label="{{ __('Close') }}"><svg class="icon"><use href="#i-x"/></svg></button></div>
+      <div class="role-b">
+        <div class="two"><label class="f" :class="{ bad: roleErrors.t }"><span>{{ __('Job title') }}</span><input class="in" x-ref="roleTitle" x-model="roleForm.t" maxlength="80" placeholder="{{ __('Lead stylist') }}"><p class="help err" x-show="roleErrors.t" x-cloak>{{ __('Add this to save the role.') }}</p></label>
+          <label class="f" :class="{ bad: roleErrors.n }"><span>{{ __('Company or brand') }}</span><input class="in" x-ref="roleOrg" x-model="roleForm.n" maxlength="80" placeholder="Maison Nour"><p class="help err" x-show="roleErrors.n" x-cloak>{{ __('Add this to save the role.') }}</p></label></div>
+        <div class="three"><label class="f"><span>{{ __('Employment type') }}</span><select class="sel" x-model="roleForm.et"><option value="">{{ __('Please select') }}</option><template x-for="o in xpEmployment" :key="o"><option :value="o" x-text="o" :selected="roleForm.et === o"></option></template></select></label>
+          <label class="f"><span>{{ __('Location') }}</span><input class="in" x-model="roleForm.loc" maxlength="60" placeholder="{{ __('City') }}"></label>
+          <label class="f"><span>{{ __('Location type') }}</span><select class="sel" x-model="roleForm.lt"><option value="">{{ __('Please select') }}</option><template x-for="o in xpLocationTypes" :key="o"><option :value="o" x-text="o" :selected="roleForm.lt === o"></option></template></select></label></div>
+        <label class="chk"><input type="checkbox" x-model="roleForm.cur"><span>{{ __('I currently work here') }}</span></label>
+        <div class="two"><div class="f"><span class="lbl">{{ __('Start date') }}</span><div class="my">
+            <select class="sel" x-model.number="roleForm.sm" aria-label="{{ __('Start month') }}"><option value="0">{{ __('Month') }}</option><template x-for="(m, j) in xpMonths" :key="m"><option :value="j + 1" x-text="m" :selected="+roleForm.sm === j + 1"></option></template></select>
+            <select class="sel" x-ref="roleSy" x-model.number="roleForm.sy" aria-label="{{ __('Start year') }}"><option value="0">{{ __('Year') }}</option><template x-for="y in roleYears" :key="y"><option :value="y" x-text="y" :selected="+roleForm.sy === y"></option></template></select></div>
+            <p class="help err" x-show="roleErrors.start" x-cloak x-text="roleErrors.start"></p></div>
+          <div class="f" x-show="!roleForm.cur"><span class="lbl">{{ __('End date') }}</span><div class="my">
+            <select class="sel" x-model.number="roleForm.em" aria-label="{{ __('End month') }}"><option value="0">{{ __('Month') }}</option><template x-for="(m, j) in xpMonths" :key="m"><option :value="j + 1" x-text="m" :selected="+roleForm.em === j + 1"></option></template></select>
+            <select class="sel" x-model.number="roleForm.ey" aria-label="{{ __('End year') }}"><option value="0">{{ __('Year') }}</option><template x-for="y in roleYears" :key="y"><option :value="y" x-text="y" :selected="+roleForm.ey === y"></option></template></select></div></div></div>
+        <label class="f"><span><span>{{ __('Highlights') }}</span><small x-text="`${(roleForm.hl || '').length.toLocaleString('en')} / 2,000`"></small></span><textarea class="ta" x-model="roleForm.hl" maxlength="2000"></textarea><p class="help">{{ __('One per line: projects, problems you solved, or results you got.') }}</p></label>
+        <div class="f"><span class="lbl" id="rSkL">{{ __('Skills') }}</span><p class="help" style="margin:0 0 var(--s2)">{{ __('Which of your skills this role used.') }}</p>
+          <div class="specs" role="group" aria-labelledby="rSkL"><template x-for="s in skills" :key="s.id"><button type="button" class="chip" :aria-pressed="(roleForm.sk || []).includes(s.id).toString()" @click="toggleRoleSkill(s.id)" x-text="skName(s)"></button></template></div></div>
+      </div>
+      <div class="role-f"><button type="button" class="btn btn-text del" x-show="roleAt != null" @click="deleteRole()">{{ __('Delete role') }}</button><span></span><button type="button" class="btn btn-2" @click="$refs.roleDlg.close()">{{ __('Cancel') }}</button><button type="submit" class="btn" x-text="roleAt == null ? @js(__('Add role')) : @js(__('Update role'))"></button></div>
+    </form>
+  </dialog>
 
   {{-- ═══ Pricing rate (ADR-N; hidden in V1 — no prototype design, same panel pattern) ═══ --}}
   @feature('pricing')

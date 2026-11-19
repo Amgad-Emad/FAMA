@@ -33,7 +33,7 @@
     $projectsCount = $talent->projects->pluck('id')
         ->merge($talent->creditedProjects->pluck('id'))
         ->unique()->count();
-    $recognitionsCount = $talent->recognitions->where('is_approved', true)->count();
+    $recognitionsCount = $talent->recognitions->filter->isShown()->count();
 
     // The featured project on the cover: the talent's pick (FeaturedProjectService).
     $owned = $talent->projects->sortBy('position')->values();
@@ -104,7 +104,7 @@
         </x-slot:hero>
     @elseif ($isOwner)
         <x-slot:hero>
-            <div class="pv-strip" id="strip"><div class="wrap"><span>{{ $isLive ? __('This is how everyone sees your profile.') : __("Your profile is private. This is how people will see it once it's public.") }}</span><a href="{{ route('talent.profile.edit') }}">{{ __('Edit profile') }}</a></div></div>
+            <div class="pv-strip" id="strip"><div class="wrap"><span>{{ $isLive ? __('This is how everyone sees your profile.') : __("Your profile is private. This is how people will see it once it's public.") }}</span><a class="btn" href="{{ route('talent.profile.edit') }}"><svg class="icon" aria-hidden="true"><use href="#i-pen"/></svg><span>{{ __('Edit profile') }}</span></a></div></div>
         </x-slot:hero>
     @endif
 
@@ -137,6 +137,8 @@
         @endif
       </div>
       @if ($talent->bio)<p class="ct-bio" dir="auto">{{ $talent->bio }}</p>@endif
+      {{-- 13 Nov 2026 review: the point of view is part of the person's details, so it moved up into the hero. --}}
+      @if (filled($talent->worldview))<div class="ct-pov"><h2>{{ __('Point of view') }}</h2><p dir="auto">“{{ $talent->worldview }}”</p></div>@endif
       @if ($firms->isNotEmpty())
         <p class="ct-with"><span>{{ __('Worked with') }}</span> {{ $firms->take(3)->implode(', ') }}@if ($firms->count() > 3) {{ __('and :n more', ['n' => $firms->count() - 3]) }}@endif</p>
       @endif
@@ -178,10 +180,11 @@
         @feature('messaging')
           <a class="btn btn-2" href="{{ route('brand.talents.message', ['talent' => $talent->slug]) }}">{{ __('Message') }}</a>
         @endfeature
-        {{-- Live only: a Private profile has no shareable link (product rule). --}}
-        @if ($isLive)
-          <button type="button" class="btn btn-2 ionly" @click="share()" aria-label="{{ __('Share profile') }}" title="{{ __('Share profile') }}"><svg class="icon" aria-hidden="true"><use href="#i-link"/></svg><span class="vh">{{ __('Share profile') }}</span></button>
-        @endif
+        {{-- Share. A Private profile (only its owner or staff can open it) shows the button
+             locked, as the prototype does (9 Oct 2026, ADR-AH): greyed, and a press explains. --}}
+        <button type="button" class="btn btn-2 ionly" @click="share()" aria-label="{{ __('Share profile') }}"
+                title="{{ $isLive ? __('Share profile') : __('Your link can be shared once your profile is Live') }}"
+                @unless ($isLive) aria-disabled="true" style="opacity:.45;cursor:not-allowed" @endunless><svg class="icon" aria-hidden="true"><use href="#i-link"/></svg><span class="vh">{{ __('Share profile') }}</span></button>
         @if ($talent->socialHandles->isNotEmpty())
           <ul class="ct-links">
             @foreach ($talent->socialHandles as $social)
@@ -240,11 +243,12 @@
   @endif
 
   {{-- What is true for every skill shows ONCE, after the tabs (24 Oct 2026) —
-       the profile-wide sections + point of view under "About {name}". The
+       the profile-wide sections under "About {name}" (the point of view moved
+       up into the hero, 13 Nov 2026). The
        partial renders nothing when none of it has content for this viewer. --}}
   @include('talent.partials.universal-blocks', $blockVars + ['blocks' => $universalBlocks, 'name' => $name])
 
-  @if ($universalBlocks->isEmpty() && $tabSkills->isEmpty() && blank($talent->worldview))
+  @if ($universalBlocks->isEmpty() && $tabSkills->isEmpty())
     <section class="notlive"><h2 class="h1">{{ __('This profile is still being set up.') }}</h2><p>{{ __('Check back soon.') }}</p>
       <a class="btn" style="margin-top:var(--s5)" href="{{ route('feed') }}">{{ __('Browse the feed') }}</a></section>
   @endif

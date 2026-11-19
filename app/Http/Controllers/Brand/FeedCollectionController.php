@@ -24,7 +24,7 @@ class FeedCollectionController extends Controller
     {
         return view('brand.feed.collection', [
             'mode' => 'saved',
-            'skills' => TalentType::query()->orderBy('id')->get(['id', 'name', 'slug']),
+            'skills' => TalentType::query()->alphabetical()->get(['id', 'name', 'slug']),
         ]);
     }
 

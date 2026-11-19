@@ -247,9 +247,14 @@ class ProjectController extends TalentController
     {
         $this->authorizeTalent('update', $project);
 
-        $project = $this->projects->addMedia($project, $request->file('files', []));
+        $before = $project->media()->where('collection_name', 'media')->pluck('id')->map('intval')->all();
+        // The block editor places its own pictures (`place=0`); anyone else's
+        // uploads join the story's Photos (ADR-AN).
+        $project = $this->projects->addMedia($project, $request->file('files', []), $request->boolean('place', true));
+        $added = $project->media->where('collection_name', 'media')->pluck('id')->map('intval')
+            ->reject(fn (int $id) => in_array($id, $before, true))->sort()->values()->all();
 
-        return response()->success($this->present($project), __('Work added.'));
+        return response()->success($this->present($project), __('Work added.'), meta: ['added' => $added]);
     }
 
     /**
@@ -390,7 +395,7 @@ class ProjectController extends TalentController
             // A new project for a talent with none becomes the featured one, locked on.
             'projectCount' => $talent->projects()->count(),
             'skills' => $this->presentSkills($skills),
-            'allSkills' => TalentType::query()->orderBy('id')->get()->map(fn (TalentType $type) => [
+            'allSkills' => TalentType::query()->alphabetical()->get()->map(fn (TalentType $type) => [
                 'id' => (int) $type->id,
                 'name' => $this->localName($type),
             ])->values()->all(),

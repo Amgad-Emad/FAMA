@@ -2,9 +2,12 @@
 /* Screen: /{username}?skill={skill} — "Talent profile" in the Fama V1 Blueprint.
    Also the talent's own Preview (with a strip that says so).
    Review states: ?view=guest (a visitor, public top bar) · ?state=unpublished · ?skill=modelling */
-.pv-strip{background:var(--ink);color:var(--cream)}
-.pv-strip .wrap{display:flex;align-items:center;justify-content:space-between;gap:var(--s4);min-height:52px;flex-wrap:wrap;padding-block:var(--s2)}
-.pv-strip a{color:var(--yellow);font-weight:600;text-decoration:none}
+/* 12 Nov 2026 review: the black strip was heavy yet easy to miss, and the link read as an afterthought.
+   Now a soft lavender band with a clear message and a real button. */
+.pv-strip{background:var(--lavender);color:var(--ink);border-bottom:1px solid var(--lavender-line)}
+.pv-strip .wrap{display:flex;align-items:center;justify-content:space-between;gap:var(--s4);min-height:68px;flex-wrap:wrap;padding-block:var(--s3)}
+.pv-strip .wrap>span{font-weight:600;font-size:17px}
+.pv-strip .btn .icon{width:18px;height:18px}
 
 /* profile header — the purple block and the one pattern on this page */
 .phero{margin-top:var(--s6);background:var(--purple);color:var(--white);border-radius:var(--radius);overflow:hidden}
@@ -103,6 +106,9 @@ dialog.signdlg{max-width:440px}
 .ct-skills a:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
 .ct-with{margin:var(--s3) 0 0;font-size:15px;line-height:1.5;color:var(--ink);max-width:44ch}
 .ct-with span{color:var(--grey)}
+.ct-pov{margin:var(--s4) 0 0;padding-inline-start:var(--s4);border-inline-start:3px solid var(--purple);max-width:44ch}
+.ct-pov h2{margin:0 0 2px;font-size:14px;font-weight:600;color:var(--purple-dk)}
+.ct-pov p{margin:0;font-size:17px;line-height:1.5;color:var(--ink);font-style:italic;text-wrap:pretty}
 .ct-bio{margin:var(--s3) 0 0;font-size:17px;line-height:1.5;color:var(--ink);max-width:40ch;text-wrap:pretty}
 #page p,#page li{text-wrap:pretty}
 .povq{margin:var(--s4) 0 0;max-width:62ch;font-size:20px;line-height:1.5}

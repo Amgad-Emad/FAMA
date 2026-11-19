@@ -30,3 +30,26 @@
 @foreach ($blocks as $block)
     @include('talent.blocks._dispatch', ['talent' => $talent, 'block' => $block, 'isOwner' => $isOwner ?? false])
 @endforeach
+
+{{-- About the practice (ADR-AG): the skill's custom fields as short facts, after the work
+     (prototype 9 Oct 2026). Comfort and coverage is for the owner and signed-in brands, never
+     visitors; digitals are their own block; software stays out when the Software block shows. --}}
+@isset($skill)
+    @php
+        $practiceFacts = \App\Support\PracticeFields::facts(
+            $skill->slug,
+            app(\App\Services\PracticeService::class)->values($talent),
+            ($isOwner ?? false) || auth('brand')->check(),
+            $blocks->contains(fn ($b) => $b->blockType?->key === 'software_stack'),
+        );
+    @endphp
+    @if ($practiceFacts !== [])
+        <section class="blk"><div class="pv-sh"><h2 class="h2">{{ __('About the practice') }}</h2></div>
+            <dl class="fx-facts" aria-label="{{ __('About the practice') }}">
+                @foreach ($practiceFacts as [$label, $html])
+                    <div class="fx-fact"><dt>{{ $label }}</dt><dd>{!! $html !!}</dd></div>
+                @endforeach
+            </dl>
+        </section>
+    @endif
+@endisset

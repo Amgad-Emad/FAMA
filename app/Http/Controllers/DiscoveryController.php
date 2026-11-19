@@ -22,7 +22,7 @@ class DiscoveryController extends Controller
     {
         return view('public.discover', [
             // Skills catalog (talent_types) — the primary filter, grouped by category.
-            'types' => TalentType::orderBy('category')->orderBy('id')->get(),
+            'types' => TalentType::orderBy('category')->alphabetical()->get(),
             'equipmentCategories' => ['camera', 'lens', 'lighting', 'audio', 'grip', 'drone', 'accessory'],
             'softwareOptions' => ['Figma', 'Photoshop', 'Illustrator', 'After Effects', 'Lightroom', 'Premiere Pro'],
             'lookOptions' => ['Editorial', 'Commercial', 'Runway', 'Fitness', 'Beauty'],

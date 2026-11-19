@@ -26,7 +26,7 @@ class ProjectController extends BrandController
 
     public function index(): View
     {
-        return view('brand.projects.index', ['talentTypes' => TalentType::orderBy('id')->get()]);
+        return view('brand.projects.index', ['talentTypes' => TalentType::alphabetical()->get()]);
     }
 
     public function data(): JsonResponse
@@ -53,7 +53,7 @@ class ProjectController extends BrandController
 
         return view('brand.projects.show', [
             'campaign' => $campaign,
-            'talentTypes' => TalentType::orderBy('id')->get(),
+            'talentTypes' => TalentType::alphabetical()->get(),
         ]);
     }
 

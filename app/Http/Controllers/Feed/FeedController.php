@@ -29,7 +29,7 @@ use Illuminate\View\View;
 class FeedController extends FeedBaseController
 {
     /**
-     * The site root. A signed-in talent follows the login landing rule (Feed
+     * The site root. A signed-in talent follows the login landing rule (Projects
      * once the profile is done, else Profile structure — ADR-AC). Everyone
      * else: the feed when it has something to show this viewer, otherwise
      * login (a signed-in brand goes to their home instead). Reads the same
@@ -86,7 +86,7 @@ class FeedController extends FeedBaseController
             'composer' => $composer,
             'activeSkill' => is_string($skill) && $skill !== '' ? $skill : null,
             'followingOnly' => $following,
-            'filterSkills' => TalentType::query()->orderBy('id')->get(['id', 'name', 'slug']),
+            'filterSkills' => TalentType::query()->alphabetical()->get(['id', 'name', 'slug']),
         ]);
     }
 

@@ -65,3 +65,23 @@
         </figure>
     </dialog>
 </div>
+
+{{-- Share to your feed (ADR-AM, prototype repostDialog): your words (optional) + a preview of
+     what you're sharing. One dialog for every card on the page. --}}
+<div x-data="famaRepostDialog()" @open-repost.window="show($event.detail)">
+    <dialog class="dlg" x-ref="d" @close="closed()">
+        <form method="dialog" novalidate @submit.prevent="submit()">
+            <div class="dh"><h2>{{ __('Share to your feed') }}</h2><button type="button" class="iconbtn plain" @click="$refs.d.close()" aria-label="{{ __('Close') }}"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button></div>
+            <label class="fx-vh" for="rpText">{{ __('Add your thoughts (optional). Type @ to credit someone.') }}</label>
+            <textarea class="ta" id="rpText" x-ref="text" maxlength="2200" style="margin-top:var(--s4);min-height:88px" x-model="body" placeholder="{{ __('Add your thoughts (optional). Type @ to credit someone.') }}"></textarea>
+            <div class="rpprev"><div class="rp">
+                <span class="rp-h"><b x-text="preview.name"></b> <span class="meta" dir="ltr" x-text="'@' + (preview.handle || '')"></span></span>
+                <span class="rp-t" dir="auto" x-show="preview.text" x-text="preview.text"></span>
+                <span class="meta rp-m" x-show="preview.media"><svg class="icon" aria-hidden="true"><use href="#i-image"/></svg> <span x-text="preview.media"></span></span>
+            </div></div>
+            <p class="help err" x-show="error" x-cloak x-text="error"></p>
+            <div class="acts"><button type="button" class="btn btn-2" @click="$refs.d.close()">{{ __('Cancel') }}</button><button class="btn" :aria-disabled="busy ? 'true' : null"><svg class="icon" aria-hidden="true"><use href="#i-repost"/></svg>{{ __('Share') }}</button></div>
+        </form>
+    </dialog>
+</div>
+

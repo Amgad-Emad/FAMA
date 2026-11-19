@@ -1,8 +1,9 @@
 {{--
     The fama-ui header (port of the prototype's shell.js navHTML), server-rendered.
-      talent — wide screens: the side bar (account · Create · Feed/Notifications/Activity ·
-               Your work: Projects/Credits · Your profile: Edit/View), folded to a rail by default.
-               ≤1100px: logo · Feed · Projects · Edit profile · Credits · Activity | View profile ·
+      talent — wide screens: the side bar (account · Create · Your work: Projects/Credits ·
+               Your profile: Edit/View · Community: Feed/Notifications/Activity), folded to a rail by
+               default (icons only, the name as a tooltip — 12–13 Nov 2026 review).
+               ≤1100px: logo · Projects · Edit profile · Credits · Feed · Activity | View profile ·
                bell · avatar menu · burger (the drawer opens over the page, with the account).
                Plus the pinned "Private" notice while the profile isn't live.
       public — logo · Feed | Log in · Join.
@@ -17,12 +18,13 @@
     if ($mode === 'talent' && ! $talent) {
         $mode = 'public';
     }
-    // 30 Oct 2026: ordered by how often a talent goes there; "Profile structure" reads as "Edit profile".
+    // 30 Oct 2026: "Profile structure" reads as "Edit profile". 13 Nov 2026 review: the portfolio comes
+    // first, the feed after it.
     $items = [
-        ['route' => 'feed', 'label' => __('Feed'), 'icon' => 'home'],
         ['route' => 'talent.projects', 'label' => __('Projects'), 'icon' => 'grid'],
         ['route' => 'talent.profile.edit', 'label' => __('Edit profile'), 'icon' => 'upen'],
         ['route' => 'talent.credits', 'label' => __('Credits'), 'icon' => 'award'],
+        ['route' => 'feed', 'label' => __('Feed'), 'icon' => 'home'],
         ['route' => 'talent.feed.activity', 'label' => __('Activity'), 'icon' => 'heart'],
     ];
     $initials = $talent
@@ -61,23 +63,24 @@
             <svg class="fx-icon fx-chev" aria-hidden="true"><use href="#fx-i-chev"/></svg></button>
         <button type="button" class="fx-snew" x-ref="create" @click.stop="openAt('create', $refs.create, $event)" aria-haspopup="menu" :aria-expanded="(open === 'create').toString()" aria-controls="fxSNewPop"><svg class="fx-icon" aria-hidden="true"><use href="#fx-i-plus"/></svg><span class="fx-sl">{{ __('Create') }}</span></button>
         <nav class="fx-snav" aria-label="{{ __('Menu') }}">
-            <ul class="fx-slinks">
-                <li><a href="{{ route('feed') }}" @if (request()->routeIs('feed')) aria-current="page" @endif><span class="fx-si"><svg class="fx-icon" aria-hidden="true"><use href="#fx-i-home"/></svg></span><span class="fx-sl">{{ __('Feed') }}</span></a></li>
-                <li><a href="{{ route('notifications.page') }}" @if ($onNotifications) aria-current="page" @else x-ref="nlink" aria-haspopup="true" :aria-expanded="(open === 'notifs').toString()" @mouseenter="hoverNotifs(true)" @mouseleave="hoverNotifs(false)" @keydown.arrow-down.prevent="openNotifs(true)" @endif>
-                    <span class="fx-si"><svg class="fx-icon" aria-hidden="true"><use href="#fx-i-bell"/></svg><span class="fx-count" aria-hidden="true" x-show="$store.famaNotifs.unread > 0" x-text="$store.famaNotifs.badge()" x-cloak></span></span><span class="fx-sl">{{ __('Notifications') }}</span></a></li>
-                <li><a href="{{ route('talent.feed.activity') }}" title="{{ __('Saved, liked, and the people you follow') }}" @if (request()->routeIs('talent.feed.activity*')) aria-current="page" @endif><span class="fx-si"><svg class="fx-icon" aria-hidden="true"><use href="#fx-i-heart"/></svg></span><span class="fx-sl">{{ __('Activity') }}</span></a></li>
-            </ul>
             <p class="fx-sgroup">{{ __('Your work') }}</p>
             <ul class="fx-slinks">
-                <li><a href="{{ route('talent.projects') }}" @if (request()->routeIs('talent.projects*')) aria-current="page" @endif><span class="fx-si"><svg class="fx-icon" aria-hidden="true"><use href="#fx-i-grid"/></svg></span><span class="fx-sl">{{ __('Projects') }}</span></a></li>
-                <li><a href="{{ route('talent.credits') }}" @if (request()->routeIs('talent.credits*')) aria-current="page" @endif><span class="fx-si"><svg class="fx-icon" aria-hidden="true"><use href="#fx-i-award"/></svg></span><span class="fx-sl">{{ __('Credits') }}</span></a></li>
+                <li><a data-tip="{{ __('Projects') }}" href="{{ route('talent.projects') }}" @if (request()->routeIs('talent.projects*')) aria-current="page" @endif><span class="fx-si"><svg class="fx-icon" aria-hidden="true"><use href="#fx-i-grid"/></svg></span><span class="fx-sl">{{ __('Projects') }}</span></a></li>
+                <li><a data-tip="{{ __('Credits') }}" href="{{ route('talent.credits') }}" @if (request()->routeIs('talent.credits*')) aria-current="page" @endif><span class="fx-si"><svg class="fx-icon" aria-hidden="true"><use href="#fx-i-award"/></svg></span><span class="fx-sl">{{ __('Credits') }}</span></a></li>
             </ul>
             <p class="fx-sgroup">{{ __('Your profile') }}</p>
             <ul class="fx-slinks">
-                <li><a href="{{ route('talent.profile.edit') }}" @if (request()->routeIs('talent.profile.edit*')) aria-current="page" @endif><span class="fx-si"><svg class="fx-icon" aria-hidden="true"><use href="#fx-i-upen"/></svg></span><span class="fx-sl">{{ __('Edit profile') }}</span></a></li>
+                <li><a data-tip="{{ __('Edit profile') }}" href="{{ route('talent.profile.edit') }}" @if (request()->routeIs('talent.profile.edit*')) aria-current="page" @endif><span class="fx-si"><svg class="fx-icon" aria-hidden="true"><use href="#fx-i-upen"/></svg></span><span class="fx-sl">{{ __('Edit profile') }}</span></a></li>
                 @if ($talent->slug)
-                    <li><a href="{{ url($talent->slug) }}" @if ($onOwnProfile) aria-current="page" @endif><span class="fx-si"><svg class="fx-icon" aria-hidden="true"><use href="#fx-i-eye"/></svg></span><span class="fx-sl">{{ __('View profile') }}</span></a></li>
+                    <li><a data-tip="{{ __('View profile') }}" href="{{ url($talent->slug) }}" @if ($onOwnProfile) aria-current="page" @endif><span class="fx-si"><svg class="fx-icon" aria-hidden="true"><use href="#fx-i-eye"/></svg></span><span class="fx-sl">{{ __('View profile') }}</span></a></li>
                 @endif
+            </ul>
+            <p class="fx-sgroup">{{ __('Community') }}</p>
+            <ul class="fx-slinks">
+                <li><a data-tip="{{ __('Feed') }}" href="{{ route('feed') }}" @if (request()->routeIs('feed')) aria-current="page" @endif><span class="fx-si"><svg class="fx-icon" aria-hidden="true"><use href="#fx-i-home"/></svg></span><span class="fx-sl">{{ __('Feed') }}</span></a></li>
+                <li><a data-tip="{{ __('Notifications') }}" href="{{ route('notifications.page') }}" @if ($onNotifications) aria-current="page" @else x-ref="nlink" aria-haspopup="true" :aria-expanded="(open === 'notifs').toString()" @mouseenter="hoverNotifs(true)" @mouseleave="hoverNotifs(false)" @keydown.arrow-down.prevent="openNotifs(true)" @endif>
+                    <span class="fx-si"><svg class="fx-icon" aria-hidden="true"><use href="#fx-i-bell"/></svg><span class="fx-count" aria-hidden="true" x-show="$store.famaNotifs.unread > 0" x-text="$store.famaNotifs.badge()" x-cloak></span></span><span class="fx-sl">{{ __('Notifications') }}</span></a></li>
+                <li><a data-tip="{{ __('Activity') }}" href="{{ route('talent.feed.activity') }}" title="{{ __('Saved, liked, and the people you follow') }}" @if (request()->routeIs('talent.feed.activity*')) aria-current="page" @endif><span class="fx-si"><svg class="fx-icon" aria-hidden="true"><use href="#fx-i-heart"/></svg></span><span class="fx-sl">{{ __('Activity') }}</span></a></li>
             </ul>
         </nav>
         <div class="fx-spop" id="fxSPop" x-show="open === 'me'" x-cloak :style="{ top: popTop + 'px' }">

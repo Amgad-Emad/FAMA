@@ -34,8 +34,12 @@
         'wBody' => __('You stop being an owner, and it comes off your profile and your name comes off the project. The project stays for its other owners. They can credit you again.'),
         'wOk' => __('Leave project'),
         'failed' => __('Something went wrong. Try again.'),
+        'hideA' => __('Hide :p from your profile'),
+        'showA' => __('Show :p on your profile again'),
+        'tHidden' => __(':p is hidden from your profile'),
+        'tShown' => __(':p is back on your profile'),
     ];
-    $shownRecognitions = $recognitions->filter(fn ($r) => (string) $r->status === 'approved')->count();
+    $shownRecognitions = $recognitions->filter(fn ($r) => (string) $r->status === 'approved' && $r->hidden_at === null)->count();
 @endphp
 <x-fama.layout :title="__('Credits & recognitions')">
     <x-slot:styles>
@@ -77,13 +81,14 @@
             <h2 class="h2 sm">{{ __('Projects you co-own') }}</h2>
             <div id="onprofile" style="margin-top:var(--s5)">
                 <template x-for="c in accepted" :key="c.id">
-                    <article class="cr">
+                    <article class="cr" :class="{ 'is-hidden': c.is_hidden }">
                         <a class="pt" :href="projectUrl(c)" aria-hidden="true" tabindex="-1"><div class="ph" :style="c.project?.cover_image_url ? { backgroundImage: 'url(' + c.project.cover_image_url + ')' } : {}"></div></a>
                         <div><a class="pt" :href="projectUrl(c)"><b x-text="c.project?.title"></b></a>
                             <p class="meta by" x-text="fmt(strings.from, { who: c.project?.owner?.display_name || '' }) + (c.responded_at ? ' · ' + fmt(strings.confirmedOn, { d: date(c.responded_at) }) : '')"></p>
-                            <div class="role"><span class="tag" x-text="c.skill?.name"></span><span class="tag" x-text="c.role"></span></div>
-                            <p class="note"><span x-text="noteText(c)"></span><template x-if="!holds(c)"><span> <a class="link" :href="skillsUrl" x-text="fmt(strings.addSkill, { s: c.skill?.name })"></a></span></template><template x-if="holds(c)"><span> <a class="link" :href="profileUrl(c)" x-text="strings.see"></a></span></template></p></div>
-                        <div class="acts"><button class="btn btn-2" type="button" @click="withdraw(c)" :aria-label="fmt(strings.withdrawA, { p: c.project?.title })"><svg class="icon" aria-hidden="true"><use href="#c-trash"/></svg>{{ __('Leave project') }}</button></div>
+                            <div class="role"><span class="tag" x-text="c.skill?.name"></span><span class="tag" x-text="c.role"></span><span class="pill p-off" x-show="c.is_hidden" x-cloak>{{ __('Hidden') }}</span></div>
+                            <p class="note" x-show="c.is_hidden" x-cloak>{{ __('Hidden. Still shows on the project page.') }}</p>
+                            <p class="note" x-show="!c.is_hidden"><span x-text="noteText(c)"></span><template x-if="!holds(c)"><span> <a class="link" :href="skillsUrl" x-text="fmt(strings.addSkill, { s: c.skill?.name })"></a></span></template><template x-if="holds(c)"><span> <a class="link" :href="profileUrl(c)" x-text="strings.see"></a></span></template></p></div>
+                        <div class="acts"><button class="btn btn-2" type="button" @click="toggleHidden(c)" :aria-label="fmt(c.is_hidden ? strings.showA : strings.hideA, { p: c.project?.title })"><svg class="icon" aria-hidden="true"><use :href="c.is_hidden ? '#c-eye' : '#c-eye-off'" href="#c-eye-off"/></svg><span x-text="c.is_hidden ? @js(__('Show')) : @js(__('Hide'))">{{ __('Hide') }}</span></button><button class="btn btn-2" type="button" @click="withdraw(c)" :aria-label="fmt(strings.withdrawA, { p: c.project?.title })"><svg class="icon" aria-hidden="true"><use href="#c-trash"/></svg>{{ __('Leave project') }}</button></div>
                     </article>
                 </template>
                 <div class="empty" x-show="loaded && !accepted.length" x-cloak><h3 class="h2">{{ __('No shared projects yet') }}</h3><p>{{ __('Projects you confirm show on your profile, in the tab of the skill you were credited for.') }}</p></div>
@@ -102,14 +107,18 @@
             <p class="meta" style="margin-top:var(--s2)">{{ __('Peers vouching for you. Approved ones show on your profile once our team has checked them.') }}</p>
             <div id="recs" style="margin-top:var(--s5)" :class="{ 'is-off': !on }">
                 @forelse ($recognitions as $recognition)
-                    <article class="rc{{ (string) $recognition->status === 'approved' ? '' : ' is-hidden' }}">
+                    <article class="rc" :class="{ 'is-hidden': {{ (string) $recognition->status === 'approved' ? 'false' : 'true' }} || hidden }"
+                             x-data="famaRecognitionHide({ url: @js(route('talent.recognitions.hidden', $recognition)), hidden: @js($recognition->hidden_at !== null), who: @js($recognition->author?->display_name ?? __('A Fama talent')), strings: @js(['hidden' => __(':w’s recognition is hidden from your profile'), 'shown' => __(':w’s recognition is back on your profile'), 'failed' => __('Something went wrong. Try again.')]) })">
                         <div>
                             <q dir="auto">{{ $recognition->body }}</q>
                             <p class="meta by">{{ $recognition->author?->display_name ?? __('A Fama talent') }} · {{ $recognition->relationship }} · {{ ($recognition->recognized_at ?? $recognition->created_at)?->format('j M Y') }}</p>
                             @if ((string) $recognition->status !== 'approved')
                                 <p class="note"><span class="pill p-off">{{ __('Pending') }}</span> {{ __('Waiting for our team to approve it.') }}</p>
                             @endif
+                            <p class="note" x-show="hidden" x-cloak><span class="pill p-off">{{ __('Hidden') }}</span> {{ __('Hidden from your profile.') }}</p>
                         </div>
+                        <div class="acts"><button class="btn btn-2" type="button" @click="toggle()" :disabled="busy"
+                                :aria-label="(hidden ? @js(__('Show :w’s recognition on your profile again')) : @js(__('Hide :w’s recognition from your profile'))).replace(':w', who)"><svg class="icon" aria-hidden="true"><use :href="hidden ? '#c-eye' : '#c-eye-off'" href="#c-eye-off"/></svg><span x-text="hidden ? @js(__('Show')) : @js(__('Hide'))">{{ __('Hide') }}</span></button></div>
                     </article>
                 @empty
                     <div class="empty"><h3 class="h2">{{ __('No recognitions yet') }}</h3><p>{{ __('When a peer recognises your work, it shows up here.') }}</p></div>

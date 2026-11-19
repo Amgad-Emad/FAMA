@@ -37,6 +37,9 @@ class TalentProjectResource extends BaseResource
             // What the card shows, already resolved in the viewer's locale.
             'label' => $this->getTranslation('title', $locale, false) ?: $this->getTranslation('title', 'en', false),
             'client_name' => $this->client_name,
+            'client_confidential' => (bool) $this->client_confidential,
+            // The story as free-form blocks (ADR-AN) — pictures are ids in `media`.
+            'blocks' => $this->storyBlocks(),
             'year' => $this->year,
             'url' => $this->url,
             // Up to four {label, value, compare} rows, in order.
@@ -52,10 +55,13 @@ class TalentProjectResource extends BaseResource
             'occurred_on' => $this->occurred_on?->toDateString(),
             // THE WORK, in the owner's chosen order. `is_video` is resolved here
             // so the client never has to parse a mime type.
-            'media' => $this->whenLoaded('media', fn () => $this->orderedMedia()->map(fn ($item) => [
+            // Every item, pictures taken out of the story included (the editor's
+            // Undo can put one back while it is kept — ADR-AN).
+            'media' => $this->whenLoaded('media', fn () => $this->allMedia()->map(fn ($item) => [
                 'id' => (int) $item->id,
                 'url' => $item->getUrl(),
                 'is_video' => str_starts_with((string) $item->mime_type, 'video/'),
+                'detached' => $item->getCustomProperty('detached_at') !== null,
             ])->values()->all(), []),
             'credits' => ProjectCreditResource::collection($this->whenLoaded('credits')),
             // The home tab (tag 0) — ADR-Q's single scope, kept in sync.

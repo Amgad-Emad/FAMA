@@ -1,7 +1,9 @@
 {{-- Comments, inline under a post in the feed (port of posts.js .pcomments):
      a box to add one, the latest few, and the way to the full thread. State
-     lives on the parent postFrame (loads once on first open). Guests get the
-     "Log in to comment" link. The full thread is the post page. --}}
+     lives on the parent postFrame (loads once on first open). Each comment
+     takes a Reply (13 Nov 2026): the box opens under it, starting with the
+     person's @username, with Cancel beside it; signed-in actors only. The
+     full thread is the post page. --}}
 @php
     $me = $currentActor ?? null;
     $meName = $me?->feedDisplayName() ?? '';
@@ -26,22 +28,44 @@
         </form>
         <p class="err" role="alert" x-show="commentError" x-cloak x-text="commentError"></p>
 
+    {{-- 13 Nov 2026 review: every comment takes a Reply (one level deep). The replies sit under the
+         comment they answer, indented on a thin line, so each conversation reads as one thread. --}}
     <ul class="clist" x-show="comments.length" x-cloak>
         <template x-for="c in comments.slice(0, 3)" :key="c.id">
-            <li :class="{ pending: c.is_pending }">
-                <template x-if="c.is_tombstone">
-                    <div class="cb"><p class="meta">{{ __('Comment deleted') }}</p></div>
-                </template>
-                <template x-if="!c.is_tombstone">
-                    <a class="av sm" :href="profileUrl(c.author)" aria-hidden="true" tabindex="-1"><img x-show="c.author?.avatar_url" :src="c.author?.avatar_url" alt=""><span x-show="!c.author?.avatar_url" x-text="initials(c.author?.display_name)"></span></a>
-                </template>
-                <template x-if="!c.is_tombstone">
-                    <div class="cb">
-                        <p><a class="who" :href="profileUrl(c.author)"><b dir="auto" x-text="c.author?.display_name"></b></a> <span class="meta" x-text="c.is_pending ? @js(__('now')) : ago(c.created_at)"></span></p>
-                        <p dir="auto" x-html="c.body_html"></p>
-                        <p x-show="c.is_failed" x-cloak><span class="fail">{{ __("Couldn't send.") }}</span> <button type="button" class="link" @click="retryComment(c)">{{ __('Retry') }}</button></p>
+            <li class="cthread" :class="{ pending: c.is_pending }">
+                @include('feed.partials.comment-item', ['var' => 'c', 'small' => false])
+                <div class="cfoot" x-show="(!isGuest && !c.is_tombstone && !c.is_pending) || (c.replies?.length) || replyTo === c.id">
+                    <button type="button" class="creply" :data-cid="c.id" x-show="!isGuest && !c.is_tombstone && !c.is_pending" @click="openReply(c)"
+                            :aria-label="@js(__('Reply')) + ': ' + (c.author?.display_name ?? '')">{{ __('Reply') }}</button>
+                    <div class="creplies" x-show="c.replies?.length || replyTo === c.id" :aria-label="repliesLabel(c)">
+                        <ul class="clist" x-show="c.replies?.length">
+                            <template x-for="r in (c.replies ?? [])" :key="r.id">
+                                <li :class="{ pending: r.is_pending }">
+                                    @include('feed.partials.comment-item', ['var' => 'r', 'small' => true])
+                                </li>
+                            </template>
+                        </ul>
+                        <a class="link" x-show="c.remaining_replies > 0" x-cloak href="{{ route('posts.show', $post) }}#comments"
+                           x-text="@js(__('View :count more replies')).replace(':count', c.remaining_replies)"></a>
+                        <template x-if="replyTo === c.id">
+                            <form class="cadd crform" @submit.prevent="sendReply(c)" novalidate>
+                                <label class="fx-vh" :for="'cr-' + id" x-text="@js(__('Reply to @:user…')).replace(':user', c.author?.username ?? '')"></label>
+                                <span class="cpill">
+                                    <span class="mwrap" x-data="famaMention()" x-modelable="value" x-model="replyDraft">
+                                        <input x-ref="field" :id="'cr-' + id" maxlength="2200" autocomplete="off"
+                                               :placeholder="@js(__('Reply to @:user…')).replace(':user', c.author?.username ?? '')"
+                                               x-model="value" @input="onInput($event)" @keydown="onKeydown($event)" @blur="onBlur()"
+                                               @keydown.escape="cancelReply(c)"
+                                               role="combobox" aria-autocomplete="list" :aria-expanded="open.toString()" :aria-controls="listId">
+                                        <x-feed.mention-field />
+                                    </span>
+                                    <button class="csend" :disabled="!replyBody(c) || posting" aria-label="{{ __('Post') }}"><svg class="icon" aria-hidden="true"><use href="#i-send-up"/></svg></button>
+                                </span>
+                                <button type="button" class="creply" @click="cancelReply(c)">{{ __('Cancel') }}</button>
+                            </form>
+                        </template>
                     </div>
-                </template>
+                </div>
             </li>
         </template>
     </ul>

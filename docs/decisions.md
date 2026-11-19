@@ -149,7 +149,7 @@
 ### ADR-F2 — Project shares: live reference + `shared_snapshot` fallback
 - **Context:** A `project_share` post references a talent's Project. Snapshot-everything (the contract-step rule, ADR-4) would show stale content; a bare FK breaks the post when the Project goes away.
 - **Decision:** The post **live-references** `projects.id` and renders the current Project; a `shared_snapshot` JSON frozen at share time lets an unpublished/deleted Project degrade to a **dead-but-intact frame** (no link-through) instead of a broken post. *(Widened in revision 5W:* the snapshot captures `{title translations, cover_media_path, client_name, year, media_count, skill_ids, shared_at}` so the dead frame renders complete — cover, meta line and skill chips — marked "This Project is no longer available".)
-- **Status:** Accepted (2026-07-22) — ⚠️ deliberately deviates from the contract-step snapshot rule; flagged for stakeholder confirmation (feed-spec Q1).
+- **Status:** Accepted (2026-07-22) — deliberately deviates from the contract-step snapshot rule. **Confirmed by the owner 2026-11-17** (feed-spec Q1 closed).
 - **Consequences:** Shares always show current work (the feed is a living surface, unlike a legal contract trail); withdrawal of a Project withdraws its content from the feed while preserving thread integrity. `posts.project_id` is `nullOnDelete`.
 
 ### ADR-F3 — Mentions stored as entity ID + offset, never as username text
@@ -336,8 +336,8 @@
 - **Consequences:** A newly-registered account is `unverified` and cannot publish until a moderator acts —
   the `created/draft` (talents) and `is_verified=false` (brands) moderation queues are now a real approval
   funnel, not a passive count. Factory defaults for the published/live states are `is_verified=true` (with
-  `unverified()` states for negative tests). Open item: whether verification should also **auto-publish**
-  (today it only unlocks the owner's Publish toggle) — deferred to stakeholders.
+  `unverified()` states for negative tests). **Decided 2026-11-17 (owner): verification does NOT auto-publish** —
+  it stays a separate act (and, for talents since ADR-AC, a badge only).
 
 ### ADR-W — V1 release scoping via feature flags (talent + feed + public profile)
 - **Context:** The client wants to ship to production now with ONLY the talent side, the public feed, and
@@ -680,4 +680,145 @@
 - **Sync method:** mirror the site, extract each page's `<style>` into `public/fama-ui/css/pages/<page>.css`
   verbatim (app tweaks in a marked `/* app overrides */` block at the bottom), copy shared sheets verbatim, and
   list dated comments newer than the last sync to find what moved.
+
+## ADR-AE — Synced to the prototype as of 13 Nov 2026 (portfolio first, shared projects as equals, comment replies)
+- **Status:** Accepted (2026-11-17; client update report "FAMA-update-2026-11-13-b.pdf", items 15–18, plus the
+  prototype's other 12–13 Nov dated changes).
+- **Decision:**
+  - **15 — shared projects:** everyone on a project (owner, confirmed on-platform credits, off-platform names) is
+    listed as an equal: "By A and B" with all avatars on the cover, one "Made by" band (name + role) at the end;
+    the owner-first Credits list is folded into it. Pending credits still appear nowhere (ADR-AA).
+  - **16 — no hiring yet:** "Work with", "Open for work" (project page), the phone follow bar and the hiring form
+    are removed. Visitors keep Share + Follow (the prototype shows Like; project likes have no backend).
+  - **17 — portfolio first:** side bar groups Your work → Your profile → Community; top bar Projects · Edit profile ·
+    Credits · Feed · Activity; a done profile lands on **Projects** (`ProfileCompletionService::homeRoute`) —
+    supersedes ADR-AC's "Feed once done".
+  - **18 — replies in the feed:** Reply under every inline comment, box pre-filled with @username + Cancel,
+    replies threaded on a thin line (one level).
+  - **Smaller (12–13 Nov):** folded rail icons-only with tooltips; one action per project card (Delete/Leave stay
+    in the editor's Settings); post media before text; no skill reordering — "Make primary" moves a skill to the
+    front (no rule change: primary = position 0); Go-Live tracker as two labelled groups, no Index milestone;
+    solid status pills; point of view in the profile hero; lavender owner strip; new projects open with Photos.
+- **Open:** where Delete / Leave project should live long-term; the notifications filter row (item 19, awaiting
+  clarification).
+
+## ADR-AF — The skills catalog is the prototype's 41 skills
+- **Status:** Accepted (2026-11-17; stakeholder asked that every skill in the prototype exist, with its data).
+- **Decision:** `database/data/skill-catalog.php` holds the 41 skills and their specialities exactly as fama-ui
+  `assets/js/skills.js` lists them (names, order; 195 specialities). `App\Actions\Catalog\SyncSkillCatalog` is the
+  one writer — seeders on a fresh DB, migration `2026_11_17_000100` on an existing one (a no-op on an empty DB).
+  - The nine existing rows are renamed IN PLACE (slugs kept: "Graphic design" → "Brand & graphic design",
+    "Retouching & post" → "Retouching"); 32 skills are new (slug = Str::slug(name)).
+  - **"Hair & makeup" splits** into Makeup (the old row; slug `hair-makeup` → `makeup` because the meaning changed)
+    and Hair (new). Every talent who held it also gets Hair; the old "Hair styling" speciality moves under Hair,
+    retired, so their claim still renders in the right tab.
+  - Specialities the catalog drops (e.g. Casting under Creative direction — now its own skill; Colour grading /
+    Video editing / Motion graphics under Retouching — now skills) are retired, not deleted (ADR-Y).
+  - Categories: model = on camera / on mic (Modelling, Acting, Voice, Presenting & hosting, Dance & movement,
+    Content creation); crew = on set with kit; creative = studio and post. `projects` and `showreel` blocks are now
+    eligible for `model` (the prototype gives every skill a projects tab).
+  - Every picker/filter lists skills alphabetically (`TalentType::alphabetical()`), as the prototype does.
+- **Open:** the Arabic names/specialities are a first pass (the prototype has no Arabic for them); the prototype's
+  per-skill "About your practice" fields (fields.js: 27 fields across 30 skills — height, measurements, dialects,
+  kit, licences…) are NOT ported yet; the prototype's audio and writing-sample sections have no block yet; the
+  32 new skills use the fallback icon.
+
+## ADR-AG — "About your practice": per-skill custom fields
+- **Status:** Accepted (2026-11-17; port of the prototype's assets/js/fields.js).
+- **Decision:** 27 fields over 31 skills (the prototype's comment says 30; its map has 31). `App\Support\PracticeFields`
+  is THE home (definitions, skill map, `clean()`, public `facts()`); the editor receives the definitions as JSON,
+  so nothing is defined twice. Values live ONCE per profile in `talents.practice` (JSON, keyed by field id), saved
+  with the Profile structure Save bar (`PUT /talent/profile/practice`, `PracticeService`). Two fields are views of
+  existing data: **digitals** (the Digitals content, dated by the newest photo; the field links to its uploader)
+  and **software** (synced with the Software list — options picked/un-picked here are added/removed, hand-listed
+  software is untouched). Public: "About the practice" after the work in each skill tab; Comfort and coverage
+  only for the owner and signed-in brands; digitals stay their own block; software is skipped when the Software
+  block shows.
+- **Comp Card superseded:** its numbers were copied into empty practice fields (migration 2026_11_17_000300) and
+  the block stays silent once the practice holds height/measurements/sizes (one height on the page). Hair/eye
+  colour remain on the comp card row only.
+- **Not ported:** uploading the drone certificate file (the number, registration and expiry are kept).
+
+## ADR-AH — A Private profile's link shows LOCKED (supersedes "no link while Private")
+- **Status:** Accepted (2026-11-17; stakeholder: match the current prototype).
+- **Decision:** as the prototype (9 Oct 2026): on Profile structure the link pill shows dashed with a lock and
+  "Locked"; pressing it says "Finish Go Live first…" and scrolls to the steps. On the owner's preview of a private
+  profile, Share is greyed (aria-disabled) and explains on press. The not-live page for visitors is unchanged.
+
+## ADR-AI — Hide one credit or recognition from your own profile
+- **Status:** Accepted (2026-11-17; prototype credits.html).
+- **Decision:** `project_credits.hidden_at` / `recognitions.hidden_at` — the named talent's choice only (403 for
+  anyone else; a credit must be accepted first, 422). A hidden credit leaves the collaborator's portfolio
+  (`Talent::creditedProjects` excludes it) but stays on the project page; a hidden recognition leaves the profile
+  (`Recognition::isShown()` = approved AND not hidden — THE public test). Hide/Show buttons with Undo on the Credits
+  page (`PATCH /talent/credits/{credit}/hidden`, `PATCH /talent/recognitions/{recognition}/hidden`).
+
+## ADR-AJ — Projects take likes
+- **Status:** Accepted (2026-11-17; prototype project.html "♡ Like" in the cover and the Made-by band).
+- **Decision:** project likes are the same polymorphic `likes` rows as posts/comments (likeable 'project'),
+  counted in `projects.likes_count` by CounterService (reconciled nightly). `POST|DELETE /projects/{project}/like`
+  (require.actor:like, feed-likes throttle; 404 unless the owner's profile is published). A visitor's like is
+  captured and replayed after login (PendingIntent resolves 'project'). The project page's Follow buttons are
+  replaced by Like (`famaProjectLike`). No notification for a project like yet (no notification type).
+
+## ADR-AK — Experience as LinkedIn-style roles
+- **Status:** Accepted (2026-11-17; prototype profile.js FAMA_EXP + Profile structure "Experience").
+- **Decision:** `brand_collabs` stays THE table, gaining role columns (role_title, employment_type, location,
+  location_type, is_current, start/end month+year, highlights, skill_ids); old rows read their project as the title
+  and their year as the start. `App\Support\Experience` holds the rules (option lists, ranges + durations,
+  newest-first grouping by company) and `resources/js/ui/experience.js` mirrors them for the editor — keep both in
+  step. Roles are part of the Profile structure draft (Add/Edit role dialog; `PUT /talent/profile/experience`
+  replaces the list via `ExperienceService`). The public `brand_collabs` block draws the grouped roles.
+
+## ADR-AL — Prototype features deliberately NOT built
+- **Audio / writing-sample sections:** the prototype keeps them only as dormant data ("a skill's tab is its
+  projects, nothing else", 3 Oct 2026) — building them would diverge from it. Likewise the 32 skills added with the
+  catalog start with a Projects-only tab.
+
+## ADR-AM — Reposts ("Share to your feed")
+- **Status:** Accepted (2026-11-17; prototype posts.js shareMenu/repostDialog).
+- **Decision:** `posts.post_type = 'repost'` + `posts.reposted_post_id` (nullOnDelete). `RepostPost` is the one write
+  path: your words are optional (mentions/links parse as for any post); reposting a repost shares its ORIGINAL.
+  `POST /posts/{post}/repost` (+ /api/v1 mirror): talents only (PostPolicy::create), original must be viewable.
+  The card shows your words, then a compact `.rp` card of the original (author, @handle, age, text or project title
+  clamped, media count) linking to it; a gone or unpublished original reads "This post is no longer available."
+  The Share menu offers "Share to your feed" to signed-in viewers only; ONE shared dialog (`famaRepostDialog`,
+  feed/partials/dialogs) and the new post is prepended on the feed. Every post-card eager load includes
+  `repostOf.author.media`, `repostOf.media`, `repostOf.project.media` (keep it that way — no N+1).
+
+## ADR-AN — Free-form project blocks (the prototype's WYSIWYG project editor)
+- **Status:** Accepted (2026-11-17; prototype project-editor.js + project.html, 24 Oct – 13 Nov 2026).
+- **Context:** A project was a fixed set of fields (summary · photos · story · results · credits). The prototype edits a
+  project as a page of free-form blocks and lays the page out from them (chapters, the scrolling "Cases" gallery,
+  picture-beside-text spreads, tagged looks, before/after, video, social posts).
+- **Decision:** `projects.blocks` (JSON, ordered) holds the story; `App\Support\ProjectBlocks` is THE home of the
+  shapes, limits, validation rules, legacy conversion and text projections. Types: text · heading · quote · image ·
+  gallery (≤ 24) · beforeafter · look (≤ 8 pieces, x/y %) · video (YouTube / Vimeo only) · embed (Instagram / TikTok /
+  Behance / YouTube) · results · credits. Pictures are ids in the project's own `media` collection — never URLs — so a
+  tampered payload cannot show another project's file (422). Results rows stay on `projects.results` and credits on
+  `project_credits`; their blocks only mark WHERE (one of each).
+  - `summary` / `body` are DERIVED by TalentProjectService from the blocks (summary = the lead, else the first
+    paragraph; body = the rest, inside the shared sanitiser's allowlist) so cards, the feed's project spread and the
+    API keep reading them. An API writer that still sends summary/body without blocks keeps working.
+  - The `media` collection's order follows first appearance in the story (lead image = what the story opens with). A
+    picture no block shows is marked `detached_at` (hidden from every reader) and deleted after 24 h — a save never
+    destroys a file outright, so the editor's Undo can put it back.
+  - Uploads: the editor sends `place=0` and places pictures itself (`meta.added` returns the new ids); any other
+    caller's uploads join the story's last Photos block.
+  - Layout: `App\Support\ProjectStory` ports project.html `render()` — no heading = the SHORT page (lead beside the
+    facts, one picture grid); with headings = chapters; heading (+ one line) + 4 photos = Cases; image then text =
+    spread; photos by count (1 wide · 2 pair · 3 wide + pair · 4+ Cases); consecutive posts = one row; Credits never
+    render in the story (the "Made by" band shows them). Drawn by `public/partials/project-story`.
+  - `projects.client_confidential` = the prototype's "Keep the client confidential": the page says "Confidential
+    client", hides the link, and a look's details never name the client.
+  - Migration 2026_11_17_000800 converts every existing project in place (opening line → photos → the story's
+    paragraphs, bold one-liners as chapters → Results → Credits). Rows with `blocks = NULL` (factories, fresh seeds)
+    read through `Project::storyBlocks()`'s legacy fallback.
+- **Not ported (prototype-only):** the localStorage draft-vs-published split (a Fama project autosaves live after its
+  first Publish, as before); Cmd+Z project-level undo (block deletes have toast Undo; typing keeps the browser's own).
+  Video length tags (the prototype's sample data). Social-post cards show the platform and handle; a picture needs a
+  link-preview fetch we do not run on save.
+- **Delete / Leave (stakeholder question, 2026-11-17):** the prototype removed them from the projects list (12 Nov) and
+  put them nowhere else, so they stay in the editor's Settings.
+- **Discovery limited to `isListed()`:** left for when `features.discover` turns on (owner, 2026-11-17).
 

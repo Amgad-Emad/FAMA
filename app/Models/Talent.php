@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Feed\Actor;
 use App\Models\Concerns\HasFeedIdentity;
 use App\States\TalentProfile\TalentProfileState;
 use Database\Factories\TalentFactory;
@@ -12,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\MediaLibrary\HasMedia;
@@ -29,7 +31,7 @@ use Spatie\Translatable\HasTranslations;
  * uploaded asset served from the media library (accessor below). headline/bio
  * are translatable.
  */
-class Talent extends Authenticatable implements \App\Feed\Actor, HasMedia
+class Talent extends Authenticatable implements Actor, HasMedia
 {
     /** @use HasFactory<TalentFactory> */
     use HasApiTokens, HasFactory, HasFeedIdentity, HasStates, HasTranslations, InteractsWithMedia, Notifiable, SoftDeletes;
@@ -48,7 +50,7 @@ class Talent extends Authenticatable implements \App\Feed\Actor, HasMedia
      */
     protected $fillable = [
         'email', 'password', 'email_verified_at', 'phone', 'last_login_at', 'is_active',
-        'slug', 'display_name', 'headline', 'bio', 'worldview',
+        'slug', 'display_name', 'headline', 'bio', 'worldview', 'practice',
         'status', 'base_city', 'base_country', 'booking_type', 'booking_value',
         'will_travel', 'is_available', 'availability_changed_at',
         'rate_unit', 'rate_amount', 'rate_currency',
@@ -92,6 +94,7 @@ class Talent extends Authenticatable implements \App\Feed\Actor, HasMedia
             'steps_completed_at' => 'datetime',
             'is_published' => 'boolean',
             'meta' => 'array',
+            'practice' => 'array',
             'view_count' => 'integer',
             'rate_amount' => 'decimal:2',
             'status' => TalentProfileState::class,
@@ -229,6 +232,8 @@ class Talent extends Authenticatable implements \App\Feed\Actor, HasMedia
     {
         return $this->belongsToMany(Project::class, 'project_credits')
             ->wherePivot('status', 'accepted')
+            // A credit the collaborator hid stays on the project, off their portfolio (ADR-AI).
+            ->wherePivotNull('hidden_at')
             ->withPivot('talent_type_id', 'role', 'position')
             ->orderByPivot('position');
     }
@@ -245,9 +250,9 @@ class Talent extends Authenticatable implements \App\Feed\Actor, HasMedia
      * Reads loaded relations only, so a profile render stays N+1-free; callers
      * must eager-load `projects.talentTypes` and `creditedProjects`.
      *
-     * @return \Illuminate\Support\Collection<int, Project>
+     * @return Collection<int, Project>
      */
-    public function portfolioProjects(?int $talentTypeId): \Illuminate\Support\Collection
+    public function portfolioProjects(?int $talentTypeId): Collection
     {
         $owned = $this->projects->filter(
             fn (Project $project) => $project->belongsToScope($talentTypeId)

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Bookmark;
 use App\Models\Brand;
 use App\Models\Comment;
 use App\Models\Follow;
@@ -82,7 +83,7 @@ class CounterService extends Service
     /**
      * Apply a bookmark's effect on its post's bookmarks_count (5X).
      */
-    public function applyBookmarkDelta(\App\Models\Bookmark $bookmark, int $delta): void
+    public function applyBookmarkDelta(Bookmark $bookmark, int $delta): void
     {
         if ($bookmark->bookmarkable_type !== 'post') {
             return;
@@ -155,6 +156,11 @@ class CounterService extends Service
         $repaired['posts.comments_count'] = $this->reconcileColumn(
             'posts', 'comments_count',
             'SELECT COUNT(*) FROM comments WHERE comments.post_id = posts.id AND comments.deleted_at IS NULL'
+        );
+
+        $repaired['projects.likes_count'] = $this->reconcileColumn(
+            'projects', 'likes_count',
+            "SELECT COUNT(*) FROM likes WHERE likes.likeable_type = 'project' AND likes.likeable_id = projects.id"
         );
 
         $repaired['comments.likes_count'] = $this->reconcileColumn(

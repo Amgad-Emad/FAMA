@@ -123,3 +123,15 @@ dialog.signdlg p{color:var(--grey);margin:var(--s2) auto 0;max-width:34ch}
 dialog.signdlg .row{display:flex;flex-direction:column;gap:var(--s2);margin-top:var(--s6)}
 dialog.signdlg .row .btn{width:100%;justify-content:center}
 @media (max-width:760px){dialog.signdlg{padding:var(--s6) var(--s5) var(--s5)}}
+
+/* 13 Nov 2026 review: reply to a comment right in the feed; replies sit under it on a thin line, so a thread reads at a glance */
+.clist .cthread{flex-wrap:wrap}
+.cthread>.cb{flex:1 1 0}
+.cfoot{flex-basis:100%;padding-inline-start:calc(32px + var(--s3));display:grid;gap:var(--s3)}
+.creply{justify-self:start;background:none;border:0;padding:2px 0;font:inherit;font-size:14px;font-weight:600;color:var(--grey);cursor:pointer;margin-top:calc(-1 * var(--s2))}
+.creply:hover,.creply:focus-visible{color:var(--ink);text-decoration:underline;text-underline-offset:3px}
+.creplies{display:grid;gap:var(--s3);padding-inline-start:var(--s4);border-inline-start:2px solid var(--line)}
+.creplies .clist{gap:var(--s3)}
+.creplies .av.xs{width:28px;height:28px;font-size:11px}
+.crform{flex-wrap:wrap}
+.crform .creply{margin-top:0}

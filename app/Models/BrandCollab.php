@@ -26,7 +26,12 @@ class BrandCollab extends Model implements HasMedia
      *
      * @var list<string>
      */
-    protected $fillable = ['talent_id', 'brand_name', 'project_title', 'year', 'url', 'position'];
+    protected $fillable = [
+        'talent_id', 'brand_name', 'project_title', 'year', 'url', 'position',
+        // A role (ADR-AK): title, employment, place, dates, highlights, skills used.
+        'role_title', 'employment_type', 'location', 'location_type', 'is_current',
+        'start_month', 'start_year', 'end_month', 'end_year', 'highlights', 'skill_ids',
+    ];
 
     /**
      * Translatable attributes.
@@ -45,6 +50,12 @@ class BrandCollab extends Model implements HasMedia
         return [
             'year' => 'integer',
             'position' => 'integer',
+            'is_current' => 'boolean',
+            'start_month' => 'integer',
+            'start_year' => 'integer',
+            'end_month' => 'integer',
+            'end_year' => 'integer',
+            'skill_ids' => 'array',
         ];
     }
 

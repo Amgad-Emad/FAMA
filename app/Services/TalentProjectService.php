@@ -8,7 +8,9 @@ use App\Models\Speciality;
 use App\Models\Talent;
 use App\States\ProjectCredit\Declined;
 use App\Support\Html\BriefSanitizer;
+use App\Support\ProjectBlocks;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Carbon;
 use InvalidArgumentException;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
@@ -45,6 +47,10 @@ class TalentProjectService extends Service
     {
         $skillIds = $this->assertOwnedSkills($talent, $skillIds);
         $specialityIds = $this->assertSkillSpecialities($skillIds, $specialityIds);
+
+        // A new project owns no media yet, so its blocks can point at none
+        // (the editor uploads right after Publish, then saves the blocks again).
+        $attributes = $this->withBlocks($attributes, []);
 
         return $this->runInTransaction(function () use ($talent, $attributes, $skillIds, $specialityIds): Project {
             $project = $talent->projects()->create($this->clean($attributes) + [
@@ -89,6 +95,11 @@ class TalentProjectService extends Service
             );
         }
 
+        $attributes = $this->withBlocks(
+            $attributes,
+            $project->media()->where('collection_name', 'media')->pluck('id')->map('intval')->all(),
+        );
+
         return $this->runInTransaction(function () use ($project, $attributes, $skillIds, $specialityIds): Project {
             $project->fill($this->clean($attributes));
 
@@ -97,6 +108,10 @@ class TalentProjectService extends Service
             }
 
             $project->save();
+
+            if (array_key_exists('blocks', $attributes)) {
+                $this->syncStoryMedia($project);
+            }
 
             if ($skillIds !== null) {
                 $this->syncSkills($project, $skillIds);
@@ -300,13 +315,22 @@ class TalentProjectService extends Service
      *
      * @param  list<UploadedFile>  $files
      */
-    public function addMedia(Project $project, array $files): Project
+    public function addMedia(Project $project, array $files, bool $place = true): Project
     {
-        return $this->runInTransaction(function () use ($project, $files): Project {
+        return $this->runInTransaction(function () use ($project, $files, $place): Project {
+            $added = [];
             foreach ($files as $file) {
                 // medialibrary stamps `order_column` as max+1 on add, so an
                 // upload lands at the END on its own — no manual ordering here.
-                $project->addMedia($file)->toMediaCollection('media');
+                $added[] = (int) $project->addMedia($file)->toMediaCollection('media')->id;
+            }
+
+            // A caller that does not place pictures itself (the API, older
+            // clients) gets them on the page: added to the last Photos block,
+            // or a new one at the end. The block editor places its own (ADR-AN).
+            if ($place && is_array($project->blocks)) {
+                $project->blocks = $this->appendToGallery($project->blocks, $added);
+                $project->save();
             }
 
             return $project->fresh(['media', 'talentTypes', 'specialities']);
@@ -357,6 +381,109 @@ class TalentProjectService extends Service
     }
 
     // ----- Internal ----------------------------------------------------------
+
+    /** How long a picture taken out of the story is kept (Undo, a second tab) before it is deleted. */
+    private const DETACHED_GRACE_HOURS = 24;
+
+    /**
+     * Put new pictures at the end of the story's last Photos block (a new one
+     * when there is none, or it is full).
+     *
+     * @param  list<array<string, mixed>>  $blocks
+     * @param  list<int>  $ids
+     * @return list<array<string, mixed>>
+     */
+    private function appendToGallery(array $blocks, array $ids): array
+    {
+        foreach ($ids as $id) {
+            $at = null;
+            foreach ($blocks as $i => $block) {
+                if (($block['t'] ?? '') === 'gallery') {
+                    $at = $i;
+                }
+            }
+            if ($at === null || count($blocks[$at]['items'] ?? []) >= ProjectBlocks::MAX_GALLERY) {
+                $blocks[] = ['t' => 'gallery', 'items' => []];
+                $at = array_key_last($blocks);
+            }
+            $blocks[$at]['items'][] = ['m' => $id, 'cap' => ''];
+        }
+
+        return $blocks;
+    }
+
+    /**
+     * Normalise a `blocks` payload (ADR-AN) and write the text projections the
+     * rest of the app reads: `summary.en` = the lead, `body.en` = the story
+     * after it. Without `blocks`, the payload is left as it came (API writers
+     * that still send summary/body keep working).
+     *
+     * @param  array<string, mixed>  $attributes
+     * @param  list<int>  $ownedMediaIds
+     * @return array<string, mixed>
+     */
+    private function withBlocks(array $attributes, array $ownedMediaIds): array
+    {
+        if (! array_key_exists('blocks', $attributes) || $attributes['blocks'] === null) {
+            unset($attributes['blocks']);
+
+            return $attributes;
+        }
+
+        $blocks = ProjectBlocks::normalize((array) $attributes['blocks'], $ownedMediaIds);
+        $lead = ProjectBlocks::summary($blocks);
+
+        $attributes['blocks'] = $blocks;
+        $attributes['summary'] = (array) ($attributes['summary'] ?? []);
+        $attributes['body'] = (array) ($attributes['body'] ?? []);
+        $attributes['summary']['en'] = $lead === '' ? '' : '<p>'.e($lead).'</p>';
+        $attributes['body']['en'] = ProjectBlocks::bodyHtml($blocks);
+
+        return $attributes;
+    }
+
+    /**
+     * Keep the `media` collection in step with the story (ADR-AN):
+     *  - the order follows first appearance in the blocks, so the lead image,
+     *    cards and feed spreads show what the story opens with;
+     *  - a picture no block shows any more is marked `detached_at` (hidden from
+     *    every reader) and deleted once the grace period has passed — a save
+     *    never destroys a file outright, so the editor's Undo can bring it back;
+     *  - a picture shown again loses the mark.
+     */
+    private function syncStoryMedia(Project $project): void
+    {
+        $shown = ProjectBlocks::mediaIds($project->blocks ?? []);
+        $items = $project->media()->where('collection_name', 'media')->orderBy('order_column')->get();
+        $rank = array_flip($shown);
+        $cutoff = now()->subHours(self::DETACHED_GRACE_HOURS);
+        $position = 0;
+
+        $ordered = $items->sortBy(fn (Media $m) => [isset($rank[$m->id]) ? 0 : 1, $rank[$m->id] ?? $m->order_column])->values();
+
+        foreach ($ordered as $item) {
+            $detachedAt = $item->getCustomProperty('detached_at');
+
+            if (isset($rank[$item->id])) {
+                if ($detachedAt !== null) {
+                    $item->forgetCustomProperty('detached_at');
+                }
+            } elseif ($detachedAt === null) {
+                $item->setCustomProperty('detached_at', now()->toIso8601String());
+            } elseif (Carbon::parse($detachedAt)->lt($cutoff)) {
+                $item->delete(); // through Eloquent, so the file goes too
+
+                continue;
+            }
+
+            $item->order_column = $position++;
+            if ($item->isDirty()) {
+                $item->save();
+            }
+        }
+
+        $project->unsetRelation('media');
+    }
 
     /**
      * THE skill rule (ADR-X): at least one skill, every one of them the talent's

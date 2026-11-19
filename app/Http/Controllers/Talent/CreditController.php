@@ -7,8 +7,10 @@ use App\Http\Requests\Talent\StoreCreditRequest;
 use App\Http\Resources\ProjectCreditResource;
 use App\Models\Project;
 use App\Models\ProjectCredit;
+use App\Models\Recognition;
 use App\Services\ProjectCreditService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 /**
@@ -145,6 +147,35 @@ class CreditController extends TalentController
             null,
             $action === 'accept' ? __('Credit confirmed.') : __('Credit declined.'),
         );
+    }
+
+    /**
+     * Hide a confirmed credit naming YOU from your profile, or show it again
+     * (ADR-AI). It stays on the project page — only your portfolio changes.
+     */
+    public function hideCredit(Request $request, ProjectCredit $credit): JsonResponse
+    {
+        abort_unless((int) $credit->talent_id === (int) $this->talent()->getKey(), 403);
+        abort_unless((string) $credit->status === 'accepted', 422, __('Only a confirmed credit can be hidden.'));
+        $hidden = $request->validate(['hidden' => ['required', 'boolean']])['hidden'];
+
+        $credit->update(['hidden_at' => $hidden ? now() : null]);
+
+        return response()->success(['hidden' => $hidden], $hidden ? __('Hidden from your profile.') : __('Back on your profile.'));
+    }
+
+    /**
+     * Hide a recognition written for YOU from your profile, or show it again
+     * (ADR-AI). Moderation's decision is untouched; this is the owner's choice.
+     */
+    public function hideRecognition(Request $request, Recognition $recognition): JsonResponse
+    {
+        abort_unless((int) $recognition->talent_id === (int) $this->talent()->getKey(), 403);
+        $hidden = $request->validate(['hidden' => ['required', 'boolean']])['hidden'];
+
+        $recognition->update(['hidden_at' => $hidden ? now() : null]);
+
+        return response()->success(['hidden' => $hidden], $hidden ? __('Hidden from your profile.') : __('Back on your profile.'));
     }
 
     /**

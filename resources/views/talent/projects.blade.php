@@ -4,11 +4,13 @@
     Every project carries at least one of the talent's own skills (ADR-X); those
     tags decide the profile tabs it appears in. Filter by skill, drag to reorder
     (only on the unfiltered single-page list — a partial list cannot express an
-    order), delete with confirmation. New / Edit open the editor PAGE
-    (talent.projects.new / talent.projects.edit) — no pop-up.
+    order). New / Edit open the editor PAGE (talent.projects.new /
+    talent.projects.edit) — no pop-up. 12 Nov 2026 review: ONE action per card —
+    the cover opens the project, Edit is the only button; Delete / Leave live in
+    the editor's Settings (co-owner rules unchanged).
 
     Projects other people credited you on, and you confirmed (ADR-AA), are listed
-    after your own with a Leave action (withdrawing = declining the credit).
+    after your own.
 
     Behaviour: `famaProjects` (resources/js/ui/projects.js) on the JSON endpoints.
 --}}
@@ -22,17 +24,7 @@
         'coowned' => __('Co-owned with :names'),
         'waiting' => __(':n awaiting confirmation'),
         'editA' => __('Edit :p'),
-        'delA' => __('Delete :p'),
-        'leaveA' => __('Leave :p'),
         'dragA' => __('Drag to reorder :p'),
-        'delTitle' => __('Delete :p?'),
-        'delBody' => __('You’re its only owner, so it comes off Fama for everyone, with its photos and credits. This can’t be undone.'),
-        'delOk' => __('Delete project'),
-        'deleted' => __(':p deleted'),
-        'leaveTitle' => __('Leave :p?'),
-        'leaveBody' => __('You stop being an owner, and it comes off your profile. The project stays for :n. Nobody can delete a project that still has other owners.'),
-        'leaveOk' => __('Leave project'),
-        'left' => __('You left :p'),
         'untitled' => __('Untitled project'),
         'featureA' => __('Feature :p on your profile'),
         'featuredA' => __('Featured on your profile. Feature another project to change it.'),
@@ -89,7 +81,7 @@
                     <article class="pc" :class="{ dragging: dragId === p.id }" :draggable="canReorder.toString()"
                              @dragstart="onDragStart($event, p)" @dragover="canReorder && dragId !== null && $event.preventDefault()"
                              @drop.prevent="onDrop(p)" @dragend="dragId = null">
-                        <div class="cover" :style="coverOf(p) ? { backgroundImage: 'url(' + coverOf(p) + ')' } : {}">
+                        <div class="cover" :style="coverOf(p) ? { backgroundImage: 'url(' + coverOf(p) + ')' } : {}" @click="!$event.target.closest('.feat, .grip') && (window.location.href = viewUrl(p))">
                             <span class="grip" x-show="canReorder" :title="fmt(strings.dragA, { p: titleOf(p) })" aria-hidden="true"><svg class="icon sm"><use href="#i-grip"/></svg></span>
                             <svg class="icon" x-show="!coverOf(p)"><use href="#i-image"/></svg>
                             <span class="ptag" :class="{ solo: !canReorder }" x-show="yearOf(p)" x-cloak x-text="yearOf(p)"></span>
@@ -116,10 +108,7 @@
                             <div class="foot">
                                 <span class="waiting" x-text="waitingCount(p) ? fmt(strings.waiting, { n: waitingCount(p) }) : ''"></span>
                                 <span>
-                                    <a class="iconbtn plain" :href="editUrl(p)" :aria-label="fmt(strings.editA, { p: titleOf(p) })"><svg class="icon"><use href="#i-edit"/></svg></a>
-                                    {{-- Only a sole owner may delete; with other owners, you leave instead. --}}
-                                    <template x-if="p.has_co_owners"><button class="iconbtn plain del" type="button" @click="leaveOwn(p)" :aria-label="fmt(strings.leaveA, { p: titleOf(p) })" :title="fmt(strings.leaveA, { p: titleOf(p) })"><svg class="icon"><use href="#i-leave"/></svg></button></template>
-                                    <template x-if="!p.has_co_owners"><button class="iconbtn plain del" type="button" @click="remove(p)" :aria-label="fmt(strings.delA, { p: titleOf(p) })"><svg class="icon"><use href="#i-trash"/></svg></button></template>
+                                    <a class="btn btn-2 pc-edit" :href="editUrl(p)" :aria-label="fmt(strings.editA, { p: titleOf(p) })"><svg class="icon" aria-hidden="true"><use href="#i-edit"/></svg>{{ __('Edit') }}</a>
                                 </span>
                             </div>
                         </div>
@@ -129,7 +118,7 @@
                 {{-- Work other people credited you on, that you confirmed (ADR-AA) --}}
                 <template x-for="c in creditedShown" :key="'c' + c.id">
                     <article class="pc">
-                        <div class="cover" :style="c.project?.cover_image_url ? { backgroundImage: 'url(' + c.project.cover_image_url + ')' } : {}">
+                        <div class="cover" :style="c.project?.cover_image_url ? { backgroundImage: 'url(' + c.project.cover_image_url + ')' } : {}" @click="window.location.href = creditUrl(c)">
                             <svg class="icon" x-show="!c.project?.cover_image_url"><use href="#i-image"/></svg>
                         </div>
                         <div class="body">
@@ -143,8 +132,7 @@
                             <div class="foot">
                                 <span class="waiting"></span>
                                 <span>
-                                    <a class="iconbtn plain" :href="editUrl(c.project)" :aria-label="fmt(strings.editA, { p: c.project?.title || '' })"><svg class="icon"><use href="#i-edit"/></svg></a>
-                                    <button class="iconbtn plain del" type="button" @click="leaveCredited(c)" :aria-label="fmt(strings.leaveA, { p: c.project?.title || '' })" :title="fmt(strings.leaveA, { p: c.project?.title || '' })"><svg class="icon"><use href="#i-leave"/></svg></button>
+                                    <a class="btn btn-2 pc-edit" :href="editUrl(c.project)" :aria-label="fmt(strings.editA, { p: c.project?.title || '' })"><svg class="icon" aria-hidden="true"><use href="#i-edit"/></svg>{{ __('Edit') }}</a>
                                 </span>
                             </div>
                         </div>

@@ -34,3 +34,11 @@
 .pe-panel .pe-danger{color:var(--rose-fg,#A23A20)}
 .pe-panel .sw[aria-disabled=true]{cursor:not-allowed;opacity:.65}
 @media (max-width:760px),(hover:none){.pe-b .cred input,.pe-b .cred select{min-height:44px}}
+/* free-form blocks (ADR-AN): each block carries the "+" that inserts ABOVE it (Alpine renders one root per
+   block, so the prototype's sibling inserters live inside the block, drawn in the gap above it) */
+.pe-b>.pe-ins-above{position:absolute;inset-inline:0;top:-38px;margin:0}
+.pe-b:first-child>.pe-ins-above{top:-34px}
+.pe-b.pe-dragging{opacity:.4}
+.pe-drop-line{position:absolute;inset-inline:0;height:3px;border-radius:3px;background:var(--purple);pointer-events:none;z-index:8}
+.pe-story{position:relative}
+.pe-ph-img video{pointer-events:none}

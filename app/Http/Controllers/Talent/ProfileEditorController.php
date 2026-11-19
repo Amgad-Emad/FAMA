@@ -8,7 +8,9 @@ use App\Http\Requests\Talent\MoveBlockRequest;
 use App\Http\Requests\Talent\ReorderRequest;
 use App\Http\Requests\Talent\UpdateAvatarRequest;
 use App\Http\Requests\Talent\UpdateCoreProfileRequest;
+use App\Http\Requests\Talent\UpdateExperienceRequest;
 use App\Http\Requests\Talent\UpdateNowRequest;
+use App\Http\Requests\Talent\UpdatePracticeRequest;
 use App\Http\Requests\Talent\UpdatePricingRateRequest;
 use App\Http\Requests\Talent\UpdateSectionOrderRequest;
 use App\Http\Requests\Talent\UpdateSocialHandlesRequest;
@@ -22,11 +24,15 @@ use App\Models\ProfileBlock;
 use App\Models\Speciality;
 use App\Models\Talent;
 use App\Models\TalentType;
+use App\Services\ExperienceService;
+use App\Services\PracticeService;
 use App\Services\ProfileBlockService;
 use App\Services\ProfileCompletionService;
 use App\Services\ProfileViewStatsService;
 use App\Services\TalentProfileService;
 use App\Support\ContentRegistry;
+use App\Support\Experience;
+use App\Support\PracticeFields;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -47,6 +53,8 @@ class ProfileEditorController extends TalentController
         private readonly TalentProfileService $profile,
         private readonly ProfileCompletionService $completion,
         private readonly ProfileViewStatsService $viewStats,
+        private readonly PracticeService $practice,
+        private readonly ExperienceService $experience,
     ) {}
 
     /**
@@ -59,7 +67,7 @@ class ProfileEditorController extends TalentController
         $talent = $this->talent()->load([
             'profileBlocks.blockType', 'talentTypes', 'specialities',
             'socialHandles', 'interests.talentType', 'interests.speciality',
-            'brandCollabs.media', 'media',
+            'brandCollabs.media', 'media', 'softwareStack', 'digitals',
         ]);
         $skills = $this->orderedSkills($talent);
 
@@ -72,7 +80,7 @@ class ProfileEditorController extends TalentController
             'catalog' => BlockTypeResource::collection($catalog),
             'skills' => TalentTypeResource::collection($skills),
             'availableSkills' => TalentTypeResource::collection(
-                TalentType::whereNotIn('id', $talent->talentTypes->pluck('id'))->orderBy('id')->get()
+                TalentType::whereNotIn('id', $talent->talentTypes->pluck('id'))->alphabetical()->get()
             ),
             // The controlled speciality vocabulary + current picks, keyed by
             // skill id (ADR-Y) — the same shape the skills endpoint returns, so
@@ -87,6 +95,20 @@ class ProfileEditorController extends TalentController
                 'availability_changed_for_humans' => $talent->availability_changed_at?->diffForHumans(),
             ],
             'social' => $this->socialPayload($talent),
+            // About your practice (ADR-AG): values + the field catalog (PHP is its one home).
+            'practice' => [
+                'values' => (object) $this->practice->values($talent),
+                'defs' => PracticeFields::definitions(),
+                'bySkill' => PracticeFields::bySkill(),
+                'digitalsUrl' => route('talent.content', ['section' => 'modeling']).'#block-digitals',
+            ],
+            // Experience roles (ADR-AK), in the editor's role shape + the option lists.
+            'experience' => [
+                'roles' => $talent->brandCollabs->sortBy('position')->map(fn ($row) => Experience::role($row))->values()->all(),
+                'employment' => Experience::EMPLOYMENT,
+                'locationTypes' => Experience::LOCATION_TYPES,
+                'months' => Experience::MONTHS,
+            ],
             'interests' => TalentInterestResource::collection($talent->interests)->resolve(),
             // Every skill, not just the talent's own — this section names
             // directions they do NOT yet work in (ADR-Z).
@@ -102,15 +124,6 @@ class ProfileEditorController extends TalentController
                 'total' => (int) $talent->view_count,
                 'weekly' => $this->viewStats->weeklyComparison($talent),
             ],
-            // Brand collabs — the "Experience" panel lists them read-only; they
-            // are edited on the profile-content page.
-            'collabs' => $talent->brandCollabs->sortBy('position')->map(fn ($collab) => [
-                'id' => (int) $collab->id,
-                'name' => (string) $collab->brand_name,
-                'project' => (string) ($collab->project_title ?? ''),
-                'year' => $collab->year,
-                'logo' => $collab->brand_logo_url,
-            ])->values()->all(),
         ]);
     }
 
@@ -131,7 +144,7 @@ class ProfileEditorController extends TalentController
 
         $locale = app()->getLocale();
 
-        return TalentType::query()->orderBy('id')->get()->map(fn (TalentType $type) => [
+        return TalentType::query()->alphabetical()->get()->map(fn (TalentType $type) => [
             'id' => (int) $type->id,
             'slug' => $type->slug,
             'name' => $type->getTranslation('name', $locale, false) ?: $type->getTranslation('name', 'en', false),
@@ -223,6 +236,32 @@ class ProfileEditorController extends TalentController
             'base_city' => $talent->base_city,
             'base_country' => $talent->base_country,
         ], __('Profile updated.'));
+    }
+
+    /**
+     * Experience (ADR-AK): replace the talent's roles with the editor's list.
+     * Returns the roles as saved (ids for the new ones).
+     */
+    public function updateExperience(UpdateExperienceRequest $request): JsonResponse
+    {
+        $roles = $this->experience->replace($this->talent(), (array) $request->validated('roles', []));
+
+        return response()->success(['roles' => $roles], __('Saved.'));
+    }
+
+    /**
+     * About your practice (ADR-AG): replace the per-skill custom field values
+     * with the editor's draft. Returns the values the server kept (malformed
+     * or emptied fields drop off).
+     */
+    public function updatePractice(UpdatePracticeRequest $request): JsonResponse
+    {
+        $talent = $this->talent()->load(['softwareStack', 'digitals']);
+        // validated() would keep only the keys with explicit rules; the full draft is
+        // read instead and PracticeFields::clean() is the guard (unknown/malformed drop off).
+        $values = $this->practice->update($talent, (array) $request->input('fields', []));
+
+        return response()->success(['values' => (object) $values], __('Saved.'));
     }
 
     /**

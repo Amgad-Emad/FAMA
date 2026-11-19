@@ -5,11 +5,15 @@ use App\Http\Controllers\Talent\BlockContentController;
 use App\Http\Controllers\Talent\ContractController;
 use App\Http\Controllers\Talent\CreditController;
 use App\Http\Controllers\Talent\DashboardController;
+use App\Http\Controllers\Talent\FeedActivityController;
+use App\Http\Controllers\Talent\FeedCollectionController;
+use App\Http\Controllers\Talent\FollowsController;
 use App\Http\Controllers\Talent\InterestController;
 use App\Http\Controllers\Talent\ProfileEditorController;
 use App\Http\Controllers\Talent\ProjectController;
 use App\Http\Controllers\Talent\ReviewController;
 use App\Http\Controllers\Talent\SkillController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -58,6 +62,8 @@ Route::delete('/profile/skills/{type}', [SkillController::class, 'destroy'])->na
 
 // --- Now + About (ADR-Z: the two time-sensitive toggles, and social links) ----
 Route::patch('/profile/now', [ProfileEditorController::class, 'updateNow'])->name('profile.now');
+Route::put('/profile/experience', [ProfileEditorController::class, 'updateExperience'])->name('profile.experience');
+Route::put('/profile/practice', [ProfileEditorController::class, 'updatePractice'])->name('profile.practice');
 Route::put('/profile/social', [ProfileEditorController::class, 'updateSocial'])->name('profile.social');
 
 // --- Willing to explore (a section inside the Profile editor) ----------------
@@ -101,22 +107,25 @@ Route::delete('/projects/{project}/credits/{credit}', [CreditController::class, 
 // Separate authorisation — owning a project never lets you answer for someone else.
 Route::get('/credits', [CreditController::class, 'index'])->name('credits');
 Route::get('/credits/data', [CreditController::class, 'data'])->name('credits.data');
+// Hide one credit / recognition from your own profile, and show it again (ADR-AI).
+Route::patch('/credits/{credit}/hidden', [CreditController::class, 'hideCredit'])->name('credits.hidden');
+Route::patch('/recognitions/{recognition}/hidden', [CreditController::class, 'hideRecognition'])->name('recognitions.hidden');
 Route::patch('/credits/{credit}/{action}', [CreditController::class, 'respond'])
     ->whereIn('action', ['accept', 'decline'])->name('credits.respond');
 
 // --- Reviews moderation -----------------------------------------------------
 // Consolidated "Activity" page — Saved · Liked · Following in one tabbed surface.
-Route::get('/feed/activity', [\App\Http\Controllers\Talent\FeedActivityController::class, 'index'])->name('feed.activity');
+Route::get('/feed/activity', [FeedActivityController::class, 'index'])->name('feed.activity');
 
 // Feed collections (5X, ADR-F9 — private to the owner). The page routes now
 // redirect into the Activity tabs; the Ajax data endpoints are unchanged.
 Route::get('/feed/saved', fn () => redirect()->route('talent.feed.activity', ['view' => 'saved']))->name('feed.saved');
 Route::get('/feed/liked', fn () => redirect()->route('talent.feed.activity', ['view' => 'liked']))->name('feed.liked');
-Route::get('/feed/collection/data', [\App\Http\Controllers\Talent\FeedCollectionController::class, 'data'])->name('feed.collection.data');
+Route::get('/feed/collection/data', [FeedCollectionController::class, 'data'])->name('feed.collection.data');
 
 // Follow-graph management (FOLLOWING / FOLLOWERS sub-tabs) → the Following tab.
-Route::get('/feed/follows', fn (\Illuminate\Http\Request $r) => redirect()->route('talent.feed.activity', ['view' => 'following'] + ($r->query('tab') ? ['tab' => $r->query('tab')] : [])))->name('feed.follows');
-Route::get('/feed/follows/data', [\App\Http\Controllers\Talent\FollowsController::class, 'data'])->name('feed.follows.data');
+Route::get('/feed/follows', fn (Request $r) => redirect()->route('talent.feed.activity', ['view' => 'following'] + ($r->query('tab') ? ['tab' => $r->query('tab')] : [])))->name('feed.follows');
+Route::get('/feed/follows/data', [FollowsController::class, 'data'])->name('feed.follows.data');
 
 Route::get('/reviews', [ReviewController::class, 'index'])->name('reviews');
 Route::get('/reviews/data', [ReviewController::class, 'data'])->name('reviews.data');

@@ -1,25 +1,43 @@
 {{--
-    Brands worked with — rendered as the fama-ui Experience card (exp.css .xp):
-    logo (or initials), brand, project, year. The app keeps brand collabs, not
-    LinkedIn-style roles (see the report).
+    Experience — LinkedIn-style roles (ADR-AK), drawn as the prototype's FAMA_EXP
+    list (exp.css .xp): newest first, consecutive roles at one company grouped
+    under it with the total time; each role shows its dates + duration, place,
+    highlights and the skills it used. Rules live in App\Support\Experience (the
+    editor's resources/js/ui/experience.js draws the same list).
 --}}
-@php $collabs = $talent->brandCollabs->sortBy('position')->values(); @endphp
-<x-profile.block :block="$block" :empty="$collabs->isEmpty()" :is-owner="$isOwner ?? false">
+@php
+    $groups = \App\Support\Experience::groups($talent->brandCollabs);
+    $place = fn (array $r) => collect([$r['loc'], $r['lt']])->filter()->implode(' · ');
+@endphp
+<x-profile.block :block="$block" :empty="$groups === []" :is-owner="$isOwner ?? false">
     <div class="card" style="margin-top:var(--s5)">
         <ol class="xp">
-            @foreach ($collabs as $collab)
-                @php $ini = collect(preg_split('/\s+/', trim((string) $collab->brand_name)))->filter()->take(2)->map(fn ($w) => mb_strtoupper(mb_substr($w, 0, 1)))->implode(''); @endphp
-                <li class="xp-g one">
-                    @if ($collab->brand_logo_url)
-                        <span class="xp-logo" aria-hidden="true" style="background:url('{{ $collab->brand_logo_url }}') center/cover;color:transparent">{{ $ini }}</span>
-                    @else
-                        <span class="xp-logo" aria-hidden="true">{{ $ini }}</span>
-                    @endif
-                    <div class="xp-b"><div class="xp-top"><div>
-                        <h3 class="xp-t">@if ($collab->url)<a href="{{ $collab->url }}" target="_blank" rel="noopener nofollow" style="color:inherit;text-decoration:none">{{ $collab->brand_name }}</a>@else{{ $collab->brand_name }}@endif</h3>
-                        @if ($collab->project_title)<p class="xp-m">{{ $collab->project_title }}</p>@endif
-                        @if ($collab->year)<p class="xp-d">{{ $collab->year }}</p>@endif
-                    </div></div></div>
+            @foreach ($groups as $group)
+                @php $one = count($group['roles']) === 1; $last = $group['roles'][0]; @endphp
+                <li @class(['xp-g', 'one' => $one])>
+                    <span class="xp-logo" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/><rect width="20" height="14" x="2" y="6" rx="2"/></svg></span>
+                    <div class="xp-b">
+                        @if ($one)
+                            <div class="xp-top"><div>
+                                <h3 class="xp-t">{{ $last['t'] ?: $group['n'] }}</h3>
+                                <p class="xp-m">{{ collect([$group['n'], $last['et']])->filter()->implode(' · ') }}</p>
+                                @if ($last['sy'])<p class="xp-d">{{ \App\Support\Experience::range($last) }}</p>@endif
+                                @if ($place($last) !== '')<p class="xp-d">{{ $place($last) }}</p>@endif
+                            </div></div>
+                            @include('talent.blocks.partials.xp-role-extra', ['r' => $last])
+                        @else
+                            @php $et = collect($group['roles'])->every(fn ($x) => $x['et'] === $last['et']) ? $last['et'] : ''; @endphp
+                            <h3 class="xp-org">{{ $group['n'] }}</h3>
+                            <p class="xp-m">{{ collect([$et, \App\Support\Experience::duration(\App\Support\Experience::groupMonths($group['roles']))])->filter()->implode(' · ') }}</p>
+                            @if ($place($last) !== '')<p class="xp-d">{{ $place($last) }}</p>@endif
+                            <ol class="xp-roles">
+                                @foreach ($group['roles'] as $r)
+                                    <li class="xp-r"><div class="xp-top"><div><h4 class="xp-t">{{ $r['t'] }}</h4>@if ($r['sy'])<p class="xp-d">{{ \App\Support\Experience::range($r) }}</p>@endif</div></div>
+                                        @include('talent.blocks.partials.xp-role-extra', ['r' => $r])</li>
+                                @endforeach
+                            </ol>
+                        @endif
+                    </div>
                 </li>
             @endforeach
         </ol>

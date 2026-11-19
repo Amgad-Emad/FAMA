@@ -130,12 +130,13 @@ class ProfileCompletionService extends Service
     }
 
     /**
-     * Where a signed-in talent lands (login, and the site root): the Feed once
-     * the profile is done, otherwise Profile structure, where the next step is.
+     * Where a signed-in talent lands (login, and the site root): Projects once
+     * the profile is done (13 Nov 2026 review: the portfolio first, then the
+     * feed), otherwise Profile structure, where the next step is.
      */
     public function homeRoute(Talent $talent): string
     {
-        return $this->isProfileDone($talent) ? 'feed' : 'talent.profile.edit';
+        return $this->isProfileDone($talent) ? 'talent.projects' : 'talent.profile.edit';
     }
 
     /**

@@ -46,7 +46,7 @@ class ProfileEditorController extends BrandController
             'brand' => $brand,
             'moods' => self::MOODS,
             'platforms' => self::PLATFORMS,
-            'talentTypes' => TalentType::orderBy('id')->get(),
+            'talentTypes' => TalentType::alphabetical()->get(),
             'projectTypes' => self::PROJECT_TYPES,
         ]);
     }

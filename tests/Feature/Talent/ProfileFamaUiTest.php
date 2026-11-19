@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\Talent\SyncGoLiveState;
 use App\Events\TalentProfileViewed;
 use App\Models\BlockType;
 use App\Models\Equipment;
@@ -117,7 +118,7 @@ it('shows the two-part path (no verification step) on Profile structure while Pr
 
 it('serves the saved profile path as JSON for the editor', function () {
     $talent = Talent::factory()->draft()->goLiveReady()->create();
-    app(App\Actions\Talent\SyncGoLiveState::class)($talent);
+    app(SyncGoLiveState::class)($talent);
 
     $this->actingAs($talent, 'talent')->getJson(route('talent.profile.state'))
         ->assertOk()
@@ -180,27 +181,29 @@ it('caps social links at nine per profile (the editor stops at nine too)', funct
     expect($talent->socialHandles()->count())->toBe(9);
 });
 
-it('shows no profile link on Profile structure while Private, and the link while Live', function () {
+it('shows the profile link LOCKED on Profile structure while Private (prototype 9 Oct 2026, ADR-AH)', function () {
     $private = Talent::factory()->create(['slug' => 'hush-hush', 'is_published' => false]);
-    $live = Talent::factory()->create(['slug' => 'out-loud', 'is_published' => true]);
 
-    $html = $this->actingAs($private, 'talent')->get(route('talent.profile.edit'))->assertOk()->getContent();
-    // The page body (the shared nav's own "Preview profile" link is not a share link).
-    $main = substr($html, strpos($html, '<main'), strpos($html, '</main>') - strpos($html, '<main'));
-    expect($main)->not->toContain('/hush-hush')
-        ->toContain('<template x-if="isPublished">');
-
-    $this->actingAs($live, 'talent')->get(route('talent.profile.edit'))->assertOk()
-        ->assertSee('x-text="linkLabel"', false);
+    $this->actingAs($private, 'talent')->get(route('talent.profile.edit'))->assertOk()
+        ->assertSee('x-text="linkLabel"', false)              // the link is there…
+        ->assertSee('off: !isPublished', false)                // …dashed while Private…
+        ->assertSee("'#i-lock'", false)                        // …with a lock…
+        ->assertSee(__('Locked'))                              // …reading "Locked"
+        ->assertSee(__('Finish Go Live first. Then you can share your link.'));
 });
 
-it('offers no share button on the owner preview of a private profile', function () {
+it('greys out Share on the owner preview of a private profile, and enables it once Live', function () {
     $talent = Talent::factory()->create(['is_published' => false]);
 
-    $this->actingAs($talent, 'talent')->get('/'.$talent->slug)->assertOk()->assertDontSee(__('Share profile'));
+    $this->actingAs($talent, 'talent')->get('/'.$talent->slug)->assertOk()
+        ->assertSee(__('Share profile'))
+        ->assertSee('aria-disabled="true"', false)
+        ->assertSee(__('Your link can be shared once your profile is Live'));
 
     $talent->update(['is_published' => true]);
-    $this->actingAs($talent, 'talent')->get('/'.$talent->slug)->assertOk()->assertSee(__('Share profile'));
+    $this->actingAs($talent, 'talent')->get('/'.$talent->slug)->assertOk()
+        ->assertSee(__('Share profile'))
+        ->assertDontSee(__('Your link can be shared once your profile is Live'));
 });
 
 it('opens the public profile on the first skill by position (no separate primary)', function () {

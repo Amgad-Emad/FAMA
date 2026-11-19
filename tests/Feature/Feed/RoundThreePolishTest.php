@@ -138,3 +138,16 @@ it('rejects ALT text over 160 characters', function () {
         ->assertUnprocessable()
         ->assertJsonValidationErrors('media_alt.0');
 });
+
+it('lets every comment under a feed post take a reply, threaded under it (13 Nov 2026)', function () {
+    Post::factory()->create();
+
+    $html = $this->get('/feed')->assertOk()->getContent();
+
+    expect($html)->toContain('class="cthread"')              // a comment and its replies read as one thread
+        ->toContain('class="creplies"')                      // replies indent on a thin line
+        ->toContain('openReply(c)')                          // the Reply link
+        ->toContain('class="cadd crform"')                   // the reply box opens under that comment
+        ->toContain('cancelReply(c)')                        // with Cancel beside it
+        ->toContain('sendReply(c)');
+});

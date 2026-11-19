@@ -32,9 +32,9 @@ class BlockTypeSeeder extends Seeder
             ['key' => 'comp_card', 'en' => 'Comp Card', 'ar' => 'بطاقة القياسات', 'availability' => 'by_category', 'content_source' => 'table', 'layout' => null, 'repeatable' => false, 'categories' => ['model']],
             ['key' => 'look_types', 'en' => 'Looks', 'ar' => 'الإطلالات', 'availability' => 'by_category', 'content_source' => 'table', 'layout' => 'list', 'repeatable' => false, 'categories' => ['model']],
             ['key' => 'digitals', 'en' => 'Digitals', 'ar' => 'الصور الأولية', 'availability' => 'by_category', 'content_source' => 'table', 'layout' => 'grid', 'repeatable' => false, 'categories' => ['model']],
-            ['key' => 'showreel', 'en' => 'Showreel', 'ar' => 'العرض المرئي', 'availability' => 'by_category', 'content_source' => 'table', 'layout' => 'carousel', 'repeatable' => true, 'categories' => ['crew', 'creative']],
+            ['key' => 'showreel', 'en' => 'Showreel', 'ar' => 'العرض المرئي', 'availability' => 'by_category', 'content_source' => 'table', 'layout' => 'carousel', 'repeatable' => true, 'categories' => ['model', 'crew', 'creative']],
             ['key' => 'equipment', 'en' => 'Equipment', 'ar' => 'المعدات', 'availability' => 'by_category', 'content_source' => 'table', 'layout' => 'list', 'repeatable' => false, 'categories' => ['crew']],
-            ['key' => 'projects', 'en' => 'Projects', 'ar' => 'المشاريع', 'availability' => 'by_category', 'content_source' => 'table', 'layout' => 'list', 'repeatable' => true, 'categories' => ['crew', 'creative']],
+            ['key' => 'projects', 'en' => 'Projects', 'ar' => 'المشاريع', 'availability' => 'by_category', 'content_source' => 'table', 'layout' => 'list', 'repeatable' => true, 'categories' => ['model', 'crew', 'creative']],
             ['key' => 'software_stack', 'en' => 'Software', 'ar' => 'البرمجيات', 'availability' => 'by_category', 'content_source' => 'table', 'layout' => 'grid', 'repeatable' => false, 'categories' => ['creative']],
         ];
 

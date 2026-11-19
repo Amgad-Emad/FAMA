@@ -321,3 +321,16 @@ figcaption b{font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
 
 /* 1 Nov 2026: 13-inch laptops — the cover title stays big but leaves room for the photo */
 @media (min-width:1101px) and (max-width:1500px){.cover h1{font-size:clamp(56px,6.6vw,96px)}}
+
+/* 13 Nov 2026 review: a shared project shows its team as equals, and there is no hiring on Fama yet */
+.cover .by .avs{display:flex}
+.cover .by .avs .av+.av{margin-inline-start:-10px;box-shadow:0 0 0 2px var(--ink)}
+.hire.team{grid-template-columns:minmax(0,1fr) auto}
+.hwho h2.hk{font-family:inherit;font-size:12px;line-height:1.4;margin:0}
+.tm{list-style:none;margin:var(--s4) 0 0;padding:0;display:flex;flex-wrap:wrap;gap:var(--s4) var(--s7)}
+.tm li{display:flex;align-items:center;gap:var(--s3)}
+.tm .av{width:56px;height:56px;font-size:18px;flex:none}
+.tm b{display:block;font-family:var(--font-display);font-weight:600;font-size:26px;line-height:1.1}
+.tm a{color:inherit;text-decoration:none}.tm a:hover b{text-decoration:underline;text-underline-offset:3px}
+.tm .r{display:block;color:var(--grey);font-size:15px}
+@media (max-width:720px){.hire.team{grid-template-columns:minmax(0,1fr)}.tm{flex-direction:column}}

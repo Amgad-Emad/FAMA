@@ -100,7 +100,7 @@ p{margin:0}
 .tip p+p{margin-top:var(--s2)}
 .tip b{color:var(--yellow);font-weight:600}
 .tip p.cur{color:var(--white)}
-.tip p:not(.cur){opacity:.72}
+.tip p:not(.cur){color:var(--line)} /* was opacity .72: too faint on ink (12 Nov review) */
 .stat:hover .tip,.stat:focus-within .tip{opacity:1;visibility:visible;transform:none}
 .hero.soft{overflow:visible;overflow-x:clip} /* the tooltip may drop below; the star may not widen the page */
 .hero.soft .fx-star{border-radius:0 var(--radius) var(--radius) 0}
@@ -124,6 +124,15 @@ p{margin:0}
 .p-idx[hidden]{display:none}
 .p-idx::before{background:var(--purple)}
 .p-bad{background:var(--rose-bg);color:var(--rose-fg)}
+/* 12 Nov 2026 review: status badges were low-contrast on the lavender hero. Solid fills, white text (AA), chunkier */
+.stat{gap:var(--s2)}
+.stat .pill{font-size:14px;min-height:30px;padding:4px var(--s3);border:0}
+.stat .pill::before{width:8px;height:8px;background:currentColor}
+.stat .p-live{background:var(--mint-fg);color:var(--white)}
+.stat .p-off{background:var(--ink);color:var(--white)}
+.stat .p-idx{background:var(--purple-dk);color:var(--white)}
+.stat .p-idx::before{background:var(--yellow)}
+.stat .tipbtn{color:var(--ink)}
 .tag{font-weight:600;font-size:13px;border-radius:var(--radius-pill);padding:2px var(--s3);white-space:nowrap}
 .tag-primary{background:var(--ink);color:var(--cream);display:inline-flex;align-items:center;gap:5px}
 /* primary skill: a pin (Lucide), it's the skill the profile opens on */
@@ -390,9 +399,10 @@ dialog::backdrop{background:rgba(20,17,15,.5)}
 .savebar.is-away .in-bar{pointer-events:none}
 @media (prefers-reduced-motion:reduce){.savebar,.savebar.is-away{transition:none}}
 /* skills: in the order of the profile tabs; the first opens first */
-.sk .shead{grid-template-columns:auto minmax(0,1fr) auto}
+.sk .shead{grid-template-columns:minmax(0,1fr) auto} /* 13 Nov 2026: no grip column any more */
 .sk .grip{cursor:grab}
 .sk .grip:active{cursor:grabbing}
+.sk .skprim .icon{width:16px;height:16px}
 .sk .order{font-size:13px;font-weight:600;color:var(--purple-dk);background:var(--lavender,#F3EAF8);border-radius:var(--radius-pill);padding:2px 10px}
 .sk .ssum{grid-column:2/-1}
 .sk .sbody{padding:0 var(--s6) var(--s5) calc(var(--s6) + 44px)}

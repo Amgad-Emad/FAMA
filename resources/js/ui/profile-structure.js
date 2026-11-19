@@ -20,7 +20,7 @@
  *
  * Product rules (2026-10-12): no separately chosen primary skill — the order is
  * the tab order and the first opens first (the server derives is_primary);
- * a Private profile shows no link at all.
+ * a Private profile shows its link LOCKED (prototype 9 Oct 2026, ADR-AH).
  */
 import { del, get, patch, post, put, ApiError } from '../http';
 import { tr, clone, fmt, toast, ask } from './profile-helpers';
@@ -28,6 +28,8 @@ import { PLATFORMS, socialIcon, isWeb, urlOf } from './social';
 import { listsMixin, merge } from './profile-structure-lists';
 import './profile-views';
 import { famaGate } from './profile-gate';
+import * as FX from './practice-fields';
+import * as XP from './experience';
 
 /** First validation message of an ApiError (or its message). */
 const firstError = (e) => Object.values(e?.errors || {})[0]?.[0] || e?.message || '';
@@ -58,6 +60,10 @@ document.addEventListener('alpine:init', () => {
         specialities: initial.specialities || {},
         blocks: initial.blocks,
         interests: (initial.interests || []).map((w) => ({ id: w.id, talent_type_id: w.talent_type_id, speciality_id: w.speciality_id, note: w.note || '' })),
+        // "About your practice" values, once per profile, keyed by field id (ADR-AG).
+        practice: clone((initial.practice || {}).values || {}),
+        // Experience roles (ADR-AK), part of the draft like everything else here.
+        roles: clone((initial.experience || {}).roles || []),
 
         // ----- the last saved state (set in init) --------------------------
         base: null,
@@ -66,7 +72,13 @@ document.addEventListener('alpine:init', () => {
         allSkills: initial.interestSkills || [],
         catalog: initial.catalog,
         contentKeys: initial.contentKeys || [],
-        collabs: initial.collabs || [],
+        xpEmployment: (initial.experience || {}).employment || [],
+        xpLocationTypes: (initial.experience || {}).locationTypes || [],
+        xpMonths: (initial.experience || {}).months || [],
+        // The Add/Edit role dialog.
+        roleAt: null,
+        roleForm: {},
+        roleErrors: {},
         hasPricing: !!initial.hasPricing,
         // The profile path from SAVED data: { steps, can_go_live, is_published, listed, profile_done, status }.
         path: initial.completion || { steps: {} },
@@ -88,9 +100,6 @@ document.addEventListener('alpine:init', () => {
         platOpen: null,
         openGroups: {},
         newSkillId: null,
-        skDrag: null,
-        skDropOn: null,
-        skDropAfter: false,
         dragBlock: null,
         dropOn: null,
         dropDeny: null,
@@ -105,12 +114,17 @@ document.addEventListener('alpine:init', () => {
         narrow: window.matchMedia('(max-width:760px)').matches,
         _k: 1000,
         _tmp: 0,
+        // The practice-field catalog (App\\Support\\PracticeFields) — not part of the draft.
+        fxDefs: (initial.practice || {}).defs || {},
+        fxBySkill: (initial.practice || {}).bySkill || {},
+        digitalsUrl: (initial.practice || {}).digitalsUrl || '#',
         picker: { open: false, title: '', help: '', ok: '', exclude: [], current: null, q: '', resolve: null },
 
         /** Snapshot the saved state, wire Ctrl/Cmd+S, the leave guard and #hash landing. */
         init() {
             this.rootEl = this.$root; // `$root` is undefined from a swapped-out row
             this.rebase();
+            this.bindPractice();
             const first = this.skills[0];
             this.openGroups = { universal: true, ...(first ? { [String(first.id)]: true } : {}) };
             window.addEventListener('keydown', (e) => {
@@ -150,15 +164,160 @@ document.addEventListener('alpine:init', () => {
             return clone({
                 core: this.core, links: this.links, rate: this.rate, now: this.now, skills: this.skills,
                 specialities: this.specialities, blocks: this.blocks, interests: this.interests,
+                practice: this.practice, roles: this.roles,
             });
         },
         /** Put a state back into the draft (Discard, Undo). */
         applyState(st) {
             const c = clone(st);
             Object.assign(this, c);
+            this.$nextTick(() => this.redrawFields());
         },
         /** The current draft becomes the saved state. */
         rebase() { this.base = this.draftState(); },
+
+        // ================= About your practice (ADR-AG) =====================
+        /** Practice values with empties dropped and keys sorted — comparable. */
+        practiceSig(v) {
+            const out = {};
+            Object.keys(v || {}).sort().forEach((k) => {
+                if (this.fxDefs[k] && FX.filled(this.fxDefs, k, v[k])) out[k] = v[k];
+            });
+            return JSON.stringify(out);
+        },
+        /** The practice draft differs from what is saved. */
+        get practiceDirty() { return !!this.base && this.practiceSig(this.practice) !== this.practiceSig(this.base.practice); },
+        /** Skill order or specialities differ from what is saved. */
+        get skillsChanged() {
+            const B = this.base;
+            if (!B) return false;
+            const j = JSON.stringify;
+            return j(this.skills.map((s) => s.id)) !== j(B.skills.map((s) => s.id))
+                || this.skills.some((s) => j(this.picked(s.id)) !== j(B.specialities[String(s.id)]?.selected || []));
+        },
+        /** The fields one skill asks for ([{ id, opt }]). */
+        fxFor(s) { return FX.forSkill(this.fxBySkill, s.slug); },
+        /** "2 of 5 added" for a skill's practice details. */
+        fxCount(s) {
+            const l = this.fxFor(s);
+            const got = l.filter((f) => FX.filled(this.fxDefs, f.id, this.practice[f.id])).length;
+            return fmt(this.S.fxCount || ':n of :m added', { n: got, m: l.length });
+        },
+        /** The editor HTML for one field of one skill. */
+        fxHtml(sk, f) {
+            return FX.editor(f.id, this.practice[f.id], f.opt, { defs: this.fxDefs, all: this.practice, digitalsUrl: this.digitalsUrl });
+        },
+        /** Fill a skill's fields box (x-init on each skill section). */
+        mountFields(el, s) {
+            el.innerHTML = this.fxFor(s).map((f) => this.fxHtml(s.slug, f)).join('');
+        },
+        /** Redraw every skill's fields (after Discard / Undo / save). */
+        redrawFields() {
+            this.rootEl.querySelectorAll('.fx-fields[data-s]').forEach((box) => {
+                const s = this.skills.find((x) => x.slug === box.dataset.s);
+                if (s) this.mountFields(box, s);
+            });
+        },
+        /**
+         * One delegated listener for every field on the page. Typing only
+         * refreshes the small read-outs (the caret stays); anything else redraws
+         * that field wherever it appears (two skills can share one), and Reach
+         * when Platforms change.
+         */
+        bindPractice() {
+            const root = this.rootEl.querySelector('#skillList');
+            if (!root) return;
+            FX.bind(root, this.fxDefs, () => this.practice, (id, el, typing) => {
+                if (typing) {
+                    const box = el.closest('.fld'); const v = this.practice[id];
+                    const out = box.querySelector('[data-out]');
+                    if (out) out.textContent = FX.inchOut(v);
+                    const er = box.querySelector('[data-err]');
+                    if (er) { const r = v || {}; er.hidden = !(r.min && r.max && r.max - r.min < 5); }
+                    return;
+                }
+                const sk = el && el.closest('.skill')?.dataset.s;
+                const focusSel = el ? (el.dataset.opt != null ? `[data-opt="${CSS.escape(el.dataset.opt)}"]${el.dataset.g != null ? `[data-g="${el.dataset.g}"]` : ''}`
+                    : el.dataset.k ? `[data-k="${CSS.escape(el.dataset.k)}"]` : el.hasAttribute('data-addpair') ? '[data-addpair]' : null) : null;
+                [id].concat(id === 'platforms' ? ['reach'] : []).forEach((fid) => {
+                    root.querySelectorAll(`.fld[data-fld="${fid}"]`).forEach((box) => {
+                        const s = this.skills.find((x) => x.slug === box.closest('.fx-fields').dataset.s);
+                        const f = s && this.fxFor(s).find((x) => x.id === fid);
+                        if (f) box.outerHTML = this.fxHtml(s.slug, f);
+                    });
+                });
+                if (focusSel && sk) root.querySelector(`.skill[data-s="${sk}"] .fld[data-fld="${id}"] ${focusSel}`)?.focus({ preventScroll: true });
+            }, (id, was, name) => {
+                toast(fmt(this.S.fxCleared || ':name cleared', { name }), () => {
+                    this.practice[id] = was;
+                    this.redrawFields();
+                });
+            });
+        },
+        // ================= Experience roles (ADR-AK) ========================
+        /** The roles differ from what is saved. */
+        get rolesDirty() { return !!this.base && JSON.stringify(this.roles) !== JSON.stringify(this.base.roles || []); },
+        /** The grouped list with a pencil per role (prototype FAMA_EXP.html). */
+        xpHtml() {
+            const name = (id) => this.skills.find((s) => s.id === id)?.name ?? '';
+            return XP.html(this.roles, { edit: true, skill: (id) => tr(name(id)) });
+        },
+        /** A pencil in the list opens that role. */
+        onExpClick(e) {
+            const b = e.target.closest('[data-edit-role]');
+            if (b) this.openRole(+b.dataset.editRole);
+        },
+        /** Open the Add / Edit role dialog. */
+        openRole(i) {
+            this.roleAt = i;
+            const r = i == null ? { t: '', n: '', et: '', loc: this.core.base_city || '', lt: '', cur: false, sm: 0, sy: 0, em: 0, ey: 0, hl: '', sk: [] } : this.roles[i];
+            this.roleForm = clone(r);
+            this.roleErrors = {};
+            this.$refs.roleDlg.showModal();
+            this.$nextTick(() => this.$refs.roleTitle?.focus());
+        },
+        /** Years for the start/end pickers: this year back 60. */
+        get roleYears() { const y = new Date().getFullYear(); return Array.from({ length: 60 }, (_, k) => y - k); },
+        /** Toggle a skill this role used. */
+        toggleRoleSkill(id) {
+            const sk = this.roleForm.sk || [];
+            this.roleForm.sk = sk.includes(id) ? sk.filter((x) => x !== id) : sk.concat(id);
+        },
+        /** Validate (title, company, start year, end after start) and put the role into the draft. */
+        saveRole() {
+            const r = { ...this.roleForm, t: (this.roleForm.t || '').trim(), n: (this.roleForm.n || '').trim(), loc: (this.roleForm.loc || '').trim(), hl: (this.roleForm.hl || '').trim(),
+                sm: +this.roleForm.sm || 0, sy: +this.roleForm.sy || 0, em: +this.roleForm.em || 0, ey: +this.roleForm.ey || 0 };
+            if (r.cur) { r.em = 0; r.ey = 0; }
+            const order = !r.cur && r.ey && r.sy && (r.ey * 12 + (r.em || 12)) < (r.sy * 12 + (r.sm || 1));
+            this.roleErrors = { t: !r.t, n: !r.n, start: !r.sy ? this.S.roleNeedY : (order ? this.S.roleOrder : '') };
+            const bad = !r.t ? 'roleTitle' : !r.n ? 'roleOrg' : this.roleErrors.start ? 'roleSy' : null;
+            if (bad) { this.$refs[bad]?.focus(); return; }
+            const was = this.roleAt;
+            if (was == null) this.roles.push(r); else this.roles.splice(was, 1, r);
+            this.$refs.roleDlg.close();
+            toast(fmt(was == null ? this.S.roleAdded : this.S.roleUpdated, { r: r.t }));
+        },
+        /** Delete the open role from the draft, with Undo. */
+        deleteRole() {
+            const i = this.roleAt; const old = this.roles[i];
+            this.$refs.roleDlg.close();
+            this.roles.splice(i, 1);
+            toast(fmt(this.S.roleRemoved, { r: old.t }), () => { this.roles.splice(i, 0, old); });
+        },
+        /** Save the roles (the server answers with them, ids included). */
+        async saveRoles() {
+            const { data } = await put('/talent/profile/experience', { roles: this.roles });
+            this.roles = clone(data.roles || []);
+            this.base.roles = clone(this.roles);
+        },
+
+        /** Save the practice values (the server answers with the values it kept). */
+        async savePractice() {
+            const { data } = await put('/talent/profile/practice', { fields: this.practice });
+            this.practice = clone(data.values || {});
+            this.base.practice = clone(this.practice);
+            this.$nextTick(() => this.redrawFields());
+        },
 
         /** Links as the API stores them (empty handles dropped). */
         cleanLinks(list = this.links) {
@@ -195,10 +354,10 @@ document.addEventListener('alpine:init', () => {
                 core: j(this.core) !== j(B.core),
                 now: j(this.now) !== j(B.now),
                 social: j(this.cleanLinks()) !== j(this.cleanLinks(B.links)),
-                skills: j(this.skills.map((s) => s.id)) !== j(B.skills.map((s) => s.id)) || specsDirty,
+                skills: j(this.skills.map((s) => s.id)) !== j(B.skills.map((s) => s.id)) || specsDirty || this.practiceDirty,
                 sections: sectionsDirty,
                 explore: j(this.interests) !== j(B.interests) || this.switchDirty('interests'),
-                brands: this.switchDirty('brand_collabs'),
+                brands: this.switchDirty('brand_collabs') || this.rolesDirty,
                 pricing: this.hasPricing && j(this.rate) !== j(B.rate),
             };
         },
@@ -332,7 +491,9 @@ document.addEventListener('alpine:init', () => {
                     this.base.now = clone(this.now);
                 }
                 if (d.sections || d.explore || d.brands) await this.saveBlocks();
-                if (d.skills) await this.saveSkills();
+                if (d.skills && this.skillsChanged) await this.saveSkills();
+                if (this.practiceDirty) await this.savePractice();
+                if (this.rolesDirty) await this.saveRoles();
                 if (d.explore) await this.saveInterests();
                 this.savedAt = Date.now();
                 this.flashSaved();
@@ -583,7 +744,13 @@ document.addEventListener('alpine:init', () => {
         get isSuspended() { return this.path.status === 'suspended'; },
         /** Copy the profile link (rendered only while Live). */
         async copyLink() {
-            if (!this.isPublished) return;
+            if (!this.isPublished) {
+                // Locked (prototype 9 Oct 2026): say why, and take them to the steps.
+                toast(this.S.copyOffN);
+                const g = document.getElementById('gate');
+                if (g && !g.hidden) g.scrollIntoView({ block: 'start', behavior: 'smooth' });
+                return;
+            }
             try { await navigator.clipboard.writeText(`${window.location.origin}/${this.base.core.slug}`); } catch (e) { /* label still shows it */ }
             this.copied = true;
             this.note = this.S.copiedA;

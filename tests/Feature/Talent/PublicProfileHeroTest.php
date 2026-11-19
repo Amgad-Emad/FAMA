@@ -67,7 +67,7 @@ it('splits a trailing year off a project title, and only a year', function () {
         ->and(ProjectTitle::split(null))->toBe(['name' => '', 'sub' => '', 'year' => '']);
 });
 
-it('shows the point of view once, under About {name}, after the tabs', function () {
+it('shows the point of view once, in the hero, before the tabs (13 Nov 2026)', function () {
     $talent = Talent::factory()->create([
         'slug' => 'hero-four', 'display_name' => 'Hero Four', 'is_published' => true,
         'worldview' => ['en' => 'Light first, then the clothes.'],
@@ -81,10 +81,10 @@ it('shows the point of view once, under About {name}, after the tabs', function 
 
     $html = $this->actingAs($talent, 'talent')->get('/hero-four')->assertOk()->getContent();
 
-    expect($html)->toContain(e(__('About :name', ['name' => 'Hero Four'])))
-        ->toContain('class="povq"')
+    expect($html)->toContain('class="ct-pov"')
+        ->not->toContain('class="povq"')
         ->and(substr_count($html, 'Light first, then the clothes.'))->toBe(1)
-        ->and(strpos($html, 'class="povq"'))->toBeGreaterThan(strpos($html, 'x-ref="panel"'));
+        ->and(strpos($html, 'class="ct-pov"'))->toBeLessThan(strpos($html, 'x-ref="panel"'));
 });
 
 it('leaves the profile-wide region out when nothing in it has content for a visitor', function () {

@@ -30,6 +30,8 @@ class StoreProjectMediaRequest extends FormRequest
                 'mimes:jpg,jpeg,png,webp,mp4,mov,webm',
                 'max:51200', // 50 MB
             ],
+            // false = the block editor places the pictures itself (ADR-AN).
+            'place' => ['sometimes', 'boolean'],
         ];
     }
 

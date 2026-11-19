@@ -1,11 +1,14 @@
 <?php
 
+use App\Actions\Catalog\SyncSkillCatalog;
 use App\Models\Project;
 use App\Models\Speciality;
 use App\Models\Talent;
 use App\Models\TalentType;
 use App\Models\User;
+use App\Queries\TalentSearch;
 use App\Services\SkillsService;
+use App\Services\TalentProjectService;
 use Database\Seeders\BlockTypeSeeder;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\SpecialitySeeder;
@@ -27,28 +30,31 @@ function withSkill(Talent $talent, string $slug): TalentType
 
 // ----- The catalog itself ----------------------------------------------------
 
-it('seeds nine skills, each with four to seven specialities on one axis', function () {
-    $skills = TalentType::with('specialities')->get();
+it('seeds the prototype’s 41 skills, each with four to eight specialities, exactly as the catalog lists them', function () {
+    $skills = TalentType::with(['specialities' => fn ($q) => $q->where('is_active', true)->orderBy('position')])->get();
 
-    expect($skills)->toHaveCount(9);
+    expect($skills)->toHaveCount(41);
 
-    foreach ($skills as $skill) {
-        expect($skill->specialities->count())
-            ->toBeGreaterThanOrEqual(4)
-            ->toBeLessThanOrEqual(7);
+    foreach (SyncSkillCatalog::catalog() as $entry) {
+        $skill = $skills->firstWhere('slug', $entry['slug']);
+        expect($skill)->not->toBeNull()
+            ->and($skill->getTranslation('name', 'en'))->toBe($entry['en'])
+            ->and($skill->specialities->map(fn ($s) => $s->getTranslation('name', 'en'))->all())
+            ->toBe(array_map(fn ($s) => $s[0], $entry['specialities']));
+        expect($skill->specialities->count())->toBeGreaterThanOrEqual(4)->toBeLessThanOrEqual(8);
     }
 
-    // Photography is the one skill that earns a seventh entry.
-    expect($skills->firstWhere('slug', 'photography')->specialities)->toHaveCount(7);
+    // Photography carries the widest range: eight.
+    expect($skills->firstWhere('slug', 'photography')->specialities)->toHaveCount(8);
 });
 
 it('lets the same speciality name live under several skills', function () {
-    // "Fashion" is a photography, a modelling AND a styling speciality — the
-    // overlap is what lets one search assemble a whole crew.
+    // "Fashion" is a photography, modelling, styling AND retouching speciality —
+    // the overlap is what lets one search assemble a whole crew.
     $fashion = Speciality::where('slug', 'fashion')->get();
 
-    expect($fashion->count())->toBe(3)
-        ->and($fashion->pluck('talent_type_id')->unique())->toHaveCount(3);
+    expect($fashion->count())->toBe(4)
+        ->and($fashion->pluck('talent_type_id')->unique())->toHaveCount(4);
 });
 
 it('flags the entries added for the regional market', function () {
@@ -58,7 +64,10 @@ it('flags the entries added for the regional market', function () {
         ->sort()
         ->values();
 
-    expect($regional->all())->toBe(['Arabic lettering', 'Modest fashion']);
+    expect($regional->all())->toBe([
+        'Arabic calligraphy', 'Arabic to English', 'Arabic type design', 'Bilingual typesetting', 'Cultural consulting',
+        'English to Arabic', 'Fixing & local coordination', 'Modest fashion', 'Permits & clearances',
+    ]);
 });
 
 // ----- A talent claiming specialities ----------------------------------------
@@ -178,7 +187,7 @@ it('prunes the picks that no longer hang off a tagged skill when the skills chan
     $photoPick = $photography->specialities()->firstOrFail();
     $stylePick = $styling->specialities()->firstOrFail();
 
-    $project = app(\App\Services\TalentProjectService::class)->create(
+    $project = app(TalentProjectService::class)->create(
         $talent,
         ['title' => ['en' => 'Both']],
         [$photography->id, $styling->id],
@@ -186,7 +195,7 @@ it('prunes the picks that no longer hang off a tagged skill when the skills chan
     );
 
     // Re-tag to photography alone WITHOUT restating the picks.
-    app(\App\Services\TalentProjectService::class)->update($project, [], [$photography->id]);
+    app(TalentProjectService::class)->update($project, [], [$photography->id]);
 
     expect($project->fresh()->specialities->pluck('id')->all())->toBe([$photoPick->id]);
 });
@@ -206,7 +215,7 @@ it('finds talents by speciality slug across the skills that share the name', fun
     $service->setSpecialities($photographer, $photography, [$photography->specialities()->where('slug', 'fashion')->firstOrFail()->id]);
     $service->setSpecialities($stylist, $styling, [$styling->specialities()->where('slug', 'fashion')->firstOrFail()->id]);
 
-    $names = app(\App\Queries\TalentSearch::class)->paginate(20)->getCollection()->pluck('display_name');
+    $names = app(TalentSearch::class)->paginate(20)->getCollection()->pluck('display_name');
 
     // Unfiltered sanity: all three are published.
     expect($names)->toHaveCount(3);
@@ -214,7 +223,7 @@ it('finds talents by speciality slug across the skills that share the name', fun
     $this->get('/discover?filter[speciality]=fashion')->assertOk();
 
     request()->merge(['filter' => ['speciality' => 'fashion']]);
-    $found = app(\App\Queries\TalentSearch::class)->paginate(20)->getCollection()->pluck('display_name')->sort()->values();
+    $found = app(TalentSearch::class)->paginate(20)->getCollection()->pluck('display_name')->sort()->values();
 
     expect($found->all())->toBe(['Shooter', 'Styler']);
 });
@@ -229,13 +238,13 @@ it('lets an admin add, retire and reinstate a speciality', function () {
 
     $id = $this->actingAs($admin, 'admin')
         ->postJson(route('admin.skills.specialities.store', $skill->id), [
-            'name' => ['en' => 'Automotive', 'ar' => 'السيارات'],
+            'name' => ['en' => 'Aerial & drone', 'ar' => 'التصوير الجوي'],
             'is_regional' => false,
         ])
         ->assertCreated()
         ->json('data.speciality.id');
 
-    expect(Speciality::findOrFail($id)->slug)->toBe('automotive');
+    expect(Speciality::findOrFail($id)->slug)->toBe('aerial-drone');
 
     $this->actingAs($admin, 'admin')
         ->patchJson(route('admin.specialities.active', $id), ['is_active' => false])
@@ -259,4 +268,12 @@ it('refuses a duplicate speciality slug within one skill', function () {
     $this->actingAs($admin, 'admin')
         ->postJson(route('admin.skills.specialities.store', $skill->id), ['name' => ['en' => 'Fashion']])
         ->assertStatus(422);
+});
+
+it('has a glyph for every catalog skill in the one shared icon map', function () {
+    $icons = json_decode(file_get_contents(resource_path('data/skill-icons.json')), true);
+
+    foreach (TalentType::pluck('icon') as $icon) {
+        expect($icons)->toHaveKey($icon);
+    }
 });

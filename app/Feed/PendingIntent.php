@@ -3,10 +3,12 @@
 namespace App\Feed;
 
 use App\Actions\Feed\CreateComment;
+use App\Actions\Feed\ToggleBookmark;
 use App\Actions\Feed\ToggleFollow;
 use App\Actions\Feed\ToggleLike;
 use App\Models\Comment;
 use App\Models\Post;
+use App\Models\Project;
 use App\Models\Talent;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -142,7 +144,7 @@ class PendingIntent
     {
         $target = $this->resolveTarget($intent['target_type'], $intent['target_id']);
 
-        if ($target instanceof Post || $target instanceof Comment) {
+        if ($target instanceof Post || $target instanceof Comment || $target instanceof Project) {
             app(ToggleLike::class)($actor, $target, onlyLike: true);
         }
     }
@@ -196,7 +198,7 @@ class PendingIntent
         $post = Post::query()->find($intent['target_id']);
 
         if ($post !== null) {
-            app(\App\Actions\Feed\ToggleBookmark::class)($actor, $post, onlySave: true);
+            app(ToggleBookmark::class)($actor, $post, onlySave: true);
         }
     }
 
@@ -208,6 +210,7 @@ class PendingIntent
         return match ($type) {
             'post' => Post::query()->find($id),
             'comment' => Comment::query()->find($id),
+            'project' => Project::query()->find($id),
             default => null,
         };
     }

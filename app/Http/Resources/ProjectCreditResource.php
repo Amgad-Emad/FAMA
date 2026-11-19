@@ -28,6 +28,7 @@ class ProjectCreditResource extends BaseResource
             'name' => $this->displayName(),
             'role' => $this->role,
             'status' => (string) $this->status,
+            'is_hidden' => $this->hidden_at !== null,
             'is_public' => $this->status->isPublic(),
             'is_on_platform' => $this->isOnPlatform(),
             'position' => (int) $this->position,

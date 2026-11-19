@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Feed\BookmarkController;
 use App\Http\Controllers\Feed\CommentController;
 use App\Http\Controllers\Feed\FeedController;
 use App\Http\Controllers\Feed\FollowController;
@@ -11,6 +12,7 @@ use App\Http\Controllers\Feed\NotificationController;
 use App\Http\Controllers\Feed\PostController;
 use App\Http\Controllers\Feed\ProjectShareController;
 use App\Http\Controllers\Feed\ReportController;
+use App\Http\Controllers\Feed\SuggestionController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -43,6 +45,8 @@ Route::prefix('v1')->middleware('resolve.actor')->group(function () {
         ->middleware(['auth:sanctum', 'require.actor:post']);
     Route::post('/posts/{post}/pin', [PostController::class, 'pin'])
         ->middleware(['auth:sanctum', 'require.actor:post']);
+    Route::post('/posts/{post}/repost', [PostController::class, 'repost'])
+        ->middleware(['auth:sanctum', 'require.actor:post', 'throttle:feed-posts']);
     Route::post('/projects/{project}/share', ProjectShareController::class)
         ->middleware(['auth:sanctum', 'require.actor:share']);
 
@@ -65,17 +69,21 @@ Route::prefix('v1')->middleware('resolve.actor')->group(function () {
         ->middleware(['auth:sanctum', 'require.actor:like', 'throttle:feed-likes']);
     Route::delete('/comments/{comment}/like', [LikeController::class, 'destroyComment'])
         ->middleware(['auth:sanctum', 'require.actor:like', 'throttle:feed-likes']);
+    Route::post('/projects/{project}/like', [LikeController::class, 'storeProject'])
+        ->middleware(['auth:sanctum', 'require.actor:like', 'throttle:feed-likes']);
+    Route::delete('/projects/{project}/like', [LikeController::class, 'destroyProject'])
+        ->middleware(['auth:sanctum', 'require.actor:like', 'throttle:feed-likes']);
 
     // Follow-suggestion rails (5Z)
-    Route::get('/feed/suggestions/talents', [\App\Http\Controllers\Feed\SuggestionController::class, 'talents']);
-    Route::get('/feed/suggestions/brands', [\App\Http\Controllers\Feed\SuggestionController::class, 'brands']);
-    Route::post('/feed/suggestions/dismiss', [\App\Http\Controllers\Feed\SuggestionController::class, 'dismiss'])
+    Route::get('/feed/suggestions/talents', [SuggestionController::class, 'talents']);
+    Route::get('/feed/suggestions/brands', [SuggestionController::class, 'brands']);
+    Route::post('/feed/suggestions/dismiss', [SuggestionController::class, 'dismiss'])
         ->middleware(['auth:sanctum', 'require.actor:dismiss', 'throttle:feed-dismissals']);
 
     // Saves (5X)
-    Route::post('/posts/{post}/bookmark', [\App\Http\Controllers\Feed\BookmarkController::class, 'store'])
+    Route::post('/posts/{post}/bookmark', [BookmarkController::class, 'store'])
         ->middleware(['auth:sanctum', 'require.actor:bookmark', 'throttle:feed-bookmarks']);
-    Route::delete('/posts/{post}/bookmark', [\App\Http\Controllers\Feed\BookmarkController::class, 'destroy'])
+    Route::delete('/posts/{post}/bookmark', [BookmarkController::class, 'destroy'])
         ->middleware(['auth:sanctum', 'require.actor:bookmark', 'throttle:feed-bookmarks']);
 
     // Follows + audiences

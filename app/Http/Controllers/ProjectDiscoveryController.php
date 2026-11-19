@@ -22,7 +22,7 @@ class ProjectDiscoveryController extends Controller
     {
         return view('public.projects', [
             // Disciplines catalog (talent_types) — the primary filter, grouped by scope.
-            'types' => TalentType::orderBy('category')->orderBy('id')->get(),
+            'types' => TalentType::orderBy('category')->alphabetical()->get(),
         ]);
     }
 

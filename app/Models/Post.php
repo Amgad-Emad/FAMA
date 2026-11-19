@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Models\Bookmark;
 use App\Observers\PostObserver;
 use App\States\Post\PostState;
 use App\States\Post\Published;
@@ -43,7 +42,7 @@ class Post extends Model implements HasMedia
      * @var list<string>
      */
     protected $fillable = [
-        'author_type', 'author_id', 'post_type', 'body', 'project_id',
+        'author_type', 'author_id', 'post_type', 'body', 'project_id', 'reposted_post_id',
         'shared_snapshot', 'state', 'published_at', 'edited_at', 'is_pinned',
     ];
 
@@ -109,6 +108,14 @@ class Post extends Model implements HasMedia
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
+    }
+
+    /**
+     * The post a repost shares (ADR-AM). Null when the original was deleted.
+     */
+    public function repostOf(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'reposted_post_id');
     }
 
     /**

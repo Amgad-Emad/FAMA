@@ -65,7 +65,7 @@
 .pe-tools button{width:32px;height:32px;border:0;border-radius:8px;background:none;color:var(--ink);display:grid;place-items:center;cursor:pointer}
 .pe-tools button:hover:not([disabled]){background:var(--line)}
 .pe-tools button[disabled]{opacity:.3;cursor:default}
-.pe-kind{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--grey);text-align:center;padding:4px 0 2px;writing-mode:vertical-rl;transform:rotate(180deg)}
+.pe-kind{align-self:center;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--grey);text-align:center;padding:4px 0 2px;writing-mode:vertical-rl;transform:rotate(180deg)}
 .pe-ins{position:relative;height:28px;margin:-6px 0;display:flex;align-items:center;justify-content:center;z-index:4;opacity:0;transition:opacity var(--duration-quick,150ms) ease-out}
 .pe-ins::before{content:"";position:absolute;inset:50% 0 auto;height:1px;background:var(--purple)}
 .pe-ins:hover,.pe-ins:focus-within{opacity:1}

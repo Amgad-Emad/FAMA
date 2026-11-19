@@ -7,7 +7,7 @@
     headings (its "short project"): the cover with the title on the picture, the
     opening line beside the facts, the pictures as a magazine spread (the first
     wide, the rest in pairs), the full story, the Results numbers, then the team
-    (Credits), the "Made by" band, the next project full width and more work.
+    ("Made by"), the next project full width and more work.
 
       cover        → the project's `cover`; with none, the first picture of the
                      work stands in (and is not repeated in the spread)
@@ -20,17 +20,23 @@
                      specialities, See it live
       story        → the body (sanitised rich text)
       results      → number / percent bar / rise-or-fall, by what was typed
-      credits      → the owner, then confirmed + off-platform people only;
-                     pending credits appear nowhere (ADR-AA)
+      team         → 13 Nov 2026 review: a shared project reads the same for
+                     everyone on it — the owner, then confirmed + off-platform
+                     people, listed as EQUALS: "By A and B" (stacked avatars) on
+                     the cover and the "Made by" band (name + role, side by side)
+                     at the end. The separate Credits list is folded into that
+                     band. Pending credits appear nowhere (ADR-AA). No hiring on
+                     Fama yet: no "Work with", no "Open for work", no phone bar.
+      pictures     → numbers (01 / 09) show only in the full-screen viewer
+                     (12 Nov 2026 review)
 
-    Behaviour: famaProjectFollow (Follow) + famaProjectPage (Share, the
-    full-screen pictures, the phone's follow bar) in resources/js/ui/projects.js;
+    Behaviour: famaProjectLike (♡ Like, ADR-AJ) + famaProjectPage (Share, the
+    full-screen pictures) in resources/js/ui/projects.js;
     motion = public/fama-ui/js/project-motion.js on GSAP (the prototype's).
 --}}
 @php
     $initials = fn (?string $name) => collect(preg_split('/\s+/', trim((string) $name)))
         ->filter()->take(2)->map(fn ($w) => mb_strtoupper(mb_substr($w, 0, 1)))->implode('');
-    $two = fn (int $n) => str_pad((string) $n, 2, '0', STR_PAD_LEFT);
 
     // "Desert Light — 2026" → name + year tag; "Nomad — Autumn launch" → sub-line (App\Support\ProjectTitle).
     $title = \App\Support\ProjectTitle::forProject($project);
@@ -38,74 +44,59 @@
     $year = $title['year'];
     $h1Size = mb_strlen($title['main']) > 28 ? 'clamp(44px,6vw,88px)' : (mb_strlen($title['main']) > 18 ? 'clamp(52px,7.5vw,108px)' : '');
 
-    // The cover: the chosen cover, else the first picture of the work (then left out of the spread).
-    $items = $project->orderedMedia();
-    $coverUrl = $project->cover_image_url;
-    if (! $coverUrl) {
-        $standIn = $items->first(fn ($item) => ! str_starts_with((string) $item->mime_type, 'video/'));
-        if ($standIn) {
-            $coverUrl = $standIn->getUrl();
-            $items = $items->reject(fn ($item) => $item->is($standIn))->values();
-        }
-    }
-    $pictures = $items->map(fn ($item) => [
-        'url' => $item->getUrl(),
-        'video' => str_starts_with((string) $item->mime_type, 'video/'),
-        'mime' => $item->mime_type,
-    ])->values();
-    $total = $pictures->count();
-
-    // A result shows by what was typed: + or − is a change, a trailing % a percent.
-    $resultType = function (string $value): string {
-        if (preg_match('/^\s*[+\-−]/u', $value)) {
-            return 'change';
-        }
-
-        return preg_match('/%\s*$/', $value) ? 'percent' : 'number';
-    };
-    $results = collect($project->resultRows());
+    // The story, laid out from the blocks by the prototype's rules (ADR-AN).
+    $story = \App\Support\ProjectStory::for($project);
+    // The cover: the chosen cover, else the story's first picture stands in.
+    $coverUrl = $project->lead_image_url;
 
     $skills = $project->talentTypes;
+    // Work under an NDA (prototype Settings): the page says "Confidential client" and hides the link.
+    $nda = (bool) $project->client_confidential;
     $client = filled($project->client_name) ? $project->client_name : '';
-    $kicker = collect([$client, $skills->first()?->name])->filter()->implode(' · ');
+    $kicker = collect([$nda ? __('Confidential client') : $client, $skills->first()?->name])->filter()->implode(' · ');
 
-    // The team: confirmed on-platform people are co-owners; off-platform names are listed.
-    $credits = $project->credits->filter(fn ($credit) => $credit->status->isPublic())->values();
-    $coOwnerIds = $project->coOwnerCredits()->pluck('talent_id')->map('intval')->all();
-    $coNames = $credits->filter(fn ($c) => $c->talent && in_array((int) $c->talent_id, $coOwnerIds, true))
-        ->map(fn ($c) => $c->talent->display_name)->filter()->unique()->values();
-    $withLine = $coNames->count() < 3
-        ? $coNames->implode(' '.__('and').' ')
-        : $coNames->slice(0, -1)->implode(', ').' '.__('and').' '.$coNames->last();
+    // The team (13 Nov 2026 review): one list of equals — the owner, then every confirmed
+    // on-platform person and every off-platform name. Pending credits appear nowhere.
+    $credits = $project->credits
+        ->filter(fn ($credit) => $credit->status->isPublic())
+        ->reject(fn ($credit) => $credit->talent && (int) $credit->talent_id === (int) $talent->id)
+        ->unique(fn ($credit) => $credit->talent_id ? 'talent:'.$credit->talent_id : 'name:'.mb_strtolower((string) $credit->name))
+        ->values();
+    $team = collect([[
+        'name' => $talent->display_name,
+        'role' => (string) $project->role,
+        'url' => url($talent->slug),
+        'who' => $talent,
+    ]])->concat($credits->map(fn ($credit) => [
+        'name' => $credit->talent ? $credit->talent->display_name : (string) $credit->name,
+        'role' => (string) ($credit->role ?: $credit->talentType?->name),
+        'url' => $credit->talent?->slug ? url($credit->talent->slug) : null,
+        'who' => $credit->talent,
+    ]))->filter(fn ($member) => filled($member['name']))->values();
+    $memberName = fn (array $m) => $m['url'] ? '<a href="'.e($m['url']).'"><b>'.e($m['name']).'</b></a>' : '<b>'.e($m['name']).'</b>';
+    $names = $team->map($memberName);
+    // "By A", "By A and B", "By A, B and C".
+    $byLine = $names->count() > 1
+        ? $names->slice(0, -1)->implode(', ').' '.e(__('and')).' '.$names->last()
+        : $names->first();
 
-    // The opening line is one line of serif: the summary as plain text.
-    $lead = trim(preg_replace('/\s+/u', ' ', html_entity_decode(strip_tags(
-        str_replace(['</p>', '<br>', '<br/>', '<br />'], ' ', (string) \App\Support\Html\BriefSanitizer::clean((string) ($project->summary ?? '')))
-    ), ENT_QUOTES | ENT_HTML5)));
-    $body = $project->body ? \App\Support\Html\BriefSanitizer::clean((string) $project->body) : '';
-    $hasBody = trim(strip_tags($body)) !== '';
-    // Plain text written before the editor was rich keeps its line breaks.
-    if ($hasBody && ! preg_match('/<(p|div|br|li)\b/i', $body)) {
-        $body = nl2br(trim($body));
-    }
-
-    $profileUrl = url($talent->slug);
-    // ", lead stylist · with Omar Saleh" after the owner's name on the cover.
-    $byTail = (filled($project->role) ? ', '.mb_strtolower($project->role) : '').($withLine !== '' ? ' · '.__('with :names', ['names' => $withLine]) : '');
-    $primary = $talent->talentTypes->sortByDesc(fn ($t) => (int) $t->pivot->is_primary)->first();
-    $ownerLine = collect([$primary?->name, $talent->base_city])->filter()->implode(' · ');
+    // One person alone: "By Lina Haddad, photographer".
+    $byTail = $team->count() === 1 && filled($project->role) ? ', '.mb_strtolower($project->role) : '';
     $liveHost = $project->url ? rtrim(preg_replace('#^https?://(www\.)?#', '', $project->url), '/') : '';
+    $lock = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect width="16" height="11" x="4" y="11" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
 
     $facts = collect([
-        $client !== '' ? [__('Client'), e($client)] : null,
+        $nda ? [__('Client'), '<span class="nda">'.$lock.e(__('Confidential')).'</span><span class="nda-note">'.e(__('The client asked not to be named')).'</span>']
+            : ($client !== '' ? [__('Client'), e($client)] : null),
         filled($project->role) ? [__('Role'), e($project->role)] : null,
         $skills->isNotEmpty() ? [__('Skills'), e($skills->pluck('name')->implode(' · ')).($project->specialities->isNotEmpty() ? '<small>'.e($project->specialities->pluck('name')->implode(', ')).'</small>' : '')] : null,
-        $project->url ? [__('See it live'), '<a href="'.e($project->url).'" target="_blank" rel="noopener">'.e($liveHost).' ↗</a>'] : null,
+        $project->url && ! $nda ? [__('See it live'), '<a href="'.e($project->url).'" target="_blank" rel="noopener">'.e($liveHost).' ↗</a>'] : null,
     ])->filter()->values();
 
     $next = $more->first();
     $others = $more->slice(1, 3)->values();
     $avatar = fn ($who) => $who?->avatar_url ? '<img src="'.e($who->avatar_url).'" alt="">' : e($initials($who?->display_name));
+    $memberAvatar = fn (array $m) => $m['who'] ? $avatar($m['who']) : e($initials($m['name']));
 @endphp
 <x-fama.layout :title="$project->title" :css="['project-page']">
     <x-slot:head>
@@ -116,8 +107,8 @@
         <link rel="stylesheet" href="{{ \App\Support\FamaAsset::url('fama-ui/css/pages/project.css') }}">
     </x-slot:styles>
 
-    <main class="ed is-short" id="page"
-          x-data="famaProjectFollow({ id: {{ (int) $talent->id }}, following: @js($following) })">
+    <main class="ed{{ $story['short'] ? ' is-short' : '' }}" id="page"
+          x-data="famaProjectLike({ id: {{ (int) $project->id }}, liked: @js($liked) })">
     <div class="ed-in" x-data="famaProjectPage({ copied: @js(__('Link copied')) })">
         @if ($preview)
             <div class="st-prev"><span><b>{{ __('Preview') }}</b> · {{ __('This is how it looks on your profile.') }}</span><a class="btn btn-2" href="{{ route('talent.projects.edit', $project) }}">{{ __('Back to editing') }}</a></div>
@@ -129,100 +120,69 @@
                 <div>
                     <p class="kick">@if ($year)<span class="ytag">{{ $year }}</span>@endif{{ $kicker }}</p>
                     <h1 @if ($h1Size) style="font-size:{{ $h1Size }}" @endif>{{ $title['main'] }}@if ($title['sub'] !== '')<span class="vh"> — </span><span class="h1-sub">{{ $title['sub'] }}</span>@endif @if ($year)<span class="vh">, {{ $year }}</span>@endif</h1>
-                    <div class="by"><span class="av" aria-hidden="true">{!! $avatar($talent) !!}</span><span><a href="{{ $profileUrl }}"><b>{{ $talent->display_name }}</b></a>{{ $byTail }}</span></div>
+                    <div class="by"><span class="avs" aria-hidden="true">@foreach ($team->take(4) as $member)<span class="av">{!! $memberAvatar($member) !!}</span>@endforeach</span><span>{{ __('By') }} {!! $byLine !!}{{ $byTail }}</span></div>
                 </div>
                 <div class="acts">
+                    {{-- Share + Like for everyone; owners also get Edit (prototype). --}}
                     <button class="btn btn-2" type="button" @click="share()">{{ __('Share') }}</button>
+                    <button class="btn btn-2" type="button" @click="toggle()" :aria-pressed="liked.toString()" aria-pressed="{{ $liked ? 'true' : 'false' }}"
+                                x-text="(liked ? '♥ ' : '♡ ') + @js(__('Like'))">{{ $liked ? '♥' : '♡' }} {{ __('Like') }}</button>
                     @if ($isOwner)
                         <a class="btn" href="{{ route('talent.projects.edit', $project) }}">{{ __('Edit project') }}</a>
-                    @else
-                        <button class="btn btn-2" type="button" @click="toggle()" :aria-pressed="following.toString()" aria-pressed="{{ $following ? 'true' : 'false' }}"
-                                x-text="following ? @js(__('Following')) : @js(__('Follow'))">{{ $following ? __('Following') : __('Follow') }}</button>
                     @endif
                 </div>
             </div>
         </header>
 
-        <div class="grid"><article class="story short">
-            <div class="s-intro">
-                @if ($lead !== '')<p class="lead">{{ $lead }}</p>@else<span></span>@endif
-                <dl class="s-facts">
-                    @foreach ($facts as [$label, $value])
-                        <div><dt>{{ $label }}</dt><dd>{!! $value !!}</dd></div>
-                    @endforeach
-                </dl>
-            </div>
+        @unless ($story['short'])
+            <div class="grid"><dl class="colo" style="--n:{{ $facts->count() }}">
+                @foreach ($facts as [$label, $value])
+                    <div><dt>{{ $label }}</dt><dd>{!! $value !!}</dd></div>
+                @endforeach
+            </dl></div>
+        @endunless
 
-            @if ($total)
-                <div class="sgrid">
-                    @foreach ($pictures as $k => $pic)
-                        @php $n = $two($k + 1).' / '.$two($total); @endphp
-                        @if ($pic['video'])
-                            <figure class="{{ $k === 0 ? 'big' : '' }} is-video" data-nolb>
-                                <video class="ph-img" controls playsinline preload="metadata" aria-label="{{ __(':title, picture :i of :n', ['title' => $project->title, 'i' => $k + 1, 'n' => $total]) }}"><source src="{{ $pic['url'] }}" type="{{ $pic['mime'] }}"></video>
-                                <figcaption><b>{{ $n }}</b></figcaption>
-                            </figure>
-                        @else
-                            <figure class="{{ $k === 0 ? 'big' : '' }}">
-                                <div class="ph-img" role="img" style="background-image:url('{{ $pic['url'] }}')" aria-label="{{ __(':title, picture :i of :n', ['title' => $project->title, 'i' => $k + 1, 'n' => $total]) }}"></div>
-                                <figcaption><b>{{ $n }}</b></figcaption>
-                            </figure>
-                        @endif
-                    @endforeach
-                </div>
-            @endif
-
-            @if ($hasBody)
-                <div class="txt">{!! $body !!}</div>
-            @endif
-
-            @if ($results->isNotEmpty())
-                <div class="res">
-                    @foreach ($results as $result)
-                        @php
-                            $kind = $resultType($result['value']);
-                            $down = $kind === 'change' && preg_match('/^\s*[\-−]/u', $result['value']);
-                            $pct = max(0, min(100, (float) preg_replace('/[^0-9.\-]/', '', $result['value'])));
-                        @endphp
-                        <div class="{{ $kind === 'change' ? ($down ? 'up down' : 'up') : '' }}" data-kind="{{ $kind }}">
-                            <b>@if ($kind === 'change')<span class="ar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></svg></span>@endif{{ $result['value'] }}</b>
-                            <span>{{ $result['label'] }}</span>
-                            @if ($kind === 'percent')<div class="bar" aria-hidden="true"><i style="width:{{ $pct }}%"></i></div>@endif
-                            @if ($kind === 'change' && $result['compare'] !== '')<small>{{ $result['compare'] }}</small>@endif
-                        </div>
-                    @endforeach
-                </div>
-            @endif
-
-            {{-- The team: the owner first, then everyone confirmed. Only when there's someone besides the owner. --}}
-            @if ($credits->isNotEmpty())
-                <section class="ch" id="credits"><div class="ch-h"><span>{{ __('THE TEAM') }}</span><h2>{{ __('Credits') }}</h2></div>
-                    <ul class="cred">
-                        <li><span class="av">{!! $avatar($talent) !!}</span><b><a href="{{ $profileUrl }}">{{ $talent->display_name }}</a></b><span class="r">{{ $project->role }}</span><span class="st">{{ __('Owner') }}</span></li>
-                        @foreach ($credits as $credit)
-                            <li>
-                                <span class="av">@if ($credit->talent){!! $avatar($credit->talent) !!}@else{{ $initials($credit->name) }}@endif</span>
-                                <b>@if ($credit->talent)<a href="{{ url($credit->talent->slug) }}">{{ $credit->talent->display_name }}</a>@else{{ $credit->name }}@endif</b>
-                                {{-- Role leads: skill says what someone can do, role says what they did HERE. --}}
-                                <span class="r">{{ collect([$credit->role, $credit->talentType?->name])->filter()->implode(' · ') }}</span>
-                                @if ($credit->talent && in_array((int) $credit->talent_id, $coOwnerIds, true))<span class="st">{{ __('Owner') }}</span>@else<span></span>@endif
-                            </li>
+        <div class="grid"><article class="story{{ $story['short'] ? ' short' : '' }}">
+            @if ($story['short'])
+                <div class="s-intro">
+                    @if ($story['lead'] !== '')<p class="lead">{{ $story['lead'] }}</p>@else<span></span>@endif
+                    <dl class="s-facts">
+                        @foreach ($facts as [$label, $value])
+                            @continue($label === __('See it live'))
+                            <div><dt>{{ $label }}</dt><dd>{!! $value !!}</dd></div>
                         @endforeach
-                    </ul>
-                </section>
+                    </dl>
+                </div>
+                @if ($story['photos'])
+                    <div class="sgrid">
+                        @foreach ($story['photos'] as $k => $fig)
+                            @include('public.partials.project-fig', ['fig' => $fig, 'cls' => $k === 0 ? 'big' : '', 'title' => $project->title])
+                        @endforeach
+                    </div>
+                @endif
+            @elseif ($story['lead'] !== '')
+                <p class="lead">{{ $story['lead'] }}</p>
             @endif
+
+            @include('public.partials.project-story', ['pieces' => $story['pieces'], 'title' => $project->title])
         </article></div>
 
-        <div class="grid"><section class="hire" id="hire" aria-labelledby="hireT" x-ref="hire">
-            <span class="av hav" aria-hidden="true">{!! $avatar($talent) !!}</span>
-            <div class="hwho"><p class="hk">{{ $isOwner && (int) auth('talent')->id() === (int) $talent->id ? __('Made by you') : __('Made by') }}</p><h2 id="hireT"><a href="{{ $profileUrl }}">{{ $talent->display_name }}</a></h2>
-                <p class="hm">@if ($ownerLine !== ''){{ $ownerLine }}@endif @if ($talent->is_available)<span class="open"><i></i>{{ __('Open for work') }}</span>@endif</p></div>
+        {{-- "Made by": everyone on the project as equals, name + role side by side (13 Nov 2026 review). --}}
+        <div class="grid"><section class="hire team" id="hire" aria-labelledby="hireT" x-ref="hire">
+            <div class="hwho"><h2 class="hk" id="hireT">{{ __('Made by') }}</h2>
+                <ul class="tm">
+                    @foreach ($team as $member)
+                        <li><span class="av" aria-hidden="true">{!! $memberAvatar($member) !!}</span><span>{!! $memberName($member) !!}@if (filled($member['role']))<span class="r">{{ $member['role'] }}</span>@endif</span></li>
+                    @endforeach
+                </ul></div>
             <div class="hacts">
                 @if ($isOwner)
+                    <a class="btn btn-2" href="{{ route('talent.work', ['slug' => $talent->slug, 'project' => $project, 'visitor' => 1]) }}">{{ __('See it as a visitor') }}</a>
                     <a class="btn" href="{{ route('talent.projects.edit', $project) }}">{{ __('Edit project') }}</a>
                 @else
-                    <button class="btn btn-2" type="button" @click="toggle()" :aria-pressed="following.toString()" x-text="following ? @js(__('Following')) : @js(__('Follow'))">{{ $following ? __('Following') : __('Follow') }}</button>
-                    <a class="btn" href="{{ $profileUrl }}">{{ __('View profile') }}</a>
+                    <button class="btn btn-2" type="button" @click="share()">{{ __('Share') }}</button>
+<button class="btn" type="button" @click="toggle()" :aria-pressed="liked.toString()" aria-pressed="{{ $liked ? 'true' : 'false' }}"
+                                x-text="(liked ? '♥ ' : '♡ ') + @js(__('Like'))">{{ $liked ? '♥' : '♡' }} {{ __('Like') }}</button>
                 @endif
             </div>
         </section></div>
@@ -240,22 +200,13 @@
             </div></div>
         @endif
 
-        {{-- On a phone, the way to follow comes with you once the cover is gone, until the "Made by" band is on screen. --}}
-        @unless ($isOwner)
-            <div class="hirebar" :class="{ show: barShown }" :aria-hidden="(!barShown).toString()" aria-hidden="true">
-                <span class="av" aria-hidden="true">{!! $avatar($talent) !!}</span>
-                <span class="hb-t"><b>{{ $talent->display_name }}</b>@if ($talent->is_available)<span class="open"><i></i>{{ __('Open for work') }}</span>@endif</span>
-                <button class="btn" type="button" :tabindex="barShown ? 0 : -1" tabindex="-1" @click="toggle()" x-text="following ? @js(__('Following')) : @js(__('Follow'))">{{ $following ? __('Following') : __('Follow') }}</button>
-            </div>
-        @endunless
-
         {{-- Full-screen pictures: every photo on the page, in order. --}}
         <dialog class="lb" x-ref="lb" aria-label="{{ __('Pictures') }}" @keydown.arrow-right="show(index + 1)" @keydown.arrow-left="show(index - 1)">
             <div class="lb-top"><span class="lb-n" x-text="counter"></span><button class="lb-x" type="button" @click="$refs.lb.close()" aria-label="{{ __('Close') }}">✕</button></div>
             <button class="lb-arr lb-prev" type="button" @click="show(index - 1)" aria-label="{{ __('Previous picture') }}">‹</button>
             <div class="lb-stage" @pointerdown="x0 = $event.clientX" @pointerup="swipe($event)"><div class="ph-img" role="img" :style="current ? { backgroundImage: current.bg } : {}" :aria-label="current ? current.cap : ''"></div></div>
             <button class="lb-arr lb-next" type="button" @click="show(index + 1)" aria-label="{{ __('Next picture') }}">›</button>
-            <p class="lb-cap"></p>
+            <p class="lb-cap" x-text="current ? current.cap : ''"></p>
         </dialog>
     </div>
     </main>

@@ -42,7 +42,7 @@ class OnboardingController extends BrandController
 
         return view('brand.onboarding', [
             'brand' => $brand,
-            'talentTypes' => TalentType::orderBy('id')->get(),
+            'talentTypes' => TalentType::alphabetical()->get(),
             'projectTypes' => self::PROJECT_TYPES,
             'moods' => self::MOODS,
         ]);

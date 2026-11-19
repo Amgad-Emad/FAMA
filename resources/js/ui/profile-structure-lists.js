@@ -108,41 +108,18 @@ export const listsMixin = () => ({
     },
     /** Skills that can still be added. */
     get canAddSkill() { return this.allSkills.some((s) => !this.skills.some((x) => x.id === s.id)); },
-    /** Move a skill to a new index (draft). The first opens first. */
-    moveSkill(id, to, focusSel = '[data-grip]') {
-        const from = this.skills.findIndex((s) => s.id === id);
-        if (to < 0 || to >= this.skills.length || to === from) return;
+    /**
+     * Make a skill the primary one (draft): it moves to the front, so it is the
+     * first tab and opens first. No other reordering (13 Nov 2026 review).
+     */
+    makePrimary(s) {
+        const from = this.skills.findIndex((x) => x.id === s.id);
+        if (from <= 0) return;
         const [m] = this.skills.splice(from, 1);
-        this.skills.splice(to, 0, m);
-        this.note = fmt(this.S.skMoved, { name: this.skName(m), n: to + 1 });
-        this.$nextTick(() => this.rootEl.querySelector(`.sk[data-s="${id}"] ${focusSel}`)?.focus({ preventScroll: true }));
+        this.skills.unshift(m);
+        this.note = fmt(this.S.skPrimary, { name: this.skName(m) });
+        this.$nextTick(() => this.rootEl.querySelector(`.sk[data-s="${s.id}"] .skrm`)?.focus({ preventScroll: true }));
     },
-    /** Drag a skill by its grip. */
-    skStart(e, s) {
-        this.skDrag = s.id;
-        if (e.dataTransfer) { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', String(s.id)); }
-    },
-    /** Show where the dragged skill would land. */
-    skOver(e, s) {
-        if (this.skDrag === null || this.skDrag === s.id) { this.skDropOn = null; return; }
-        const b = e.currentTarget.getBoundingClientRect();
-        this.skDropOn = s.id;
-        this.skDropAfter = e.clientY >= b.top + b.height / 2;
-    },
-    /** Drop a dragged skill before / after another. */
-    skDrop(s) {
-        const drag = this.skDrag;
-        const after = this.skDropAfter;
-        this.skEnd();
-        if (drag === null || drag === s.id) return;
-        let to = this.skills.findIndex((x) => x.id === s.id);
-        const from = this.skills.findIndex((x) => x.id === drag);
-        if (after) to++;
-        if (from < to) to--;
-        this.moveSkill(drag, to);
-    },
-    /** Clear the drag state. */
-    skEnd() { this.skDrag = null; this.skDropOn = null; },
     /** Add a skill through the picker (draft; its sections are seeded on save). */
     async addSkill() {
         const id = await this.openPicker({ exclude: this.skills.map((s) => s.id), title: this.S.addTitle, help: this.S.addHelp, ok: this.S.addOk });
@@ -342,5 +319,4 @@ export const listsMixin = () => ({
         toast(fmt(this.S.tRemoved, { name: this.allSkillName(w.talent_type_id) }), () => this.interests.splice(i, 0, w));
     },
     /** Company initials for the experience logo fallback. */
-    initialsOf(n) { return String(n || '?').split(/\s+/).filter(Boolean).map((w) => w[0]).slice(0, 2).join('').toUpperCase(); },
 });

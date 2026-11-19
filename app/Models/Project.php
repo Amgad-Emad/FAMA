@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\ProjectBlocks;
 use Database\Factories\ProjectFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -46,8 +47,8 @@ class Project extends Model implements HasMedia
      * @var list<string>
      */
     protected $fillable = [
-        'talent_id', 'talent_type_id', 'title', 'client_name', 'role', 'summary', 'body',
-        'results', 'occurred_on', 'url', 'position',
+        'talent_id', 'talent_type_id', 'title', 'client_name', 'client_confidential', 'role', 'summary', 'body',
+        'blocks', 'results', 'occurred_on', 'url', 'position',
     ];
 
     /**
@@ -66,6 +67,8 @@ class Project extends Model implements HasMedia
     {
         return [
             'results' => 'array',
+            'blocks' => 'array',
+            'client_confidential' => 'boolean',
             'year' => 'integer',
             'occurred_on' => 'date',
             'position' => 'integer',
@@ -124,12 +127,38 @@ class Project extends Model implements HasMedia
      */
     public function orderedMedia(): Collection
     {
+        return $this->allMedia()
+            ->reject(fn (Media $item) => $item->getCustomProperty('detached_at') !== null)
+            ->values();
+    }
+
+    /**
+     * Every item in the `media` collection, including pictures taken out of the
+     * story that are still inside their grace period (ADR-AN) — what the editor
+     * needs to resolve a block it is undoing.
+     *
+     * @return Collection<int, Media>
+     */
+    public function allMedia(): Collection
+    {
         $this->loadMissing('media');
 
         return $this->media
             ->where('collection_name', 'media')
             ->sortBy('order_column')
             ->values();
+    }
+
+    /**
+     * The story as blocks (ADR-AN): the stored list, or — for a row written
+     * before blocks that the migration has not reached — the legacy fields
+     * read as blocks.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function storyBlocks(): array
+    {
+        return is_array($this->blocks) ? $this->blocks : ProjectBlocks::fromLegacy($this);
     }
 
     /**

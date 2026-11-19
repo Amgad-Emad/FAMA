@@ -25,7 +25,7 @@ class FeedCollectionController extends Controller
     {
         return view('talent.feed.collection', [
             'mode' => 'saved',
-            'skills' => TalentType::query()->orderBy('id')->get(['id', 'name', 'slug']),
+            'skills' => TalentType::query()->alphabetical()->get(['id', 'name', 'slug']),
         ]);
     }
 
@@ -36,7 +36,7 @@ class FeedCollectionController extends Controller
     {
         return view('talent.feed.collection', [
             'mode' => 'liked',
-            'skills' => TalentType::query()->orderBy('id')->get(['id', 'name', 'slug']),
+            'skills' => TalentType::query()->alphabetical()->get(['id', 'name', 'slug']),
         ]);
     }
 

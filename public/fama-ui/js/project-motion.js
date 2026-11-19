@@ -38,6 +38,37 @@
       gsap.fromTo(f.firstElementChild, { yPercent: -6 }, { yPercent: 6, ease: 'none', scrollTrigger: { trigger: f, start: 'top bottom', end: 'bottom top', scrub: true } });
     });
     $('.pair figure:last-child').forEach(function (f) { gsap.fromTo(f, { y: 40 }, { y: -40, ease: 'none', scrollTrigger: { trigger: f.parentElement, start: 'top bottom', end: 'bottom top', scrub: true } }); });
+    /* the "Cases" gallery: pinned stage, the column slides up through it, the list and counter follow (ADR-AN) */
+    $('[data-cases]').forEach(function (cs) {
+      var mm = gsap.matchMedia(), start = +cs.dataset.start;
+      mm.add('(min-width:761px)', function () {
+        cs.classList.add('live');
+        var stage = cs.querySelector('.cs-stage'), col = cs.querySelector('.cs-col'), figs = $('.cs-fig', cs), lis = $('.cs-list li', cs), num = cs.querySelector('.cs-count b');
+        if (!figs.length) return function () { cs.classList.remove('live'); };
+        var cur = -1;
+        var active = function () {
+          var r = stage.getBoundingClientRect(), mid = r.top + r.height / 2, best = 0, bd = 1e9;
+          figs.forEach(function (f, i) { var b = f.getBoundingClientRect(), d = Math.abs(b.top + b.height / 2 - mid); if (d < bd) { bd = d; best = i; } });
+          if (best !== cur) {
+            cur = best; lis.forEach(function (l, i) { l.classList.toggle('on', i === best); });
+            num.textContent = String(best + start).padStart(2, '0');
+            gsap.fromTo(num, { yPercent: 40, opacity: 0 }, { yPercent: 0, opacity: 1, duration: 0.35, overwrite: true });
+          }
+        };
+        var ctr = function (f) { return f.offsetTop + f.offsetHeight / 2; },
+          y0 = function () { return stage.offsetHeight * 0.12 - figs[0].offsetTop; },
+          y1 = function () { return stage.offsetHeight / 2 - ctr(figs[figs.length - 1]) - stage.offsetHeight * 0.1; };
+        gsap.fromTo(col, { y: y0 }, { y: y1, ease: 'none', onUpdate: active, scrollTrigger: { trigger: stage, start: 'top 72px', end: function () { return '+=' + (y0() - y1()) * 1.1; }, pin: true, scrub: 0.6, invalidateOnRefresh: true, onUpdate: active, onRefresh: active } });
+        gsap.from(cs.querySelector('.cs-title'), { yPercent: 30, opacity: 0, duration: 1, ease: 'power3.out', scrollTrigger: { trigger: stage, start: 'top 70%' } });
+        return function () { cs.classList.remove('live'); };
+      });
+    });
+    /* a quote lights up word by word as it is read; who said it follows */
+    $('.quote').forEach(function (q) {
+      var c = q.querySelector('cite'); if (c) c.remove();
+      gsap.fromTo(words(q), { opacity: 0.12 }, { opacity: 1, stagger: 0.08, ease: 'none', scrollTrigger: { trigger: q, start: 'top 75%', end: 'bottom 50%', scrub: true } });
+      if (c) { q.appendChild(c); gsap.from(c, { opacity: 0, y: 10, duration: 0.6, scrollTrigger: { trigger: q, start: 'bottom 60%' } }); }
+    });
     $('.res').forEach(function (res) {
       var st = { trigger: res, start: 'top 80%' };
       $(':scope>div', res).forEach(function (d, i) {

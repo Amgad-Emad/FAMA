@@ -7,21 +7,22 @@
     screens the site header steps aside and the bar takes its place (x-teleport into `.fx-nav > .fx-in` +
     the `fx-editor` class on the header — see famaProjectEdit.init).
 
-    Mapped onto the real project model (ADR-X / ADR-Y / ADR-AA) — a Fama project is a fixed set of fields,
-    not the prototype's free-form blocks, so the blocks are fixed and appear in the page's order:
+    Mapped onto the real project model (ADR-X / ADR-Y / ADR-AA / ADR-AN):
       cover        → the single-file `cover` collection (optional)
       title        → title.en (English-only in V1; a stored Arabic value rides along untouched)
-      colophon     → client_name (hidden on the page when empty), role.en, skills (≥1 of the HOME owner's
-                     own; the first is the home tab) + specialities (only from tagged skills), url
-      opening line → summary.en (one line of text)
-      Photos       → the ordered `media` collection (the order is the edit; the first leads)
-      Text         → body.en (the full story)
-      Results      → up to four {value, label, compare} rows
-      Credits      → project_credits (on-Fama people confirm before they show; off-Fama names list at once)
-      Settings     → occurred_on (recorded, never shown), Featured, status, Leave / Delete (co-owner rules)
+      colophon     → client_name (+ client_confidential), role.en, skills (≥1 of the HOME owner's own; the
+                     first is the home tab) + specialities (only from tagged skills), url
+      story        → `projects.blocks`: free-form blocks (text · heading · quote · image · photos ·
+                     before/after · look · video · social post · results · credits), any order, any number
+                     (App\Support\ProjectBlocks). Pictures are ids in the `media` collection; Results rows
+                     stay on `projects.results` and credits on `project_credits` — their blocks mark WHERE.
+                     summary/body are written from the blocks by the service.
+      Settings     → occurred_on (recorded; shows as the year tag), confidential client, Featured, status,
+                     Leave / Delete (co-owner rules)
 
-    A NEW project is a draft in this page until Publish (POST /talent/projects); the staged cover, photos
-    and credits are sent right after. From then on every change autosaves (PATCH, 700ms).
+    A NEW project is a draft in this page until Publish (POST /talent/projects); its staged cover, pictures
+    and credits are sent right after, then the blocks are saved again with the pictures' ids. From then on
+    every change autosaves (PATCH, 700ms) and a picked picture uploads at once (`place=0`).
 
     Behaviour: `famaProjectEdit` (resources/js/ui/projects.js).
 --}}
@@ -63,7 +64,7 @@
         'removeCreditBody' => __('Their name comes off this project, and off their profile if they had confirmed it.'),
         'blockRemoved' => __(':b removed'),
         'deleteBlock' => __('Delete'),
-        'blockNotEmpty' => __('Remove what’s in it first.'),
+        'blockNotEmpty' => __('Remove the people in it first.'),
         'uploading' => __('Uploading…'),
         'leave' => __('You have unsaved changes.'),
         'failed' => __('Something went wrong. Try again.'),
@@ -75,21 +76,58 @@
         'delTitle' => __('Delete :p?'),
         'delBody' => __('You’re its only owner, so it comes off Fama for everyone, with its photos and credits. This can’t be undone.'),
         'delOk' => __('Delete project'),
-        // What each block is, in the block menu: [label, hint]; groups: Write · Show · Prove.
+        // The block menu (prototype MENU): [label, hint, icon]; groups Write · Show · Prove.
         'groups' => ['write' => __('Write'), 'show' => __('Show'), 'prove' => __('Prove')],
         'blocks' => [
-            'story' => [__('Text'), __('The full story: the brief, what you did, how it landed')],
-            'gallery' => [__('Photos'), __('Your pictures and video, in order. The first one leads')],
-            'results' => [__('Results'), __('Up to four numbers: 1.2M, 68%, +40%')],
-            'credits' => [__('Credits'), __('People you made it with, asked to confirm')],
+            'text' => [__('Text'), __('A paragraph. Type / in an empty line for this menu'), 'e-text'],
+            'heading' => [__('Heading'), __('Starts a new chapter on the page'), 'e-heading'],
+            'quote' => [__('Quote'), __('Set large, with who said it'), 'e-quote'],
+            'image' => [__('Image'), __('Full width. Text right after it sits beside it'), 'e-image'],
+            'gallery' => [__('Photos'), __('2 sit side by side; 4 or more become the scrolling gallery'), 'e-images'],
+            'beforeafter' => [__('Before / After'), __('One frame twice, with a line to drag'), 'e-split'],
+            'look' => [__('Look with tags'), __('Numbered pieces on a photo'), 'e-tags'],
+            'video' => [__('Video'), __('A YouTube or Vimeo link'), 'e-video'],
+            'embed' => [__('Social post'), __('A post from Instagram, TikTok, Behance or YouTube Shorts'), 'e-reel'],
+            'results' => [__('Results'), __('Up to four numbers: 1.2M, 68%, +40%'), 'e-chart'],
+            'credits' => [__('Credits'), __('People you made it with, asked to confirm'), 'e-users'],
         ],
-        'kinds' => ['lead' => __('Text'), 'story' => __('Text'), 'gallery' => __('Photos'), 'results' => __('Results'), 'credits' => __('Credits')],
+        'kinds' => ['text' => __('Text'), 'heading' => __('Heading'), 'quote' => __('Quote'), 'image' => __('Image'), 'gallery' => __('Photos'),
+            'beforeafter' => __('Before / After'), 'look' => __('Look'), 'video' => __('Video'), 'embed' => __('Social post'),
+            'results' => __('Results'), 'credits' => __('Credits')],
         'gallery' => [
-            'none' => __('Add pictures. The first one leads the page.'),
+            'none' => __('Add pictures. 4 or more become the scrolling gallery.'),
             'one' => __('On the page: full width.'),
-            'many' => __('On the page: the first one wide, the rest in pairs, in this order.'),
+            'two' => __('On the page: side by side.'),
+            'three' => __('On the page: one wide, then two side by side.'),
+            'many' => __('On the page: the scrolling gallery, in this order, under the chapter name.'),
             'title' => __('Photos · :n'),
         ],
+        'chapter' => __('CHAPTER'),
+        'addBelow' => __('Add a block below'),
+        'turnInto' => __('Turn into :k'),
+        'duplicate' => __('Duplicate'),
+        'deleted' => __(':b deleted'),
+        'oneOnly' => __('A project has one :b block.'),
+        'paras' => __(':n paragraphs added'),
+        'pieceRemoved' => __('Piece removed'),
+        'picRemoved' => __('Picture removed'),
+        'numberRemoved' => __('Number removed'),
+        'lookFull' => __('A look holds up to 8 pieces.'),
+        'needVisual' => __('Add a cover, or some pictures or a video'),
+        'pickImage' => __('Add an image'),
+        'replaceImage' => __('Replace the image'),
+        'pickLook' => __('The look’s photo'),
+        'replaceLook' => __('Replace the look’s photo'),
+        'pickBefore' => __('The before picture'),
+        'pickAfter' => __('The after picture'),
+        'pickMany' => __('Add pictures'),
+        'replacePic' => __('Replace picture :n'),
+        'addPic1' => __('Add 1 picture'),
+        'addPicN' => __('Add :n pictures'),
+        'ndaWarn1' => __(':c is still named in :n block. Change those words so the page doesn’t give it away.'),
+        'ndaWarnN' => __(':c is still named in :n blocks. Change those words so the page doesn’t give it away.'),
+        'confidential' => __('Confidential client'),
+        'badVideo' => __('Paste a YouTube or Vimeo link.'),
         'creditStates' => [
             'accepted' => __('Confirmed'),
             'pending' => __('Waiting to confirm'),
@@ -157,7 +195,7 @@
                     <h1 contenteditable="true" spellcheck="true" role="textbox" id="peTitle" data-ph="{{ __('Name the project') }}" aria-label="{{ __('Project title') }}"
                         x-init="$el.textContent = form.title.en || ''; if (!id) $nextTick(() => $el.focus())"
                         :class="{ 'pe-bad': errors.title }" :aria-invalid="(!!errors.title).toString()"
-                        @input="onTitle($el)" @keydown.enter.prevent="focusLead()" @paste="onPaste($event)"></h1>
+                        @input="onTitle($el)" @keydown.enter.prevent="focusStory()" @paste="onPaste($event)"></h1>
                     <p class="pe-err" role="alert" x-show="errors.title" x-text="errors.title" x-cloak></p>
                     <div class="by"><span class="av" aria-hidden="true"><template x-if="me.avatar"><img :src="me.avatar" alt=""></template><template x-if="!me.avatar"><span x-text="me.initials"></span></template></span><span><b x-text="me.name"></b><span x-text="form.role.en ? ', ' + form.role.en.toLowerCase() : ''"></span></span></div>
                 </div></div>
@@ -170,6 +208,7 @@
                 <div data-f="client"><dt>{{ __('Client') }}</dt>
                     <dd contenteditable="true" data-ph="{{ __('Add a client, or leave empty') }}" role="textbox" aria-label="{{ __('Client') }}"
                         x-init="$el.textContent = form.client_name || ''" @input="onPlain($el, 'client')" @keydown.enter.prevent @paste="onPaste($event)"></dd>
+                    <span class="pe-nda" x-show="form.client_confidential" x-cloak><svg class="pe-i" aria-hidden="true"><use href="#e-lock"/></svg>{{ __('Hidden on the page: Confidential') }}</span>
                     <p class="pe-err" role="alert" x-show="errors.client" x-text="errors.client" x-cloak></p></div>
                 <div data-f="role"><dt>{{ __('Role') }}</dt>
                     <dd contenteditable="true" data-ph="{{ __('What did you do on it?') }}" role="textbox" aria-label="{{ __('Role') }}"
@@ -191,134 +230,13 @@
                     <p class="pe-err" role="alert" x-show="errors.skills || errors.specialities" x-text="errors.skills || errors.specialities" x-cloak></p></div>
                 <div data-f="url"><dt>{{ __('See it live') }}</dt>
                     <dd><input class="pe-link" type="url" dir="ltr" maxlength="2048" x-model="form.url" @input="changed('url')" placeholder="{{ __('Paste a link') }}" aria-label="{{ __('Link to the live work') }}"></dd>
+                    <span class="pe-nda" x-show="form.client_confidential" x-cloak><svg class="pe-i" aria-hidden="true"><use href="#e-lock"/></svg>{{ __('Hidden on the page: Confidential') }}</span>
                     <p class="pe-err" role="alert" x-show="errors.url" x-text="errors.url" x-cloak></p></div>
             </dl></div>
 
-            {{-- The story --}}
+            {{-- The story: free-form blocks (ADR-AN) --}}
             <div class="grid"><article class="story pe-story" id="story">
-
-                {{-- The opening line (summary) --}}
-                <div class="pe-b pe-text" data-b="lead" :class="{ 'is-on': active === 'lead' }">
-                    <div class="pe-tools" role="toolbar" aria-label="{{ __('Text block') }}"><span class="pe-kind" x-text="strings.kinds.lead"></span></div>
-                    <p class="lead pe-lead" contenteditable="true" spellcheck="true" role="textbox" data-ph="{{ __('Open with one line about the project') }}" aria-label="{{ __('Open with one line about the project') }}"
-                       x-init="$el.textContent = textOf(form.summary.en)" @input="onLead($el)" @keydown.enter.prevent="focusBlock('story')" @paste="onPaste($event)"></p>
-                    <p class="pe-err" role="alert" x-show="errors.summary" x-text="errors.summary" x-cloak></p>
-                </div>
-
-                {{-- Photos (the ordered media) --}}
-                <template x-if="shown.gallery">
-                    <div class="pe-b pe-gallery" data-b="gallery" :class="{ 'is-on': active === 'gallery' }">
-                        @include('talent.partials.project-edit-tools', ['block' => 'gallery'])
-                        <div class="pe-gal">
-                            <p class="pe-note"><svg class="pe-i" aria-hidden="true"><use href="#e-images"/></svg><span><b x-text="fmt(strings.gallery.title, { n: gallery.length })"></b><span x-text="galleryNote"></span></span></p>
-                            <ol class="pe-strip">
-                                <template x-for="(m, k) in gallery" :key="m.key">
-                                    <li class="pe-ph" :class="{ 'pe-dragging': mediaDrag === m.key }" draggable="true"
-                                        @dragstart="onMediaDragStart($event, m)" @dragover.prevent @drop.prevent="onMediaDrop(m)" @dragend="mediaDrag = null">
-                                        <div class="pe-ph-img" :style="m.is_video ? {} : { backgroundImage: 'url(' + m.url + ')' }" role="img" :aria-label="@js(__('Picture')) + ' ' + (k + 1)">
-                                            <template x-if="m.is_video"><video :src="m.url" muted playsinline preload="metadata"></video></template>
-                                            <span class="pe-ph-n" x-text="String(k + 1).padStart(2, '0')"></span>
-                                            <span class="pe-ph-acts">
-                                                <button type="button" x-show="k > 0" @click="moveMedia(k, -1)" :aria-label="@js(__('Move picture :n earlier')).replace(':n', k + 1)"><svg class="pe-i" aria-hidden="true"><use href="#e-left"/></svg></button>
-                                                <button type="button" x-show="k < gallery.length - 1" @click="moveMedia(k, 1)" :aria-label="@js(__('Move picture :n later')).replace(':n', k + 1)"><svg class="pe-i" aria-hidden="true"><use href="#e-right"/></svg></button>
-                                                <button type="button" @click="removeMedia(m)" :aria-label="@js(__('Remove picture :n')).replace(':n', k + 1)"><svg class="pe-i" aria-hidden="true"><use href="#e-x"/></svg></button>
-                                            </span>
-                                        </div>
-                                    </li>
-                                </template>
-                                <li class="pe-ph add"><button type="button" @click="$refs.mediaInput.click()" :disabled="uploading"><svg class="pe-i" aria-hidden="true"><use href="#e-plus"/></svg><b x-text="uploading ? strings.uploading : @js(__('Add pictures'))">{{ __('Add pictures') }}</b><small>{{ __('JPG, PNG, WebP, MP4, MOV or WebM') }}</small></button></li>
-                            </ol>
-                            <p class="pe-hint">{{ __('Up to 12 per upload, 50 MB each. Drag, or use the arrows, to set the order — the first one leads.') }}</p>
-                        </div>
-                        <input type="file" x-ref="mediaInput" multiple accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm" style="display:none"
-                               @change="addMedia($event.target.files); $event.target.value = ''">
-                    </div>
-                </template>
-
-                {{-- Text (the full story) --}}
-                <template x-if="shown.story">
-                    <div class="pe-b pe-text" data-b="story" :class="{ 'is-on': active === 'story' }">
-                        @include('talent.partials.project-edit-tools', ['block' => 'story'])
-                        <div class="txt pe-body" contenteditable="true" spellcheck="true" role="textbox" aria-multiline="true" aria-label="{{ __('The full story') }}"
-                             data-ph="{{ __('Write, or type / to add a block') }}"
-                             x-init="$el.innerHTML = form.body.en || ''" @input="onBody($el)" @paste="onPaste($event, true)"></div>
-                        <p class="pe-err" role="alert" x-show="errors.story" x-text="errors.story" x-cloak></p>
-                    </div>
-                </template>
-
-                {{-- Results --}}
-                <template x-if="shown.results">
-                    <div class="pe-b pe-results" data-b="results" :class="{ 'is-on': active === 'results' }">
-                        @include('talent.partials.project-edit-tools', ['block' => 'results'])
-                        <div class="res">
-                            <template x-for="(r, k) in form.results" :key="r.key">
-                                <div class="pe-item" :class="resultClass(r.value)">
-                                    <b contenteditable="true" data-ph="1.2M" aria-label="{{ __('Number') }}" x-init="$el.textContent = r.value || ''" @input="r.value = $el.textContent; changed('results')" @keydown.enter.prevent></b>
-                                    <span contenteditable="true" data-ph="{{ __('What it measures') }}" aria-label="{{ __('What it measures') }}" x-init="$el.textContent = r.label || ''" @input="r.label = $el.textContent; changed('results')" @keydown.enter.prevent></span>
-                                    <template x-if="resultKind(r.value) === 'percent'"><div class="bar" aria-hidden="true"><i :style="{ width: pctOf(r.value) + '%' }"></i></div></template>
-                                    <template x-if="resultKind(r.value) === 'change'"><small contenteditable="true" data-ph="{{ __('Compared with, e.g. last season') }}" aria-label="{{ __('Compared with') }}" x-init="$el.textContent = r.compare || ''" @input="r.compare = $el.textContent; changed('results')" @keydown.enter.prevent></small></template>
-                                    <button type="button" class="pe-x" @click="removeResult(k)" aria-label="{{ __('Remove this number') }}"><svg class="pe-i" aria-hidden="true"><use href="#e-x"/></svg></button>
-                                </div>
-                            </template>
-                            <button type="button" class="pe-add-tile" x-show="form.results.length < 4" @click="addResult()"><svg class="pe-i" aria-hidden="true"><use href="#e-plus"/></svg><b>{{ __('Add a number') }}</b><small>1.2M · 68% · +40%</small></button>
-                        </div>
-                        <p class="pe-hint">{{ __('Type a number the way it reads. A % gets a bar; a + or − shows a rise or a fall, with what it’s compared to.') }}</p>
-                        <p class="pe-err" role="alert" x-show="errors.results" x-text="errors.results" x-cloak></p>
-                    </div>
-                </template>
-
-                {{-- Credits (person + skill + role) --}}
-                <template x-if="shown.credits">
-                    <div class="pe-b pe-credits" data-b="credits" :class="{ 'is-on': active === 'credits' }">
-                        @include('talent.partials.project-edit-tools', ['block' => 'credits'])
-                        <ul class="cred">
-                            <li class="pe-me"><span class="av"><template x-if="me.avatar"><img :src="me.avatar" alt=""></template><template x-if="!me.avatar"><span x-text="me.initials"></span></template></span><b x-text="me.name"></b><span class="r" x-text="form.role.en || strings.yourRole"></span><span class="st">{{ __('Owner') }}</span></li>
-                            {{-- Saved credits (a credit is removed and re-added, never rewritten) --}}
-                            <template x-for="c in credits" :key="'c' + c.id">
-                                <li>
-                                    <span class="av"><template x-if="c.talent?.avatar_url"><img :src="c.talent.avatar_url" alt=""></template><template x-if="!c.talent?.avatar_url"><span x-text="initials(c.name)"></span></template></span>
-                                    <b x-text="c.name"></b>
-                                    <span class="r" x-text="[c.role, c.skill?.name].filter(Boolean).join(' · ')"></span>
-                                    <span class="st" :class="creditClass(c.status)" x-text="creditState(c)"></span>
-                                    <button type="button" class="pe-x" @click="removeCredit(c)" :aria-label="@js(__('Remove')) + ' ' + c.name"><svg class="pe-i" aria-hidden="true"><use href="#e-x"/></svg></button>
-                                </li>
-                            </template>
-                            {{-- New rows: saved as soon as they have a person, a skill and a role --}}
-                            <template x-for="(d, k) in drafts" :key="d.key">
-                                <li class="pe-draft" @focusout="onDraftBlur($event, d)">
-                                    <span class="av"><template x-if="d.talent?.avatar_url"><img :src="d.talent.avatar_url" alt=""></template><template x-if="!d.talent?.avatar_url"><span x-text="initials(d.name || '?')"></span></template></span>
-                                    <span class="pe-cname">
-                                        <input x-model="d.name" maxlength="120" placeholder="{{ __('Their name, or search Fama') }}" aria-label="{{ __('Person') }}" autocomplete="off" @input="onDraftName(d)" :data-draft="d.key">
-                                        <div class="pe-menu pe-people" role="listbox" x-show="d.results.length" x-cloak>
-                                            <p>{{ __('On Fama') }}</p>
-                                            <template x-for="p in d.results" :key="p.id">
-                                                <button type="button" role="option" @mousedown.prevent="pickPerson(d, p)">
-                                                    <span class="ico"><span class="av"><template x-if="p.avatar_url"><img :src="p.avatar_url" alt=""></template><template x-if="!p.avatar_url"><span x-text="initials(p.display_name)"></span></template></span></span>
-                                                    <b x-text="p.display_name"></b><small dir="ltr" x-text="'@' + p.username"></small>
-                                                </button>
-                                            </template>
-                                        </div>
-                                    </span>
-                                    <span class="r"><input x-model="d.role" maxlength="80" placeholder="{{ __('Role, e.g. Photographer') }}" aria-label="{{ __('Role') }}"></span>
-                                    <span class="pe-cskill">
-                                        <select x-model.number="d.talent_type_id" aria-label="{{ __('Skill') }}" @change="maybeCommit(d)">
-                                            <option value="">{{ __('Skill…') }}</option>
-                                            @foreach ($allSkills as $s)
-                                                <option value="{{ $s['id'] }}">{{ $s['name'] }}</option>
-                                            @endforeach
-                                        </select>
-                                        <small x-show="d.name" x-cloak x-text="draftState(d)"></small>
-                                    </span>
-                                    <button type="button" class="pe-x" @click="drafts.splice(k, 1)" :aria-label="@js(__('Remove')) + ' ' + (d.name || @js(__('this person')))"><svg class="pe-i" aria-hidden="true"><use href="#e-x"/></svg></button>
-                                </li>
-                            </template>
-                            <li class="pe-add-li"><button type="button" @click="addDraft()"><svg class="pe-i" aria-hidden="true"><use href="#e-plus"/></svg><b>{{ __('Credit someone') }}</b><small>{{ __('Anyone on Fama is asked to confirm; people not on Fama are listed right away') }}</small></button></li>
-                        </ul>
-                    </div>
-                </template>
-
-                {{-- The last + : "Add a block" (project-editor.css draws it) --}}
-                <div class="pe-ins" x-show="addable.length"><button type="button" data-act="add" @click.stop="openAddMenu($el)" aria-label="{{ __('Add a block') }}"><svg class="pe-i" aria-hidden="true"><use href="#e-plus"/></svg></button></div>
+                @include('talent.partials.project-edit-story')
             </article></div>
         </main>
 
@@ -333,6 +251,9 @@
                 <input id="peDate" type="month" :value="monthValue" @input="onMonth($event.target.value)" max="{{ now()->addYear()->format('Y-m') }}">
                 <small>{{ __('Sorts your projects, and shows as the year tag.') }}</small>
                 <p class="pe-err" role="alert" x-show="errors.date" x-text="errors.date" x-cloak></p></div>
+            <div class="row"><div class="tog"><div><label id="peNdaL">{{ __('Keep the client confidential') }}</label><small>{{ __('The page says “Confidential client” and hides the link. For work under an NDA.') }}</small></div>
+                <button class="sw" role="switch" type="button" aria-labelledby="peNdaL" :aria-checked="(!!form.client_confidential).toString()" @click="form.client_confidential = !form.client_confidential; changed('client')"></button></div>
+                <p class="pe-warn" x-show="ndaHits" x-cloak x-text="fmt(ndaHits === 1 ? strings.ndaWarn1 : strings.ndaWarnN, { c: (form.client_name || '').trim(), n: ndaHits })"></p></div>
             <div class="row" x-show="canFeature"><div class="tog"><div><label id="peFeatL">{{ __('Featured on your profile') }}</label><small x-text="featuredNote"></small></div>
                 <button class="sw" role="switch" type="button" aria-labelledby="peFeatL" :aria-checked="featured.toString()"
                         :aria-disabled="(featuredLocked || (featured && !!id)).toString()" @click="toggleFeatured()"></button></div></div>
@@ -344,6 +265,30 @@
                 </div>
             </template>
         </aside>
+
+        {{-- Pictures: upload from the device, or pick one already on this project (prototype pickPicture) --}}
+        <dialog class="pe-picker" x-ref="picker" aria-labelledby="pePkT" @close="onPickerClose()">
+            <form method="dialog">
+                <div class="pe-pk-h"><h2 id="pePkT" x-text="picker.title"></h2><button class="x" value="cancel" aria-label="{{ __('Close') }}"><svg class="pe-i" aria-hidden="true"><use href="#e-x"/></svg></button></div>
+                <label class="pe-up"><svg class="pe-i" aria-hidden="true"><use href="#e-upload"/></svg><span><b>{{ __('Upload from your device') }}</b><small x-text="picker.many ? @js(__('JPG, PNG or WebP, several at once')) + (picker.video ? ' · MP4, MOV, WebM' : '') : @js(__('JPG, PNG or WebP'))"></small></span>
+                    <input type="file" x-ref="pickerFile" :multiple="picker.many" :accept="picker.video ? 'image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm' : 'image/jpeg,image/png,image/webp'" @change="onPickerFiles($event.target.files); $event.target.value = ''"></label>
+                <template x-if="pool.length">
+                    <div>
+                        <p class="pe-pk-k">{{ __('Or pick from this project’s pictures') }}</p>
+                        <div class="pe-pk-grid">
+                            <template x-for="(m, k) in pool" :key="'pk' + m.id">
+                                <button type="button" class="pe-pk" :aria-pressed="picker.chosen.includes(m.id).toString()" :style="{ backgroundImage: 'url(' + m.url + ')' }"
+                                        :aria-label="@js(__('Picture')) + ' ' + (k + 1)" @click="onPoolPick(m)" x-text="picker.many && picker.chosen.includes(m.id) ? picker.chosen.indexOf(m.id) + 1 : ''"></button>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+                <template x-if="picker.many">
+                    <div class="pe-pk-foot"><button class="btn btn-2" value="cancel">{{ __('Cancel') }}</button>
+                        <button class="btn" value="ok" :disabled="!picker.chosen.length" x-text="picker.chosen.length ? fmt(picker.chosen.length === 1 ? strings.addPic1 : strings.addPicN, { n: picker.chosen.length }) : @js(__('Add pictures'))"></button></div>
+                </template>
+            </form>
+        </dialog>
 
         {{-- The block menu, the skill / speciality pickers and the publish checklist --}}
         <div class="pe-menu" role="menu" x-show="menu.open" x-cloak x-ref="menu" @click.outside="closeMenu()" @keydown="onMenuKey($event)"

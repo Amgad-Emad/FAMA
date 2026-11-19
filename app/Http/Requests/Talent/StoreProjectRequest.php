@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Talent;
 
+use App\Support\ProjectBlocks;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -51,6 +52,8 @@ class StoreProjectRequest extends FormRequest
             'body.ar' => ['nullable', 'string', 'max:20000'],
 
             'client_name' => ['nullable', 'string', 'max:255'],
+            // Work under an NDA: the page says "Confidential client" (ADR-AN).
+            'client_confidential' => ['sometimes', 'boolean'],
             // Recorded, not displayed (ADR-AA). `year` is a derived projection
             // of this and is no longer accepted from a client at all.
             'occurred_on' => ['nullable', 'date', 'before_or_equal:'.now()->addYear()->toDateString()],
@@ -66,6 +69,10 @@ class StoreProjectRequest extends FormRequest
             'results.*.label' => ['nullable', 'string', 'max:60'],
             'results.*.value' => ['nullable', 'string', 'max:60'],
             'results.*.compare' => ['nullable', 'string', 'max:60'],
+
+            // The story as free-form blocks (ADR-AN); shape here, media
+            // ownership + link hosts in ProjectBlocks::normalize().
+            ...ProjectBlocks::rules(),
         ];
     }
 

@@ -35,7 +35,7 @@ class ProjectCredit extends Model
      */
     protected $fillable = [
         'project_id', 'talent_id', 'name', 'talent_type_id', 'role',
-        'status', 'responded_at', 'position',
+        'status', 'responded_at', 'position', 'hidden_at',
     ];
 
     /**
@@ -47,6 +47,7 @@ class ProjectCredit extends Model
     {
         return [
             'responded_at' => 'datetime',
+            'hidden_at' => 'datetime',
             'position' => 'integer',
             'status' => ProjectCreditState::class,
         ];

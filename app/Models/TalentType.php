@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Database\Factories\TalentTypeFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -79,5 +80,14 @@ class TalentType extends Model
     public function blockTypes(): BelongsToMany
     {
         return $this->belongsToMany(BlockType::class, 'block_type_talent_type');
+    }
+
+    /**
+     * Skills in alphabetical order of their English name — how the prototype
+     * lists all 41 in every picker and filter (ADR-AF).
+     */
+    public function scopeAlphabetical(Builder $query): Builder
+    {
+        return $query->orderBy('name->en');
     }
 }

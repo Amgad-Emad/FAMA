@@ -124,9 +124,11 @@ of content tables (`app/Models`, schema in `docs/schema.md`).
 - **Media.** Every model holding uploaded files is `HasMedia` with single-file collections + a `thumb`
   conversion; `*_url` accessors resolve from the library (ADR-5, list in `docs/conventions.md`). External
   links/embeds stay as plain columns.
-- **Seeders.** `TalentTypeSeeder` (nine skills) + `SpecialitySeeder` (45 entries — must run AFTER it,
-  since specialities nest under skills) + `BlockTypeSeeder` (catalog, incl. the `is_profile_default`
-  flags) are the canonical
+- **Seeders.** `TalentTypeSeeder` (the 41 skills) + `SpecialitySeeder` (195 entries — must run AFTER it) both
+  delegate to `App\Actions\Catalog\SyncSkillCatalog`, which applies `database/data/skill-catalog.php` (THE catalog,
+  identical to the prototype's skills.js — ADR-AF). The catalog migration runs the same action on an existing DB.
+  Unlisted specialities are retired (is_active=false), never deleted; skill slugs never change.
+  `BlockTypeSeeder` (catalog, incl. the `is_profile_default` flags) is the rest of the canonical
   reference data; `TalentDemoSeeder` builds one rich multi-type (model + photographer) talent for later
   phases to render.
 
@@ -220,6 +222,14 @@ serves the Phase 1A queries/views.
   follow-back lookup) behind `NotificationController::index`.
 - **Titles:** `App\Support\ProjectTitle` (name · sub · year tag) shared by the profile grid, featured cover and
   project page.
+
+### Project stories as free-form blocks (2026-11-17, ADR-AN)
+A project's story is `projects.blocks`. Write path: `StoreProjectRequest` (shape via `ProjectBlocks::rules()`) →
+`TalentProjectService::create/update` (`ProjectBlocks::normalize` checks media ownership + link hosts, derives
+`summary`/`body`, then `syncStoryMedia` orders the `media` collection by the story and marks/deletes pictures it no
+longer shows). Read path: `Project::storyBlocks()` → `ProjectStory::for()` (layout decisions) → the
+`public/partials/project-story` view; behaviour in `famaProjectPage` (slider, look tags, click-to-play video) and the
+GSAP layer `project-motion.js` (Cases pin, quote reveal). Editor: `famaProjectEdit` in `resources/js/ui/project-editor.js`.
 
 ## Talent dashboard (Phase 1C)
 

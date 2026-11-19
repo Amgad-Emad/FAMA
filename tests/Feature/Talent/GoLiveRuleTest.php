@@ -9,8 +9,11 @@ use App\Models\Speciality;
 use App\Models\Talent;
 use App\Models\TalentSocialHandle;
 use App\Models\TalentType;
+use App\Models\User;
 use App\Services\ProfileCompletionService;
 use App\Services\SkillsService;
+use App\Services\TalentProfileService;
+use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Http\UploadedFile;
 
 /**
@@ -78,7 +81,7 @@ it('grandfathers a profile that was Live before the rule (no speciality) — an 
 it('never undoes a deliberate hold: Unpublished and Suspended stay down on save', function (string $status) {
     $talent = Talent::factory()->goLiveReady()->create(['status' => $status, 'is_published' => false]);
 
-    app(App\Services\TalentProfileService::class)->updateCore($talent, ['bio' => ['en' => 'Hello.']]);
+    app(TalentProfileService::class)->updateCore($talent, ['bio' => ['en' => 'Hello.']]);
 
     expect($talent->fresh()->status->getValue())->toBe($status)
         ->and($talent->fresh()->is_published)->toBeFalse();
@@ -105,7 +108,7 @@ it('counts every Stand out step, and calls the profile done only when all ten ar
 
     expect($service->steps($talent))->each->toBeTrue()
         ->and($service->isProfileDone($talent))->toBeTrue()
-        ->and($service->homeRoute($talent))->toBe('feed');
+        ->and($service->homeRoute($talent))->toBe('talent.projects');
 
     $talent->setTranslation('headline', 'en', '')->save();
     expect($service->isProfileDone($talent->fresh()))->toBeFalse()
@@ -113,8 +116,8 @@ it('counts every Stand out step, and calls the profile done only when all ten ar
 });
 
 it('lets an admin Publish a talent regardless of verification', function () {
-    $this->seed(Database\Seeders\RolesAndPermissionsSeeder::class);
-    $admin = App\Models\User::factory()->create();
+    $this->seed(RolesAndPermissionsSeeder::class);
+    $admin = User::factory()->create();
     $admin->assignRole('super-admin');
     $talent = Talent::factory()->create(['status' => 'unpublished', 'is_published' => false, 'is_verified' => false]);
 

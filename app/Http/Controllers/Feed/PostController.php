@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Feed;
 
 use App\Actions\Feed\CreatePost;
 use App\Actions\Feed\DeletePost;
+use App\Actions\Feed\RepostPost;
 use App\Actions\Feed\TogglePinPost;
 use App\Actions\Feed\UpdatePost;
 use App\Data\Feed\CreatePostData;
@@ -14,6 +15,7 @@ use App\Models\Post;
 use App\Models\Talent;
 use App\Support\FeedComposer;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 /**
@@ -66,7 +68,7 @@ class PostController extends FeedBaseController
      */
     private function frameGraph(): array
     {
-        $graph = ['author.media', 'skills', 'project.media', 'linkedUrls.preview', 'mentions.mentioned', 'media'];
+        $graph = ['author.media', 'repostOf.author.media', 'repostOf.media', 'repostOf.project.media', 'skills', 'project.media', 'linkedUrls.preview', 'mentions.mentioned', 'media'];
         $viewer = $this->currentActor->resolve();
 
         if ($viewer !== null) {
@@ -88,7 +90,7 @@ class PostController extends FeedBaseController
     {
         abort_unless($this->gate()->allows('view', $post), 404);
 
-        $post->load(['author.media', 'skills', 'project.media', 'mentions.mentioned', 'linkedUrls.preview', 'media']);
+        $post->load(['author.media', 'repostOf.author.media', 'repostOf.media', 'repostOf.project.media', 'skills', 'project.media', 'mentions.mentioned', 'linkedUrls.preview', 'media']);
 
         return response()->success(new PostResource($post));
     }
@@ -118,7 +120,7 @@ class PostController extends FeedBaseController
 
         $posts = $talent->posts()
             ->published()
-            ->with(['author.media', 'media', 'skills', 'project.media', 'mentions.mentioned', 'linkedUrls.preview', 'viewerLike' => $viewerLike, 'viewerBookmark' => $viewerBookmark])
+            ->with(['author.media', 'repostOf.author.media', 'repostOf.media', 'repostOf.project.media', 'media', 'skills', 'project.media', 'mentions.mentioned', 'linkedUrls.preview', 'viewerLike' => $viewerLike, 'viewerBookmark' => $viewerBookmark])
             ->orderByDesc('is_pinned')
             ->latest('published_at')
             ->paginate(12);
@@ -142,6 +144,19 @@ class PostController extends FeedBaseController
         ));
 
         return response()->success($post, status: 201);
+    }
+
+    /**
+     * Share a post to your own feed (ADR-AM). Talents only (PostPolicy::create);
+     * the original must be visible to you. Your words are optional.
+     */
+    public function repost(Post $post, Request $request, RepostPost $repost): JsonResponse
+    {
+        $this->gate()->authorize('create', Post::class);
+        abort_unless($this->gate()->allows('view', $post), 404);
+        $body = $request->validate(['body' => ['nullable', 'string', 'max:2200']])['body'] ?? null;
+
+        return response()->success($repost($this->currentActor->resolve(), $post, $body), status: 201);
     }
 
     /**

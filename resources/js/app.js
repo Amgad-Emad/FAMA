@@ -36,6 +36,7 @@ import './ui/combo';
 import './ui/feed';
 import './ui/profile';
 import './ui/projects';
+import './ui/project-editor';
 import './ui/auth';
 
 Alpine.start();

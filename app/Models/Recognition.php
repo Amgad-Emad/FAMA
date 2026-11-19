@@ -37,7 +37,7 @@ class Recognition extends Model
      */
     protected $fillable = [
         'talent_id', 'author_talent_id', 'relationship', 'body',
-        'status', 'is_approved', 'recognized_at',
+        'status', 'is_approved', 'recognized_at', 'hidden_at',
     ];
 
     /**
@@ -50,6 +50,7 @@ class Recognition extends Model
         return [
             'is_approved' => 'boolean',
             'recognized_at' => 'datetime',
+            'hidden_at' => 'datetime',
             'status' => RecognitionState::class,
         ];
     }
@@ -82,5 +83,14 @@ class Recognition extends Model
     public function scopeApproved(Builder $query): void
     {
         $query->where('is_approved', true);
+    }
+
+    /**
+     * On the profile: approved by moderation AND not hidden by the talent it
+     * was written for (ADR-AI). The one public test — use it everywhere.
+     */
+    public function isShown(): bool
+    {
+        return (bool) $this->is_approved && $this->hidden_at === null;
     }
 }

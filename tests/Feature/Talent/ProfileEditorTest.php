@@ -235,3 +235,16 @@ it('forbids editing another talent’s block', function () {
         ->deleteJson(route('talent.profile.blocks.destroy', $block->id))
         ->assertForbidden();
 });
+
+it('offers one primary skill instead of reordering (13 Nov 2026)', function () {
+    $talent = editorTalent();
+
+    $this->actingAs($talent, 'talent')->withoutVite()->get(route('talent.profile.edit'))
+        ->assertOk()
+        ->assertSee('makePrimary(s)', false)
+        ->assertSee(__('Make primary'))
+        ->assertSee(__('Each skill is a tab on your profile. Your primary skill opens first.'))
+        ->assertDontSee('data-grip', false)
+        ->assertDontSee('skStart(', false)
+        ->assertDontSee('data-mv=', false);
+});

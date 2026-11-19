@@ -247,3 +247,11 @@ uploads via medialibrary, `embed_url` external, `caption` translatable).
 
 ## Open schema items (from the specs / decisions)
 - Discovery/search (ADR-6): **applied for both talent (Phase 1C) and brand (Phase 2A)** sides.
+
+### projects — free-form blocks (2026-11-17, ADR-AN)
+- `projects.blocks` JSON (nullable): the story as an ordered list of blocks (`App\Support\ProjectBlocks`). Pictures
+  are ids in the project's `media` collection; `results` / `credits` blocks are placement markers.
+- `projects.client_confidential` boolean (default false): "Confidential client" on the page, link hidden.
+- `summary` / `body` are now derived projections of `blocks`. Media items taken out of the story carry the custom
+  property `detached_at` and are deleted after 24 h.
+

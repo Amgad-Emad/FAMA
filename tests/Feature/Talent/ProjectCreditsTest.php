@@ -2,6 +2,7 @@
 
 use App\Models\Project;
 use App\Models\ProjectCredit;
+use App\Models\Recognition;
 use App\Models\Talent;
 use App\Models\TalentType;
 use App\Notifications\Credits\ProjectCreditAccepted;
@@ -80,8 +81,8 @@ it('lists an off-platform credit immediately — there is nobody to ask', functi
 
     $credit = app(ProjectCreditService::class)->add($project, [
         'name' => 'Hana Farouk',
-        'talent_type_id' => TalentType::where('slug', 'hair-makeup')->firstOrFail()->id,
-        'role' => 'Hair & makeup',
+        'talent_type_id' => TalentType::where('slug', 'makeup')->firstOrFail()->id,
+        'role' => 'Makeup',
     ]);
 
     expect($credit->status->getValue())->toBe('listed')
@@ -389,4 +390,56 @@ it('refuses to reorder media that is not on the project', function () {
     $this->actingAs($owner, 'talent')
         ->patchJson(route('talent.projects.media.reorder', $mine->id), ['order' => [$foreignId]])
         ->assertStatus(422);
+});
+
+// ----- Hiding one credit or recognition (ADR-AI) -----------------------------
+
+it('lets the collaborator hide a confirmed credit from their profile, keeping it on the project page', function () {
+    $owner = creditTalent('Owner');
+    $peer = creditTalent('Omar Saleh');
+    $project = creditProject($owner, 'Desert Light');
+    $credits = app(ProjectCreditService::class);
+    $credit = $credits->add($project, ['talent_id' => $peer->id, 'talent_type_id' => $peer->talentTypes()->first()->id, 'role' => 'Stylist']);
+    $credits->accept($credit->fresh());
+
+    expect($peer->fresh()->creditedProjects()->count())->toBe(1);
+
+    // Only the person named can hide it — not the project's owner.
+    $this->actingAs($owner, 'talent')->patchJson(route('talent.credits.hidden', $credit), ['hidden' => true])->assertForbidden();
+
+    $this->actingAs($peer, 'talent')->patchJson(route('talent.credits.hidden', $credit), ['hidden' => true])
+        ->assertOk()->assertJsonPath('data.hidden', true);
+
+    expect($peer->fresh()->creditedProjects()->count())->toBe(0);
+    $this->get(route('talent.work', ['slug' => $owner->slug, 'project' => $project->id]))->assertOk()->assertSee('Omar Saleh');
+
+    $this->actingAs($peer, 'talent')->patchJson(route('talent.credits.hidden', $credit), ['hidden' => false])->assertOk();
+    expect($peer->fresh()->creditedProjects()->count())->toBe(1);
+});
+
+it('refuses to hide a credit that is not confirmed yet', function () {
+    $owner = creditTalent('Owner');
+    $peer = creditTalent('Peer');
+    $credit = app(ProjectCreditService::class)->add(creditProject($owner), ['talent_id' => $peer->id, 'talent_type_id' => $peer->talentTypes()->first()->id, 'role' => 'Stylist']);
+
+    $this->actingAs($peer, 'talent')->patchJson(route('talent.credits.hidden', $credit), ['hidden' => true])->assertStatus(422);
+});
+
+it('lets a talent hide one recognition from their profile and bring it back', function () {
+    $talent = creditTalent('Lina');
+    $recognition = Recognition::factory()->create(['talent_id' => $talent->id, 'status' => 'approved', 'is_approved' => true, 'body' => 'Calm under pressure, every time.']);
+    $talent->profileBlocks()->whereNull('talent_type_id')->update(['is_visible' => true]);
+
+    $this->get('/'.$talent->slug)->assertOk()->assertSee('Calm under pressure, every time.');
+
+    $other = creditTalent('Someone else');
+    $this->actingAs($other, 'talent')->patchJson(route('talent.recognitions.hidden', $recognition), ['hidden' => true])->assertForbidden();
+
+    $this->actingAs($talent, 'talent')->patchJson(route('talent.recognitions.hidden', $recognition), ['hidden' => true])->assertOk();
+    auth('talent')->logout();
+    $this->get('/'.$talent->slug)->assertOk()->assertDontSee('Calm under pressure, every time.');
+
+    $this->actingAs($talent, 'talent')->get(route('talent.credits'))->assertOk()
+        ->assertSee('famaRecognitionHide(', false)
+        ->assertSee(__('Hidden from your profile.'));
 });

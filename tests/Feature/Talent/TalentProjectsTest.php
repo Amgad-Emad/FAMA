@@ -4,9 +4,11 @@ use App\Models\Project;
 use App\Models\Talent;
 use App\Models\TalentType;
 use App\Services\SkillsService;
+use App\Services\TalentProjectService;
 use Database\Seeders\BlockTypeSeeder;
 use Database\Seeders\TalentTypeSeeder;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -39,7 +41,11 @@ it('renders the Projects page with the talent\'s skills', function () {
         ->assertSee('Projects', false)
         ->assertSee('famaProjects(', false)
         ->assertSee('Modeling', false)
-        ->assertSee('Photography', false);
+        ->assertSee('Photography', false)
+        // 12 Nov 2026: one action per card — the cover opens the project, Edit is the only button.
+        ->assertSee('class="btn btn-2 pc-edit"', false)
+        ->assertDontSee('remove(p)', false)
+        ->assertDontSee('leaveOwn(p)', false);
 });
 
 it('creates a project with several skills, mirroring the first onto the home-tab column', function () {
@@ -93,7 +99,7 @@ it('refuses a project with no skill, and one tagged with a skill the talent does
 it('rejects the service call directly when the skill list is empty (the rule lives in the service)', function () {
     [$talent] = projectTalent();
 
-    expect(fn () => app(\App\Services\TalentProjectService::class)->create($talent, ['title' => ['en' => 'X']], []))
+    expect(fn () => app(TalentProjectService::class)->create($talent, ['title' => ['en' => 'X']], []))
         ->toThrow(InvalidArgumentException::class);
 });
 
@@ -209,7 +215,7 @@ it('deletes a project and its tags', function () {
     $this->actingAs($talent, 'talent')->deleteJson(route('talent.projects.destroy', $project))->assertOk();
 
     expect(Project::find($project->id))->toBeNull()
-        ->and(\Illuminate\Support\Facades\DB::table('project_talent_type')->where('project_id', $project->id)->count())->toBe(0);
+        ->and(DB::table('project_talent_type')->where('project_id', $project->id)->count())->toBe(0);
 });
 
 it('preserves a project when its skill is removed, re-homing it on the next tag', function () {

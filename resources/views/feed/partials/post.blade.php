@@ -57,6 +57,29 @@
         : [];
     $n = count($mediaItems);
 
+    // Repost (ADR-AM): the shared original, compact — author, age, its words (or
+    // project title) clamped, and a media count. Gone or no longer published →
+    // the card says so instead of linking to a 404.
+    $original = null;
+    if ($post->post_type === 'repost') {
+        $orig = $post->relationLoaded('repostOf') ? $post->repostOf : null;
+        $original = $orig !== null && (string) $orig->state === 'published' ? $orig : null;
+        if ($original !== null) {
+            $oAuthor = $original->author;
+            $oName = $oAuthor?->feedDisplayName() ?? __('Fama');
+            $oSecs = max(0, now()->getTimestamp() - ($original->published_at?->getTimestamp() ?? now()->getTimestamp()));
+            $oAge = match (true) {
+                $oSecs < 60 => __('now'), $oSecs < 3600 => intdiv($oSecs, 60).'m', $oSecs < 86400 => intdiv($oSecs, 3600).'h',
+                $oSecs < 604800 => intdiv($oSecs, 86400).'d', default => intdiv($oSecs, 604800).'w',
+            };
+            $oText = $original->post_type === 'project_share'
+                ? ($original->project?->title ?? ($original->shared_snapshot['title']['en'] ?? __('A Project')))
+                : trim(preg_replace('#https?://\S+#', '', (string) $original->body));
+            $oMedia = $original->post_type === 'media' ? $original->getMedia('post_media')->count() : 0;
+            $oInitials = collect(preg_split('/\s+/', trim($oName)))->filter()->take(2)->map(fn ($w) => mb_strtoupper(mb_substr($w, 0, 1)))->implode('');
+        }
+    }
+
     // Project share: live Project, else the frozen snapshot (ADR-F2).
     if ($post->post_type === 'project_share') {
         $project = $post->relationLoaded('project') ? $post->project : null;
@@ -94,6 +117,14 @@
         'skillIds' => $post->skills->pluck('id')->values(),
         'media' => $mediaItems,
         'full' => $full,
+        // What the "Share to your feed" preview shows (ADR-AM): a repost shares its original.
+        'repost' => [
+            'id' => $post->post_type === 'repost' ? ($original?->id) : $post->id,
+            'name' => $post->post_type === 'repost' ? ($oName ?? '') : $authorName,
+            'handle' => $post->post_type === 'repost' ? ($oAuthor?->feedUsername() ?? '') : ($author?->feedUsername() ?? ''),
+            'text' => $post->post_type === 'repost' ? ($oText ?? '') : ($post->post_type === 'project_share' ? ($projectTitle ?? '') : trim(preg_replace('#https?://\S+#', '', (string) $post->body))),
+            'media' => $post->post_type === 'repost' ? ($oMedia ?? 0) : $n,
+        ],
     ];
 @endphp
 
@@ -123,7 +154,22 @@
         </div>
     </header>
 
-    @if ($post->post_type === 'project_share')
+    @if ($post->post_type === 'repost')
+        @if ($textHtml !== '')<p class="ptext" dir="auto" x-ref="text">{!! $textHtml !!}</p>@endif
+        @if ($original)
+            <a class="rp" href="{{ route('posts.show', $original) }}">
+                <span class="rp-h"><span class="av sm" aria-hidden="true">@if ($oAuthor?->feedAvatarUrl())<img src="{{ $oAuthor->feedAvatarUrl() }}" alt="">@else{{ $oInitials }}@endif</span><b>{{ $oName }}</b> <span class="meta" dir="ltr">{{ '@'.($oAuthor?->feedUsername() ?? '') }} · {{ $oAge }}</span></span>
+                @if ($original->post_type === 'project_share')
+                    <span class="rp-t"><span class="label">{{ __('Project') }}</span> {{ $oText }}</span>
+                @elseif ($oText !== '')
+                    <span class="rp-t" dir="auto">{{ $oText }}</span>
+                @endif
+                @if ($oMedia)<span class="meta rp-m"><svg class="icon" aria-hidden="true"><use href="#i-image"/></svg> {{ $oMedia }}</span>@endif
+            </a>
+        @else
+            <div class="rp"><span class="meta">{{ __('This post is no longer available.') }}</span></div>
+        @endif
+    @elseif ($post->post_type === 'project_share')
         @if ($textHtml !== '')<p class="ptext" dir="auto" x-ref="text">{!! $textHtml !!}</p>@endif
         @if ($projectUrl)<a class="projframe" href="{{ $projectUrl }}">@else<div class="projframe">@endif
             <div class="ph cover">
@@ -136,14 +182,7 @@
             </div>
         @if ($projectUrl)</a>@else</div>@endif
     @else
-        <p class="ptext" dir="auto" x-ref="text">{!! $textHtml !!}</p>
-        @if ($chips !== [])
-            <div class="chips lchips">
-                @foreach ($chips as $chip)
-                    <a class="chip" href="{{ $chip['url'] }}" target="_blank" rel="noopener noreferrer nofollow ugc"><svg class="icon" aria-hidden="true"><use href="#i-link"/></svg>{{ $chip['label'] }}</a>
-                @endforeach
-            </div>
-        @endif
+        {{-- 13 Nov 2026 review: the visual leads; the words, then their links, follow it. --}}
         @if ($n > 0)
             <div @class(['pmedia', 'n'.min($n, 4), 'many' => $n > 1]) data-n="{{ $n }}" @dblclick="doubleTapLike()">
                 <div class="ptrack" @scroll.passive="onTrack($event)">
@@ -164,6 +203,14 @@
                     <span class="pcount" aria-hidden="true" x-text="(slide + 1) + ' / {{ $n }}'">1 / {{ $n }}</span>
                     <span class="pdots" aria-hidden="true">@for ($i = 0; $i < $n; $i++)<i :class="{ on: slide === {{ $i }} }" @class(['on' => $i === 0])></i>@endfor</span>
                 @endif
+            </div>
+        @endif
+        <p class="ptext" dir="auto" x-ref="text">{!! $textHtml !!}</p>
+        @if ($chips !== [])
+            <div class="chips lchips">
+                @foreach ($chips as $chip)
+                    <a class="chip" href="{{ $chip['url'] }}" target="_blank" rel="noopener noreferrer nofollow ugc"><svg class="icon" aria-hidden="true"><use href="#i-link"/></svg>{{ $chip['label'] }}</a>
+                @endforeach
             </div>
         @endif
     @endif
@@ -199,6 +246,10 @@
             <svg class="icon" aria-hidden="true"><use :href="saved ? '#i-bm-f' : '#i-bm'" href="#{{ $saved ? 'i-bm-f' : 'i-bm' }}"/></svg><span x-text="saved ? @js(__('Saved')) : @js(__('Save'))">{{ $saved ? __('Saved') : __('Save') }}</span>
         </button>
         <div class="pmenu smenu" role="menu" x-show="shareOpen" x-cloak @click.outside="if (! $refs.shareBtn.contains($event.target)) shareOpen = false" @keydown.arrow-down.prevent="moveFocus($event, 1)" @keydown.arrow-up.prevent="moveFocus($event, -1)">
+            {{-- A visitor has no feed of their own, so the repost option isn't offered (prototype). --}}
+            @unless ($isGuest)
+                <button type="button" role="menuitem" x-show="repost.id" @click="openRepost()"><svg class="icon" aria-hidden="true"><use href="#i-repost"/></svg>{{ __('Share to your feed') }}</button>
+            @endunless
             <button type="button" role="menuitem" @click="copyLink()"><svg class="icon" aria-hidden="true"><use href="#i-link"/></svg>{{ __('Copy link') }}</button>
             <hr>
             @foreach (['LinkedIn' => 'https://www.linkedin.com/sharing/share-offsite/?url=', 'X' => 'https://x.com/intent/post?url=', 'Facebook' => 'https://www.facebook.com/sharer/sharer.php?u=', 'WhatsApp' => 'https://wa.me/?text='] as $net => $base)

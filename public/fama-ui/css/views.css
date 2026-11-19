@@ -350,3 +350,14 @@ html.fx-menu-open .fx-notice.gt-float{visibility:hidden}
   .fx-notice .gt-next{min-height:44px}
 }
 .gt-ph{text-transform:none;letter-spacing:0}
+
+/* 13 Nov 2026 review: the track reads as two named parts, each with a count */
+.gt-track{align-items:flex-end;gap:var(--s4)}
+.gt-g{flex:var(--n) 1 0;display:flex;flex-direction:column;gap:6px;min-width:0}
+.gt-gl{display:inline-flex;align-items:center;gap:4px;font-size:13px;font-weight:600;color:var(--grey);white-space:nowrap;line-height:1}
+.gt-gl .icon{width:13px;height:13px;stroke-width:2.5;color:var(--purple-dk)}
+.gt-gc{font-weight:500;font-variant-numeric:tabular-nums}
+.gt-g.on .gt-gl{color:var(--ink)}
+.gt-gs{display:flex;gap:4px}
+.gt-gs .gt-s{height:8px}
+@media (max-width:760px){.gt-gl{font-size:12px}}

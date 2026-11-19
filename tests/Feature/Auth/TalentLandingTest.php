@@ -31,11 +31,11 @@ function landingDoneTalent(): Talent
     return $talent->fresh();
 }
 
-it('lands a talent with a done profile on the Feed', function () {
+it('lands a talent with a done profile on Projects (portfolio first, 13 Nov 2026)', function () {
     $talent = landingDoneTalent();
 
     $this->post('/login', ['email' => $talent->email, 'password' => 'password', 'role' => 'talent'])
-        ->assertRedirect(route('feed'));
+        ->assertRedirect(route('talent.projects'));
 });
 
 it('lands a talent with an unfinished profile on Profile structure', function () {
@@ -51,7 +51,7 @@ it('still replays the visitor intent on login, whatever the landing', function (
 
     $this->postJson("/posts/{$post->id}/like")->assertStatus(401);
     $this->post('/login', ['email' => $talent->email, 'password' => 'password', 'role' => 'talent'])
-        ->assertRedirect(route('feed'));
+        ->assertRedirect(route('talent.projects'));
 
     expect(Like::query()->where([
         'likeable_type' => 'post', 'likeable_id' => $post->id,
@@ -60,6 +60,6 @@ it('still replays the visitor intent on login, whatever the landing', function (
 });
 
 it('sends a signed-in talent from the site root by the same rule', function () {
-    $this->actingAs(landingDoneTalent(), 'talent')->get('/')->assertRedirect(route('feed'));
+    $this->actingAs(landingDoneTalent(), 'talent')->get('/')->assertRedirect(route('talent.projects'));
     $this->actingAs(Talent::factory()->create(), 'talent')->get('/')->assertRedirect(route('talent.profile.edit'));
 });

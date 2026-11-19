@@ -90,7 +90,7 @@ class SkillController extends TalentController
         return [
             'linked' => TalentTypeResource::collection($talent->talentTypes),
             'available' => TalentTypeResource::collection(
-                TalentType::whereNotIn('id', $talent->talentTypes->pluck('id'))->orderBy('id')->get()
+                TalentType::whereNotIn('id', $talent->talentTypes->pluck('id'))->alphabetical()->get()
             ),
             // Keyed by skill id so the per-skill picker reads its own slice.
             'specialities' => $talent->talentTypes->mapWithKeys(fn (TalentType $type) => [

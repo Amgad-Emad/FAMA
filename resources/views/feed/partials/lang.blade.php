@@ -6,6 +6,8 @@
     window.famaLang = {
         like1: @js(__(':count like')), likeN: @js(__(':count likes')),
         comment1: @js(__(':count comment')), commentN: @js(__(':count comments')),
+        reply1: @js(__(':count reply')), replyN: @js(__(':count replies')),
+        rpDone: @js(__('Shared to your feed')),
         copied: @js(__('Link copied')),
         editLeft: @js(__('Edit · :min min left')),
         delT: @js(__('Delete this post?')), delB: @js(__('It comes off the feed and your profile, with its comments.')), delOk: @js(__('Delete post')),

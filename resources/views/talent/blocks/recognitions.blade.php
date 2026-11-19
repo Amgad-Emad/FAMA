@@ -3,7 +3,7 @@
     relationship first, no stars (they must not read like reviews). Four show;
     the rest open with "Show all N recognitions".
 --}}
-@php $recognitions = $talent->recognitions->where('is_approved', true)->values(); @endphp
+@php $recognitions = $talent->recognitions->filter->isShown()->values(); @endphp
 <x-profile.block :block="$block" :empty="$recognitions->isEmpty()" :is-owner="$isOwner ?? false">
     <div x-data="{ all: false }">
     <ul class="recs" id="recList">

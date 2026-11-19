@@ -1353,5 +1353,14 @@
     "Signed in as Fama staff": "مسجّل الدخول كفريق فاما",
     "Feed moderation": "إشراف الموجز",
     "You’re browsing the public feed as :name. Moderate posts and reports from the admin panel.": "تتصفح الموجز العام باسم :name. أشرف على المنشورات والبلاغات من لوحة الإدارة.",
-    "You’re signed in as Fama staff. Liking, saving, following and commenting are for talent accounts.": "أنت مسجّل الدخول كفريق فاما. الإعجاب والحفظ والمتابعة والتعليق متاحة لحسابات المواهب."
+    "You’re signed in as Fama staff. Liking, saving, following and commenting are for talent accounts.": "أنت مسجّل الدخول كفريق فاما. الإعجاب والحفظ والمتابعة والتعليق متاحة لحسابات المواهب.",
+    "Reply": "رد",
+    "Reply to @:user…": "رد على @:user…",
+    ":count reply": ":count رد",
+    ":count replies": ":count رد",
+    "View :count more replies": "عرض :count ردود أخرى",
+    "Community": "المجتمع",
+    "Made by": "من صنع",
+    "By": "بواسطة",
+    "See it as a visitor": "شوفه كزائر"
 }

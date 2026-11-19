@@ -11,8 +11,11 @@ use App\Models\Recognition;
 use App\Models\Talent;
 use App\Models\TalentType;
 use App\Services\CounterService;
+use App\Services\ExperienceService;
 use App\Services\ProjectCreditService;
 use App\Services\SkillsService;
+use App\Services\TalentProjectService;
+use App\Support\PracticeFields;
 use Database\Seeders\Concerns\GeneratesCoverImages;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Collection;
@@ -70,6 +73,8 @@ class ScreensDemoSeeder extends Seeder
         DB::transaction(function () use ($demo, $peers): void {
             $this->seedViews($demo);
             $this->seedSocials($demo);
+            $this->seedPractice($demo);
+            $this->seedExperience($demo);
             $this->seedProjects($demo, $peers);
             $this->seedCreditsWaiting($demo, $peers);
             $this->seedRecognitions($demo, $peers);
@@ -80,8 +85,43 @@ class ScreensDemoSeeder extends Seeder
 
         $this->seedPrivateTalent();
         $this->usePrototypePhotos($demo->fresh());
+        $this->seedStory($demo->fresh());
 
         app(CounterService::class)->reconcile();
+    }
+
+    /**
+     * Experience roles (ADR-AK) — the prototype's sample shape: a current role,
+     * two roles at one company (grouped on the profile) and an older freelance one.
+     * Written through ExperienceService, the one write path.
+     */
+    private function seedExperience(Talent $demo): void
+    {
+        $skills = $demo->talentTypes->pluck('id')->all();
+        app(ExperienceService::class)->replace($demo, [
+            ['t' => 'Lead stylist', 'n' => 'Maison Nour', 'et' => 'Freelance', 'loc' => 'Cairo', 'lt' => 'On-site', 'cur' => true, 'sm' => 3, 'sy' => 2024,
+                'hl' => "Styled the Red Sea 2026 resort capsule\nBuilt the brand's first modest-wear lookbook", 'sk' => array_slice($skills, 0, 2)],
+            ['t' => 'Senior stylist', 'n' => 'Nomad Coffee Co.', 'et' => 'Contract', 'loc' => 'Dubai', 'lt' => 'Hybrid', 'sm' => 6, 'sy' => 2022, 'em' => 12, 'ey' => 2023,
+                'hl' => 'Autumn launch campaign, 14 looks in two days', 'sk' => array_slice($skills, 0, 1)],
+            ['t' => 'Stylist', 'n' => 'Nomad Coffee Co.', 'et' => 'Contract', 'loc' => 'Dubai', 'lt' => 'Hybrid', 'sm' => 1, 'sy' => 2021, 'em' => 5, 'ey' => 2022],
+            ['t' => 'Assistant stylist', 'n' => 'Cairo Fashion Week', 'et' => 'Freelance', 'loc' => 'Cairo', 'lt' => 'On-site', 'sm' => 9, 'sy' => 2019, 'em' => 10, 'ey' => 2020],
+        ]);
+    }
+
+    /**
+     * "About your practice" (ADR-AG) for the demo's Modelling tab: height,
+     * measurements, sizes and comfort — through PracticeFields::clean so the
+     * demo can only hold values the editor could have saved.
+     */
+    private function seedPractice(Talent $demo): void
+    {
+        $demo->practice = PracticeFields::clean([
+            'height' => 178,
+            'measure' => ['chest' => 96, 'waist' => 78, 'hips' => 94, 'inseam' => 84],
+            'sizes' => ['r' => 'EU', 'c' => '48', 's' => '43'],
+            'comfort' => ['a' => ['Short sleeves', 'Fitted cuts'], 'b' => ['Closed set']],
+        ]);
+        $demo->save();
     }
 
     /**
@@ -175,6 +215,64 @@ class ScreensDemoSeeder extends Seeder
                 ['talent_type_id' => $skill?->id ?? TalentType::value('id'), 'role' => 'Set designer', 'status' => 'listed', 'position' => 9],
             );
         }
+    }
+
+    /**
+     * The showcase project's story as free-form blocks (ADR-AN) — the prototype's
+     * "Desert Light" sample: an opening line, chapters, a picture beside its text,
+     * a quote, the scrolling Cases gallery, a tagged look, a before/after grade,
+     * Results and Credits. Uses the prototype's own stock photos
+     * (public/fama-ui/img/stock) and writes through TalentProjectService, so the
+     * summary/body projections and the media order follow. Idempotent: a story
+     * that already has a chapter is left alone.
+     */
+    private function seedStory(Talent $demo): void
+    {
+        $project = $demo->projects()->with('media')->where('title->en', 'Zeina Swim — SS27')->first();
+        if (! $project || collect($project->blocks ?? [])->contains(fn ($b) => $b['t'] === 'heading')) {
+            return;
+        }
+
+        $stock = fn (string $name) => public_path("fama-ui/img/stock/{$name}.jpg");
+        $add = function (string $name) use ($project, $stock): ?int {
+            if (! is_file($stock($name))) {
+                return null;
+            }
+
+            return (int) $project->addMedia($stock($name))->preservingOriginal()
+                ->withCustomProperties(['fama_ui' => true, 'alt' => ''])->toMediaCollection('media')->id;
+        };
+
+        $own = $project->getMedia('media')->pluck('id')->map('intval')->values()->all();
+        $gallery = array_values(array_filter(array_map($add, ['desert-light-1', 'desert-light-2', 'desert-light-3', 'desert-light-4', 'desert-light-5'])));
+        $look = $add('look-04');
+        $before = $add('grade-before');
+        $after = $add('grade-after');
+
+        $blocks = array_values(array_filter([
+            ['t' => 'text', 'v' => 'A resort capsule shot at golden hour, built from the collection’s linen base.'],
+            ['t' => 'heading', 'v' => 'The brief'],
+            ['t' => 'text', 'v' => 'Zeina wanted the fabric to carry the story without a postcard shot. We built every look from the collection’s base pieces and kept anything that pulled the eye away from the cloth off the rail.'],
+            isset($own[0]) ? ['t' => 'image', 'm' => $own[0], 'cap' => 'Looks laid out on the table the night before'] : null,
+            ['t' => 'text', 'v' => 'We kept the palette to sand and bone, and pinned each outfit on the board before the shoot so the team could see the whole edit at once.'],
+            isset($own[1], $own[2]) ? ['t' => 'gallery', 'items' => [['m' => $own[1], 'cap' => 'The board, day one'], ['m' => $own[2], 'cap' => 'Final pick, eleven looks']]] : null,
+            $look ? ['t' => 'look', 'm' => $look, 'title' => 'Look 04', 'items' => [
+                ['n' => 'Sweatshirt', 'd' => 'Zeina Swim · brushed cotton, rust', 'x' => 24, 'y' => 34],
+                ['n' => 'Cable-knit jumper', 'd' => 'Zeina Swim · wool, brick', 'x' => 70, 'y' => 34],
+                ['n' => 'Chelsea boots', 'd' => 'Archive, Cairo · tan suede', 'x' => 22, 'y' => 73],
+                ['n' => 'Check trousers', 'd' => 'Zeina Swim · wool, rust check', 'x' => 70, 'y' => 75],
+            ]] : null,
+            ['t' => 'quote', 'v' => 'The light did half the work. We just stayed out of its way.', 'by' => 'Omar Saleh, photographer'],
+            $before && $after ? ['t' => 'beforeafter', 'mb' => $before, 'ma' => $after, 'lb' => 'Raw frame', 'la' => 'Final grade', 'cap' => 'The grade warmed the sand and deepened the sky'] : null,
+            ['t' => 'heading', 'v' => 'On set'],
+            ['t' => 'text', 'v' => 'Two evenings, forty-minute windows. Every look was steamed and hung in order so a change took under a minute.'],
+            count($gallery) >= 4 ? ['t' => 'gallery', 'items' => array_map(fn ($id, $cap) => ['m' => $id, 'cap' => $cap], $gallery, array_slice(['The rail at the edge of the dunes', 'Fittings in the tent', 'Pins, swaps, last notes', 'Last light, last look', 'The book, the morning after'], 0, count($gallery)))] : null,
+            ['t' => 'heading', 'v' => 'What it did'],
+            ['t' => 'results'],
+            ['t' => 'credits'],
+        ]));
+
+        app(TalentProjectService::class)->update($project->fresh(), ['blocks' => $blocks]);
     }
 
     /**

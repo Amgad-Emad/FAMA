@@ -629,7 +629,7 @@ migrate:fresh --seed exits 0):
   `account-actions` partial shows **Verify** for both kinds and hides **Publish** until verified. Verify
   is ONE-WAY (use Suspend/Unpublish to take down). Migration grandfathers live/published rows to verified;
   factory defaults for published/live states are `is_verified=true` (with `unverified()` states). Open
-  stakeholder item: whether verify should also auto-publish (today it only unlocks the owner's toggle).
+  owner decision (2026-11-17): verify does NOT auto-publish.
 
 V1 RELEASE SCOPING — talent + feed + public profile only (2026-08-06, ADR-W, suite 624 green).
 Config-driven feature flags gate whole product areas so production V1 ships ONLY the talent side, the public
@@ -1141,14 +1141,14 @@ comment — sync by mirroring the site and listing dated comments newer than the
   `famaSide` / `famaNav` in resources/js/ui/shell.js; notifications for BOTH bars = ONE store
   `Alpine.store('famaNotifs')` (pages sync the badge through it, never via a component's $data). Create menu →
   `talent.projects.new` / `feed?new=post` (feedComposer opens on `?new=post|photo` and strips it). Top bar
-  ≤1100px order: Feed · Projects · Edit profile · Credits · Activity. Nav label is "Edit profile". The Private
+  ≤1100px order: Projects · Edit profile · Credits · Feed · Activity (portfolio first, ADR-AE). Nav label is "Edit profile". The Private
   notice shows only while `! is_published` and never on Edit profile (its own floating tracker replaces it).
   WATCH OUT: shell.css margins key off `.fx-nav + main` / `.fx-nav + .fx-hero-wrap` — nothing may sit between
   the header and the page's first block (the owner's `.pv-strip` is the one allowed exception).
 - GO LIVE (ADR-AC): `ProfileCompletionService` is THE home — Go Live = display name · a speciality · city, and a
   profile goes Live BY ITSELF when they are saved (`App\Actions\Talent\SyncGoLiveState` via `syncAfterWrite()`);
   Stand out (7, advisory) — `show` lists a Live profile in the Creatives Index (`isListed()`); `isProfileDone()` =
-  all ten → login and `/` land on the Feed (`homeRoute()`). Unpublished/Suspended are holds a save never undoes.
+  all ten → login and `/` land on PROJECTS (`homeRoute()`, ADR-AE — was the Feed). Unpublished/Suspended are holds a save never undoes.
   `is_verified` = badge only. Any new write path that can complete/break a Go Live step must call `syncAfterWrite()`.
 - LOGOUT (fixed 2026-11-04): `POST /logout` is `auth:talent,brand,admin`. NEVER put a shared-auth route
   behind plain `auth`/`guest` — they check only the default guard (`admin`). The other Breeze `auth`
@@ -1166,4 +1166,63 @@ comment — sync by mirroring the site and listing dated comments newer than the
   prototype's locked link on a Private profile (app keeps "no link while Private"); Discovery not yet limited
   to `isListed()` (one line, when `features.discover` turns on). Not ported (no backend): free-form project
   blocks, repost, LinkedIn-style experience, per-skill practice fields, hiding single credits/recognitions.
+
+PROTOTYPE SYNC TO 13 NOV 2026 (2026-11-17, ADR-AE; suite 902 green, build green). Source: the client's
+"FAMA-update-2026-11-13-b.pdf" (items 15–18) + every 12–13 Nov dated comment in the prototype.
+- SIDE BAR: groups Your work (Projects · Credits) → Your profile (Edit · View) → Community (Feed · Notifications ·
+  Activity). Folded rail = icons only; each link carries `data-tip` (the CSS tooltip) — keep it on new links.
+- PROJECT PAGE: the team is listed as EQUALS — owner + confirmed + off-platform credits: cover "By A, B and C"
+  (stacked `.avs`) + the "Made by" band (`.hire.team` > `.tm`, name + role). The separate Credits list, "Open for
+  work", the phone `.hirebar` and its JS are gone (no hiring on Fama yet). Owner: "See it as a visitor"
+  (`?visitor=1` → rendered as a non-owner) + Edit. Visitors: Share + Follow (the prototype's Like has no
+  backend — project likes are not ported). Picture numbers show only in the full-screen viewer.
+- PROJECTS LIST: one action per card — cover opens the project, Edit is the only button. Delete / Leave live only
+  in the editor's Settings (OPEN: stakeholders asked where they should live).
+- FEED: every inline comment takes a Reply (`openReply/cancelReply/sendReply/retryReply` on postFrame; markup
+  `feed/partials/comments` + `feed/partials/comment-item`); one level deep (CreateComment re-attaches deeper
+  replies). Post cards: media first, then text, then link chips.
+- EDIT PROFILE: no skill reordering (drag/arrows gone); "Make primary" moves a skill to the front
+  (`makePrimary`) — is_primary stays derived from position 0. Tracker = two labelled groups ("1 · Go Live n/3",
+  "2 · Stand out n/7"), no Index milestone. Status pills solid. New projects open with the Photos block shown.
+- PUBLIC PROFILE: point of view (worldview) moved into the hero (`.ct-pov`), out of "About {name}". The owner's
+  strip is a lavender band with a real Edit-profile button.
+SKILLS CATALOG = THE PROTOTYPE'S 41 (2026-11-17, ADR-AF; suite 902 green; fresh migrate+seed exits 0). THE catalog
+is `database/data/skill-catalog.php` (41 skills, 195 specialities, identical to fama-ui skills.js) applied ONLY by
+`App\Actions\Catalog\SyncSkillCatalog` (seeders + migration 2026_11_17_000100). Edit the data file, never the
+seeders. Skill slugs are frozen (renames in place via `legacy`); dropped specialities are RETIRED. "Hair & makeup"
+is now Makeup (slug `makeup`) + Hair. Tests must not reference `hair-makeup`. List skills with
+`TalentType::alphabetical()`. NOT yet ported: per-skill "About your practice" fields (fields.js), audio/writing-
+sample sections, icons for the 32 new skills (fallback glyph).
+PRACTICE FIELDS + LOCKED LINK (2026-11-17, ADR-AG/AH; suite 910 green). `App\Support\PracticeFields` is THE home
+of the per-skill "About your practice" catalog (27 fields, 31 skills) — the editor (resources/js/ui/practice-fields.js,
+wired in profile-structure.js via bindPractice/mountFields) gets the definitions as JSON; never redefine fields in JS.
+Values: `talents.practice` JSON via `PracticeService` (`PUT /talent/profile/practice`; the controller reads the FULL
+`fields` input — validated() would drop keys without rules — and `clean()` is the guard). `digitals` and `software`
+are DERIVED (Digitals content / software_stack) — never store them in practice. The comp_card block is silent once
+practice holds height/measure/sizes. A Private profile's link is shown LOCKED (supersedes the old "no link" rule).
+PROTOTYPE GAP-FILL (2026-11-17, ADR-AI…AM; suite 927 green, build green, fresh migrate+seed exits 0):
+- Hide ONE credit/recognition from your profile (`hidden_at`; `Recognition::isShown()` is the public test; a hidden
+  credit stays on the project page). Skill glyphs: ONE map `resources/data/skill-icons.json` (Blade + dashboard.js).
+- Projects take likes (`projects.likes_count`, same `likes` rows; `famaProjectLike` replaced Follow on the project page).
+- Experience = LinkedIn-style roles on `brand_collabs` (role columns); rules in `App\Support\Experience` mirrored by
+  resources/js/ui/experience.js — change both together. Roles save with the Profile structure draft
+  (`PUT /talent/profile/experience`).
+- Reposts: `post_type=repost` + `reposted_post_id`; `RepostPost` is the only writer; every post-card eager load must
+  include `repostOf.author.media`, `repostOf.media`, `repostOf.project.media`.
+- NOT built on purpose (ADR-AL): audio / writing-sample sections (dormant in the prototype). New skills = Projects-only tab.
+- Free-form project blocks: BUILT (see below).
+FREE-FORM PROJECT BLOCKS (2026-11-17, ADR-AN; suite 939 green, build green, fresh migrate+seed exits 0). The story
+is `projects.blocks` — `App\Support\ProjectBlocks` is THE home (shapes, limits, Form Request rules via
+`ProjectBlocks::rules()`, legacy conversion, summary/body projections); `App\Support\ProjectStory` is THE page
+layout (port of project.html render) drawn by `public/partials/project-story`. Editor = `resources/js/ui/project-editor.js`
+(`famaProjectEdit`, moved out of projects.js; shared helpers in `ui/project-util.js`) + `talent/partials/project-edit-story`.
+WATCH OUTS: (1) pictures are media IDS of the project — never URLs; normalize() 422s a foreign id. (2) Never write
+summary/body by hand when blocks are sent — the service derives them. (3) `orderedMedia()` hides pictures marked
+`detached_at` (taken out of the story; deleted after 24 h by the next save); the editor resolves undo through
+`allMedia()`. (4) The editor uploads with `place=0`; any other uploader's pictures join the last Photos block.
+(5) prototype CSS needs blocks as DIRECT children of `.pe-story`/`.pe-b` — x-if templates sit straight under `.pe-b`,
+the "+" inserter lives inside each block (`.pe-ins-above`). (6) Fresh seeds/factories leave `blocks` NULL →
+`Project::storyBlocks()` reads the legacy fields. Owner decisions 2026-11-17: ADR-F2 confirmed; verification never
+auto-publishes; Delete/Leave stay in the editor's Settings; Discovery isListed() waits for features.discover;
+Arabic copy paused.
 

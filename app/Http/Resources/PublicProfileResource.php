@@ -82,7 +82,7 @@ class PublicProfileResource extends BaseResource
             // Peer vouches and stated directions are profile-level sections, so
             // they sit beside the blocks rather than inside a skill (ADR-Z).
             'recognitions' => $talent->relationLoaded('recognitions')
-                ? RecognitionResource::collection($talent->recognitions->where('is_approved', true)->values())
+                ? RecognitionResource::collection($talent->recognitions->filter->isShown()->values())
                 : [],
             'interests' => $talent->relationLoaded('interests')
                 ? TalentInterestResource::collection($talent->interests)

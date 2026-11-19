@@ -70,7 +70,6 @@ class Contract extends Model
         return $this->belongsTo(Talent::class);
     }
 
-
     /**
      * @return BelongsTo<ContractFlow, $this>
      */

@@ -25,7 +25,7 @@ class DiscoveryController extends BrandController
 
     public function index(): View
     {
-        return view('brand.discover', ['types' => TalentType::orderBy('id')->get()]);
+        return view('brand.discover', ['types' => TalentType::alphabetical()->get()]);
     }
 
     public function feed(): JsonResponse

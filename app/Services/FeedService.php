@@ -406,6 +406,7 @@ class FeedService extends Service
             ->whereIn('id', $ids)
             ->with([
                 'author.media',
+                'repostOf.author.media', 'repostOf.media', 'repostOf.project.media',
                 'media',
                 'skills',
                 'project.media',

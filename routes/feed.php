@@ -1,10 +1,18 @@
 <?php
 
+use App\Http\Controllers\Feed\BookmarkController;
 use App\Http\Controllers\Feed\CommentController;
 use App\Http\Controllers\Feed\FeedController;
 use App\Http\Controllers\Feed\FollowController;
+use App\Http\Controllers\Feed\FollowListController;
 use App\Http\Controllers\Feed\LikeController;
+use App\Http\Controllers\Feed\LinkPreviewController;
+use App\Http\Controllers\Feed\MentionSearchController;
+use App\Http\Controllers\Feed\NotificationController;
 use App\Http\Controllers\Feed\PostController;
+use App\Http\Controllers\Feed\ProjectShareController;
+use App\Http\Controllers\Feed\ReportController;
+use App\Http\Controllers\Feed\SuggestionController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -35,6 +43,8 @@ Route::middleware('resolve.actor')->group(function () {
     Route::get('/talents/{username}/posts', [PostController::class, 'byTalent'])->name('talents.posts');
 
     // --- Post write path (authors; PostPolicy gates talents-only) ------------
+    Route::post('/posts/{post}/repost', [PostController::class, 'repost'])
+        ->middleware(['require.actor:post', 'throttle:feed-posts'])->name('posts.repost');
     Route::post('/posts', [PostController::class, 'store'])
         ->middleware(['require.actor:post', 'throttle:feed-posts'])->name('posts.store');
     Route::patch('/posts/{post}', [PostController::class, 'update'])
@@ -43,7 +53,7 @@ Route::middleware('resolve.actor')->group(function () {
         ->middleware('require.actor:post')->name('posts.destroy');
     Route::post('/posts/{post}/pin', [PostController::class, 'pin'])
         ->middleware('require.actor:post')->name('posts.pin');
-    Route::post('/projects/{project}/share', \App\Http\Controllers\Feed\ProjectShareController::class)
+    Route::post('/projects/{project}/share', ProjectShareController::class)
         ->middleware('require.actor:share')->name('projects.share');
 
     // --- Comments (read is public; write requires an actor) ------------------
@@ -61,56 +71,61 @@ Route::middleware('resolve.actor')->group(function () {
         ->middleware(['require.actor:like', 'throttle:feed-likes'])->name('posts.like');
     Route::delete('/posts/{post}/like', [LikeController::class, 'destroy'])
         ->middleware(['require.actor:like', 'throttle:feed-likes'])->name('posts.unlike');
+    // Projects take likes too (ADR-AJ, prototype project.html).
+    Route::post('/projects/{project}/like', [LikeController::class, 'storeProject'])
+        ->middleware(['require.actor:like', 'throttle:feed-likes'])->name('projects.like');
+    Route::delete('/projects/{project}/like', [LikeController::class, 'destroyProject'])
+        ->middleware(['require.actor:like', 'throttle:feed-likes'])->name('projects.unlike');
     Route::post('/comments/{comment}/like', [LikeController::class, 'storeComment'])
         ->middleware(['require.actor:like', 'throttle:feed-likes'])->name('comments.like');
     Route::delete('/comments/{comment}/like', [LikeController::class, 'destroyComment'])
         ->middleware(['require.actor:like', 'throttle:feed-likes'])->name('comments.unlike');
 
     // --- Follow-suggestion rails (5Z) ----------------------------------------
-    Route::get('/feed/suggestions/talents', [\App\Http\Controllers\Feed\SuggestionController::class, 'talents'])
+    Route::get('/feed/suggestions/talents', [SuggestionController::class, 'talents'])
         ->name('feed.suggestions.talents');
-    Route::get('/feed/suggestions/brands', [\App\Http\Controllers\Feed\SuggestionController::class, 'brands'])
+    Route::get('/feed/suggestions/brands', [SuggestionController::class, 'brands'])
         ->middleware('feature:brands')->name('feed.suggestions.brands');
-    Route::post('/feed/suggestions/dismiss', [\App\Http\Controllers\Feed\SuggestionController::class, 'dismiss'])
+    Route::post('/feed/suggestions/dismiss', [SuggestionController::class, 'dismiss'])
         ->middleware(['require.actor:dismiss', 'throttle:feed-dismissals'])->name('feed.suggestions.dismiss');
 
     // --- Saves (5X) ----------------------------------------------------------
-    Route::post('/posts/{post}/bookmark', [\App\Http\Controllers\Feed\BookmarkController::class, 'store'])
+    Route::post('/posts/{post}/bookmark', [BookmarkController::class, 'store'])
         ->middleware(['require.actor:bookmark', 'throttle:feed-bookmarks'])->name('posts.bookmark');
-    Route::delete('/posts/{post}/bookmark', [\App\Http\Controllers\Feed\BookmarkController::class, 'destroy'])
+    Route::delete('/posts/{post}/bookmark', [BookmarkController::class, 'destroy'])
         ->middleware(['require.actor:bookmark', 'throttle:feed-bookmarks'])->name('posts.unbookmark');
 
     // --- Mention autocomplete (composer) -------------------------------------
-    Route::get('/mentions/search', \App\Http\Controllers\Feed\MentionSearchController::class)
+    Route::get('/mentions/search', MentionSearchController::class)
         ->middleware('throttle:feed-mentions')->name('mentions.search');
 
     // --- Link chip (composer on-paste) ---------------------------------------
-    Route::post('/links/preview', \App\Http\Controllers\Feed\LinkPreviewController::class)
+    Route::post('/links/preview', LinkPreviewController::class)
         ->middleware(['require.actor:link', 'throttle:feed-links'])->name('links.preview');
 
     // --- Reports -------------------------------------------------------------
-    Route::post('/posts/{post}/report', [\App\Http\Controllers\Feed\ReportController::class, 'post'])
+    Route::post('/posts/{post}/report', [ReportController::class, 'post'])
         ->middleware('require.actor:report')->name('posts.report');
-    Route::post('/comments/{comment}/report', [\App\Http\Controllers\Feed\ReportController::class, 'comment'])
+    Route::post('/comments/{comment}/report', [ReportController::class, 'comment'])
         ->middleware('require.actor:report')->name('comments.report');
 
     // --- Notifications (actor-only reads) ------------------------------------
     Route::middleware('require.actor:notifications')->group(function () {
-        Route::get('/notifications', [\App\Http\Controllers\Feed\NotificationController::class, 'index'])
+        Route::get('/notifications', [NotificationController::class, 'index'])
             ->name('notifications');
-        Route::post('/notifications/read', [\App\Http\Controllers\Feed\NotificationController::class, 'markRead'])
+        Route::post('/notifications/read', [NotificationController::class, 'markRead'])
             ->name('notifications.read');
         // fama-ui notifications page (the bell's "See all notifications").
-        Route::get('/notifications/all', [\App\Http\Controllers\Feed\NotificationController::class, 'page'])
+        Route::get('/notifications/all', [NotificationController::class, 'page'])
             ->name('notifications.page');
-        Route::get('/notifications/unread-count', [\App\Http\Controllers\Feed\NotificationController::class, 'unreadCount'])
+        Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount'])
             ->name('notifications.unread');
     });
 
     // --- Audience listings (public reads) ------------------------------------
-    Route::get('/talents/{username}/followers', [\App\Http\Controllers\Feed\FollowListController::class, 'followers'])
+    Route::get('/talents/{username}/followers', [FollowListController::class, 'followers'])
         ->name('talents.followers');
-    Route::get('/talents/{username}/following', [\App\Http\Controllers\Feed\FollowListController::class, 'following'])
+    Route::get('/talents/{username}/following', [FollowListController::class, 'following'])
         ->name('talents.following');
 
     // --- Follows -------------------------------------------------------------

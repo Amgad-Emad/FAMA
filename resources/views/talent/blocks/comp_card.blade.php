@@ -1,6 +1,12 @@
-{{-- Comp card — the fama-ui "About the practice" facts (fields.css .fx-facts). --}}
+{{-- Comp card — the fama-ui "About the practice" facts (fields.css .fx-facts).
+     Superseded by the Modelling practice fields (ADR-AG): once a profile's practice
+     holds height / measurements / sizes, those render under "About the practice"
+     and this block stays silent, so the page never shows two heights. --}}
 @php
-    $card = $talent->compCard;
+    $practice = (array) ($talent->practice ?? []);
+    $card = collect(['height', 'measure', 'sizes'])->contains(fn ($k) => \App\Support\PracticeFields::filled($k, $practice[$k] ?? null))
+        ? null
+        : $talent->compCard;
     $facts = $card ? array_filter([
         __('Height') => $card->height_cm ? $card->height_cm.' cm' : null,
         __('Bust') => $card->bust_cm ? $card->bust_cm.' cm' : null,

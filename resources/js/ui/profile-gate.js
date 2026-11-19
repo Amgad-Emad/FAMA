@@ -56,20 +56,22 @@ export function famaGate(el, opts = {}) {
     const tick = (ok) => `<span class="tick">${ok ? ic('i-check') : ''}</span>`;
     const left = (L) => L.filter((r) => !done[r[0]]);
 
-    /* the track: one segment per step, with labelled milestones (Live, Index, Ready) that turn solid once reached */
+    /* the track (13 Nov 2026 review: "not clear how to read it"): two labelled groups, each with its name
+       and count, one segment per step (each jumps to its step). A group turns solid once done; no Index
+       milestone (12 Nov 2026 review). */
     function track(all, next, fresh = []) {
-        const listed = all || !!done[KEY]; const isLive = all || !left(REQ).length; const ready = all || (!left(REQ).length && !left(REC).length);
+        const isLive = all || !left(REQ).length; const ready = all || (!left(REQ).length && !left(REC).length);
         const seg = (r) => {
             const ok = all || done[r[0]];
             const cls = 'gt-s' + (ok ? ' ok' : '') + (next && r === next ? ' cur' : '') + (fresh.indexOf(r[0]) >= 0 ? ' new' : '');
             return link(r, cls, `<span class="vh">${r[1]}${ok ? esc(S.doneSuffix) : ''}</span>`).replace(/^<(button|a) /, `<$1 title="${r[1]}" `);
         };
-        const ms = (on, icon, label) => `<span class="gt-ms${on ? ' on' : ''}">${icon}<span class="gt-msl">${esc(label)}</span></span>`;
-        const cnt = (L) => f(S.ofN, { n: L.filter((r) => all || done[r[0]]).length, m: L.length });
+        const got = (L) => L.filter((r) => all || done[r[0]]).length;
+        const cnt = (L) => f(S.ofN, { n: got(L), m: L.length });
+        const grp = (L, label, on) => `<div class="gt-g${on ? ' on' : ''}" style="--n:${L.length}"><span class="gt-gl">${on ? ic('i-check') : ''}${esc(label)}`
+            + ` <span class="gt-gc">${got(L)}/${L.length}</span></span><span class="gt-gs">${L.map(seg).join('')}</span></div>`;
         return `<div class="gt-track" role="group" aria-label="${esc(f(S.trackA, { a: cnt(REQ), b: cnt(REC) }))}">`
-            + REQ.map(seg).join('') + ms(isLive, STAR.replace('gt-star', 'gt-msi'), S.msLive)
-            + (REC[0] ? seg(REC[0]) : '') + ms(listed, ic('i-search'), S.msIndex)
-            + REC.slice(1).map(seg).join('') + ms(ready, ic('i-check'), S.msReady) + '</div>';
+            + grp(REQ, S.grpLive, isLive) + grp(REC, S.grpStand, ready) + '</div>';
     }
 
     /* one part of the card: its number, title, count and steps (a single line once done) */

@@ -7,6 +7,7 @@ use App\Models\Bookmark;
 use App\Models\Like;
 use App\Models\Post;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 
 /**
  * The private dashboard collections (5X, ADR-F9): an actor's SAVED and LIKED
@@ -113,7 +114,7 @@ class FeedCollectionService extends Service
     private function hydrate(array $ids, ?string $skill, ?string $q): LengthAwarePaginator
     {
         if ($ids === []) {
-            return new \Illuminate\Pagination\LengthAwarePaginator([], 0, 12);
+            return new LengthAwarePaginator([], 0, 12);
         }
 
         return Post::query()
@@ -123,7 +124,7 @@ class FeedCollectionService extends Service
                 'skills', fn ($sub) => $sub->where('slug', $skill)
             ))
             ->when($q !== null && $q !== '', fn ($query) => $query->where('body', 'like', '%'.$q.'%'))
-            ->with(['author.media', 'media', 'skills'])
+            ->with(['author.media', 'media', 'skills', 'repostOf.author.media', 'repostOf.media', 'repostOf.project.media'])
             ->orderByRaw('FIELD(id, '.implode(',', array_map(intval(...), $ids)).')')
             ->paginate(12);
     }
@@ -132,9 +133,9 @@ class FeedCollectionService extends Service
      * The compact card payload the collection views render.
      *
      * @param  LengthAwarePaginator<int, Post>  $posts
-     * @return \Illuminate\Support\Collection<int, array<string, mixed>>
+     * @return Collection<int, array<string, mixed>>
      */
-    public function present(LengthAwarePaginator $posts): \Illuminate\Support\Collection
+    public function present(LengthAwarePaginator $posts): Collection
     {
         return $posts->getCollection()->map(function (Post $post): array {
             $cover = $post->getMedia('post_media')->first();

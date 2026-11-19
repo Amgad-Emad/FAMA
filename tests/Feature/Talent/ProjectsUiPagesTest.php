@@ -52,12 +52,48 @@ it('renders the project page as a story with results, public credits and more wo
         ->assertSee('Maison Nour')
         ->assertSee('data-kind="percent"', false)
         ->assertSee('data-kind="change"', false)
-        ->assertSee('THE TEAM')
+        ->assertSee('Made by')
+        ->assertDontSee('THE TEAM')         // the separate credits list is folded into "Made by"
+        ->assertDontSee('Open for work')    // no hiring on Fama yet (13 Nov 2026)
+        ->assertDontSee('hirebar', false)
         ->assertSee('famaProjectPage(', false)
         ->assertSee('Hana Mostafa')          // off-platform: listed at once
         ->assertDontSee('Key stylist')       // pending: appears nowhere
         ->assertSee('Studio portraits')      // more from this talent
-        ->assertSee('famaProjectFollow(', false)
+        ->assertSee('famaProjectLike(', false)
+        ->assertDontSee('Edit project');
+});
+
+it('lists everyone on a shared project as equals, on the cover and in "Made by"', function () {
+    $owner = uiTalent('Lina Haddad');
+    $peer = uiTalent('Omar Saleh', 'styling');
+    $project = uiProject($owner, ['role' => 'Photographer']);
+    $credits = app(ProjectCreditService::class);
+    $credit = $credits->add($project, ['talent_id' => $peer->id, 'talent_type_id' => $peer->talentTypes()->first()->id, 'role' => 'Stylist']);
+    $credits->accept($credit->fresh());
+    $credits->add($project, ['name' => 'Hana Mostafa', 'talent_type_id' => $peer->talentTypes()->first()->id, 'role' => 'Director']);
+
+    $html = $this->get(route('talent.work', ['slug' => $owner->slug, 'project' => $project->id]))->assertOk()->getContent();
+
+    preg_match('#<div class="by">(.*?)</div>#s', $html, $by);
+    expect($by[1] ?? '')->toContain('class="avs"')
+        ->toMatch('#By .*Lina Haddad.*, .*Omar Saleh.* and .*Hana Mostafa#s');
+
+    preg_match('#<ul class="tm">(.*?)</ul>#s', $html, $team);
+    expect($team[1] ?? '')->toMatch('#Lina Haddad.*Photographer.*Omar Saleh.*Stylist.*Hana Mostafa.*Director#s');
+});
+
+it('shows a project by one person as "By name, role" and gives the owner the visitor view', function () {
+    $owner = uiTalent('Lina Haddad');
+    $project = uiProject($owner, ['role' => 'Photographer']);
+    $url = route('talent.work', ['slug' => $owner->slug, 'project' => $project->id]);
+
+    $this->get($url)->assertOk()->assertSee(', photographer', false);
+
+    $this->actingAs($owner, 'talent')->get($url)->assertOk()
+        ->assertSee('See it as a visitor')
+        ->assertSee('Edit project');
+    $this->actingAs($owner, 'talent')->get($url.'?visitor=1')->assertOk()
         ->assertDontSee('Edit project');
 });
 
@@ -144,4 +180,33 @@ it('renders the recognise form, pre-filled when the peer already wrote one', fun
         ->assertOk()
         ->assertSee('Assisted me for two years')
         ->assertSee('Send updated recognition');
+});
+
+it('lets a signed-in talent like and unlike a project, counted on the project (ADR-AJ)', function () {
+    $owner = uiTalent('Lina Haddad');
+    $fan = uiTalent('Omar Saleh', 'styling');
+    $project = uiProject($owner);
+
+    $this->actingAs($fan, 'talent')->postJson(route('projects.like', $project))
+        ->assertOk()->assertJsonPath('data.liked', true)->assertJsonPath('data.likes_count', 1);
+    // Liking twice is a no-op, not a second like.
+    $this->actingAs($fan, 'talent')->postJson(route('projects.like', $project))->assertJsonPath('data.likes_count', 1);
+
+    $this->actingAs($fan, 'talent')->get(route('talent.work', ['slug' => $owner->slug, 'project' => $project->id]))
+        ->assertOk()->assertSee('liked: true', false)->assertSee('♥ Like', false);
+
+    $this->actingAs($fan, 'talent')->deleteJson(route('projects.unlike', $project))
+        ->assertOk()->assertJsonPath('data.liked', false)->assertJsonPath('data.likes_count', 0);
+});
+
+it('asks a visitor to sign in to like a project and finishes the like after login', function () {
+    $owner = uiTalent('Lina Haddad');
+    $project = uiProject($owner);
+    $fan = uiTalent('Omar Saleh', 'styling');
+    $fan->update(['password' => bcrypt('password')]);
+
+    $this->postJson(route('projects.like', $project))->assertStatus(401)->assertJsonPath('data.intent.target_type', 'project');
+    $this->post('/login', ['email' => $fan->email, 'password' => 'password', 'role' => 'talent']);
+
+    expect($project->fresh()->likes_count)->toBe(1);
 });

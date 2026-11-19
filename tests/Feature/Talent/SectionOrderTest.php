@@ -48,9 +48,9 @@ it('persists the universal section position from the editor pill bar', function 
 
 it('renders the profile-wide region once, after the skill tabs (fama-ui 24 Oct 2026)', function () {
     $talent = talentWithSections();
-    $talent->update(['worldview' => ['en' => 'Light first, then the clothes.']]);
 
-    $html = $this->get('/'.$talent->slug)->assertOk()->getContent();
+    // The owner sees the (still empty) profile-wide sections; the point of view lives in the hero now.
+    $html = $this->actingAs($talent, 'talent')->get('/'.$talent->slug)->assertOk()->getContent();
 
     expect(strpos($html, 'id="universal-blocks"'))->not->toBeFalse()
         ->toBeGreaterThan(strpos($html, 'x-ref="panel"'));
@@ -59,9 +59,9 @@ it('renders the profile-wide region once, after the skill tabs (fama-ui 24 Oct 2
 
 it('keeps the profile-wide region after the tabs even when placed first in the editor', function () {
     $talent = talentWithSections();
-    $talent->update(['worldview' => ['en' => 'Light first.'], 'meta' => ['universal_position' => 0]]);
+    $talent->update(['meta' => ['universal_position' => 0]]);
 
-    $html = $this->get('/'.$talent->slug)->assertOk()->getContent();
+    $html = $this->actingAs($talent, 'talent')->get('/'.$talent->slug)->assertOk()->getContent();
 
     expect(strpos($html, 'id="universal-blocks"'))->toBeGreaterThan(strpos($html, 'x-ref="panel"'));
 });

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Enums\UserRole;
 use App\Feed\PendingIntent;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
@@ -46,7 +47,7 @@ class AuthenticatedSessionController extends Controller
         // a talent login), which would bounce the user straight back to login.
         $request->session()->forget('url.intended');
 
-        // A talent lands on the Feed once their profile is done (every Go Live
+        // A talent lands on Projects once their profile is done (portfolio first, 13 Nov 2026) (every Go Live
         // and Stand out step), otherwise on Profile structure, where the next
         // step is (ADR-AC, 2026-11-04 — prototype FAMA_HOME). A visitor's
         // pending feed action (follow / like / comment / save) has already been
@@ -54,7 +55,7 @@ class AuthenticatedSessionController extends Controller
         // dropped.
         $request->session()->forget('feed.return_to');
 
-        if ($request->role() === \App\Enums\UserRole::Talent) {
+        if ($request->role() === UserRole::Talent) {
             $talent = Auth::guard('talent')->user();
 
             return redirect()->route($talent instanceof Talent
