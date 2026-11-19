@@ -90,10 +90,38 @@
         'ownNote' => __('This is your own profile. Visitors use this button.'),
     ];
     $blockVars = ['talent' => $talent, 'isOwner' => $isOwner];
+
+    // Search + share (ADR-AO): who they are, what they do, where — then their own words.
+    $profileUrl = route('talent.public', ['slug' => $talent->slug]);
+    $skillNames = $skills->pluck('name')->implode(', ');
+    $seoLine = trim($name.($skillNames !== '' ? ' — '.$skillNames : '').($place !== '' ? ' '.__('in :place', ['place' => $place]) : '').'.');
+    $seo = \App\Support\Seo::make()
+        ->title($name.($primaryType ? ' — '.$primaryType->name : ''))
+        ->description($seoLine.' '.($talent->worldview ?: $talent->bio ?: __('See their projects and the people they made them with on Fama.')))
+        ->canonical($profileUrl)
+        ->image($featured?->lead_image_url ?: $avatar)
+        ->type('profile')
+        ->noindex(! $isLive || ! empty($staffPreview))
+        ->schema([
+            '@type' => 'ProfilePage',
+            'url' => $profileUrl,
+            'mainEntity' => [
+                '@type' => 'Person',
+                'name' => $name,
+                'alternateName' => '@'.$talent->slug,
+                'url' => $profileUrl,
+                'image' => $avatar,
+                'jobTitle' => $skillNames,
+                'description' => $talent->worldview ?: $talent->bio,
+                'address' => $place !== '' ? ['@type' => 'PostalAddress', 'addressLocality' => $talent->base_city, 'addressCountry' => $talent->base_country] : null,
+                'sameAs' => $talent->socialHandles->pluck('url')->filter()->values()->all(),
+                'knowsAbout' => $skills->pluck('name')->all(),
+            ],
+        ]);
 @endphp
 
 {{-- Staff preview (moderation's View panel): no visitor nav — no Log in / Feed chrome inside the admin. --}}
-<x-fama.layout :title="$name" :css="['fields', 'exp']" :mode="! empty($staffPreview) ? 'bare' : null">
+<x-fama.layout :title="$name" :seo="$seo" :css="['fields', 'exp']" :mode="! empty($staffPreview) ? 'bare' : null">
     <x-slot:styles>
         <link rel="stylesheet" href="{{ \App\Support\FamaAsset::url('fama-ui/css/pages/preview.css') }}">
     </x-slot:styles>

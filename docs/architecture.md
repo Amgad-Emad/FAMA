@@ -231,6 +231,11 @@ longer shows). Read path: `Project::storyBlocks()` → `ProjectStory::for()` (la
 `public/partials/project-story` view; behaviour in `famaProjectPage` (slider, look tags, click-to-play video) and the
 GSAP layer `project-motion.js` (Cases pin, quote reveal). Editor: `famaProjectEdit` in `resources/js/ui/project-editor.js`.
 
+### SEO (2026-11-19, ADR-AO)
+`App\Support\Seo` (per-page metadata) → `partials/seo` inside `<x-fama.layout>`; `RobotsTag` middleware mirrors the
+robots decision as a header for every web response. Crawler files: `SeoController` (thin) → `SitemapService` /
+`LlmsTxtService` (cached strings), routes at the top of routes/web.php outside the locale group.
+
 ## Talent dashboard (Phase 1C)
 
 The authenticated talent-guard dashboard (`routes/talent.php`, controllers in

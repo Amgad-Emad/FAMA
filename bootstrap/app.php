@@ -1,10 +1,15 @@
 <?php
 
+use App\Http\Middleware\EnsureFeature;
+use App\Http\Middleware\RequireActor;
+use App\Http\Middleware\ResolveActor;
+use App\Http\Middleware\RobotsTag;
 use App\Support\ApiResponse;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Mcamara\LaravelLocalization\Middleware\LaravelLocalizationRedirectFilter;
@@ -35,6 +40,10 @@ return Application::configure(basePath: dirname(__DIR__))
             return $isAdminArea ? route('admin.login') : route('login');
         });
 
+        // Search: every web response that must stay out of search says so in a
+        // header too (ADR-AO, App\Support\Seo::requestIndexable()).
+        $middleware->appendToGroup('web', RobotsTag::class);
+
         // mcamara/laravel-localization route middleware aliases (the package
         // does not register them itself). Applied to the locale route group in
         // routes/web.php.
@@ -47,10 +56,10 @@ return Application::configure(basePath: dirname(__DIR__))
             // Feed actor resolution (ADR-F8): resolve never rejects (guests
             // read everything); require guards write routes with the
             // 401-with-intent envelope.
-            'resolve.actor' => \App\Http\Middleware\ResolveActor::class,
-            'require.actor' => \App\Http\Middleware\RequireActor::class,
+            'resolve.actor' => ResolveActor::class,
+            'require.actor' => RequireActor::class,
             // Release feature flags (config/features.php) — a disabled area 404s.
-            'feature' => \App\Http\Middleware\EnsureFeature::class,
+            'feature' => EnsureFeature::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
@@ -80,7 +89,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Rate limits (feed-spec §12) answer with a friendly envelope, not a
         // bare "Too Many Attempts.".
-        $exceptions->render(function (\Illuminate\Http\Exceptions\ThrottleRequestsException $e, Request $request) use ($wantsJson) {
+        $exceptions->render(function (ThrottleRequestsException $e, Request $request) use ($wantsJson) {
             if ($wantsJson($request)) {
                 return ApiResponse::error(
                     message: __('Slow down a little — please try again in a moment.'),

@@ -320,3 +320,13 @@ what the Phase-4 public-profile endpoint returns (and mirrors the web page's two
 
 The web page consumes the same regions server-side; lazy tabs use `GET /{slug}/tab/{skill}` (HTML
 fragment envelope) above.
+
+## Crawler files (ADR-AO) — site root, no locale prefix, no auth
+
+| Endpoint | What |
+|---|---|
+| `GET /robots.txt` | text/plain. Disallows signed-in areas + `?preview`/`?visitor`, points at the sitemap; `Disallow: /` when `seo.indexable` is off |
+| `GET /sitemap.xml` | the sitemap index |
+| `GET /sitemaps/{pages\|profiles-N\|projects-N}.xml` | one file (5,000 URLs); out-of-range or unknown → 404 |
+| `GET /llms.txt` | text/plain Markdown for AI assistants (llmstxt.org) |
+

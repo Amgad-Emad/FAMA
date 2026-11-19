@@ -15,25 +15,26 @@
     $ogImage = $post->getFirstMediaUrl('post_media', 'feed')
         ?: $post->getFirstMediaUrl('post_media')
         ?: ($post->author?->feedAvatarUrl() ?? '');
+    // Search + share (ADR-AO) — the permalink unfurls with the post's picture.
+    $seo = \App\Support\Seo::make()
+        ->title($ogTitle)
+        ->description($ogDesc)
+        ->canonical(route('posts.show', $post))
+        ->image($ogImage ?: null)
+        ->type('article')
+        ->schema([
+            '@type' => 'SocialMediaPosting',
+            'url' => route('posts.show', $post),
+            'headline' => \Illuminate\Support\Str::limit($ogDesc, 110),
+            'datePublished' => $post->published_at?->toAtomString() ?? $post->created_at?->toAtomString(),
+            'image' => $ogImage ?: null,
+            'author' => ['@type' => 'Person', 'name' => $authorName, 'url' => $post->author instanceof \App\Models\Talent ? route('talent.public', ['slug' => $post->author->slug]) : null],
+        ]);
     $isGuest = ($currentActor ?? null) === null;
 @endphp
 
-<x-fama.layout :title="$authorName" :css="['posts', 'pages/post', 'pages/feed-common']">
+<x-fama.layout :title="$authorName" :seo="$seo" :css="['posts', 'pages/post', 'pages/feed-common']">
     <x-slot:head>
-        <meta property="og:type" content="article">
-        <meta property="og:site_name" content="Fama">
-        <meta property="og:title" content="{{ $ogTitle }}">
-        <meta property="og:description" content="{{ $ogDesc }}">
-        <meta property="og:url" content="{{ route('posts.show', $post) }}">
-        @if ($ogImage)
-            <meta property="og:image" content="{{ $ogImage }}">
-            <meta name="twitter:card" content="summary_large_image">
-            <meta name="twitter:image" content="{{ $ogImage }}">
-        @else
-            <meta name="twitter:card" content="summary">
-        @endif
-        <meta name="twitter:title" content="{{ $ogTitle }}">
-        <meta name="twitter:description" content="{{ $ogDesc }}">
         @include('feed.partials.lang')
     </x-slot:head>
 

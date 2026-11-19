@@ -12,7 +12,7 @@
     $serverErrors = collect($errors->getMessages())->map(fn ($m) => $m[0]);
     $defaultRole = old('role', request('role', 'talent'));
 @endphp
-<x-fama.layout :title="__('Log in')" mode="auth" :css="['auth']">
+<x-fama.layout :title="__('Log in')" :seo="\App\Support\Seo::make()->description(__('Log in to Fama to update your profile and projects.'))" mode="auth" :css="['auth']">
     <x-slot:styles>
         <style>
             /* Role control (brands feature on): the auth.css .type cards side by side. */

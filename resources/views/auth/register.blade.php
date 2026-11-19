@@ -10,7 +10,7 @@
     $serverErrors = collect($errors->getMessages())->map(fn ($m) => $m[0]);
     $type = old('account_type', 'talent');
 @endphp
-<x-fama.layout :title="__('Create account')" mode="auth" :css="['auth']">
+<x-fama.layout :title="__('Create account')" :seo="\App\Support\Seo::make()->title(__('Join Fama'))->description(__('Create your Fama profile: show your projects, credit the people you made them with, and get found for the work you want.'))" mode="auth" :css="['auth']">
     <x-slot:styles>
         <style>
             /* Account type (brands feature on): the auth.css .type cards side by side. */

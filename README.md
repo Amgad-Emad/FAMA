@@ -18,7 +18,7 @@ client's fama-ui kit (`public/fama-ui/`, `<x-fama.layout>`), synced to the co-fo
 Notifications · Activity), a top bar ≤1100px. A talent signs in to **Projects** once the profile is done, else to
 Profile structure; **going Live = three saved steps** (name, a skill with a speciality, city — no admin review,
 ADR-AC). Skills: the prototype's **41 skills / 195 specialities** (`database/data/skill-catalog.php`, ADR-AF).
-Full Pest suite **939/939 green**.
+Full Pest suite **949/949 green**.
 
 Demo logins (password `password`): `talent-demo@fama.test` (every screen populated), `talent-new@fama.test`
 (Private — the go-Live steps), `brand-demo@fama.test`, `admin-demo@fama.test` (at `/admin/login`).
@@ -37,7 +37,9 @@ content older than the 30-day ranking windows), run `php artisan demo:freshen`.
   **at least one skill** (ADR-X), which is what places it in the public profile's tabs. A project is
   written as **free-form blocks** in a WYSIWYG editor (chapters, quotes, images, Photos, before/after,
   tagged looks, video, social posts, Results, Credits — ADR-AN) and its public page lays itself out
-  from them, as the prototype's project page does. The dashboard
+  from them, as the prototype's project page does. Public pages carry full SEO metadata and the site serves
+  `/sitemap.xml`, `/robots.txt` and `/llms.txt` (ADR-AO; set `SEO_INDEXABLE=true` on a live site whose
+  `APP_ENV` is not `production`). The dashboard
   home carries a public/private visibility switch and a views KPI with a week-over-week delta that
   expands into a range-filterable chart (back to the profile's creation date).
 - **Brand** — core + satellites, **projects**, the brand contract room, brand discovery, plus the

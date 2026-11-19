@@ -1225,4 +1225,12 @@ the "+" inserter lives inside each block (`.pe-ins-above`). (6) Fresh seeds/fact
 `Project::storyBlocks()` reads the legacy fields. Owner decisions 2026-11-17: ADR-F2 confirmed; verification never
 auto-publishes; Delete/Leave stay in the editor's Settings; Discovery isListed() waits for features.discover;
 Arabic copy paused.
+SEO (2026-11-19, ADR-AO; suite 949 green). `config/seo.php` + `App\Support\Seo` (THE per-page metadata: pass
+`:seo` to `<x-fama.layout>`) + `RobotsTag` middleware + `SeoController` → `SitemapService` / `LlmsTxtService`
+(/robots.txt, /sitemap.xml, /sitemaps/*.xml, /llms.txt — root routes before the locale group; public/robots.txt was
+DELETED, the route serves it). WATCH OUTS: (1) indexable ROUTES are an ALLOWLIST in config/seo.php — a new public
+page must be added there or it stays noindex. (2) `SEO_INDEXABLE` defaults on only for APP_ENV=production. (3) A
+private profile / ?preview / ?visitor is noindex; never put a confidential client in metadata (the project page
+already guards it). (4) Tests that count text on a page must count in the <body> — the <head> repeats descriptions.
+DEPLOY: `config/scribe.php` returns [] when Scribe is absent, so `composer install --no-dev` works.
 

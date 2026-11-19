@@ -83,7 +83,8 @@ it('shows the point of view once, in the hero, before the tabs (13 Nov 2026)', f
 
     expect($html)->toContain('class="ct-pov"')
         ->not->toContain('class="povq"')
-        ->and(substr_count($html, 'Light first, then the clothes.'))->toBe(1)
+        // once on the PAGE (the <head>'s description / share card / Person data repeat it on purpose — ADR-AO)
+        ->and(substr_count(strstr($html, '<body'), 'Light first, then the clothes.'))->toBe(1)
         ->and(strpos($html, 'class="ct-pov"'))->toBeLessThan(strpos($html, 'x-ref="panel"'));
 });
 

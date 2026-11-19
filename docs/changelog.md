@@ -2,6 +2,15 @@
 
 Notable changes to the Fama project. Newest first.
 
+## 2026-11-19 — SEO (ADR-AO)
+- `/sitemap.xml` (+ paged files for pages, public profiles and their projects), a dynamic `/robots.txt`, and
+  `/llms.txt` (the site explained for AI assistants).
+- Every public page has a description, canonical link, share card (Open Graph + Twitter) and structured data:
+  Person on profiles, CreativeWork with the whole team on projects, SocialMediaPosting on posts, Organization +
+  WebSite on the feed. Signed-in pages, private profiles and preview/visitor views are noindex (meta + header).
+- Indexing is on only in production (`SEO_INDEXABLE` overrides).
+- Deploy fix: `config/scribe.php` no longer breaks `composer install --no-dev` (Scribe is a dev-only package).
+
 ## 2026-11-17 — Free-form project blocks (ADR-AN)
 - The project editor is the prototype's block editor: text, headings (chapters), quotes, images, Photos, before/after,
   looks with tagged pieces, YouTube/Vimeo video, social posts, Results and Credits — added anywhere ("+" between

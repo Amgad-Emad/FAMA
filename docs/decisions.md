@@ -822,3 +822,27 @@
   put them nowhere else, so they stay in the editor's Settings.
 - **Discovery limited to `isListed()`:** left for when `features.discover` turns on (owner, 2026-11-17).
 
+## ADR-AO — SEO: sitemap, robots, llms.txt, page metadata, structured data
+- **Status:** Accepted (2026-11-19).
+- **Decision:**
+  - `config/seo.php` holds the switch `seo.indexable` (env `SEO_INDEXABLE`, default ON only when `APP_ENV=production`
+    — a staging copy never competes with the real site) and an ALLOWLIST of indexable route names (home, feed,
+    profiles, projects, posts, login/register, discovery/brand pages while their feature is on). Every other page is
+    noindex, so a new signed-in page can never leak into search. `?preview` / `?visitor` variants are noindex too.
+  - `App\Support\Seo` = one page's metadata (title, description ≤160, canonical on the default locale — Arabic copy is
+    paused, so /ar points home — share picture, OG type, robots, JSON-LD). `<x-fama.layout :seo>` prints it via
+    `partials/seo` (description, canonical, robots, Open Graph, Twitter card, ld+json); pages without one still get
+    defaults. `App\Http\Middleware\RobotsTag` (web group) sends `X-Robots-Tag: noindex, nofollow` on the same rule,
+    covering the Tailwind layouts, JSON and PDFs.
+  - Pages: public profile = ProfilePage + Person (skills, city/country, social links, worldview/bio), noindex while
+    private; project = CreativeWork (the whole team as creators, client as sourceOrganization unless confidential,
+    skills + specialities as keywords, year); post = SocialMediaPosting; feed = Organization + WebSite.
+  - Crawler files at the site root, outside the locale group: `/robots.txt` (dynamic — the static file was removed;
+    disallows signed-in areas, points at the sitemap; `Disallow: /` when not indexable), `/sitemap.xml` (an index) →
+    `/sitemaps/pages.xml`, `/sitemaps/profiles-{n}.xml`, `/sitemaps/projects-{n}.xml` (`SitemapService`: public
+    profiles = `is_published`, projects of public profiles; 5,000 URLs per file; cached 60 min), and `/llms.txt`
+    (`LlmsTxtService`, llmstxt.org Markdown: what Fama is, how pages are built, the skills, the 100 most recently
+    updated public profiles).
+- **Consequences:** a profile going private leaves the sitemap within the cache window (60 min) and is noindex at once.
+  Social share previews of profiles and projects now show the featured project / project cover.
+

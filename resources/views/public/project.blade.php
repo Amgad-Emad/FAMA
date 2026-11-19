@@ -93,12 +93,36 @@
         $project->url && ! $nda ? [__('See it live'), '<a href="'.e($project->url).'" target="_blank" rel="noopener">'.e($liveHost).' ↗</a>'] : null,
     ])->filter()->values();
 
+    // Search + share (ADR-AO): the project's own words, its lead picture, and CreativeWork data
+    // naming everyone on the team. A confidential client is never named here either.
+    $workUrl = route('talent.work', ['slug' => $talent->slug, 'project' => $project]);
+    $seoAbout = trim(collect([$nda ? __('Confidential client') : $client, $project->role, $skills->pluck('name')->implode(', ')])->filter()->implode(' · '));
+    $seo = \App\Support\Seo::make()
+        ->title($title['main'].' — '.$talent->display_name)
+        ->description(($story['lead'] !== '' ? $story['lead'] : \App\Support\ProjectBlocks::summary($project->storyBlocks())) ?: __(':name’s project on Fama.', ['name' => $talent->display_name]).($seoAbout !== '' ? ' '.$seoAbout.'.' : ''))
+        ->canonical($workUrl)
+        ->image($coverUrl)
+        ->type('article')
+        ->noindex($preview)
+        ->schema([
+            '@type' => 'CreativeWork',
+            'name' => $title['main'],
+            'url' => $workUrl,
+            'image' => $coverUrl,
+            'description' => $story['lead'] ?: null,
+            'dateCreated' => $year ? (string) $year : null,
+            'creator' => $team->map(fn (array $m) => ['@type' => 'Person', 'name' => $m['name'], 'url' => $m['url'], 'jobTitle' => $m['role'] ?: null])->values()->all(),
+            'sourceOrganization' => ! $nda && $client !== '' ? ['@type' => 'Organization', 'name' => $client] : null,
+            'keywords' => $skills->pluck('name')->merge($project->specialities->pluck('name'))->unique()->implode(', '),
+            'isPartOf' => ['@type' => 'ProfilePage', 'url' => route('talent.public', ['slug' => $talent->slug])],
+        ]);
+
     $next = $more->first();
     $others = $more->slice(1, 3)->values();
     $avatar = fn ($who) => $who?->avatar_url ? '<img src="'.e($who->avatar_url).'" alt="">' : e($initials($who?->display_name));
     $memberAvatar = fn (array $m) => $m['who'] ? $avatar($m['who']) : e($initials($m['name']));
 @endphp
-<x-fama.layout :title="$project->title" :css="['project-page']">
+<x-fama.layout :title="$project->title" :seo="$seo" :css="['project-page']">
     <x-slot:head>
         <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap">

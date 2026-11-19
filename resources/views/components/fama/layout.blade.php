@@ -14,9 +14,12 @@
                in, else public.
       css    — extra fama-ui sheets for the page: posts|views|fields|exp|auth.
       footer — render the shared footer (default true).
+      seo    — an App\Support\Seo for the page's description, canonical, robots, share card and
+               structured data (ADR-AO). Optional: defaults still print, and the robots rule
+               (route allowlist + ?preview/?visitor) applies to every page.
     Slots: head (extra <head>), hero (the page banner, above <main>), default.
 --}}
-@props(['title' => null, 'mode' => null, 'css' => [], 'footer' => true])
+@props(['title' => null, 'mode' => null, 'css' => [], 'footer' => true, 'seo' => null])
 
 @php
     $mode = $mode ?? (auth('talent')->check() ? 'talent' : 'public');
@@ -29,6 +32,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $title ? $title.' · Fama' : 'Fama' }}</title>
+    @include('partials.seo', ['seo' => $seo ?? \App\Support\Seo::make(), 'title' => $title ? $title.' · Fama' : 'Fama'])
     <link rel="icon" href="{{ asset('fama-ui/img/fama-emblem.svg') }}" type="image/svg+xml">
     {{ $head ?? '' }}
     @include('partials.fama-head')

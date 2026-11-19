@@ -4,7 +4,7 @@
     TalentProfileController@show and deliberately says nothing about the talent
     — no name, no picture — so a private profile stays private.
 --}}
-<x-fama.layout :title="__('Profile')">
+<x-fama.layout :title="__('Profile')" :seo="\App\Support\Seo::make()->noindex()">
     <x-slot:styles>
         <link rel="stylesheet" href="{{ \App\Support\FamaAsset::url('fama-ui/css/pages/preview.css') }}">
     </x-slot:styles>

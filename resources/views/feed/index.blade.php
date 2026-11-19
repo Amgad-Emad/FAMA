@@ -16,7 +16,17 @@
     $skillNames = $filterSkills->mapWithKeys(fn ($s) => [$s->slug => $s->name]);
 @endphp
 
-<x-fama.layout :title="__('Feed')" :css="['posts', 'pages/feed', 'pages/feed-common']">
+@php
+    // Search + share (ADR-AO): the feed is the front door, so it carries the site-wide
+    // Organization + WebSite structured data.
+    $seo = \App\Support\Seo::make()
+        ->title(__('Fama — the creative feed'))
+        ->description(__('See what photographers, models, stylists, directors and other creatives are making right now — their projects, and the people they made them with.'))
+        ->canonical(route('feed'))
+        ->schema(['@type' => 'Organization', 'name' => config('seo.site_name'), 'url' => url('/'), 'logo' => asset('images/email/fama-logo.png'), 'sameAs' => config('seo.same_as')])
+        ->schema(['@type' => 'WebSite', 'name' => config('seo.site_name'), 'url' => url('/')]);
+@endphp
+<x-fama.layout :title="__('Feed')" :seo="$seo" :css="['posts', 'pages/feed', 'pages/feed-common']">
     <x-slot:head>
         @include('feed.partials.lang')
     </x-slot:head>

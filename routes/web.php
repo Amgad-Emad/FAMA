@@ -1,18 +1,23 @@
 <?php
 
+use App\Http\Controllers\Admin\Auth\AdminLoginController;
 use App\Http\Controllers\Brand\TalentMessageController;
 use App\Http\Controllers\BrandDiscoveryController;
 use App\Http\Controllers\BrandMessageController;
 use App\Http\Controllers\BrandProfileController;
-use App\Http\Controllers\ProjectDiscoveryController;
 use App\Http\Controllers\DiscoveryController;
 use App\Http\Controllers\EnquiryController;
+use App\Http\Controllers\Feed\FeedController;
+use App\Http\Controllers\LocationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\ProjectDiscoveryController;
 use App\Http\Controllers\PublicRecognitionController;
 use App\Http\Controllers\PublicReviewController;
+use App\Http\Controllers\SeoController;
 use App\Http\Controllers\TalentProfileController;
 use App\Support\Auth\Guards;
+use App\Support\Features;
 use Illuminate\Support\Facades\Route;
 use Mcamara\LaravelLocalization\Facades\LaravelLocalization;
 
@@ -28,6 +33,16 @@ use Mcamara\LaravelLocalization\Facades\LaravelLocalization;
 |
 */
 
+/*
+| Crawler files (ADR-AO) — at the site root, OUTSIDE the locale group (their
+| addresses never change), and registered before the /{slug} catch-all.
+*/
+Route::get('/robots.txt', [SeoController::class, 'robots'])->name('seo.robots');
+Route::get('/sitemap.xml', [SeoController::class, 'sitemap'])->name('seo.sitemap');
+Route::get('/sitemaps/{file}.xml', [SeoController::class, 'sitemapFile'])
+    ->where('file', '[a-z]+(-[0-9]+)?')->name('seo.sitemap.file');
+Route::get('/llms.txt', [SeoController::class, 'llms'])->name('seo.llms');
+
 Route::group([
     'prefix' => LaravelLocalization::setLocale(),
     // NOTE: no `localeSessionRedirect`. With hideDefaultLocaleInURL=true it traps
@@ -41,7 +56,7 @@ Route::group([
     // profile pages are Phase 1 (they need their tables) and are added here,
     // unguarded, then.
     // The root opens the feed, or login when the feed has nothing to show.
-    Route::get('/', [\App\Http\Controllers\Feed\FeedController::class, 'home'])
+    Route::get('/', [FeedController::class, 'home'])
         ->middleware('resolve.actor')->name('home');
 
     // --- Post-login entry point ---------------------------------------------
@@ -52,7 +67,7 @@ Route::group([
 
         // A disabled guard's dashboard no longer exists (V1 feature flags) — send a
         // stray brand session to login rather than a 404 route.
-        if ($guard === 'brand' && ! \App\Support\Features::brands()) {
+        if ($guard === 'brand' && ! Features::brands()) {
             $guard = null;
         }
 
@@ -62,8 +77,8 @@ Route::group([
     // --- Staff login (its own routes + view, separate from the public
     //     role-aware /login; the AdminLoginRequest pins the admin guard) -----
     Route::middleware('guest:admin')->prefix('admin')->group(function () {
-        Route::get('/login', [\App\Http\Controllers\Admin\Auth\AdminLoginController::class, 'create'])->name('admin.login');
-        Route::post('/login', [\App\Http\Controllers\Admin\Auth\AdminLoginController::class, 'store'])->name('admin.login.store');
+        Route::get('/login', [AdminLoginController::class, 'create'])->name('admin.login');
+        Route::post('/login', [AdminLoginController::class, 'store'])->name('admin.login.store');
     });
 
     // --- Guarded dashboards (one group per guard) ---------------------------
@@ -93,7 +108,7 @@ Route::group([
     require __DIR__.'/feed.php';
 
     // --- Location drop lists (City options per country; static, public) ---
-    Route::get('/locations/{country}/cities', [\App\Http\Controllers\LocationController::class, 'cities'])
+    Route::get('/locations/{country}/cities', [LocationController::class, 'cities'])
         ->where('country', '[A-Za-z]{2}')->middleware('throttle:120,1')->name('locations.cities');
 
     // --- Public discovery + talent sub-pages (before the {slug} catch-all) ---
