@@ -1,6 +1,6 @@
 /* Profile motion (24 Oct 2026), GSAP 3.12.5 + ScrollTrigger.
    One authored moment: the profile arrives. The featured project opens from the bottom like a curtain while the
-   name and its details settle in, and numbers of 10 or more count up. After that, motion stays quiet:
+   name and its details settle in. After that, motion stays quiet:
      - the cover picture drifts a little as the page scrolls (scrubbed)
      - each part of the work fades up once as it reaches the screen, in small batches
      - a new skill tab slides in from the side of the tab that was picked
@@ -25,13 +25,6 @@
     });
   }
 
-  function count(dd) {
-    var txt = dd.textContent, n = parseInt(txt.replace(/[^\d]/g, ''), 10);
-    if (!n || n < 10) return; /* a single digit counting up reads as a flicker */
-    var o = { v: 0 }, fmt = function (v) { return Math.round(v).toLocaleString('en-US'); };
-    dd.style.fontVariantNumeric = 'tabular-nums';
-    gsap.to(o, { v: n, duration: 0.9, ease: 'power2.out', delay: 0.25, onUpdate: function () { dd.textContent = fmt(o.v); }, onComplete: function () { dd.textContent = txt; } });
-  }
 
   mm.add('(prefers-reduced-motion: no-preference)', function () {
     var top = document.querySelector('.ct-top');
@@ -42,11 +35,12 @@
         tl.fromTo(wrap, { clipPath: 'inset(100% 0% 0% 0% round 20px)' }, { clipPath: 'inset(0% 0% 0% 0% round 20px)', duration: 1.1, clearProps: 'clipPath' }, 0)
           /* the cover has a CSS transform transition for hover; it must not fight the tween */
           .fromTo(cover, { scale: 1.08, transition: 'none' }, { scale: 1, duration: 1.4, clearProps: 'transform,transition' }, 0);
-        if (feat) tl.from(feat, { y: 16, autoAlpha: 0, duration: 0.7, clearProps: 'all' }, 0.55);
+        if (feat) tl.from(feat, { y: 16, autoAlpha: 0, duration: 0.7, clearProps: 'transform,opacity,visibility' }, 0.55);
       }
       var id = q('.ct-id > *', top);
-      tl.from(id, { y: 18, autoAlpha: 0, duration: 0.8, stagger: 0.05, clearProps: 'all' }, 0.1);
-      q('.ct-stats dd', top).forEach(count);
+      /* clear ONLY what the tween set — 'all' wiped the avatar's inline
+         background-image (the photo), leaving the initials (2026-11-23) */
+      tl.from(id, { y: 18, autoAlpha: 0, duration: 0.8, stagger: 0.05, clearProps: 'transform,opacity,visibility' }, 0.1);
 
       /* the picture drifts as the hero scrolls away */
       if (window.ScrollTrigger && cover) {
@@ -64,7 +58,7 @@
     tab: function (dir) {
       if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
       var body = document.getElementById('skillBody'); if (!body) return;
-      gsap.from(body, { x: 24 * (dir || 1), autoAlpha: 0, duration: 0.45, ease: 'power3.out', clearProps: 'all' });
+      gsap.from(body, { x: 24 * (dir || 1), autoAlpha: 0, duration: 0.45, ease: 'power3.out', clearProps: 'transform,opacity,visibility' });
       /* what the new tab shows is already where the reader is: no second reveal for it, only for what is below */
       q(ITEMS, body).forEach(function (el) { if (el.getBoundingClientRect().top < innerHeight) el.dataset.fx = '1'; });
       reveal(body);

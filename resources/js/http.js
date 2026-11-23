@@ -107,6 +107,54 @@ export async function http(url, { method = 'GET', body = null, headers = {}, sig
     return envelope;
 }
 
+/**
+ * Upload a FormData body with progress (fetch() cannot report upload progress,
+ * so this one request type uses XMLHttpRequest). Same headers, locale prefix and
+ * envelope handling as {@link http}: resolves to the envelope, throws ApiError.
+ *
+ * @param {string} url
+ * @param {FormData} body
+ * @param {{ method?: string, onProgress?: (fraction: number) => void }} options
+ *   onProgress receives 0..1 as the bytes go up (not called when the size is unknown).
+ */
+export function upload(url, body, { method = 'POST', onProgress } = {}) {
+    return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open(method, localizeUrl(url));
+        xhr.withCredentials = true;
+        xhr.setRequestHeader('Accept', 'application/json');
+        xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+        xhr.setRequestHeader('X-CSRF-TOKEN', csrfToken());
+
+        if (onProgress) {
+            xhr.upload.addEventListener('progress', (e) => {
+                if (e.lengthComputable && e.total > 0) onProgress(e.loaded / e.total);
+            });
+        }
+
+        xhr.addEventListener('load', () => {
+            let payload = null;
+            try { payload = xhr.status === 204 ? null : JSON.parse(xhr.responseText); } catch { payload = null; }
+            const ok = xhr.status >= 200 && xhr.status < 300;
+            const envelope = payload ?? { success: ok, data: null, message: null, errors: null, meta: null };
+            if (!ok || envelope.success === false) {
+                reject(new ApiError(envelope.message, {
+                    status: xhr.status,
+                    errors: envelope.errors ?? null,
+                    data: envelope.data ?? null,
+                    meta: envelope.meta ?? null,
+                }));
+                return;
+            }
+            resolve(envelope);
+        });
+        xhr.addEventListener('error', () => reject(new ApiError(null, { status: 0 })));
+        xhr.addEventListener('abort', () => reject(new ApiError(null, { status: 0 })));
+
+        xhr.send(body);
+    });
+}
+
 /** Convenience helpers. */
 export const get = (url, options = {}) => http(url, { ...options, method: 'GET' });
 export const post = (url, body, options = {}) => http(url, { ...options, method: 'POST', body });
@@ -115,4 +163,4 @@ export const patch = (url, body, options = {}) => http(url, { ...options, method
 export const del = (url, options = {}) => http(url, { ...options, method: 'DELETE' });
 
 // Expose on window for inline Alpine handlers that don't import modules.
-window.fama = { http, get, post, put, patch, del, ApiError, localizeUrl };
+window.fama = { http, get, post, put, patch, del, upload, ApiError, localizeUrl };

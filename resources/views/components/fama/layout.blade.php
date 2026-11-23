@@ -67,6 +67,7 @@
 
     <x-fama.confirm-dialog />
     <x-fama.toast />
+    <x-fama.upload-progress />
     <script src="{{ \App\Support\FamaAsset::url('fama-ui/js/hero.js') }}" defer></script>
     {{ $scripts ?? '' }}
 </body>

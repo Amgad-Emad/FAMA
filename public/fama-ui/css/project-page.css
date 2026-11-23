@@ -23,6 +23,7 @@
 .cover .acts{display:flex;gap:var(--s2)}
 .cover .acts .btn-2{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.5);color:#fff;backdrop-filter:blur(6px)}
 .cover .acts .btn{background:#fff;color:var(--ink);border-color:#fff}
+.cover .acts .btn:not(.btn-2):not(.btn-text):not(.btn-danger):not(:disabled):hover{background:#fff;border-color:var(--purple);color:var(--purple-dk)}
 
 /* one grid for everything: every left edge (cover title, facts, story, end) lines up */
 .grid{max-width:var(--wide);margin:0 auto;padding-inline:var(--s6)}

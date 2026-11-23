@@ -39,6 +39,10 @@
 .pe-cover-acts{position:absolute;top:var(--s5);right:var(--s6);z-index:3;display:flex;gap:var(--s2)}
 .pe-cover-acts .btn{background:rgba(255,255,255,.94);border-color:transparent;color:var(--ink);min-height:40px}
 .pe-cover.none .pe-cover-acts .btn{background:var(--white);border:var(--border)}
+/* The site-wide dark hover (app-bridge .btn:not(...):hover) was painting these
+   LIGHT buttons near-black while their text stayed ink — the label vanished
+   (2026-11-23). Same specificity chain so this wins; they stay light on hover. */
+.pe-cover-acts .btn:not(.btn-2):not(.btn-text):not(.btn-danger):not(:disabled):hover{background:var(--white);border-color:var(--purple);color:var(--purple-dk)}
 .pe-auto{margin-inline-start:var(--s3);font-size:12px;letter-spacing:.02em;text-transform:none;font-weight:500;opacity:.75}
 .pe-cover h1{min-width:4ch}
 
@@ -62,6 +66,13 @@
 .pe-b>figure,.pe-b>.look,.pe-b>.res,.pe-b>.quote,.pe-b>.cred{margin-top:var(--s4);margin-bottom:var(--s4)}
 .pe-tools{position:absolute;top:0;right:calc(100% + 14px);z-index:5;display:flex;flex-direction:column;gap:2px;padding:4px;border-radius:12px;background:#fff;border:var(--border);box-shadow:0 6px 18px rgba(20,17,15,.08);opacity:0;transform:translateX(4px);transition:opacity var(--duration-quick,150ms) ease-out,transform var(--duration-quick,150ms) ease-out;pointer-events:none}
 .pe-b:hover>.pe-tools,.pe-b.is-on>.pe-tools,.pe-tools:focus-within{opacity:1;transform:none;pointer-events:auto}
+/* Hover bridge (2026-11-23): the tools float 14px OUTSIDE the block, and only the
+   block + its tools keep :hover — crossing that gap (or reaching the rail from low
+   in a tall block) dropped the hover and the rail vanished under the pointer. This
+   invisible strip covers the whole gutter beside the block, top to bottom, so the
+   pointer never leaves the block on its way to the rail. */
+.pe-b::before{content:"";position:absolute;top:0;bottom:0;right:100%;width:64px}
+.pe-tools::after{content:"";position:absolute;top:0;bottom:0;left:100%;width:16px}
 .pe-tools button{width:32px;height:32px;border:0;border-radius:8px;background:none;color:var(--ink);display:grid;place-items:center;cursor:pointer}
 .pe-tools button:hover:not([disabled]){background:var(--line)}
 .pe-tools button[disabled]{opacity:.3;cursor:default}
@@ -74,7 +85,7 @@
 .pe-story>.pe-ins:last-child::before{display:none}
 .pe-story>.pe-ins:last-child button{width:auto;height:44px;padding:0 var(--s4);gap:var(--s2);display:inline-flex;align-items:center;background:transparent;color:var(--ink);border:1.5px dashed rgba(20,17,15,.3);border-radius:var(--s3);font:600 15px var(--font-body,inherit)}
 .pe-story>.pe-ins:last-child button::after{content:"Add a block"}
-@media (max-width:1100px){.pe-tools{right:auto;left:0;top:-44px;flex-direction:row}.pe-kind{writing-mode:horizontal-tb;transform:none;padding:0 6px;align-self:center}.pe-b{margin-top:48px}}
+@media (max-width:1100px){.pe-tools{right:auto;left:0;top:-44px;flex-direction:row}.pe-b::before{right:0;left:0;top:-48px;bottom:auto;width:auto;height:48px}.pe-tools::after{left:0;right:0;top:100%;bottom:auto;width:auto;height:8px}.pe-kind{writing-mode:horizontal-tb;transform:none;padding:0 6px;align-self:center}.pe-b{margin-top:48px}}
 
 /* pictures */
 .pe-frame{position:relative}

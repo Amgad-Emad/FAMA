@@ -141,3 +141,35 @@ html{scroll-behavior:smooth}
   :where(button,a,summary,select,[role=button],[role=tab],.btn,.chip,.fx-link,.vw-link),.btn,.btn .icon{transition:none}
   .btn:hover,.btn:active,.btn:hover .icon{transform:none}
 }
+
+/* ── Upload modal (2026-11-23) — <x-fama.upload-progress>, $store.famaUpload.
+   Blocking scrim + a white card: lavender badge with a progress ring, Oswald
+   title, a purple bar; "process" = the bytes are up and the server is storing
+   (bar shimmers), "done" = check mark just before it closes. */
+.fx-up{position:fixed;inset:0;z-index:80;display:grid;place-items:center;padding:var(--s4);background:rgba(20,17,15,.45);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.fx-up-card{width:min(400px,100%);background:var(--white);color:var(--ink);border-radius:var(--radius);padding:var(--s6) var(--s6) var(--s5);text-align:center;box-shadow:0 24px 60px -20px rgba(20,17,15,.45),0 0 0 1px var(--lavender-line)}
+.fx-up-badge{position:relative;width:72px;height:72px;margin:0 auto var(--s4);border-radius:50%;background:var(--lavender);display:grid;place-items:center;color:var(--purple-dk)}
+.fx-up-ring{position:absolute;inset:4px;width:64px;height:64px;transform:rotate(-90deg)}
+.fx-up-ring circle{fill:none;stroke:var(--lavender-line);stroke-width:3}
+.fx-up-ring .fill{stroke:var(--purple);stroke-linecap:round;stroke-dasharray:100;transition:stroke-dashoffset 300ms cubic-bezier(.22,1,.36,1)}
+.fx-up-arrow,.fx-up-check{width:26px;height:26px;position:relative}
+.fx-up-arrow{animation:fx-up-bob 1.2s ease-in-out infinite}
+.fx-up-card.is-done .fx-up-badge{background:var(--purple);color:var(--white)}
+.fx-up-card.is-done .fx-up-ring{opacity:0}
+.fx-up-check{animation:fx-up-pop 320ms cubic-bezier(.34,1.56,.64,1)}
+.fx-up-title{font-family:var(--font-display);font-weight:600;font-size:24px;line-height:1.15;margin:0}
+[dir=rtl] .fx-up-title{font-family:var(--ar);font-weight:700}
+.fx-up-detail{color:var(--grey);margin:var(--s2) 0 var(--s5);min-height:1.4em}
+.fx-up-bar{position:relative;height:8px;border-radius:var(--radius-pill);background:var(--lavender);overflow:hidden}
+.fx-up-bar>i{position:absolute;inset-block:0;inset-inline-start:0;border-radius:inherit;background:linear-gradient(90deg,var(--purple),var(--purple-dk));transition:width 300ms cubic-bezier(.22,1,.36,1)}
+.fx-up-bar.is-indeterminate>i::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);animation:fx-up-shine 1.1s linear infinite}
+.fx-up-pct{margin:var(--s2) 0 0;font-size:13px;font-variant-numeric:tabular-nums;color:var(--grey);text-align:end}
+.fx-up-in{transition:opacity 200ms ease-out}
+.fx-up-in .fx-up-card{transition:transform 260ms cubic-bezier(.22,1,.36,1)}
+.fx-up-out{transition:opacity 180ms ease-in}
+.fx-up-from{opacity:0}
+.fx-up-from .fx-up-card{transform:translateY(8px) scale(.98)}
+@keyframes fx-up-bob{0%,100%{transform:translateY(1px)}50%{transform:translateY(-3px)}}
+@keyframes fx-up-pop{from{transform:scale(.4);opacity:0}to{transform:none;opacity:1}}
+@keyframes fx-up-shine{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+@media (prefers-reduced-motion:reduce){.fx-up-arrow,.fx-up-check,.fx-up-bar.is-indeterminate>i::after{animation:none}.fx-up-in,.fx-up-out,.fx-up-in .fx-up-card,.fx-up-ring .fill,.fx-up-bar>i{transition:none}}

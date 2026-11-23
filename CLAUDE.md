@@ -1243,3 +1243,12 @@ page + lazy tab endpoint) and adds a Projects section when a scope has work but 
 show. `<x-profile.block>` hides an empty section for EVERYONE (no owner "Nothing here yet"; `isOwner` prop
 inert). `ProjectCreditService::ensureProjectsBlock()` stays as a safety net.
 MIGRATIONS: always create with `php artisan make:migration` (user rule, 2026-11-23) — never hand-write the file.
+UPLOAD MODAL (2026-11-23): every media upload runs under ONE modal — `window.famaUploading({count, kind:
+'media'|'cover'|'avatar'}, onProgress => upload(url, formData, { onProgress }))` (store `famaUpload` in
+ui/shell.js, component `<x-fama.upload-progress>` in the fama layout). `upload()` in http.js is the XHR twin of
+`post()` (same headers/envelope/ApiError) — use it for any new file upload, never a bare `post()`, and never
+build a per-page spinner. Light buttons on dark-hover pages need the full `.btn:not(.btn-2):not(.btn-text):not(
+.btn-danger):not(:disabled):hover` chain to beat app-bridge's dark hover.
+GSAP WATCH OUT (2026-11-23): never `clearProps: 'all'` in public/fama-ui/js/*-motion.js — it deletes the element's
+entire inline style, and server-rendered inline styles (the profile avatar's background-image photo) vanish. Clear
+only the props the tween set (`'transform,opacity,visibility'` for y/autoAlpha). The public profile has NO stats row.

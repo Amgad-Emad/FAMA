@@ -43,6 +43,66 @@ document.addEventListener('alpine:init', () => {
         },
     });
     window.famaToast = (m, u) => Alpine.store('famaToast').show(m, u);
+
+    /**
+     * Upload modal store (<x-fama.upload-progress>): one blocking, branded
+     * "Uploading…" dialog for every media upload. begin() opens it, progress()
+     * moves the bar (0..1 — at 100% it switches to "Finishing up" while the
+     * server stores the file), end() closes it. end() closes after a short
+     * grace period that a following begin() cancels, so back-to-back uploads
+     * (cover then pictures on Publish) read as ONE job, not a flicker; and it
+     * stays up at least ~600ms so a fast upload is seen, not flashed.
+     * Use window.famaUploading(opts, fn) rather than calling these by hand.
+     */
+    Alpine.store('famaUpload', {
+        open: false,
+        count: 1,
+        kind: 'media',      // 'media' | 'cover' | 'avatar'
+        pct: 0,
+        phase: 'upload',    // 'upload' → 'process' → 'done'
+        _shownAt: 0,
+        _close: null,
+
+        /** Open (or keep open) the dialog for a new job. */
+        begin({ count = 1, kind = 'media' } = {}) {
+            clearTimeout(this._close);
+            if (!this.open) this._shownAt = Date.now();
+            this.count = Math.max(1, count);
+            this.kind = kind;
+            this.pct = 0;
+            this.phase = 'upload';
+            this.open = true;
+        },
+
+        /** Bytes sent, 0..1. */
+        progress(fraction) {
+            this.pct = Math.min(100, Math.max(this.pct, Math.round(fraction * 100)));
+            if (fraction >= 1) this.phase = 'process';
+        },
+
+        /** The job finished (or failed): close after the grace period. */
+        end() {
+            this.pct = 100;
+            this.phase = 'done';
+            const wait = Math.max(250, 600 - (Date.now() - this._shownAt));
+            clearTimeout(this._close);
+            this._close = setTimeout(() => { this.open = false; }, wait);
+        },
+    });
+
+    /**
+     * Run an upload under the modal: `fn(onProgress)` gets a 0..1 progress
+     * callback (hand it to window.fama.upload). Always closes, even on failure.
+     */
+    window.famaUploading = async (opts, fn) => {
+        const store = Alpine.store('famaUpload');
+        store.begin(opts);
+        try {
+            return await fn((f) => store.progress(f));
+        } finally {
+            store.end();
+        }
+    };
     // Alt+Z presses the visible toast's Undo.
     document.addEventListener('keydown', (e) => {
         const s = Alpine.store('famaToast');

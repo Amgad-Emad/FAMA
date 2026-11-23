@@ -36,7 +36,7 @@ it('shows availability as the yellow signal, the skill chips and the Worked with
         ->assertSee(__('Worked with'))
         ->assertSee('Maison Nour, Nomad Coffee, Nefertari')
         ->assertSee(__('and :n more', ['n' => 1]))           // four distinct brands, three named
-        ->assertSee('<dt>'.__('Brands').'</dt><dd>4</dd>', false);
+        ->assertDontSee('<dt>'.__('Brands').'</dt>', false);  // no stats row (removed 2026-11-23)
 });
 
 it('puts the featured project on the cover with its name and client', function () {

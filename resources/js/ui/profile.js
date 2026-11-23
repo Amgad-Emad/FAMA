@@ -10,7 +10,7 @@
  * profile-content.html, views.js) onto the real endpoints via http.js. Every
  * runtime string arrives from Blade (`strings`), so the copy stays in __().
  */
-import { del, get, patch, post, put, ApiError } from '../http';
+import { del, get, patch, post, put, upload as uploadFile, ApiError } from '../http';
 import { tr, clone, fmt, toast, ask } from './profile-helpers';
 import './profile-structure';
 
@@ -260,16 +260,23 @@ document.addEventListener('alpine:init', () => {
         },
         /** Upload files as new items (gallery-style blocks). */
         async upload(fileList) {
+            const files = Array.from(fileList || []);
+            if (!files.length) return;
             this.saving = true;
             try {
-                for (const file of Array.from(fileList || [])) {
-                    const payload = clone(this.blank);
-                    if ('media_type' in payload) payload.media_type = file.type.startsWith('video') ? 'video' : 'image';
-                    const { data } = await post(this.endpoint, payload);
-                    const body = new FormData();
-                    body.append('file', file);
-                    await post(`${this.endpoint}/${data.id}/media`, body);
-                }
+                // One upload modal for the batch; each file is its share of the bar.
+                await window.famaUploading({ count: files.length, kind: 'media' }, async (onProgress) => {
+                    for (const [i, file] of files.entries()) {
+                        const payload = clone(this.blank);
+                        if ('media_type' in payload) payload.media_type = file.type.startsWith('video') ? 'video' : 'image';
+                        const { data } = await post(this.endpoint, payload);
+                        const body = new FormData();
+                        body.append('file', file);
+                        await uploadFile(`${this.endpoint}/${data.id}/media`, body, {
+                            onProgress: (f) => onProgress((i + f) / files.length),
+                        });
+                    }
+                });
                 await this.load();
             } catch (e) {
                 if (e instanceof ApiError) toast(Object.values(e.errors || {})[0]?.[0] || e.message);
@@ -283,7 +290,8 @@ document.addEventListener('alpine:init', () => {
             const body = new FormData();
             body.append('file', file);
             try {
-                await post(`${this.endpoint}/${item.id}/media`, body);
+                await window.famaUploading({ kind: 'media' },
+                    (onProgress) => uploadFile(`${this.endpoint}/${item.id}/media`, body, { onProgress }));
                 await this.load();
             } catch (e) {
                 if (e instanceof ApiError) toast(Object.values(e.errors || {})[0]?.[0] || e.message);

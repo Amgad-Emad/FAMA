@@ -2,6 +2,22 @@
 
 Notable changes to the Fama project. Newest first.
 
+## 2026-11-23 — Upload modal, editor rail + cover-button fixes
+- ONE branded upload modal for every media upload on fama-ui pages: `<x-fama.upload-progress>` (in
+  `<x-fama.layout>`), store `$store.famaUpload`, run via `window.famaUploading(opts, fn)`; real byte progress
+  via the new `upload()` in `resources/js/http.js` (XHR — fetch can't report upload progress). Wired into the
+  project editor (cover + pictures), profile content uploads and the profile photo. Styles `.fx-up*` in
+  app-bridge.css.
+- Project editor: the block rail no longer vanishes on the way to it — `.pe-b::before` covers the gutter
+  beside each block and `.pe-tools::after` bridges the 14px gap.
+- Public profile: the stats row (Projects · Brands · Recognitions) under the bio is removed.
+- Fix: the profile photo never showed on the public profile (initials instead). profile-motion.js tweened
+  `.ct-id > *` with `clearProps: 'all'`, which deletes the WHOLE inline style — incl. the avatar's
+  `background-image`. Now clears only `transform,opacity,visibility` (same fix on the featured card and the
+  tab swap).
+- "Add a cover" / "Change cover" (and the public project cover buttons) keep a light hover instead of the
+  site-wide dark one that hid their label.
+
 ## 2026-11-23 — Projects in every skill tab; no empty sections on View profile
 - Photography, Modelling, Styling and Makeup now seed a **Projects** section (catalog `default_blocks`).
   Migration `2026_11_23_003520_add_projects_block_to_every_skill_tab` re-syncs the catalog and backfills one

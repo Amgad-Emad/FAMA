@@ -28,13 +28,6 @@
     $isGuest = ! auth('talent')->check() && ! auth('brand')->check();
     $isLive = (bool) $talent->is_published;
 
-    // Header numbers (eager-loaded relations — no N+1). Projects counts what
-    // the page SHOWS: own projects plus accepted credits (ADR-AA), once each.
-    $projectsCount = $talent->projects->pluck('id')
-        ->merge($talent->creditedProjects->pluck('id'))
-        ->unique()->count();
-    $recognitionsCount = $talent->recognitions->filter->isShown()->count();
-
     // The featured project on the cover: the talent's pick (FeaturedProjectService).
     $owned = $talent->projects->sortBy('position')->values();
     $featured = app(\App\Services\FeaturedProjectService::class)->resolve($talent, $owned);
@@ -167,11 +160,7 @@
       @if ($firms->isNotEmpty())
         <p class="ct-with"><span>{{ __('Worked with') }}</span> {{ $firms->take(3)->implode(', ') }}@if ($firms->count() > 3) {{ __('and :n more', ['n' => $firms->count() - 3]) }}@endif</p>
       @endif
-      <dl class="ct-stats">
-        <div><dt>{{ __('Projects') }}</dt><dd>{{ number_format($projectsCount) }}</dd></div>
-        <div><dt>{{ __('Brands') }}</dt><dd>{{ number_format($firms->count()) }}</dd></div>
-        <div><dt>{{ __('Recognitions') }}</dt><dd>{{ number_format($recognitionsCount) }}</dd></div>
-      </dl>
+      {{-- No stats row (Projects · Brands · Recognitions) — removed 2026-11-23. --}}
       <div class="ct-acts">
         {{-- Follow: your own profile explains itself; a guest is asked to sign in;
              anyone signed in (talent or brand) follows for real. --}}

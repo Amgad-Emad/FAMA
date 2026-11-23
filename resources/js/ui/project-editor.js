@@ -21,7 +21,7 @@ import { fmt, initials, toast, firstError, ask } from './project-util';
 
 document.addEventListener('alpine:init', () => {
     const Alpine = window.Alpine;
-    const { get, post, patch, del, ApiError } = window.fama;
+    const { get, post, patch, del, upload, ApiError } = window.fama;
 
     let seq = 0;
     const nextKey = (p = 'k') => `${p}${++seq}`;
@@ -327,20 +327,27 @@ document.addEventListener('alpine:init', () => {
             keys = keys.filter((k) => this.staged[k] && !this.staged[k].busy);
             if (!this.id || !keys.length) return;
             keys.forEach((k) => { this.staged[k].busy = true; });
-            for (let i = 0; i < keys.length; i += 12) {
-                const batch = keys.slice(i, i + 12);
-                const body = new FormData();
-                batch.forEach((k) => body.append('files[]', this.staged[k].file));
-                body.append('place', '0');
-                try {
-                    const { data, meta } = await post(`/talent/projects/${this.id}/media`, body);
-                    this.media = data?.media || this.media;
-                    (meta?.added || []).forEach((id, n) => this.settle(batch[n], id));
-                } catch (e) {
-                    batch.forEach((k) => this.settle(k, null));
-                    toast(firstError(e, this.strings.failed));
+            // One upload modal for the whole job; batches share its bar.
+            const batches = Math.ceil(keys.length / 12);
+            await window.famaUploading({ count: keys.length, kind: 'media' }, async (onProgress) => {
+                for (let i = 0; i < keys.length; i += 12) {
+                    const batch = keys.slice(i, i + 12);
+                    const n0 = i / 12;
+                    const body = new FormData();
+                    batch.forEach((k) => body.append('files[]', this.staged[k].file));
+                    body.append('place', '0');
+                    try {
+                        const { data, meta } = await upload(`/talent/projects/${this.id}/media`, body, {
+                            onProgress: (f) => onProgress((n0 + f) / batches),
+                        });
+                        this.media = data?.media || this.media;
+                        (meta?.added || []).forEach((id, n) => this.settle(batch[n], id));
+                    } catch (e) {
+                        batch.forEach((k) => this.settle(k, null));
+                        toast(firstError(e, this.strings.failed));
+                    }
                 }
-            }
+            });
             this.changed('blocks');
         },
 
@@ -1121,7 +1128,8 @@ document.addEventListener('alpine:init', () => {
             try {
                 const body = new FormData();
                 body.append('cover', file);
-                const { data } = await post(`/talent/projects/${this.id}/cover`, body);
+                const { data } = await window.famaUploading({ kind: 'cover' },
+                    (onProgress) => upload(`/talent/projects/${this.id}/cover`, body, { onProgress }));
                 this.coverUrl = data.cover_image_url;
                 this.coverFile = null;
                 return true;

@@ -39,9 +39,7 @@ it('renders the profile hero (avatar, name, first skill, stats, CTAs)', function
         ->assertSee('Nadia K')                 // display name
         ->assertSee('NK')                      // circular avatar initials fallback (no cover image)
         ->assertSee('Photography')             // primary skill secondary line
-        ->assertSee('Projects')                // stat labels (fama-ui: Projects · Brands · Recognitions)
-        ->assertSee(__('Brands'))
-        ->assertSee(__('Recognitions'))
+        ->assertDontSee('ct-stats')            // no stats row (removed 2026-11-23)
         ->assertSee(__('Skills'))              // the skill chips' list label
         ->assertSee('Editorial photographer.') // bio
         ->assertSee(__('Message'))             // primary CTA (replaces "Contact" — ADR-P)

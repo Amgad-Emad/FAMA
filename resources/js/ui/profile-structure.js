@@ -22,7 +22,7 @@
  * the tab order and the first opens first (the server derives is_primary);
  * a Private profile shows its link LOCKED (prototype 9 Oct 2026, ADR-AH).
  */
-import { del, get, patch, post, put, ApiError } from '../http';
+import { del, get, patch, post, put, upload, ApiError } from '../http';
 import { tr, clone, fmt, toast, ask } from './profile-helpers';
 import { PLATFORMS, socialIcon, isWeb, urlOf } from './social';
 import { listsMixin, merge } from './profile-structure-lists';
@@ -706,7 +706,8 @@ document.addEventListener('alpine:init', () => {
             try {
                 const body = new FormData();
                 body.append('avatar', file);
-                const { data } = await post('/talent/profile/avatar', body);
+                const { data } = await window.famaUploading({ kind: 'avatar' },
+                    (onProgress) => upload('/talent/profile/avatar', body, { onProgress }));
                 this.avatarUrl = data.avatar_url;
                 toast(this.S.tPhoto);
                 this.refreshState();
