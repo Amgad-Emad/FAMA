@@ -688,12 +688,6 @@ document.addEventListener('alpine:init', () => {
         get userBad() { return !/^[a-z0-9-]+$/i.test(this.core.slug || '') || !!this.errors.slug; },
         /** "1,024 / 5,000" for a counted textarea. */
         count(v, max) { return `${String(v || '').length.toLocaleString('en')} / ${max.toLocaleString('en')}`; },
-        /** Append a point-of-view prompt to the textarea. */
-        addPrompt(p) {
-            const v = this.core.worldview.en || '';
-            this.core.worldview.en = (v ? v.trimEnd() + '\n\n' : '') + p + '\n';
-            this.$nextTick(() => document.getElementById('fPov')?.focus());
-        },
         /** Upload / replace the profile photo now (checked here, then by the server). */
         async uploadAvatar(fileList) {
             const file = fileList && fileList[0];

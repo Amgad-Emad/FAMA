@@ -1252,3 +1252,6 @@ build a per-page spinner. Light buttons on dark-hover pages need the full `.btn:
 GSAP WATCH OUT (2026-11-23): never `clearProps: 'all'` in public/fama-ui/js/*-motion.js — it deletes the element's
 entire inline style, and server-rendered inline styles (the profile avatar's background-image photo) vanish. Clear
 only the props the tween set (`'transform,opacity,visibility'` for y/autoAlpha). The public profile has NO stats row.
+EDIT PROFILE HAS NO FLOATING TRACKER (2026-11-23): `famaGate` (ui/profile-gate.js) no longer creates the `.fx-notice.gt`
+bar under the nav — the #gate card is the only steps UI (hidden once every step is done). The tracker code paths
+are inert behind `bar === null`; the nav's Private notice still stays off Edit profile.

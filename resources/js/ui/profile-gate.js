@@ -5,10 +5,9 @@
  *   Stand out (opts.rec) — not needed to go Live. Its first step (opts.indexKey,
  *             something to show) lists the profile in the Creatives Index; the
  *             rest is what gets a profile picked.
- * The card (#gate) lists both parts; once Live it folds to one line. The tracker
- * floats under the nav (.fx-notice.gt-float) while the card is scrolled away: a
- * ring for the current part, one segment per step with milestones, and the next
- * step. Every step lands on its own field (centred, focused, flashed).
+ * The card (#gate) lists both parts; once Live it folds to one line. (The floating
+ * tracker under the nav was removed 2026-11-23; its code paths are inert while
+ * `bar` is null.) Every step lands on its own field (centred, focused, flashed).
  *
  * opts.done(key) must answer from SAVED data — never the draft. All copy comes
  * from Blade (opts.S) so it is translatable; labels are escaped here.
@@ -37,18 +36,12 @@ export function famaGate(el, opts = {}) {
     const done = {};
     let open = false; let expanded = false; let lastSig = null; let lastStage = null; let was = null;
 
-    // The nav's own status notice gives way to the tracker on this page.
-    const nav = document.querySelector('.fx-nav');
+    // No floating tracker under the nav (removed 2026-11-23, owner request) — the
+    // #gate card on the page is the one place the steps show. `bar` stays null and
+    // every tracker path below is guarded on it; the nav's Private notice is still
+    // dropped on this page (the card says the same thing).
     document.querySelectorAll('.fx-notice:not(.gt)').forEach((n) => n.remove());
-    let bar = null;
-    if (nav) {
-        bar = document.createElement('div');
-        bar.className = 'fx-notice gt';
-        bar.setAttribute('role', 'region');
-        bar.setAttribute('aria-label', S.barLabel || 'Profile steps');
-        bar.hidden = true;
-        nav.appendChild(bar);
-    }
+    const bar = null;
 
     const link = (r, cls, inner) => (GO[r[0]]
         ? `<button type="button" class="${cls}" data-go="${r[0]}">${inner}</button>`

@@ -174,7 +174,7 @@
         </div>
         @if (! $talent->is_published && ! request()->routeIs('talent.profile.edit'))
             {{-- Pinned while the profile is Private (ADR-AC, 2026-11-04: no review step — the Go Live
-                 steps alone put it Live). Edit profile has its own floating steps tracker instead. --}}
+                 steps alone put it Live). Edit profile shows its own steps card instead. --}}
             <div class="fx-notice" role="region" aria-label="{{ __('Profile status') }}">
                 <div class="fx-wrap fx-in">
                     <svg class="fx-icon" aria-hidden="true"><use href="#fx-i-lock"/></svg>

@@ -278,11 +278,7 @@
           <label for="fPov" class="lbl"><span>{{ __('Point of view') }}</span><small x-text="count(core.worldview.en, 2000)"></small></label>
           <textarea class="ta" id="fPov" maxlength="2000" x-model="core.worldview.en"></textarea>
           <p class="help">{{ __('Your taste, in your words. Not a second bio.') }}</p>
-          <div class="prompts">
-            @foreach ([__('What do you notice that others miss?'), __('A reference you keep going back to'), __('Work you won’t take, and why')] as $prompt)
-              <button type="button" class="chip" @click="addPrompt(@js($prompt))">{{ $prompt }}</button>
-            @endforeach
-          </div>
+          {{-- No prompt chips under Point of view (removed 2026-11-23). --}}
         </div>
         <div class="two f">
           {{-- Country first: it decides the City list. --}}
@@ -595,7 +591,7 @@
     <input class="in" type="search" style="margin-top:var(--s4)" placeholder="{{ __('Search skills or specialities') }}" x-ref="pickSearch" x-model="picker.q">
     <ul class="picklist">
       <template x-for="o in pickerList" :key="o.id">
-        <li><label><input type="radio" name="newskill" :value="o.id" :checked="o.id === currentPick" @change="picker.current = o.id"><span><span x-text="o.name"></span><small class="via" x-show="o.via" x-text="o.via"></small></span></label></li>
+        <li><label><input type="radio" name="newskill" :value="o.id" :checked="o.id === currentPick" @change="picker.current = o.id"><span><span x-text="o.name"></span></span></label></li>
       </template>
       <li class="empty" style="padding:var(--s4)" x-show="!pickerList.length">{{ __('No skill matches that. Try another word.') }}</li>
     </ul>

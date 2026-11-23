@@ -11,6 +11,10 @@ Notable changes to the Fama project. Newest first.
 - Project editor: the block rail no longer vanishes on the way to it — `.pe-b::before` covers the gutter
   beside each block and `.pe-tools::after` bridges the 14px gap.
 - Public profile: the stats row (Projects · Brands · Recognitions) under the bio is removed.
+- Edit profile skill picker: no grey speciality line under each skill name (a speciality search still finds the skill).
+- Edit profile: the three prompt chips under Point of view are removed (the hint line stays).
+- Edit profile: the floating steps tracker under the nav ("Stand out · n to go" + segments + Next) is removed;
+  the #gate steps card on the page is the one place the steps show (`profile-gate.js` — `bar` is null).
 - Fix: the profile photo never showed on the public profile (initials instead). profile-motion.js tweened
   `.ct-id > *` with `clearProps: 'all'`, which deletes the WHOLE inline style — incl. the avatar's
   `background-image`. Now clears only `transform,opacity,visibility` (same fix on the featured card and the

@@ -166,8 +166,10 @@ export const listsMixin = () => ({
         const q = this.picker.q.trim().toLowerCase();
         return this.allSkills.filter((s) => !this.picker.exclude.includes(s.id)).map((s) => {
             const name = String(s.name || '');
-            const via = !q || name.toLowerCase().includes(q) ? '' : (s.specialities.find((x) => String(x.name).toLowerCase().includes(q))?.name || '');
-            return { id: s.id, name, via, hit: !q || name.toLowerCase().includes(q) || !!via };
+            // A speciality match still finds the skill; the list shows the skill name only
+            // (the matched speciality under it was removed 2026-11-23).
+            const via = !q || name.toLowerCase().includes(q) ? false : s.specialities.some((x) => String(x.name).toLowerCase().includes(q));
+            return { id: s.id, name, hit: !q || name.toLowerCase().includes(q) || via };
         }).filter((s) => s.hit);
     },
     /** The checked option (or the first match). */
