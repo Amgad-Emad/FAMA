@@ -28,7 +28,12 @@ class SeedBlocksForSkill implements Action
      */
     public function __invoke(Talent $talent, TalentType $skill): Collection
     {
+        // Projects is a fixed part of every skill tab (2026-11-23,
+        // ProfileBlockService::isPinned) — seeded even if a catalog row forgets it.
         $keys = $skill->default_blocks ?? [];
+        if (! in_array('projects', $keys, true)) {
+            $keys[] = 'projects';
+        }
         $blockTypes = BlockType::whereIn('key', $keys)->get()->keyBy('key');
 
         // Dedupe + position are scoped to this skill's tab.

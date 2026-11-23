@@ -1362,5 +1362,9 @@
     "Community": "المجتمع",
     "Made by": "من صنع",
     "By": "بواسطة",
-    "See it as a visitor": "شوفه كزائر"
+    "See it as a visitor": "شوفه كزائر",
+    "Projects is part of every skill tab and cannot be moved.": "المشاريع جزء من كل تبويب مهارة ولا يمكن نقلها.",
+    "Projects always shows on your profile while you have projects.": "تظهر المشاريع دائمًا في ملفك ما دامت لديك مشاريع.",
+    "Projects is part of every skill tab and cannot be removed.": "المشاريع جزء من كل تبويب مهارة ولا يمكن حذفها.",
+    "No sections here. Drag one in.": "لا توجد أقسام هنا. اسحب قسمًا إليها."
 }

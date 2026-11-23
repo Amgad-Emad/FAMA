@@ -2,6 +2,21 @@
 
 Notable changes to the Fama project. Newest first.
 
+## 2026-11-23 — Projects in every skill tab; no empty sections on View profile
+- Photography, Modelling, Styling and Makeup now seed a **Projects** section (catalog `default_blocks`).
+  Migration `2026_11_23_003520_add_projects_block_to_every_skill_tab` re-syncs the catalog and backfills one
+  Projects block, appended last, into every (talent, held skill) scope that had none.
+- Projects in a skill tab is **pinned** (`ProfileBlockService::isPinned`): it can't be hidden, moved or
+  removed (422) — only reordered within its tab; the editor shows a locked ON switch.
+- Edit profile → Sections: the "Move to…" dropdown is gone from every row — sections move between tabs by
+  drag only. `SeedBlocksForSkill` always seeds it. Migration `2026_11_23_003522_show_pinned_projects_blocks`
+  switched any hidden ones back on.
+- Public profile: `App\Support\ProfileSections::forScope()` is THE section list for a scope (page + lazy
+  tab endpoint) and adds a Projects section whenever the scope has work but no Projects block, so projects
+  always show.
+- `<x-profile.block>` leaves an empty section out for **everyone**, the owner included — the "Nothing here
+  yet" owner placeholder is gone; View profile shows exactly what visitors see.
+
 ## 2026-11-19 — SEO (ADR-AO)
 - `/sitemap.xml` (+ paged files for pages, public profiles and their projects), a dynamic `/robots.txt`, and
   `/llms.txt` (the site explained for AI assistants).

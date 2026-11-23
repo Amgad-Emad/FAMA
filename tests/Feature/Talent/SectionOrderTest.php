@@ -19,14 +19,16 @@ function talentWithSections(): Talent
     $type = TalentType::query()->first();
     $talent->talentTypes()->attach($type->id, ['is_primary' => true, 'position' => 0]);
 
-    // Skip `hero` — the public profile deliberately never renders it (ADR-O).
-    $universalType = BlockType::query()->where('availability', 'universal')->where('key', '!=', 'hero')->first();
+    // Recognitions: a universal block whose content is one factory row (empty
+    // sections render for nobody, so the region needs something in it).
+    $universalType = BlockType::query()->where('key', 'recognitions')->firstOrFail();
     ProfileBlock::factory()->for($talent)->create([
         'block_type_id' => $universalType->id, 'talent_type_id' => null, 'is_visible' => true, 'position' => 0,
     ]);
     ProfileBlock::factory()->for($talent)->create([
         'block_type_id' => $universalType->id, 'talent_type_id' => $type->id, 'is_visible' => true, 'position' => 0,
     ]);
+    \App\Models\Recognition::factory()->approved()->create(['talent_id' => $talent->id]);
 
     return $talent->fresh();
 }
@@ -49,7 +51,7 @@ it('persists the universal section position from the editor pill bar', function 
 it('renders the profile-wide region once, after the skill tabs (fama-ui 24 Oct 2026)', function () {
     $talent = talentWithSections();
 
-    // The owner sees the (still empty) profile-wide sections; the point of view lives in the hero now.
+    // The point of view lives in the hero now, not in the profile-wide region.
     $html = $this->actingAs($talent, 'talent')->get('/'.$talent->slug)->assertOk()->getContent();
 
     expect(strpos($html, 'id="universal-blocks"'))->not->toBeFalse()

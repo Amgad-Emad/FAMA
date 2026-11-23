@@ -250,15 +250,17 @@ it('shows a project once when the talent both owns it and is credited on it', fu
     expect($owner->portfolioProjects($owner->talentTypes()->firstOrFail()->id))->toHaveCount(1);
 });
 
-it('makes confirmed work actually appear, even in a skill that seeds no projects block', function () {
-    // Photography's default_blocks are gallery/showreel/equipment/… — NO
-    // projects block. Without the accept-time fix, confirming a credit here
-    // would put the project in a tab that renders nothing.
+it('makes confirmed work actually appear, even in a tab with no projects block', function () {
+    // Every skill seeds a projects block now (2026-11-23), but a profile seeded
+    // before that — or one built by hand — may lack it. Without the accept-time
+    // fix, confirming a credit here would put the project in a tab that renders nothing.
     $owner = creditTalent('Owner');
     $peer = creditTalent('Peer', 'photography');
     $project = creditProject($owner, 'Nomad launch');
 
     $photography = TalentType::where('slug', 'photography')->firstOrFail();
+    $peer->profileBlocks()->where('talent_type_id', $photography->id)
+        ->whereRelation('blockType', 'key', 'projects')->get()->each->delete();
 
     expect($peer->profileBlocks()->where('talent_type_id', $photography->id)
         ->whereRelation('blockType', 'key', 'projects')->exists())->toBeFalse();

@@ -6,7 +6,7 @@
     (13 Nov 2026 review — it is part of the person's details).
     Each section renders to a string first so the whole region — heading
     included — is left out when nothing in it has content for this viewer
-    (empty sections only show to the owner, via <x-profile.block>).
+    (empty sections are left out for everyone, via <x-profile.block>).
       blocks  — the universal ProfileBlocks, in order
       name    — the display name for the heading
 --}}

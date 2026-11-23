@@ -8,7 +8,7 @@ use App\Models\ProfileBlock;
 use App\Models\Talent;
 use App\Models\TalentType;
 use App\Services\FollowService;
-use App\Support\Features;
+use App\Support\ProfileSections;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
@@ -150,13 +150,9 @@ class TalentProfileController extends Controller
      */
     private function blocksForSkill(Talent $talent, TalentType $skill): Collection
     {
-        return $talent->profileBlocks
-            ->where('talent_type_id', $skill->id)
-            ->filter(fn ($block) => $block->blockType->key !== 'hero')
-            // Reviews stay off the public page while features.reviews is off.
-            ->filter(fn ($block) => Features::enabled('reviews') || $block->blockType->key !== 'reviews')
-            ->sortBy('position')
-            ->values();
+        // One rule set with the profile page — incl. "Projects always show while
+        // the tab has work" (App\Support\ProfileSections).
+        return ProfileSections::forScope($talent, (int) $skill->id);
     }
 
     /**

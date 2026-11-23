@@ -430,7 +430,7 @@
   </section>
 
   {{-- ═══ Sections — the blocks on each tab (app feature; built from the
-       prototype's own section-row pattern: name → content, Move to, Visible). ═══ --}}
+       prototype's own section-row pattern: name → content, Visible; moves between tabs by drag). ═══ --}}
   <section class="sec panel" id="sections" :class="{ changed: dirty.sections }">
     <div class="phead">
       <div class="ptitle"><div class="hrow"><h2 class="h3x">{{ __('Sections') }}</h2><span class="dirty" x-show="dirty.sections" x-cloak>{{ __('Unsaved') }}</span></div>
@@ -461,18 +461,16 @@
                   </template>
                   <span class="tag tag-hidden" x-show="!b.is_visible">{{ __('Hidden') }}</span>
                 </span>
-                <span class="rmeta">
-                  <select class="sel" x-show="moveTargets(b).length" @change="moveBlock(b, $event.target.value); $event.target.value = ''"
-                          :aria-label="@js(__('Move :name to another tab')).replace(':name', blockName(b))">
-                    <option value="">{{ __('Move to…') }}</option>
-                    <template x-for="t in moveTargets(b)" :key="t.key"><option :value="t.typeId === null ? 'u' : t.typeId" x-text="t.label"></option></template>
-                  </select>
-                </span>
+                {{-- No "Move to…" control (2026-11-23): sections move between tabs by drag only. --}}
+                <span class="rmeta"></span>
+                {{-- Projects in a skill tab is pinned (ProfileBlockService::isPinned): it always
+                     shows while the tab has work — a locked ON switch. --}}
                 <button type="button" class="switch" role="switch" :aria-checked="b.is_visible.toString()" @click="toggleVisible(b)"
+                        :disabled="isPinned(b)"
                         :aria-label="@js(__('Show :name on your profile')).replace(':name', blockName(b))"><i></i></button>
               </li>
             </template>
-            <li class="empty" x-show="!blocksInScope(g.typeId).length" x-text="g.isNew ? @js(__('Its sections appear once you save.')) : @js(__('No sections here. Drag one in, or use Move to.'))"></li>
+            <li class="empty" x-show="!blocksInScope(g.typeId).length" x-text="g.isNew ? @js(__('Its sections appear once you save.')) : @js(__('No sections here. Drag one in.'))"></li>
           </ul>
         </div>
       </template>

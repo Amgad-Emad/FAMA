@@ -74,11 +74,19 @@ it('hides the reviews section on the public profile while features.reviews is of
     $this->get('/'.$talent->slug)->assertOk()->assertSee('HiddenWhileFlagOff');
 });
 
-it('shows an empty section to the owner only', function () {
+it('leaves an empty section out for everyone, the owner included', function () {
     $talent = fuiTalentWithBlock(['is_published' => true], 'brand_collabs');
 
-    $this->get('/'.$talent->slug)->assertOk()->assertDontSee(__('Nothing here yet.'));
-    $this->actingAs($talent, 'talent')->get('/'.$talent->slug)->assertOk()->assertSee(__('Nothing here yet.'));
+    $this->get('/'.$talent->slug)->assertOk()->assertDontSee(__('Nothing here yet.'))->assertDontSee('blk-brand_collabs');
+    $this->actingAs($talent, 'talent')->get('/'.$talent->slug)->assertOk()
+        ->assertDontSee(__('Nothing here yet.'))->assertDontSee('blk-brand_collabs');
+});
+
+it('seeds a Projects section into every skill tab', function () {
+    $legacy = \App\Models\TalentType::whereIn('slug', ['photography', 'modeling', 'styling', 'makeup'])->get();
+
+    expect($legacy)->not->toBeEmpty();
+    $legacy->each(fn ($type) => expect($type->default_blocks)->toContain('projects'));
 });
 
 it('reports the Go Live and Stand out steps from real data (ADR-AC)', function () {

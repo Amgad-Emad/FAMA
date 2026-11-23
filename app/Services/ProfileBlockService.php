@@ -158,6 +158,10 @@ class ProfileBlockService extends Service
      */
     public function moveBlock(ProfileBlock $block, ?TalentType $target): ProfileBlock
     {
+        if (self::isPinned($block)) {
+            throw new InvalidArgumentException(__('Projects is part of every skill tab and cannot be moved.'));
+        }
+
         return $this->runInTransaction(function () use ($block, $target): ProfileBlock {
             $blockType = $block->blockType;
 
@@ -190,6 +194,10 @@ class ProfileBlockService extends Service
      */
     public function setVisibility(ProfileBlock $block, bool $visible): ProfileBlock
     {
+        if (! $visible && self::isPinned($block)) {
+            throw new InvalidArgumentException(__('Projects always shows on your profile while you have projects.'));
+        }
+
         return $this->runInTransaction(function () use ($block, $visible): ProfileBlock {
             $target = $visible ? Visible::class : Hidden::class;
 
@@ -206,7 +214,23 @@ class ProfileBlockService extends Service
      */
     public function removeBlock(ProfileBlock $block): void
     {
+        if (self::isPinned($block)) {
+            throw new InvalidArgumentException(__('Projects is part of every skill tab and cannot be removed.'));
+        }
+
         $this->runInTransaction(fn () => $block->delete(), ['block_id' => $block->id]);
+    }
+
+    /**
+     * Whether a block is a fixed part of its skill tab (2026-11-23): the Projects
+     * section of a skill scope. Every skill tab has one, it always shows while
+     * the talent has work there, and it can't be hidden, moved or removed — only
+     * reordered within its tab. Profile-wide Projects (credits on unheld skills)
+     * is not pinned.
+     */
+    public static function isPinned(ProfileBlock $block): bool
+    {
+        return $block->talent_type_id !== null && $block->blockType?->key === 'projects';
     }
 
     /**

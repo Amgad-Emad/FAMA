@@ -24,7 +24,9 @@
  *                  projects, nothing else" — so every skill added with the 41
  *                  starts with Projects only (its practice facts follow the
  *                  work, ADR-AG). The nine older skills keep the blocks they
- *                  always had (their talents' content lives in them).
+ *                  always had (their talents' content lives in them) — and
+ *                  EVERY skill seeds Projects (2026-11-23): a tab without a
+ *                  Projects section cannot show the work filed under it.
  *   specialities   [en, ar, keep-slug?, regional?] in display order. A keep-slug
  *                  pins an EXISTING row (its slug is locked; only the name
  *                  changes). Anything under the skill that is not listed is
@@ -34,7 +36,7 @@
 
 return [
     ['slug' => 'photography', 'en' => 'Photography', 'ar' => 'التصوير الفوتوغرافي', 'category' => 'crew',
-        'default_blocks' => ['gallery', 'showreel', 'equipment', 'brand_collabs', 'reviews'],
+        'default_blocks' => ['projects', 'gallery', 'showreel', 'equipment', 'brand_collabs', 'reviews'],
         'specialities' => [
             ['Fashion', 'الأزياء', 'fashion'],
             ['Beauty', 'الجمال', 'beauty'],
@@ -46,7 +48,7 @@ return [
             ['Automotive', 'السيارات'],
         ]],
     ['slug' => 'modeling', 'en' => 'Modelling', 'ar' => 'عرض الأزياء', 'category' => 'model',
-        'default_blocks' => ['gallery', 'comp_card', 'look_types', 'digitals', 'brand_collabs', 'reviews'],
+        'default_blocks' => ['projects', 'gallery', 'comp_card', 'look_types', 'digitals', 'brand_collabs', 'reviews'],
         'specialities' => [
             ['Fashion', 'الأزياء', 'fashion'],
             ['Commercial & lifestyle', 'الإعلانات ونمط الحياة', 'commercial-lifestyle'],
@@ -57,7 +59,7 @@ return [
             ['Parts & hands', 'الأيدي وأجزاء الجسم'],
         ]],
     ['slug' => 'styling', 'en' => 'Styling', 'ar' => 'تنسيق الأزياء', 'category' => 'creative',
-        'default_blocks' => ['gallery', 'brand_collabs', 'reviews'],
+        'default_blocks' => ['projects', 'gallery', 'brand_collabs', 'reviews'],
         'specialities' => [
             ['Fashion', 'الأزياء', 'fashion'],
             ['Commercial wardrobe', 'أزياء الإعلانات', 'commercial-wardrobe'],
@@ -67,7 +69,7 @@ return [
             ['Food', 'الطعام', 'food'],
         ]],
     ['slug' => 'makeup', 'legacy' => ['hair-makeup'], 'en' => 'Makeup', 'ar' => 'المكياج', 'category' => 'crew',
-        'default_blocks' => ['gallery', 'equipment', 'brand_collabs', 'reviews'],
+        'default_blocks' => ['projects', 'gallery', 'equipment', 'brand_collabs', 'reviews'],
         'specialities' => [
             ['Beauty', 'الجمال', 'beauty-makeup'],
             ['Editorial & fashion', 'التحرير والأزياء', 'editorial-makeup'],

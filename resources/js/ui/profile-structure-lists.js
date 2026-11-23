@@ -222,8 +222,15 @@ export const listsMixin = () => ({
         if (bt.availability === 'by_type') return (bt.type_gates || []).includes(g.typeId);
         return false;
     },
+    /**
+     * Whether a block is a fixed part of its skill tab — mirrors
+     * ProfileBlockService::isPinned (Projects in a skill tab: always shown,
+     * never moved; reorder within the tab only).
+     */
+    isPinned(b) { return (b.talent_type_id ?? null) !== null && b.block_type.key === 'projects'; },
     /** Saved scopes a block may move to (eligible, no non-repeatable clash). */
     moveTargets(b) {
+        if (this.isPinned(b)) return [];
         const bt = this.catalogFor(b);
         if (!bt) return [];
         return this.scopeGroups.filter((g) => {
@@ -235,6 +242,7 @@ export const listsMixin = () => ({
     },
     /** Show / hide a block (draft; content is kept). */
     toggleVisible(b) {
+        if (this.isPinned(b)) return;
         b.is_visible = !b.is_visible;
         if (!b.is_visible) this.note = fmt(this.S.offA, { name: this.blockName(b) });
     },

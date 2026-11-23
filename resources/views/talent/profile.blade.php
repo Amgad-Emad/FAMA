@@ -57,12 +57,9 @@
     $externalUrl = ($talent->booking_type === 'external' && filled($talent->booking_value)) ? $talent->booking_value : null;
 
     // Blocks (ADR-Q/R): universal (talent_type_id NULL) + one tab per skill that
-    // has visible blocks. `hero` is retired; reviews hide while the flag is off.
-    $blocksFor = fn ($typeId) => $talent->profileBlocks
-        ->where('talent_type_id', $typeId)
-        ->filter(fn ($b) => $b->blockType->key !== 'hero')
-        ->filter(fn ($b) => $reviewsOn || $b->blockType->key !== 'reviews')
-        ->sortBy('position')->values();
+    // has sections. `hero` is retired; reviews hide while the flag is off.
+    // Projects always show while a scope has work (App\Support\ProfileSections).
+    $blocksFor = fn ($typeId) => \App\Support\ProfileSections::forScope($talent, $typeId);
     $universalBlocks = $blocksFor(null);
     $tabSkills = $skills->filter(fn ($s) => $blocksFor($s->id)->isNotEmpty())->values();
 

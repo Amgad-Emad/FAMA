@@ -1233,4 +1233,13 @@ page must be added there or it stays noindex. (2) `SEO_INDEXABLE` defaults on on
 private profile / ?preview / ?visitor is noindex; never put a confidential client in metadata (the project page
 already guards it). (4) Tests that count text on a page must count in the <body> — the <head> repeats descriptions.
 DEPLOY: `config/scribe.php` returns [] when Scribe is absent, so `composer install --no-dev` works.
-
+PROJECTS IN EVERY TAB + NO EMPTY SECTIONS (2026-11-23, suite 953 green): every skill tab has a PINNED
+Projects section — `ProfileBlockService::isPinned()` (skill-scoped `projects` block) is THE rule: it can't
+be hidden, moved or removed (422), only reordered; the editor mirrors it (`isPinned` in
+profile-structure-lists.js → locked ON switch). The editor has NO "Move to…" dropdown on any row — sections move between tabs by drag only. `SeedBlocksForSkill` always seeds
+it, and every catalog skill lists it. Migrations 2026_11_23_003520 (backfill, appended last) +
+2026_11_23_003522 (unhide). `App\Support\ProfileSections::forScope()` is THE public section list (profile
+page + lazy tab endpoint) and adds a Projects section when a scope has work but no block — projects always
+show. `<x-profile.block>` hides an empty section for EVERYONE (no owner "Nothing here yet"; `isOwner` prop
+inert). `ProjectCreditService::ensureProjectsBlock()` stays as a safety net.
+MIGRATIONS: always create with `php artisan make:migration` (user rule, 2026-11-23) — never hand-write the file.
