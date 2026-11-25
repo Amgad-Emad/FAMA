@@ -22,7 +22,8 @@
 (unique `talent_id`+`talent_type_id`), `specialities` (+ `speciality_talent`, `project_speciality` —
 ADR-Y; `slug` unique per skill, not globally), `block_types`, `block_type_category`,
 `block_type_talent_type`, `profile_blocks` (+ `block_types.is_profile_default` — ADR-Z),
-`talent_social_handles`, `recognitions`, `talent_interests` (the ADR-Z portfolio sections),
+`talent_social_handles`, `recognitions`, `talent_interests` (the ADR-Z portfolio sections; `note` is TEXT,
+max 2,000 — migration `2026_11_23_200709`, was VARCHAR/160),
 `project_credits` (collaborator credits — ADR-AA; `projects` also gains `occurred_on`, with `year`
 demoted to a derived projection).
 

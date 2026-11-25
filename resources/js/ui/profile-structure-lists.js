@@ -1,7 +1,8 @@
 /**
  * The list editors of Profile structure (a mixin merged into profileStructure):
  * social links (max 9), skills (order = tab order, the first opens first),
- * the shared skill picker, sections (blocks) and willing to explore (max 6).
+ * the shared skill picker, the Explore / Experience show switches and
+ * willing to explore (max 6).
  * Every change here edits the draft; the save bar commits it.
  */
 import { tr, clone, fmt, toast, ask } from './profile-helpers';
@@ -186,119 +187,20 @@ export const listsMixin = () => ({
         if (r) r(value);
     },
 
-    // ================= sections (blocks) ===============================
-    /** One group per skill in tab order (draft). */
-    get skillGroups() { return this.skills.map((s) => ({ key: String(s.id), typeId: s.id, label: tr(s.name), category: s.category, isNew: !!s._new })); },
-    /** Every scope, profile-wide first. */
-    get scopeGroups() { return [{ key: 'universal', typeId: null, label: this.S.pw, category: null }, ...this.skillGroups]; },
-    /**
-     * A scope's blocks in position order. Reviews are hidden while
-     * features.reviews is off (`all` includes them, for saving the order).
-     */
-    blocksInScope(typeId, all = false) {
-        return this.blocks.filter((b) => (b.talent_type_id ?? null) === typeId && (all || this.reviewsOn || b.block_type.key !== 'reviews'))
-            .sort((a, b) => a.position - b.position);
-    },
+    // ================= section switches (Explore / Experience) =========
+    // The Sections panel (per-tab show / hide / reorder / move) was removed
+    // on 2026-11-23: a profile shows its seeded sections in their seeded
+    // order. Only the two profile-wide switches on Willing to explore and
+    // Experience remain, and they still save through the visibility endpoint.
     /** A block's display name (admin-governed; read-only). */
     blockName(b) { return tr(b.title) || tr(b.block_type.name); },
     /** The universal block of a key (the switches on Explore / Experience). */
     uniBlock(key) { return this.blocks.find((b) => (b.talent_type_id ?? null) === null && b.block_type.key === key) || null; },
-    /** Expand / collapse a group. */
-    toggleGroup(key) { this.openGroups = { ...this.openGroups, [key]: !this.openGroups[key] }; },
-    /** Whether a block has an editor (profile content / its own page). */
-    hasContentEditor(b) { return this.contentKeys.includes(b.block_type.key) && (this.reviewsOn || b.block_type.key !== 'reviews'); },
-    /** Where a block's content is edited. */
-    contentUrl(b) {
-        if (b.block_type.key === 'projects') return window.fama.localizeUrl('/talent/projects');
-        if (b.block_type.key === 'interests') return '#explore';
-        const skill = this.skills.find((s) => s.id === (b.talent_type_id ?? null));
-        return window.fama.localizeUrl(`/talent/content/${skill ? skill.slug : 'universal'}#block-${b.block_type.key}`);
-    },
-    /** The catalog row for a block. */
-    catalogFor(b) { return this.catalog.find((c) => c.id === b.block_type.id) || null; },
-    /** Whether a block type may live in a scope (ADR-Q gates). */
-    eligibleInScope(bt, g) {
-        if (g.typeId === null) return bt.availability === 'universal';
-        if (bt.availability === 'universal') return true;
-        if (bt.availability === 'by_category') return (bt.category_gates || []).includes(g.category);
-        if (bt.availability === 'by_type') return (bt.type_gates || []).includes(g.typeId);
-        return false;
-    },
-    /**
-     * Whether a block is a fixed part of its skill tab — mirrors
-     * ProfileBlockService::isPinned (Projects in a skill tab: always shown,
-     * never moved; reorder within the tab only).
-     */
-    isPinned(b) { return (b.talent_type_id ?? null) !== null && b.block_type.key === 'projects'; },
-    /** Saved scopes a block may move to (eligible, no non-repeatable clash). */
-    moveTargets(b) {
-        if (this.isPinned(b)) return [];
-        const bt = this.catalogFor(b);
-        if (!bt) return [];
-        return this.scopeGroups.filter((g) => {
-            if (g.isNew || (b.talent_type_id ?? null) === g.typeId) return false;
-            if (!this.eligibleInScope(bt, g)) return false;
-            if (bt.is_repeatable) return true;
-            return !this.blocksInScope(g.typeId, true).some((x) => x.block_type.id === bt.id && x.id !== b.id);
-        });
-    },
-    /** Show / hide a block (draft; content is kept). */
+    /** Show / hide a profile-wide block (draft; content is kept). */
     toggleVisible(b) {
-        if (this.isPinned(b)) return;
         b.is_visible = !b.is_visible;
         if (!b.is_visible) this.note = fmt(this.S.offA, { name: this.blockName(b) });
     },
-    /** Move a block to another scope ('u' = profile-wide), at its end (draft). */
-    moveBlock(b, target) {
-        if (target === '') return;
-        const value = target === 'u' || target === null ? null : Number(target);
-        const last = this.blocksInScope(value, true).reduce((m, x) => Math.max(m, x.position), -1);
-        b.talent_type_id = value;
-        b.position = last + 1;
-        const g = this.scopeGroups.find((x) => x.typeId === value);
-        this.openGroups = { ...this.openGroups, [g?.key ?? 'universal']: true };
-        toast(fmt(this.S.tMoved, { name: this.blockName(b), group: g?.label || '' }));
-    },
-    /** Start dragging a block row by its grip. */
-    rowStart(e, b) {
-        this.dragBlock = b.id;
-        if (e.dataTransfer) { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', 'b' + b.id); }
-    },
-    /** Hover state for a group's list: ok (cream) or no (rose). */
-    groupOver(g) {
-        const b = this.blocks.find((x) => x.id === this.dragBlock);
-        if (!b) return;
-        this.dropOn = g.key;
-        this.dropDeny = (b.talent_type_id ?? null) !== g.typeId && !this.moveTargets(b).some((t) => t.key === g.key);
-    },
-    /** Drop onto a row: same scope reorders, another scope moves (draft). */
-    rowDrop(target) {
-        const b = this.blocks.find((x) => x.id === this.dragBlock);
-        this.rowEnd();
-        if (!b || b.id === target.id) return;
-        const scope = target.talent_type_id ?? null;
-        if ((b.talent_type_id ?? null) !== scope) { this.dropMove(b, scope); return; }
-        const scoped = this.blocksInScope(scope, true);
-        const from = scoped.findIndex((x) => x.id === b.id);
-        const to = scoped.findIndex((x) => x.id === target.id);
-        const [m] = scoped.splice(from, 1);
-        scoped.splice(to, 0, m);
-        scoped.forEach((x, i) => { x.position = i; });
-    },
-    /** Drop onto a group's empty area: move there when allowed. */
-    groupDrop(g) {
-        const b = this.blocks.find((x) => x.id === this.dragBlock);
-        this.rowEnd();
-        if (b && (b.talent_type_id ?? null) !== g.typeId) this.dropMove(b, g.typeId);
-    },
-    /** Move after a drop, or say why not. */
-    dropMove(b, typeId) {
-        const key = typeId === null ? 'universal' : String(typeId);
-        if (!this.moveTargets(b).some((t) => t.key === key)) { toast(this.S.cantMove); return; }
-        this.moveBlock(b, typeId === null ? 'u' : typeId);
-    },
-    /** Clear the drag state. */
-    rowEnd() { this.dragBlock = null; this.dropOn = null; this.dropDeny = null; },
 
     // ================= willing to explore (max 6) ======================
     /** The specialities of a skill (from the full catalog). */

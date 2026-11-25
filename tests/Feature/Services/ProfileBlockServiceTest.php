@@ -88,46 +88,6 @@ it('adds an eligible block into a tab and rejects an ineligible one', function (
         ->toThrow(InvalidArgumentException::class);
 });
 
-it('reorders blocks within a scope only (tabs are independent)', function () {
-    $talent = makeTalentOfCategory('model');
-    $skill = $talent->talentTypes->first();
-    $service = app(ProfileBlockService::class);
-    $type = BlockType::factory()->create(['availability' => 'universal', 'is_active' => true, 'is_repeatable' => true]);
-
-    $a = $service->addBlock($talent, $type, $skill);
-    $b = $service->addBlock($talent->fresh('talentTypes', 'profileBlocks'), $type, $skill);
-    $u = $service->addBlock($talent->fresh('talentTypes', 'profileBlocks'), $type, null); // universal
-
-    $service->reorder($talent->fresh(), $skill, [$b->id, $a->id]);
-    expect($b->fresh()->position)->toBe(0);
-    expect($a->fresh()->position)->toBe(1);
-
-    // A block from another scope cannot be reordered here.
-    expect(fn () => $service->reorder($talent->fresh(), $skill, [$u->id]))
-        ->toThrow(InvalidArgumentException::class);
-});
-
-it('moves a block between scopes when eligible and rejects an ineligible move', function () {
-    $talent = Talent::factory()->create();
-    $model = TalentType::factory()->create(['category' => 'model']);
-    $crew = TalentType::factory()->create(['category' => 'crew']);
-    $talent->talentTypes()->attach([$model->id => ['is_primary' => true, 'position' => 0], $crew->id => ['is_primary' => false, 'position' => 1]]);
-    $talent->load('talentTypes', 'profileBlocks');
-    $service = app(ProfileBlockService::class);
-
-    // A universal block moves freely between tabs.
-    $universal = BlockType::factory()->create(['availability' => 'universal', 'is_active' => true, 'is_repeatable' => true]);
-    $block = $service->addBlock($talent, $universal, $model);
-    $moved = $service->moveBlock($block, $crew);
-    expect($moved->talent_type_id)->toBe($crew->id);
-
-    // A crew-gated block cannot move into the model tab.
-    $crewBlock = blockGatedToCategory('crew');
-    $crewOwned = $service->addBlock($talent->fresh('talentTypes', 'profileBlocks'), $crewBlock, $crew);
-    expect(fn () => $service->moveBlock($crewOwned, $model))
-        ->toThrow(InvalidArgumentException::class);
-});
-
 it('fills, hides (syncing is_visible) and removes blocks', function () {
     $talent = makeTalentOfCategory('model');
     $skill = $talent->talentTypes->first();
@@ -145,12 +105,4 @@ it('fills, hides (syncing is_visible) and removes blocks', function () {
 
     $service->removeBlock($a);
     expect(ProfileBlock::find($a->id))->toBeNull();
-});
-
-it('rejects reordering a block that belongs to another talent', function () {
-    $talent = makeTalentOfCategory('model');
-    $foreign = ProfileBlock::factory()->create();
-
-    expect(fn () => app(ProfileBlockService::class)->reorder($talent, null, [$foreign->id]))
-        ->toThrow(InvalidArgumentException::class);
 });

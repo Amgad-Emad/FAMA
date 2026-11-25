@@ -27,9 +27,18 @@ beforeEach(function () {
     $this->talent->specialities()->attach(Speciality::where('talent_type_id', $skill->id)->value('id'), ['position' => 0]);
 });
 
-it('goes Live and emails once when the last Go Live step is saved', function () {
+it('turns Private (no e-mail) when the last Go Live step is saved, then emails once on Go Live', function () {
     $this->actingAs($this->talent, 'talent')
         ->patchJson('/talent/profile', ['base_city' => 'Cairo'])->assertOk();
+
+    // ADR-AQ: the steps make the profile Private — the link doesn't work yet, so no "you're Live" mail.
+    $fresh = $this->talent->fresh();
+    expect($fresh->is_published)->toBeFalse()
+        ->and($fresh->status->getValue())->toBe('unpublished')
+        ->and($fresh->steps_completed_at)->toBeNull();
+    Mail::assertNothingQueued();
+
+    $this->patchJson(route('talent.profile.publish'), ['publish' => true])->assertOk();
 
     $fresh = $this->talent->fresh();
     expect($fresh->is_published)->toBeTrue()
@@ -38,8 +47,10 @@ it('goes Live and emails once when the last Go Live step is saved', function () 
         ->and($fresh->steps_completed_at)->not->toBeNull();
     Mail::assertQueued(ProfileStepsCompleted::class, fn ($m) => $m->hasTo($this->talent->email) && $m->name === 'Nour');
 
-    // Saving again (still ready) does not send a second one.
+    // Saving again, or going Private and Live again, does not send a second one.
     $this->patchJson('/talent/profile', ['bio' => ['en' => 'Ten years in fashion.']])->assertOk();
+    $this->patchJson(route('talent.profile.publish'), ['publish' => false])->assertOk();
+    $this->patchJson(route('talent.profile.publish'), ['publish' => true])->assertOk();
     Mail::assertQueued(ProfileStepsCompleted::class, 1);
 });
 

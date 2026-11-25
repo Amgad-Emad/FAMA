@@ -178,13 +178,12 @@ class TalentProfileService extends Service
     }
 
     /**
-     * Publish the profile by hand (Draft/Unpublished → Live; guarded by ToLive).
-     *
-     * Since ADR-AC a profile goes Live by itself once its Go Live steps are
-     * saved; this stays for a profile HELD private (Unpublished — e.g. after an
-     * admin Unpublish or a reinstatement), which the automatic sync never undoes.
-     * Admin verification is no longer required. The pre-check gives the talent a
-     * clear message; the ToLive guard (display name) is the hard backstop.
+     * Go Live (Private → Live; guarded by ToLive) — the talent's own call
+     * (ADR-AQ: Draft → Private → Live). Saving the Go Live steps only makes a
+     * profile Private; this is the one step that makes its link work. A Draft
+     * whose steps are all saved (grandfathered data) may go Live directly.
+     * Already Live → no-op. The pre-check gives the talent a clear message; the
+     * ToLive guard (display name) is the hard backstop.
      */
     public function publish(Talent $talent): Talent
     {
@@ -192,6 +191,10 @@ class TalentProfileService extends Service
             throw new \InvalidArgumentException(
                 __('Finish the Go Live steps first: a display name, a skill with a speciality, and your city.')
             );
+        }
+
+        if ($talent->status instanceof Live) {
+            return $talent;
         }
 
         $talent = $this->runInTransaction(function () use ($talent): Talent {
@@ -222,10 +225,21 @@ class TalentProfileService extends Service
     }
 
     /**
-     * Take a live profile back down (Live → Unpublished).
+     * Make the profile Private (Live → Unpublished) — the talent's own call,
+     * reversible with {@see publish()}. Already Private → no-op. A Draft can't
+     * be "made private": it isn't public yet, and Private means its Go Live
+     * steps are done (ADR-AQ), so that is refused with a clear message.
      */
     public function unpublish(Talent $talent): Talent
     {
+        if ($talent->status instanceof Unpublished) {
+            return $talent;
+        }
+
+        if (! $talent->status instanceof Live) {
+            throw new \InvalidArgumentException(__('Only a Live profile can be made private.'));
+        }
+
         return $this->runInTransaction(function () use ($talent): Talent {
             $talent->status->transitionTo(Unpublished::class);
 

@@ -12,10 +12,11 @@ use Illuminate\Support\Facades\Mail;
  * prototype, profile.js FAMA_INDEX_REQ / FAMA_INDEX_REC / FAMA_PROFILE_DONE).
  * One path in two parts:
  *
- *   Go Live   — the three steps that make the profile Live (its link works and
+ *   Go Live   — the three steps a profile needs before it can go Live (its link works and
  *               can be shared): display name · a skill AND a speciality · city.
  *               Nobody approves anything: a profile whose Go Live steps are
- *               saved goes Live by itself ({@see SyncGoLiveState}).
+ *               saved becomes Private by itself ({@see SyncGoLiveState}), and
+ *               the talent presses Go Live when ready (ADR-AQ: Draft → Private → Live).
  *   Stand out — advisory, never a gate. Its first step ("something to show")
  *               lists a Live profile in the Creatives Index; the rest is what
  *               gets a profile picked.
@@ -157,12 +158,30 @@ class ProfileCompletionService extends Service
             'listed' => $published && $steps[self::INDEX_STEP],
             'profile_done' => ! in_array(false, $steps, true),
             'status' => $talent->status->getValue(),
+            'stage' => $this->stage($talent),
         ];
     }
 
     /**
+     * The profile state the talent sees (ADR-AQ): draft → private → live, plus
+     * Fama's own holds. `draft` = the Go Live steps aren't all saved;
+     * `private` = they are, and the profile isn't Live (yet, or by choice);
+     * `live` = the link works; `suspended` / `archived` = taken down by Fama.
+     */
+    public function stage(Talent $talent): string
+    {
+        return match ($talent->status->getValue()) {
+            'live' => 'live',
+            'unpublished' => 'private',
+            'suspended' => 'suspended',
+            'archived' => 'archived',
+            default => 'draft',
+        };
+    }
+
+    /**
      * Call after any write that can change a Go Live step. Moves the profile
-     * Live (or back out, see SyncGoLiveState) and sends the one-time "you're
+     * Draft → Private (or back to Draft, see SyncGoLiveState) and sends the one-time "you're
      * Live" e-mail. `$wasReady` = canGoLive() captured BEFORE the write.
      */
     public function syncAfterWrite(Talent $talent, ?bool $wasReady = null): void

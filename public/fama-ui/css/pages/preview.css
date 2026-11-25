@@ -277,7 +277,7 @@ dialog.sheet .sheet-b{padding:var(--s5) var(--s6);overflow:auto;max-height:calc(
 .wtel li{display:flex;flex-direction:column;gap:2px;padding:var(--s3) var(--s4);background:var(--white);border:var(--border);border-radius:var(--s3);max-width:360px}
 .wtel-s{font-weight:600}
 .wtel-s span{font-weight:400;color:var(--grey)}
-.wtel-n{font-size:var(--t-meta);color:var(--grey)}
+.wtel-n{font-size:var(--t-meta);color:var(--grey);white-space:pre-line} /* 2026-11-23: notes are text areas now — keep their line breaks */
 .wte li{display:flex;gap:var(--s3);align-items:baseline;flex-wrap:wrap}
 .notlive{text-align:center;padding:var(--s9) var(--s5)}
 .notlive .h1{font-size:clamp(34px,5vw,44px)}

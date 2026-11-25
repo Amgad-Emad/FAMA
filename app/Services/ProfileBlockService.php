@@ -17,7 +17,9 @@ use InvalidArgumentException;
  * The malleable block system's write side (talent-spec workflow #12), now
  * SCOPE-AWARE (ADR-Q). Every block lives in a scope: a skill's tab
  * (`talent_type_id`) or the universal / profile-level section (NULL). Add, fill,
- * reorder (within a scope), show/hide, move-between-scopes and remove.
+ * show/hide and remove. (Talent-side reorder + move-between-scopes were removed
+ * with the editor's Sections panel on 2026-11-23 — blocks keep their seeded
+ * scope and order.)
  *
  * The picker ({@see availableBlockTypes()}) is per-scope: it lists only `is_active`
  * blocks the talent is eligible for **in that scope** (a `by_type`/`by_category`
@@ -130,66 +132,6 @@ class ProfileBlockService extends Service
     }
 
     /**
-     * Reorder a talent's blocks WITHIN one scope to match the given id order. Every
-     * id must belong to the talent and to that scope.
-     *
-     * @param  list<int>  $orderedBlockIds
-     */
-    public function reorder(Talent $talent, ?TalentType $scope, array $orderedBlockIds): void
-    {
-        $this->runInTransaction(function () use ($talent, $scope, $orderedBlockIds): void {
-            $owned = $talent->profileBlocks()
-                ->when($scope, fn ($q) => $q->where('talent_type_id', $scope->id), fn ($q) => $q->whereNull('talent_type_id'))
-                ->pluck('id')->all();
-
-            foreach ($orderedBlockIds as $index => $id) {
-                if (! in_array($id, $owned, true)) {
-                    throw new InvalidArgumentException("Block [{$id}] is not in this scope.");
-                }
-
-                $talent->profileBlocks()->whereKey($id)->update(['position' => $index]);
-            }
-        }, ['talent_id' => $talent->id, 'scope' => $scope?->id]);
-    }
-
-    /**
-     * Move a block to another scope (re-stamp `talent_type_id` + append). Validates
-     * eligibility and per-scope repeatability in the target scope.
-     */
-    public function moveBlock(ProfileBlock $block, ?TalentType $target): ProfileBlock
-    {
-        if (self::isPinned($block)) {
-            throw new InvalidArgumentException(__('Projects is part of every skill tab and cannot be moved.'));
-        }
-
-        return $this->runInTransaction(function () use ($block, $target): ProfileBlock {
-            $blockType = $block->blockType;
-
-            if (! $this->isEligibleForScope($blockType, $target)) {
-                throw new InvalidArgumentException("Block [{$blockType->key}] cannot move to this scope.");
-            }
-
-            $clash = ProfileBlock::query()
-                ->where('talent_id', $block->talent_id)
-                ->where('block_type_id', $blockType->id)
-                ->whereKeyNot($block->id)
-                ->when($target, fn ($q) => $q->where('talent_type_id', $target->id), fn ($q) => $q->whereNull('talent_type_id'))
-                ->exists();
-
-            if (! $blockType->is_repeatable && $clash) {
-                throw new InvalidArgumentException("Block [{$blockType->key}] already exists in the target scope.");
-            }
-
-            $block->update([
-                'talent_type_id' => $target?->id,
-                'position' => $this->nextPosition($block->talent, $target?->id),
-            ]);
-
-            return $block->refresh();
-        }, ['block_id' => $block->id, 'target_scope' => $target?->id]);
-    }
-
-    /**
      * Show or hide a block (Block state machine; idempotent if already there).
      */
     public function setVisibility(ProfileBlock $block, bool $visible): ProfileBlock
@@ -224,8 +166,7 @@ class ProfileBlockService extends Service
     /**
      * Whether a block is a fixed part of its skill tab (2026-11-23): the Projects
      * section of a skill scope. Every skill tab has one, it always shows while
-     * the talent has work there, and it can't be hidden, moved or removed — only
-     * reordered within its tab. Profile-wide Projects (credits on unheld skills)
+     * the talent has work there, and it can't be hidden or removed. Profile-wide Projects (credits on unheld skills)
      * is not pinned.
      */
     public static function isPinned(ProfileBlock $block): bool

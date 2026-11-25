@@ -7,6 +7,7 @@ use App\Models\TalentType;
 use Database\Seeders\BlockTypeSeeder;
 use Database\Seeders\TalentTypeSeeder;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 
 beforeEach(fn () => $this->seed([TalentTypeSeeder::class, BlockTypeSeeder::class]));
@@ -24,7 +25,6 @@ it('renders the consolidated profile editor (skills, username, publishing, prici
 
     $this->actingAs($talent, 'talent')->withoutVite()->get(route('talent.profile.edit'))
         ->assertOk()
-        ->assertSee(__('Sections'))
         ->assertSee(__('Add skill'))
         ->assertSee(__('Username'))
         ->assertSee(__('Core details'))
@@ -146,10 +146,6 @@ it('adds an eligible block, fills, toggles, reorders and removes it', function (
     expect(ProfileBlock::find($blockId)->is_visible)->toBeFalse();
 
     $this->actingAs($talent, 'talent')
-        ->patchJson(route('talent.profile.blocks.reorder'), ['order' => [$blockId]])
-        ->assertOk();
-
-    $this->actingAs($talent, 'talent')
         ->deleteJson(route('talent.profile.blocks.destroy', $blockId))
         ->assertOk();
     expect(ProfileBlock::find($blockId))->toBeNull();
@@ -171,41 +167,27 @@ it('exposes the eligibility-filtered block picker for a skill tab', function () 
     expect($universalKeys)->toContain('brand_collabs')->not->toContain('comp_card');
 });
 
-it('adds a block to a skill tab, then moves it to the universal section', function () {
+it('no longer exposes the block reorder / move endpoints (Sections panel removed)', function () {
     $talent = editorTalent();
-    $skill = $talent->talentTypes->first();
-    $gallery = BlockType::where('key', 'gallery')->firstOrFail(); // universal, repeatable
+    $block = ProfileBlock::factory()->create(['talent_id' => $talent->id]);
 
-    $blockId = $this->actingAs($talent, 'talent')
-        ->postJson(route('talent.profile.blocks.store'), ['block_type_id' => $gallery->id, 'talent_type_id' => $skill->id])
-        ->assertCreated()->json('data.id');
-    expect(ProfileBlock::find($blockId)->talent_type_id)->toBe($skill->id);
+    expect(Route::has('talent.profile.blocks.reorder'))->toBeFalse()
+        ->and(Route::has('talent.profile.blocks.move'))->toBeFalse();
 
+    // The old URLs no longer move anything: `reorder` falls through to the
+    // {block} update route (a non-numeric id → 404) and `move` matches nothing.
     $this->actingAs($talent, 'talent')
-        ->patchJson(route('talent.profile.blocks.move', $blockId), ['talent_type_id' => null])
-        ->assertOk()->assertJsonPath('data.talent_type_id', null);
-    expect(ProfileBlock::find($blockId)->talent_type_id)->toBeNull();
-
-    // Reorder within the universal scope.
-    $this->actingAs($talent, 'talent')
-        ->patchJson(route('talent.profile.blocks.reorder'), ['talent_type_id' => null, 'order' => [$blockId]])
-        ->assertOk();
+        ->patchJson('/talent/profile/blocks/'.$block->id.'/move', ['talent_type_id' => null])
+        ->assertNotFound();
+    expect($block->fresh()->talent_type_id)->toBe($block->talent_type_id);
 });
 
-it('rejects moving a block into a scope that is not one of the talent’s skills (422)', function () {
-    $talent = editorTalent(); // model
-    $skill = $talent->talentTypes->first();
-    $gallery = BlockType::where('key', 'gallery')->firstOrFail();
-
-    $blockId = $this->actingAs($talent, 'talent')
-        ->postJson(route('talent.profile.blocks.store'), ['block_type_id' => $gallery->id, 'talent_type_id' => $skill->id])
-        ->assertCreated()->json('data.id');
-
-    $foreign = TalentType::where('slug', 'photography')->firstOrFail(); // not linked to this talent
-
-    $this->actingAs($talent, 'talent')
-        ->patchJson(route('talent.profile.blocks.move', $blockId), ['talent_type_id' => $foreign->id])
-        ->assertStatus(422)->assertJsonPath('success', false);
+it('does not render the Sections panel on Edit profile', function () {
+    $this->actingAs(editorTalent(), 'talent')
+        ->get(route('talent.profile.edit'))
+        ->assertOk()
+        ->assertDontSee('id="sections"', false)
+        ->assertDontSee('Hidden sections keep their content.');
 });
 
 it('rejects adding an ineligible block with 422', function () {

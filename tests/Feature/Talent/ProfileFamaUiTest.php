@@ -38,7 +38,7 @@ function fuiTalentWithBlock(array $attributes, string $key): Talent
 }
 
 it('lets the owner preview their own private profile, and 404s it for everyone else', function () {
-    $talent = Talent::factory()->create(['slug' => 'quiet-one', 'display_name' => 'Quiet One', 'is_published' => false]);
+    $talent = Talent::factory()->create(['slug' => 'quiet-one', 'display_name' => 'Quiet One', 'status' => 'unpublished', 'is_published' => false]);
     $other = Talent::factory()->create(['is_published' => true]);
 
     $this->get('/quiet-one')->assertNotFound();
@@ -47,7 +47,7 @@ it('lets the owner preview their own private profile, and 404s it for everyone e
     $this->actingAs($talent, 'talent')->get('/quiet-one')
         ->assertOk()
         ->assertSee('Quiet One')
-        ->assertSee(__("Your profile is private. This is how people will see it once it's public."))
+        ->assertSee(__('Your profile is Private. This is how people will see it once you go Live.'))
         ->assertSee(__('Edit profile'));
 });
 
@@ -83,7 +83,7 @@ it('leaves an empty section out for everyone, the owner included', function () {
 });
 
 it('seeds a Projects section into every skill tab', function () {
-    $legacy = \App\Models\TalentType::whereIn('slug', ['photography', 'modeling', 'styling', 'makeup'])->get();
+    $legacy = TalentType::whereIn('slug', ['photography', 'modeling', 'styling', 'makeup'])->get();
 
     expect($legacy)->not->toBeEmpty();
     $legacy->each(fn ($type) => expect($type->default_blocks)->toContain('projects'));
@@ -131,7 +131,9 @@ it('serves the saved profile path as JSON for the editor', function () {
     $this->actingAs($talent, 'talent')->getJson(route('talent.profile.state'))
         ->assertOk()
         ->assertJsonPath('data.can_go_live', true)
-        ->assertJsonPath('data.is_published', true)
+        // ADR-AQ: the steps make it Private; Go Live is the talent's call.
+        ->assertJsonPath('data.is_published', false)
+        ->assertJsonPath('data.stage', 'private')
         ->assertJsonPath('data.listed', false)
         ->assertJsonPath('data.profile_done', false)
         ->assertJsonPath('data.steps.skill', true);

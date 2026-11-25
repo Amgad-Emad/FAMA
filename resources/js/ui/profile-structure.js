@@ -4,7 +4,7 @@
  *
  *   profileStructure — the whole page as ONE DRAFT: identity, availability,
  *                      links, skills (order / add / remove / specialities),
- *                      sections (visibility / order / scope / placement),
+ *                      the Explore / Experience show switches,
  *                      willing to explore and pricing all change locally; the
  *                      bottom bar saves them through the existing endpoints or
  *                      discards them (toast with Undo). Leaving with unsaved
@@ -15,7 +15,7 @@
  * follows what is SAVED (GET /talent/profile/state after every save), never
  * the draft — a half-typed edit must not tell anyone they are no longer Live.
  * If saving the draft WOULD take the profile out of Live, the bar says so first.
- * The list editors (links, skills, picker, sections, explore) are a mixin in
+ * The list editors (links, skills, picker, show switches, explore) are a mixin in
  * ./profile-structure-lists.js.
  *
  * Product rules (2026-10-12): no separately chosen primary skill — the order is
@@ -44,7 +44,6 @@ document.addEventListener('alpine:init', () => {
         socialIcon,
         isWeb,
         platforms: PLATFORMS,
-        reviewsOn: !!initial.reviewsOn,
 
         // ----- location drop lists -----------------------------------------
         countries: initial.countries || [],
@@ -70,8 +69,6 @@ document.addEventListener('alpine:init', () => {
 
         // ----- not part of the draft ---------------------------------------
         allSkills: initial.interestSkills || [],
-        catalog: initial.catalog,
-        contentKeys: initial.contentKeys || [],
         xpEmployment: (initial.experience || {}).employment || [],
         xpLocationTypes: (initial.experience || {}).locationTypes || [],
         xpMonths: (initial.experience || {}).months || [],
@@ -80,7 +77,7 @@ document.addEventListener('alpine:init', () => {
         roleForm: {},
         roleErrors: {},
         hasPricing: !!initial.hasPricing,
-        // The profile path from SAVED data: { steps, can_go_live, is_published, listed, profile_done, status }.
+        // The profile path from SAVED data: { steps, can_go_live, is_published, listed, profile_done, status, stage }.
         path: initial.completion || { steps: {} },
         avatarUrl: initial.avatarUrl || null,
         uploadingAvatar: false,
@@ -98,11 +95,7 @@ document.addEventListener('alpine:init', () => {
         newRow: { platform: 'website' },
         showNew: false,
         platOpen: null,
-        openGroups: {},
         newSkillId: null,
-        dragBlock: null,
-        dropOn: null,
-        dropDeny: null,
         saving: false,
         savedAt: null,
         // The bar stays up for a moment after a save ("Saved just now"), then slides away.
@@ -125,8 +118,6 @@ document.addEventListener('alpine:init', () => {
             this.rootEl = this.$root; // `$root` is undefined from a swapped-out row
             this.rebase();
             this.bindPractice();
-            const first = this.skills[0];
-            this.openGroups = { universal: true, ...(first ? { [String(first.id)]: true } : {}) };
             window.addEventListener('keydown', (e) => {
                 if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
                     e.preventDefault();
@@ -151,8 +142,9 @@ document.addEventListener('alpine:init', () => {
                     S: this.S.gate || {},
                     go: { name: '#fDisplay', place: '#fCity', skill: '#skills', photo: '#fPhoto', headline: '#fHeadline', bio: '#fBio', links: '#social .pin-card', brands: '#addBrand' },
                     done: (k) => !!(this.path.steps || {})[k],
-                    // Going Live hands over the link: the copy button lights up in the hero.
-                    onState: (st) => { if (st.wentLive) this.flashLink(); },
+                    // ADR-AQ: finishing the steps makes the profile Private; the card offers Go Live.
+                    stage: () => this.stage,
+                    goLive: () => this.setPublished(true),
                 });
                 this.gateRefresh = () => gate.refresh();
             }
@@ -324,8 +316,6 @@ document.addEventListener('alpine:init', () => {
             return list.filter((l) => String(l.handle || '').trim())
                 .map((l) => ({ platform: l.platform, handle: String(l.handle).trim(), url: urlOf(l.platform, l.handle) }));
         },
-        /** A block's saved-or-draft row as comparable data. */
-        blockSig(b) { return { t: b.talent_type_id ?? null, p: b.position, v: !!b.is_visible }; },
         /** The draft block keyed by id, from a state. */
         blockMap(list) { return Object.fromEntries((list || []).map((b) => [b.id, b])); },
         /** Whether one universal switch (interests / brand_collabs) differs from saved. */
@@ -340,22 +330,12 @@ document.addEventListener('alpine:init', () => {
             const B = this.base;
             if (!B) return {};
             const j = JSON.stringify;
-            const baseBlocks = this.blockMap(B.blocks);
-            const switchKeys = ['interests', 'brand_collabs'];
-            const sectionsDirty = this.blocks.some((b) => {
-                const was = baseBlocks[b.id];
-                if (!was) return false;
-                const a = this.blockSig(b); const o = this.blockSig(was);
-                const isSwitch = (b.talent_type_id ?? null) === null && switchKeys.includes(b.block_type.key);
-                return a.t !== o.t || a.p !== o.p || (!isSwitch && a.v !== o.v);
-            });
             const specsDirty = this.skills.some((s) => j(this.picked(s.id)) !== j(B.specialities[String(s.id)]?.selected || []));
             return {
                 core: j(this.core) !== j(B.core),
                 now: j(this.now) !== j(B.now),
                 social: j(this.cleanLinks()) !== j(this.cleanLinks(B.links)),
                 skills: j(this.skills.map((s) => s.id)) !== j(B.skills.map((s) => s.id)) || specsDirty || this.practiceDirty,
-                sections: sectionsDirty,
                 explore: j(this.interests) !== j(B.interests) || this.switchDirty('interests'),
                 brands: this.switchDirty('brand_collabs') || this.rolesDirty,
                 pricing: this.hasPricing && j(this.rate) !== j(B.rate),
@@ -431,7 +411,7 @@ document.addEventListener('alpine:init', () => {
         /**
          * Save every dirty part through the existing endpoints, in an order that
          * keeps each step valid: identity → links → pricing → availability →
-         * sections (visibility, moves, order) → skills (remove, add,
+         * Explore / Experience show switches → skills (remove, add,
          * specialities, order — the server derives the first-skill flag) →
          * profile-wide placement → willing to explore. Each part rebases as it
          * lands, so a failure part-way keeps only what is still unsaved dirty.
@@ -490,7 +470,7 @@ document.addEventListener('alpine:init', () => {
                     this.now = { is_available: !!data.is_available, will_travel: !!data.will_travel };
                     this.base.now = clone(this.now);
                 }
-                if (d.sections || d.explore || d.brands) await this.saveBlocks();
+                if (this.switchDirty('interests') || this.switchDirty('brand_collabs')) await this.saveBlocks();
                 if (d.skills && this.skillsChanged) await this.saveSkills();
                 if (this.practiceDirty) await this.savePractice();
                 if (this.rolesDirty) await this.saveRoles();
@@ -533,30 +513,18 @@ document.addEventListener('alpine:init', () => {
                 setTimeout(() => lk.classList.remove('gt-flash'), 1800);
             });
         },
-        /** Sections: visibility, scope moves, then each scope's order. */
+        /**
+         * The Explore / Experience show switches: each changed universal block's
+         * visibility, then a re-read of the blocks so the draft rebases.
+         */
         async saveBlocks() {
-            const removed = this.removedSkillIds();
             const was = this.blockMap(this.base.blocks);
-            const live = this.blocks.filter((b) => was[b.id] && !removed.includes(b.talent_type_id));
-            for (const b of live) {
-                if (!!b.is_visible !== !!was[b.id].is_visible) {
+            for (const key of ['interests', 'brand_collabs']) {
+                const b = this.uniBlock(key);
+                if (b && was[b.id] && !!b.is_visible !== !!was[b.id].is_visible) {
                     await patch(`/talent/profile/blocks/${b.id}/visibility`, { is_visible: !!b.is_visible });
                 }
             }
-            for (const b of live) {
-                if ((b.talent_type_id ?? null) !== (was[b.id].talent_type_id ?? null)) {
-                    await patch(`/talent/profile/blocks/${b.id}/move`, { talent_type_id: b.talent_type_id ?? null });
-                }
-            }
-            const scopes = [null, ...this.skills.filter((s) => !s._new).map((s) => s.id)];
-            for (const scope of scopes) {
-                const order = this.blocksInScope(scope, true).map((b) => b.id);
-                const before = (this.base.blocks || []).filter((b) => (b.talent_type_id ?? null) === scope).sort((a, b) => a.position - b.position).map((b) => b.id);
-                if (order.length && JSON.stringify(order) !== JSON.stringify(before)) {
-                    await patch('/talent/profile/blocks/reorder', { talent_type_id: scope, order });
-                }
-            }
-            // Re-read: the server re-numbers positions on moves.
             const { data } = await get('/talent/profile/blocks');
             this.blocks = data;
             this.base.blocks = clone(this.blocks);
@@ -733,14 +701,26 @@ document.addEventListener('alpine:init', () => {
         get linkLabel() { return `${this.host}/${this.base?.core.slug || ''}`; },
         /** Listed in the Creatives Index (Live + something to show). */
         get isListed() { return !!this.path.listed; },
-        /** Held private on purpose (Unpublished): the Go Live steps alone don't bring it back. */
-        get isHeld() { return !this.isPublished && this.path.status === 'unpublished'; },
+        /**
+         * Where the profile is on Draft → Private → Live (ADR-AQ), from SAVED
+         * data: 'draft' | 'private' | 'live' | 'suspended' | 'archived'.
+         */
+        get stage() {
+            if (this.isPublished) return 'live';
+            const st = this.path.stage;
+            return st && st !== 'live' ? st : (this.path.status === 'unpublished' ? 'private' : 'draft');
+        },
+        /** The state pill's word. */
+        get stageLabel() { return this.stage === 'live' ? this.S.stLive : this.stage === 'private' ? this.S.stPrivate : this.stage === 'draft' ? this.S.stDraft : this.S.stHeld; },
+        /** Private with every Go Live step saved: the talent can go Live now. */
+        get canPublish() { return this.stage === 'private' && !!this.path.can_go_live; },
         /** Taken down by Fama (Suspended). */
-        get isSuspended() { return this.path.status === 'suspended'; },
+        get isSuspended() { return this.path.stage === 'suspended' || this.path.status === 'suspended'; },
         /** Copy the profile link (rendered only while Live). */
         async copyLink() {
             if (!this.isPublished) {
-                // Locked (prototype 9 Oct 2026): say why, and take them to the steps.
+                // Locked (prototype 9 Oct 2026): say why — Private only needs Go Live; a Draft needs the steps.
+                if (this.stage === 'private') { toast(this.S.copyOffPrivate); return; }
                 toast(this.S.copyOffN);
                 const g = document.getElementById('gate');
                 if (g && !g.hidden) g.scrollIntoView({ block: 'start', behavior: 'smooth' });
@@ -752,8 +732,9 @@ document.addEventListener('alpine:init', () => {
             setTimeout(() => { this.copied = false; this.note = ''; }, 2000);
         },
         /**
-         * Go Live by hand — only for a profile HELD private (Unpublished). Every
-         * other profile goes Live by itself once its Go Live steps are saved.
+         * Private ⇄ Live — the talent's own call (ADR-AQ: Draft → Private → Live).
+         * Saving the Go Live steps only makes a profile Private; this is the one
+         * step that makes the link work. Making it Private again offers Undo.
          */
         async setPublished(on) {
             if (this.publishing) return;
@@ -762,7 +743,9 @@ document.addEventListener('alpine:init', () => {
             try {
                 const { data } = await patch('/talent/profile/publish', { publish: on });
                 this.isPublished = !!data.is_published;
-                toast(this.isPublished ? this.S.tLive : this.S.tPrivate);
+                this.path = { ...this.path, status: data.status, stage: this.isPublished ? 'live' : 'private', is_published: this.isPublished };
+                if (this.isPublished) this.flashLink();
+                toast(this.isPublished ? this.S.tLive : this.S.tPrivate, this.isPublished ? null : () => this.setPublished(true));
                 this.refreshState();
             } catch (e) {
                 if (e instanceof ApiError) this.publishError = e.message;

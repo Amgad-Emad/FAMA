@@ -46,8 +46,6 @@ Route::patch('/profile/sections/universal-position', [ProfileEditorController::c
 Route::get('/profile/blocks', [ProfileEditorController::class, 'blocks'])->name('profile.blocks');
 Route::get('/profile/block-picker', [ProfileEditorController::class, 'picker'])->name('profile.picker');
 Route::post('/profile/blocks', [ProfileEditorController::class, 'addBlock'])->name('profile.blocks.store');
-Route::patch('/profile/blocks/reorder', [ProfileEditorController::class, 'reorderBlocks'])->name('profile.blocks.reorder');
-Route::patch('/profile/blocks/{block}/move', [ProfileEditorController::class, 'moveBlock'])->name('profile.blocks.move');
 Route::patch('/profile/blocks/{block}', [ProfileEditorController::class, 'fillBlock'])->name('profile.blocks.update');
 Route::patch('/profile/blocks/{block}/visibility', [ProfileEditorController::class, 'toggleBlock'])->name('profile.blocks.visibility');
 Route::delete('/profile/blocks/{block}', [ProfileEditorController::class, 'removeBlock'])->name('profile.blocks.destroy');

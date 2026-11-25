@@ -3,12 +3,14 @@
     screen on real data. The old dashboard is folded in: the profile path (Go Live
     then Stand out — ADR-AC, drawn by ./profile-gate.js from SAVED data, with the
     tracker floating under the nav) and the views card (the chart opens on request). EVERY edit — identity, availability, links,
-    skills (order = tab order; the first opens first), specialities, sections,
+    skills (order = tab order; the first opens first), specialities, the
+    Explore / Experience show switches,
     willing to explore, pricing — collects in a draft; the bottom bar saves it
     through the existing endpoints or discards it (toast with Undo), and leaving
     with unsaved changes warns. Only the photo uploads immediately. A profile goes
-    Live by itself once its Go Live steps are SAVED; a Private profile shows no
-    link anywhere on this page (product rule).
+    Private by itself once its Go Live steps are SAVED, and the talent presses Go
+    Live when ready (ADR-AQ: Draft → Private → Live; Live ⇄ Private both ways). A
+    profile that isn't Live shows its link LOCKED (ADR-AH).
     Behaviour: `profileStructure` (resources/js/ui/profile-structure*.js) + `profileViews`.
 --}}
 @php
@@ -68,6 +70,8 @@
         'leadListed' => __('Your link works and brands find you in the Creatives Index. Fama recommends these next: they are what gets a profile picked.'),
         'leadNotListed' => __('Your link works and you can share it. Add something to show and brands find you in the Creatives Index too.'),
         'onlyYou' => __('Only you see this'),
+        'privH' => __('Ready. Your profile is Private'), 'goLive' => __('Go Live'),
+        'leadPrivate' => __('Your Go Live steps are done. Only you can see your profile until you go Live; then your link works and you can share it.'),
         'p1Title' => __('Go Live'), 'p1Sub' => __('Your link works and you can share it.'),
         'p2Title' => __('Stand out'), 'p2Sub' => __('Not needed to go Live. Something to show gets you into the Creatives Index; the rest gets you picked.'),
         'readyH' => __('Your profile is ready'), 'readySub' => __('Live, and standing out. Nice work.'), 'readySr' => __('Your profile is ready.'),
@@ -81,7 +85,7 @@
 
     $strings = [
         'goLive' => $goLive, 'standOut' => $standOut, 'gate' => $gate,
-        'partNames' => ['core' => __('Core details'), 'now' => __('Availability'), 'social' => __('Social links'), 'skills' => __('Skills'), 'sections' => __('Sections'), 'explore' => __('Willing to explore'), 'brands' => __('Experience')] + (\App\Support\Features::enabled('pricing') ? ['pricing' => __('Pricing rate')] : []),
+        'partNames' => ['core' => __('Core details'), 'now' => __('Availability'), 'social' => __('Social links'), 'skills' => __('Skills'), 'explore' => __('Willing to explore'), 'brands' => __('Experience')] + (\App\Support\Features::enabled('pricing') ? ['pricing' => __('Pricing rate')] : []),
         'sbClean' => __('All changes saved'), 'sbCleanN' => __('Your profile is up to date.'), 'sbSavedNow' => __('Saved just now'),
         'sbDirtyOneIn' => __('Unsaved changes in :name'), 'sbDirtyManyIn' => __('Unsaved changes in :n sections'), 'sbShort' => __('Unsaved changes'),
         'sbDirtyN' => __('Save to update your profile, or discard to undo them.'),
@@ -91,7 +95,9 @@
         'sbBadUser' => __('Fix your username to save'), 'sbBadUserN' => __('Use letters, numbers and dashes only.'),
         'sbRisk' => __('Saving this takes your profile out of Live'), 'sbRiskN' => __('Your city is empty. Add it back to stay Live.'),
         'tSaved' => __('Changes saved'), 'saveFailed' => __('Some changes couldn’t be saved. Try again.'), 'tPhoto' => __('Profile photo updated'), 'tDiscarded' => __('Changes discarded'), 'tRemoved' => __(':name removed'), 'tAdded' => __(':name added'),
-        'tMoved' => __(':name moved to :group'), 'tLive' => __('Your profile is Live'), 'tPrivate' => __('Your profile is Private'),
+        'tLive' => __('Your profile is Live'), 'tPrivate' => __('Your profile is Private'),
+        'stDraft' => __('Draft'), 'stPrivate' => __('Private'), 'stLive' => __('Live'), 'stHeld' => __('Taken down'),
+        'copyOffPrivate' => __('Go Live to share your link.'),
         'photo' => __('Profile photo'), 'photoType' => __('Use a JPG, PNG or WebP photo.'), 'photoBig' => __('That photo is over 5 MB. Choose a smaller one.'),
         'photoRmTitle' => __('Remove profile photo?'), 'photoRmHelp' => __('Your photo will be removed and replaced with your initials.'),
         'uploadFailed' => __('Upload failed'), 'remove' => __('Remove'),
@@ -107,10 +113,9 @@
         'roleOrder' => __("The end date can't be before the start date."),
         'copyOffN' => __('Finish Go Live first. Then you can share your link.'),
         'fxCleared' => __(':name cleared'),
-        'addTitle' => __('Add a skill'), 'addHelp' => __('It gets its own tab, with default sections you can change.'), 'addOk' => __('Add skill'),
+        'addTitle' => __('Add a skill'), 'addHelp' => __('It gets its own tab, with its default sections.'), 'addOk' => __('Add skill'),
         'rmTitle' => __('Remove :name?'), 'rmHelp' => __('Its tab and sections come off your profile. The content inside them is kept, so you can add the skill back later.'), 'rmOk' => __('Remove skill'),
-        'pw' => __('Profile-wide'), 'offA' => __(':name is hidden from your profile. It keeps its content.'),
-        'cantMove' => __('That section can’t go there.'),
+        'offA' => __(':name is hidden from your profile. It keeps its content.'),
         'wtePickT' => __('Choose a skill to explore'), 'wtePickH' => __('Any skill, including one you have no work in yet.'), 'wtePickOk' => __('Choose skill'),
     ];
     $viewStrings = ['sum' => __(':n views in this period'), 'nViews' => __(':n views')];
@@ -135,14 +140,11 @@
         specialities: @js($specialities),
         interestSkills: @js($interestSkills),
         blocks: @js($blocks),
-        catalog: @js($catalog),
-        contentKeys: @js($contentKeys),
         countries: @js(\App\Support\Locations::countries()),
         interests: @js($interests),
         experience: @js($experience),
         hasPricing: {{ \App\Support\Features::enabled('pricing') ? 'true' : 'false' }},
         rate: @js($rate),
-        reviewsOn: {{ \App\Support\Features::enabled('reviews') ? 'true' : 'false' }},
         practice: @js($practice),
     })">
 
@@ -166,19 +168,22 @@
       </button>
       <span class="vh" id="copyNote" aria-live="polite" x-text="note"></span>
       <span class="stat">
-        <span class="pill" :class="isPublished ? 'p-live' : 'p-off'" x-text="isPublished ? @js(__('Live')) : @js(__('Private'))">{{ $talent->is_published ? __('Live') : __('Private') }}</span>
+        {{-- ADR-AQ: Draft → Private → Live. --}}
+        <span class="pill" :class="{ 'p-live': stage === 'live', 'p-off': stage === 'private', 'p-draft': stage === 'draft', 'p-bad': isSuspended || stage === 'archived' }" x-text="stageLabel">{{ ['live' => __('Live'), 'private' => __('Private'), 'draft' => __('Draft')][$completion['stage']] ?? __('Taken down') }}</span>
         <span class="pill p-idx" x-show="isListed" x-cloak>{{ __('In the Index') }}</span>
-        <button type="button" class="tipbtn" aria-describedby="pubTip" aria-label="{{ __('What Live and Private mean') }}"><svg class="icon" aria-hidden="true"><use href="#i-info"/></svg></button>
-        {{-- Three states, and every line that is true is lit. --}}
+        <button type="button" class="tipbtn" aria-describedby="pubTip" aria-label="{{ __('What Draft, Private and Live mean') }}"><svg class="icon" aria-hidden="true"><use href="#i-info"/></svg></button>
+        {{-- Draft → Private → Live (+ the Index); the line that is true is lit. --}}
         <span class="tip" role="tooltip" id="pubTip">
-          <p :class="{ cur: !isPublished }"><b>{{ __('Private') }}</b> {{ __('Only you can see it. Finish Go Live and your link works.') }}</p>
-          <p :class="{ cur: isPublished }"><b>{{ __('Live') }}</b> {{ __('Anyone with your link can open your profile.') }}</p>
+          <p :class="{ cur: stage === 'draft' }"><b>{{ __('Draft') }}</b> {{ __('Finish the Go Live steps. Only you can see it.') }}</p>
+          <p :class="{ cur: stage === 'private' }"><b>{{ __('Private') }}</b> {{ __('Ready, and only you can see it. Go Live when you want your link to work.') }}</p>
+          <p :class="{ cur: stage === 'live' }"><b>{{ __('Live') }}</b> {{ __('Anyone with your link can open your profile. You can make it Private again any time.') }}</p>
           <p :class="{ cur: isListed }"><b>{{ __('In the Creatives Index') }}</b> <span x-text="isListed ? @js(__('Brands find you when they search.')) : @js(__('Brands find you when they search. Add something to show to get there.'))"></span></p>
         </span>
       </span>
-      {{-- App states the prototype has no screen for: a profile HELD private (Unpublished) goes
-           Live by hand; a suspended one can't. Every other profile goes Live by itself. --}}
-      <button type="button" class="btn btn-text pub-act" x-show="isHeld && path.can_go_live" x-cloak @click="setPublished(true)" :disabled="publishing">{{ __('Go Live') }}</button>
+      {{-- ADR-AQ: Private ⇄ Live is the talent's call. A Draft has nothing to switch (the steps
+           card says what's left); a suspended profile can't (Fama's hold). --}}
+      <button type="button" class="btn pub-act" x-show="canPublish" x-cloak @click="setPublished(true)" :disabled="publishing">{{ __('Go Live') }}</button>
+      <button type="button" class="btn btn-text pub-act" x-show="stage === 'live'" x-cloak @click="setPublished(false)" :disabled="publishing">{{ __('Make private') }}</button>
       <p class="vw-err pub-note" x-show="publishError || isSuspended" x-cloak x-text="publishError || @js(__('Fama has taken your profile down. Contact support to restore it.'))"></p>
     </div>
   </div>
@@ -233,7 +238,7 @@
   </div>
 </section>
 
-<div class="layout">
+<div class="layout" :class="{ 'has-bar': barShown }">
 
   {{-- ═══ Core details ═══ --}}
   <section class="sec panel" id="core" :class="{ changed: dirty.core }">
@@ -425,54 +430,6 @@
     </div>
   </section>
 
-  {{-- ═══ Sections — the blocks on each tab (app feature; built from the
-       prototype's own section-row pattern: name → content, Visible; moves between tabs by drag). ═══ --}}
-  <section class="sec panel" id="sections" :class="{ changed: dirty.sections }">
-    <div class="phead">
-      <div class="ptitle"><div class="hrow"><h2 class="h3x">{{ __('Sections') }}</h2><span class="dirty" x-show="dirty.sections" x-cloak>{{ __('Unsaved') }}</span></div>
-        <p class="pdesc">{{ __('What shows on each tab of your profile. Choose a section to fill it in, drag to reorder, or switch it off to hide it. Hidden sections keep their content.') }}</p></div>
-    </div>
-    <div class="pbody">
-      {{-- No "Before / After your work" control: every profile shows its profile-wide
-           sections after the skill tabs (prototype place:'below'). --}}
-      <template x-for="g in scopeGroups" :key="g.key">
-        <div class="group">
-          <h3><button type="button" class="ghead" @click="toggleGroup(g.key)" :aria-expanded="(!!openGroups[g.key]).toString()">
-            <span x-text="g.label"></span>
-            <span class="meta" x-text="g.typeId === null ? @js(__('Shows on every tab')) : (blocksInScope(g.typeId).length === 1 ? @js(__('1 section')) : @js(__(':n sections')).replace(':n', blocksInScope(g.typeId).length))"></span>
-            <svg class="icon" aria-hidden="true"><use href="#i-chev"/></svg>
-          </button></h3>
-          <ul class="rows" x-show="openGroups[g.key]" :class="{ 'drop-ok': dropOn === g.key && !dropDeny, 'drop-no': dropOn === g.key && dropDeny }"
-              @dragover.prevent="groupOver(g)" @dragleave.self="dropOn = null" @drop.prevent="groupDrop(g)">
-            <template x-for="b in blocksInScope(g.typeId)" :key="b.id">
-              <li class="row" :class="{ off: !b.is_visible, dragging: dragBlock === b.id }" @drop.prevent.stop="rowDrop(b)">
-                <span class="rname">
-                  <button type="button" class="grip" draggable="true" @dragstart="rowStart($event, b)" @dragend="rowEnd()"
-                          :aria-label="@js(__('Drag to reorder :name')).replace(':name', blockName(b))"><svg class="icon" aria-hidden="true"><use href="#i-grip"/></svg></button>
-                  <template x-if="hasContentEditor(b)">
-                    <a class="name" :href="contentUrl(b)"><span x-text="blockName(b)"></span><svg class="icon" aria-hidden="true"><use href="#i-pen"/></svg></a>
-                  </template>
-                  <template x-if="!hasContentEditor(b)">
-                    <span class="name" x-text="blockName(b)"></span>
-                  </template>
-                  <span class="tag tag-hidden" x-show="!b.is_visible">{{ __('Hidden') }}</span>
-                </span>
-                {{-- No "Move to…" control (2026-11-23): sections move between tabs by drag only. --}}
-                <span class="rmeta"></span>
-                {{-- Projects in a skill tab is pinned (ProfileBlockService::isPinned): it always
-                     shows while the tab has work — a locked ON switch. --}}
-                <button type="button" class="switch" role="switch" :aria-checked="b.is_visible.toString()" @click="toggleVisible(b)"
-                        :disabled="isPinned(b)"
-                        :aria-label="@js(__('Show :name on your profile')).replace(':name', blockName(b))"><i></i></button>
-              </li>
-            </template>
-            <li class="empty" x-show="!blocksInScope(g.typeId).length" x-text="g.isNew ? @js(__('Its sections appear once you save.')) : @js(__('No sections here. Drag one in.'))"></li>
-          </ul>
-        </div>
-      </template>
-    </div>
-  </section>
-
   {{-- ═══ Willing to explore ═══ --}}
   <section class="sec panel" id="explore" :class="{ 'is-off': uniBlock('interests') && !uniBlock('interests').is_visible, changed: dirty.explore }">
     <div class="phead">
@@ -494,8 +451,9 @@
                   <template x-for="sp in skillSpecs(w.talent_type_id)" :key="sp.id"><option :value="sp.id" :selected="sp.id === w.speciality_id" x-text="sp.name"></option></template>
                 </select></label>
               <button type="button" class="iconbtn" @click="removeInterest(w)" aria-label="{{ __('Remove this entry') }}" style="margin-top:34px"><svg class="icon" aria-hidden="true"><use href="#i-trash"/></svg></button>
-              <label class="note"><span class="lbl"><span>{{ __('Note') }}</span><small x-text="(w.note || '').length + ' / 160'"></small></span>
-                <input class="in" maxlength="160" x-model="w.note" placeholder="{{ __('What you\'d like to try, in a line') }}"></label>
+              {{-- 2026-11-23: a text area with the normal long-text limit (2,000), not a 160-char line. --}}
+              <label class="note"><span class="lbl"><span>{{ __('Note') }}</span><small x-text="count(w.note, 2000)"></small></span>
+                <textarea class="ta" maxlength="2000" x-model="w.note" placeholder="{{ __('What you\'d like to try') }}"></textarea></label>
             </li>
           </template>
         </ul>

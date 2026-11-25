@@ -33,7 +33,7 @@ use Illuminate\Support\Str;
  *   Credits — credits WAITING for the demo talent's answer, recognitions incl. a pending one.
  *   Activity — saved posts, a mutual follow graph.
  *   Notifications + bell — one of every type, read and unread, today / this week / earlier.
- *   Gate states — a second, Private + unverified talent (talent-new@fama.test) mid-setup.
+ *   Gate states — a second, Draft + unverified talent (talent-new@fama.test) mid-setup.
  *
  * Runs last in DatabaseSeeder and is IDEMPOTENT, so it also tops up an existing dev
  * DB: `php artisan db:seed --class=ScreensDemoSeeder`. Pair with `php artisan
@@ -440,8 +440,8 @@ class ScreensDemoSeeder extends Seeder
     }
 
     /**
-     * A second demo talent who is Private, unverified and half set up — the
-     * "Your profile is Private" notice, the go-Live steps and the private preview.
+     * A second demo talent who is a Draft (ADR-AQ), unverified and half set up — the
+     * "Your profile is a Draft" notice, the go-Live steps and the private preview.
      * Login: talent-new@fama.test / password.
      */
     private function seedPrivateTalent(): void

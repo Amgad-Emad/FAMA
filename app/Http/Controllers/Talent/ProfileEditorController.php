@@ -4,8 +4,6 @@ namespace App\Http\Controllers\Talent;
 
 use App\Http\Requests\Talent\AddBlockRequest;
 use App\Http\Requests\Talent\FillBlockRequest;
-use App\Http\Requests\Talent\MoveBlockRequest;
-use App\Http\Requests\Talent\ReorderRequest;
 use App\Http\Requests\Talent\UpdateAvatarRequest;
 use App\Http\Requests\Talent\UpdateCoreProfileRequest;
 use App\Http\Requests\Talent\UpdateExperienceRequest;
@@ -30,7 +28,6 @@ use App\Services\ProfileBlockService;
 use App\Services\ProfileCompletionService;
 use App\Services\ProfileViewStatsService;
 use App\Services\TalentProfileService;
-use App\Support\ContentRegistry;
 use App\Support\Experience;
 use App\Support\PracticeFields;
 use Illuminate\Http\JsonResponse;
@@ -59,7 +56,8 @@ class ProfileEditorController extends TalentController
 
     /**
      * The Profile structure page (fama-ui): identity, availability, links,
-     * skills + specialities, sections (blocks), willing-to-explore, experience
+     * skills + specialities, willing-to-explore (+ its show switch), experience
+     * (+ its show switch)
      * and pricing, plus the folded-in dashboard (completion steps + views).
      */
     public function edit(): View
@@ -71,13 +69,9 @@ class ProfileEditorController extends TalentController
         ]);
         $skills = $this->orderedSkills($talent);
 
-        $catalog = BlockType::query()->where('is_active', true)
-            ->with(['categories', 'talentTypes'])->orderBy('position')->get();
-
         return view('talent.profile-editor', [
             'talent' => $talent,
             'blocks' => ProfileBlockResource::collection($talent->profileBlocks),
-            'catalog' => BlockTypeResource::collection($catalog),
             'skills' => TalentTypeResource::collection($skills),
             'availableSkills' => TalentTypeResource::collection(
                 TalentType::whereNotIn('id', $talent->talentTypes->pluck('id'))->alphabetical()->get()
@@ -113,10 +107,6 @@ class ProfileEditorController extends TalentController
             // Every skill, not just the talent's own — this section names
             // directions they do NOT yet work in (ADR-Z).
             'interestSkills' => $this->interestSkillPayload(),
-            // Block types whose content is editable somewhere — the rest
-            // (comp_card) must not offer a dead "Edit content" link. `projects`
-            // is editable on its own page (ADR-X), not the content page.
-            'contentKeys' => [...ContentRegistry::keys(), 'reviews', 'projects', 'recognitions', 'interests'],
             // The fama-ui page folds the old dashboard in: the profile path
             // (Go Live then Stand out, ADR-AC — from SAVED data) and the views card.
             'completion' => $this->completion->state($talent),
@@ -404,26 +394,6 @@ class ProfileEditorController extends TalentController
         $block = $this->blocks->fillBlock($block, $request->validated());
 
         return response()->success(new ProfileBlockResource($block->load('blockType')), __('Block saved.'));
-    }
-
-    public function reorderBlocks(ReorderRequest $request): JsonResponse
-    {
-        $scope = $this->scope($request->filled('talent_type_id') ? $request->integer('talent_type_id') : null);
-        $this->blocks->reorder($this->talent(), $scope, $request->orderedIds());
-
-        return response()->success(null, __('Order saved.'));
-    }
-
-    /**
-     * Move a block to another scope (a tab, or the universal section) — ADR-Q.
-     */
-    public function moveBlock(MoveBlockRequest $request, ProfileBlock $block): JsonResponse
-    {
-        $this->ensureOwns($block);
-        $target = $this->scope($request->filled('talent_type_id') ? $request->integer('talent_type_id') : null);
-        $block = $this->blocks->moveBlock($block, $target);
-
-        return response()->success(new ProfileBlockResource($block->load('blockType')), __('Block moved.'));
     }
 
     public function toggleBlock(Request $request, ProfileBlock $block): JsonResponse

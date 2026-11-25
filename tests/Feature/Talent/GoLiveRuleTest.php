@@ -17,6 +17,8 @@ use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Http\UploadedFile;
 
 /**
+ * ADR-AQ (2026-11-23): the talent sees Draft → Private → Live. Saving the Go
+ * Live steps makes a Draft Private by itself; the talent presses Go Live.
  * ADR-AC (2026-11-04, per the co-founder prototype, stakeholder-confirmed):
  * Go Live = display name · a skill AND a speciality · city; no review step.
  * Stand out is advisory; its first step lists a Live profile in the Creatives
@@ -38,7 +40,7 @@ function doneTalent(): Talent
     return $talent->fresh();
 }
 
-it('takes a profile Live by itself once the three Go Live steps are saved', function () {
+it('makes a Draft profile Private (not Live) by itself once the three Go Live steps are saved', function () {
     $talent = Talent::factory()->draft()->unverified()->create(['display_name' => 'Nour', 'base_city' => 'Cairo']);
     $type = TalentType::factory()->create();
     $speciality = Speciality::factory()->create(['talent_type_id' => $type->id]);
@@ -48,9 +50,43 @@ it('takes a profile Live by itself once the three Go Live steps are saved', func
 
     app(SkillsService::class)->setSpecialities($talent->fresh(), $type, [$speciality->id]);
 
-    expect($talent->fresh()->status->getValue())->toBe('live')
-        ->and($talent->fresh()->is_published)->toBeTrue()
+    expect($talent->fresh()->status->getValue())->toBe('unpublished')
+        ->and(app(ProfileCompletionService::class)->stage($talent->fresh()))->toBe('private')
+        ->and($talent->fresh()->is_published)->toBeFalse()
         ->and($talent->fresh()->is_verified)->toBeFalse();
+});
+
+it('lets the talent go Live from Private, and make a Live profile Private again', function () {
+    $talent = Talent::factory()->draft()->goLiveReady()->create();
+    app(SyncGoLiveState::class)($talent);
+    expect($talent->fresh()->status->getValue())->toBe('unpublished');
+
+    $this->actingAs($talent->fresh(), 'talent')->patchJson(route('talent.profile.publish'), ['publish' => true])
+        ->assertOk()->assertJsonPath('data.is_published', true)->assertJsonPath('data.status', 'live');
+
+    $this->actingAs($talent->fresh(), 'talent')->patchJson(route('talent.profile.publish'), ['publish' => false])
+        ->assertOk()->assertJsonPath('data.is_published', false)->assertJsonPath('data.status', 'unpublished');
+
+    expect(app(ProfileCompletionService::class)->stage($talent->fresh()))->toBe('private');
+});
+
+it('refuses to go Live or be made Private while still a Draft', function () {
+    $talent = Talent::factory()->draft()->create(['display_name' => 'Nour', 'base_city' => null]);
+
+    $this->actingAs($talent, 'talent')->patchJson(route('talent.profile.publish'), ['publish' => true])->assertStatus(422);
+    $this->actingAs($talent, 'talent')->patchJson(route('talent.profile.publish'), ['publish' => false])->assertStatus(422);
+
+    expect($talent->fresh()->status->getValue())->toBe('draft');
+});
+
+it('takes a Private profile back to Draft when a save empties a Go Live step', function () {
+    $talent = Talent::factory()->draft()->goLiveReady()->create(['base_city' => 'Cairo']);
+    app(SyncGoLiveState::class)($talent);
+    expect($talent->fresh()->status->getValue())->toBe('unpublished');
+
+    $this->actingAs($talent->fresh(), 'talent')->patchJson('/talent/profile', ['base_city' => ''])->assertOk();
+
+    expect($talent->fresh()->status->getValue())->toBe('draft');
 });
 
 it('needs the city, not the country, to go Live', function () {
@@ -62,6 +98,7 @@ it('needs the city, not the country, to go Live', function () {
 it('takes a Live profile back to Draft when a save empties a Go Live step', function () {
     $talent = Talent::factory()->draft()->goLiveReady()->create(['base_city' => 'Cairo']);
     app(SyncGoLiveState::class)($talent);
+    app(TalentProfileService::class)->publish($talent->fresh());
     expect($talent->fresh()->is_published)->toBeTrue();
 
     $this->actingAs($talent->fresh(), 'talent')->patchJson('/talent/profile', ['base_city' => ''])->assertOk();
@@ -91,7 +128,7 @@ it('lists a Live profile in the Creatives Index only once it has something to sh
     $service = app(ProfileCompletionService::class);
     $talent = Talent::factory()->draft()->goLiveReady()->create();
     app(SyncGoLiveState::class)($talent);
-    $talent = $talent->fresh();
+    $talent = app(TalentProfileService::class)->publish($talent->fresh());
 
     expect($service->isListed($talent))->toBeFalse();
 
@@ -124,4 +161,24 @@ it('lets an admin Publish a talent regardless of verification', function () {
     $this->actingAs($admin, 'admin')->patchJson("/admin/moderation/talents/{$talent->id}/publish")->assertOk();
 
     expect($talent->fresh()->status->getValue())->toBe('live');
+});
+
+it('shows Draft, Private or Live on Edit profile and tells the nav notice apart', function (string $status, bool $published, string $label) {
+    $talent = Talent::factory()->goLiveReady()->create(['status' => $status, 'is_published' => $published]);
+
+    $this->actingAs($talent, 'talent')->get(route('talent.profile.edit'))
+        ->assertOk()
+        ->assertSee('x-text="stageLabel">'.$label.'</span>', false);
+})->with([
+    'draft' => ['draft', false, 'Draft'],
+    'private' => ['unpublished', false, 'Private'],
+    'live' => ['live', true, 'Live'],
+]);
+
+it('says Draft or Private in the nav notice off Edit profile', function () {
+    $draft = Talent::factory()->create(['status' => 'draft', 'is_published' => false]);
+    $private = Talent::factory()->goLiveReady()->create(['status' => 'unpublished', 'is_published' => false]);
+
+    $this->actingAs($draft, 'talent')->get(route('talent.credits'))->assertOk()->assertSee(__('Your profile is a Draft.'));
+    $this->actingAs($private, 'talent')->get(route('talent.credits'))->assertOk()->assertSee(__('Your profile is Private.'));
 });

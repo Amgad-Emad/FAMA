@@ -149,8 +149,8 @@ lifecycles are **state machines**; side effects are **events**.
 - `ProfileBlockService` — **scope-aware** (ADR-Q). `availableBlockTypes($talent, ?$scope)` is the
   per-scope picker (active + eligible in that scope − non-repeatable already present there; universal
   blocks in any tab or the universal section, gated blocks only in an eligible skill's tab); `addBlock`
-  (into a scope), `fillBlock`, `reorder` (within a scope), `moveBlock` (re-stamp `talent_type_id`,
-  validated for eligibility + per-scope repeatability), `setVisibility`, `removeBlock`. Rendering
+  (into a scope), `fillBlock`, `setVisibility`, `removeBlock` (talent-side `reorder` + `moveBlock` were
+  removed with the editor's Sections panel, ADR-AP — blocks keep their seeded scope and order). Rendering
   resolves via `block_type_id → block_types`, so deactivated (grandfathered) blocks still render.
 - `SkillsService` — `addType` (seeds **that skill's** tab via `SeedBlocksForSkill`), `removeType`
   (deletes the tab's blocks but **preserves content** — items un-linked, and `untagProjects` drops the

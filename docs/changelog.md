@@ -2,6 +2,44 @@
 
 Notable changes to the Fama project. Newest first.
 
+## 2026-11-23 — Willing to explore: the note is a text area
+- Edit profile → Willing to explore: each entry's Note is a `<textarea>` with the normal long-text limit
+  (2,000 characters, like Point of view and Highlights) instead of a 160-character one-line input.
+- `StoreInterestRequest` `note` max 160 → 2,000; migration `2026_11_23_200709_widen_talent_interests_note_to_text`
+  widens `talent_interests.note` VARCHAR(255) → TEXT (down() trims to 255 first). The public profile keeps the
+  note's line breaks (`.wtel-n{white-space:pre-line}`).
+
+## 2026-11-23 — Profile states: Draft → Private → Live (ADR-AQ); nav label "Profile"
+- A talent's profile now reads **Draft → Private → Live**. Saving the three Go Live steps makes a Draft
+  **Private** (`unpublished`) by itself — no longer Live (supersedes ADR-AC's auto-Live). The talent presses
+  **Go Live** (hero button or the steps card) and can **Make private** again at any time (toast with Undo).
+  Breaking a Go Live step on a Private or Live profile goes back to Draft. Suspended/archived are unchanged.
+- State machine: new `draft → unpublished` and `unpublished → draft` transitions; `SyncGoLiveState` targets
+  Private; `TalentProfileService::publish` is a no-op when Live, `unpublish` refuses a Draft (422).
+  `ProfileCompletionService::stage()` is THE draft/private/live mapping; `state()` returns `stage`.
+- The "you're Live" e-mail now goes when the talent actually goes Live, still once.
+- Edit profile: Draft / Private / Live pill (Draft = dashed), three-line tooltip, Go Live / Make private;
+  the steps card says "Ready. Your profile is Private" with a Go Live button instead of "You're Live".
+  The nav notice and the owner's strip on the public profile tell Draft and Private apart.
+- Nav: the Edit profile link (side bar + top bar + `Navigation::talentItems()`) is labelled **Profile**; the
+  account menu and the owner's strip keep the "Edit profile" action.
+
+## 2026-11-23 — Edit profile: Sections panel removed (ADR-AP)
+- The **Sections** card on Edit profile (per-tab list of blocks with drag-to-reorder, drag-between-tabs,
+  show/hide switches and "edit content" pencils) is gone, with its whole behaviour: `scopeGroups`,
+  `blocksInScope`, drag handlers, `moveTargets`, `contentUrl`, the `sections` dirty part and the
+  move/reorder steps of `saveBlocks()` (profile-structure*.js); `catalog` + `contentKeys` are no longer sent
+  to the editor.
+- Endpoints removed: `PATCH /talent/profile/blocks/reorder` and `PATCH /talent/profile/blocks/{block}/move`
+  (+ `MoveBlockRequest`, controller `reorderBlocks`/`moveBlock`, `ProfileBlockService::reorder`/`moveBlock`).
+- Kept: `PATCH /talent/profile/blocks/{block}/visibility` — the Willing to explore / Experience "Show on
+  profile" switches and the Credits page's Recognitions switch still use it.
+- Profile content: the hero's "Show or hide sections" button and the empty-state "Manage your sections" link
+  (both pointed at `#sections`) are removed.
+- Tests updated (reorder/move tests removed; new tests assert the routes and the panel are gone).
+- Edit profile no longer leaves a large empty gap above the footer: the 120px reserved for the floating save
+  bar applies only while the bar shows (`.layout.has-bar`), and the footer sits 48px below the last card.
+
 ## 2026-11-23 — Upload modal, editor rail + cover-button fixes
 - ONE branded upload modal for every media upload on fama-ui pages: `<x-fama.upload-progress>` (in
   `<x-fama.layout>`), store `$store.famaUpload`, run via `window.famaUploading(opts, fn)`; real byte progress

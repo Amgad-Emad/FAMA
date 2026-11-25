@@ -338,3 +338,25 @@ it('seeds the profile-level sections once, not once per skill', function () {
     expect($talent->fresh()->profileBlocks()->whereNotNull('talent_type_id')
         ->whereRelation('blockType', 'key', 'recognitions')->count())->toBe(0);
 });
+
+it('takes a long, multi-line note up to 2,000 characters and refuses more', function () {
+    $talent = Talent::factory()->create(['display_name' => 'A']);
+    $direction = TalentType::where('slug', 'direction')->firstOrFail();
+    $note = str_repeat('Would love to shape a campaign end to end. ', 40)."\nSecond line."; // well past the old 160 / 255
+
+    $this->actingAs($talent, 'talent')->postJson(route('talent.profile.interests.store'), [
+        'talent_type_id' => $direction->id, 'note' => $note,
+    ])->assertCreated();
+    expect($talent->fresh()->interests->first()->note)->toBe($note);
+
+    $this->actingAs($talent, 'talent')->postJson(route('talent.profile.interests.store'), [
+        'talent_type_id' => TalentType::where('slug', 'styling')->firstOrFail()->id, 'note' => str_repeat('x', 2001),
+    ])->assertStatus(422);
+});
+
+it('edits the Willing to explore note in a text area, without the old 160 limit', function () {
+    $this->actingAs(Talent::factory()->create(), 'talent')->get(route('talent.profile.edit'))
+        ->assertOk()
+        ->assertSee('<textarea class="ta" maxlength="2000" x-model="w.note"', false)
+        ->assertDontSee("' / 160'", false);
+});

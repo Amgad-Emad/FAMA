@@ -13,7 +13,12 @@
  * from Blade (opts.S) so it is translatable; labels are escaped here.
  *
  * @param {HTMLElement} el the #gate card
- * @param {object} opts { req, rec, indexKey, S, go, done, onState }
+ * ADR-AQ (2026-11-23): Draft → Private → Live. Finishing Go Live makes the
+ * profile PRIVATE, not Live — opts.stage() says where it is ('draft' |
+ * 'private' | 'live' | …) and, while Private, the card leads with a Go Live
+ * button (opts.goLive). It only says "You're Live" once it is.
+ *
+ * @param {object} opts { req, rec, indexKey, S, go, done, onState, stage, goLive }
  * @returns {{ refresh: Function }}
  */
 const esc = (x) => String(x == null ? '' : x).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -87,28 +92,38 @@ export function famaGate(el, opts = {}) {
         if (opts.done) ALL.forEach((r) => { const v = opts.done(r[0]); if (v != null) done[r[0]] = v; });
         const reqLeft = left(REQ); const recLeft = left(REC);
         const stage = reqLeft.length ? 'live' : recLeft.length ? 'stand' : 'done';
-        const sig = ALL.map((r) => (done[r[0]] ? 1 : 0)).join('') + open + expanded;
+        // Steps done but not Live yet (Private): the card's one job is the Go Live button.
+        const pub = opts.stage ? opts.stage() : 'live';
+        const priv = !reqLeft.length && pub === 'private';
+        const sig = ALL.map((r) => (done[r[0]] ? 1 : 0)).join('') + open + expanded + pub;
         if (sig === lastSig) return;
         const fresh = was ? ALL.filter((r) => done[r[0]] && !was[r[0]]).map((r) => r[0]) : [];
         const listed = !!done[KEY]; const gotListed = was && !was[KEY] && listed && stage !== 'live';
-        const wentLive = lastStage === 'live' && stage !== 'live'; const finished = !!lastStage && lastStage !== 'done' && stage === 'done';
+        const wentLive = lastStage === 'live' && stage !== 'live' && pub === 'live'; const finished = !!lastStage && lastStage !== 'done' && stage === 'done';
         if (opts.onState) opts.onState({ live: stage !== 'live', listed: listed && stage !== 'live', wentLive });
         lastSig = sig; lastStage = stage; was = {}; ALL.forEach((r) => { was[r[0]] = done[r[0]]; });
 
-        el.hidden = stage === 'done';
+        el.hidden = stage === 'done' && !priv;
         el.classList.toggle('jr-compact', stage !== 'live' && !expanded);
+        const goBtn = priv ? `<button type="button" class="btn jr-go" data-golive>${esc(S.goLive)}${ic('i-arrow')}</button>` : '';
+        /* Private (steps done, not Live): one line — the state and Go Live. "All steps" opens the rest */
+        if (!el.hidden && priv && !expanded) {
+            el.innerHTML = '<div class="jr-row">'
+                + `<h2 class="jr-rt">${esc(S.privH)}</h2>` + goBtn
+                + (stage !== 'done' ? `<button type="button" class="vw-link jr-more" data-jr="open" aria-expanded="false">${esc(S.allSteps)}${ic('i-down')}</button>` : '')
+                + '</div>';
         /* once Live the card folds to one line: where they stand and the next step. "All steps" opens the rest */
-        if (!el.hidden && stage !== 'live' && !expanded) {
+        } else if (!el.hidden && stage !== 'live' && !expanded) {
             const nx = left(REC)[0]; const got = REC.length - left(REC).length;
             el.innerHTML = '<div class="jr-row">'
                 + `<h2 class="jr-rt">${listed ? `${esc(S.standOut)} <span class="jr-c">${got}/${REC.length}</span>` : esc(S.oneToIndex)}</h2>`
                 + (nx ? link(nx, 'btn btn-2 jr-go', `<span class="jr-gl">${esc(S.nextColon)}</span> ${nx[1]}${ic('i-arrow')}`) : '')
                 + `<button type="button" class="vw-link jr-more" data-jr="open" aria-expanded="false">${esc(S.allSteps)}${ic('i-down')}</button></div>`;
         } else if (!el.hidden) {
-            const h = stage === 'live' ? f(reqLeft.length === 1 ? S.moreOne : S.moreMany, { n: reqLeft.length }) : listed ? S.liveStand : S.liveNext;
-            const lead = stage === 'live' ? S.leadLive : listed ? S.leadListed : S.leadNotListed;
+            const h = stage === 'live' ? f(reqLeft.length === 1 ? S.moreOne : S.moreMany, { n: reqLeft.length }) : priv ? S.privH : listed ? S.liveStand : S.liveNext;
+            const lead = stage === 'live' ? S.leadLive : priv ? S.leadPrivate : listed ? S.leadListed : S.leadNotListed;
             el.innerHTML = `<div class="vw-head"><div><span class="vw-label">${esc(S.yourProfile)}</span><h2 class="vw-h">${esc(h)}</h2>`
-                + `<p class="vw-lead">${esc(lead)}</p></div>`
+                + `<p class="vw-lead">${esc(lead)}</p>${goBtn}</div>`
                 + `<span class="vw-only">${ic('i-lock')}${esc(S.onlyYou)}</span></div>`
                 + part(REQ, 1, S.p1Title, S.p1Sub, stage === 'live' ? 'is-now' : 'is-done')
                 + part(REC, 2, S.p2Title, S.p2Sub, stage === 'live' ? 'is-later' : 'is-now')
@@ -170,6 +185,7 @@ export function famaGate(el, opts = {}) {
     function onClick(e) {
         const j = e.target.closest('[data-jr]');
         if (j) { expanded = j.dataset.jr === 'open'; lastSig = null; draw(); const fb = el.querySelector('[data-jr]'); if (fb) fb.focus(); return; }
+        if (e.target.closest('[data-golive]')) { if (opts.goLive) opts.goLive(); return; }
         const g = e.target.closest('[data-go]'); if (g) { go(g.dataset.go); return; }
         if (e.target.closest('.gt-sum')) setOpen(!open);
     }

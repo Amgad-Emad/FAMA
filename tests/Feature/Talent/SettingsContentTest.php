@@ -231,11 +231,6 @@ it('never offers an editor for a block type that has none (comp_card)', function
     $this->actingAs($talent, 'talent')->get(route('talent.content', ['section' => 'modeling']))
         ->assertOk()
         ->assertDontSee('id="block-comp_card"', false);
-
-    // The editor knows which keys are editable, so it hides the dead link.
-    $this->actingAs($talent, 'talent')->get(route('talent.profile.edit'))
-        ->assertOk()
-        ->assertViewHas('contentKeys', fn (array $keys) => in_array('reviews', $keys, true) && ! in_array('comp_card', $keys, true));
 });
 
 it('adds equipment with a blank category without a 500 — the column default applies', function () {

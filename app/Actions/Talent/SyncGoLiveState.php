@@ -7,20 +7,23 @@ use App\Services\ProfileCompletionService;
 use App\States\TalentProfile\Created;
 use App\States\TalentProfile\Draft;
 use App\States\TalentProfile\Live;
+use App\States\TalentProfile\Unpublished;
 
 /**
- * Keeps a talent's Live state in step with the Go Live steps (ADR-AC): no
- * publish button, no approval — saving the three Go Live steps IS going Live.
+ * Keeps a talent's Draft / Private state in step with the Go Live steps
+ * (ADR-AQ, 2026-11-23 — supersedes ADR-AC's auto-Live). The profile path the
+ * talent sees is Draft → Private → Live:
  *
- *  - ready + Created/Draft            → Live
- *  - not ready + Live + WAS ready      → Draft (this write broke a step; the
- *                                        editor warns before such a save)
- *  - Unpublished / Suspended / Archived → untouched: a deliberate hold (admin
- *                                        Unpublish/Suspend, or a reinstated
- *                                        profile) is never undone by a save.
+ *  - ready + Created/Draft                 → Private (Unpublished). Going Live
+ *                                            is the talent's own call (the Go
+ *                                            Live button → TalentProfileService::publish).
+ *  - not ready + Private/Live + WAS ready  → Draft (this write broke a step;
+ *                                            the editor warns before such a save)
+ *  - Suspended / Archived                  → untouched: Fama's hold is never
+ *                                            undone by a save.
  *
  * Going OUT is edge-triggered (`$wasReady === true`): a profile that was Live
- * before this rule existed (e.g. no speciality) is grandfathered, never
+ * or Private before a step existed (e.g. no speciality) is grandfathered, never
  * silently pulled down by an unrelated edit. Callers run it in a transaction
  * (ProfileCompletionService::syncAfterWrite).
  */
@@ -42,8 +45,8 @@ class SyncGoLiveState
             if ($talent->status instanceof Created) {
                 $talent->status->transitionTo(Draft::class);
             }
-            $talent->status->transitionTo(Live::class);
-        } elseif (! $ready && $wasReady === true && $talent->status instanceof Live) {
+            $talent->status->transitionTo(Unpublished::class);
+        } elseif (! $ready && $wasReady === true && ($talent->status instanceof Live || $talent->status instanceof Unpublished)) {
             $talent->status->transitionTo(Draft::class);
         }
 

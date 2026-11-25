@@ -76,7 +76,7 @@
 
     $strings = [
         'copied' => __('Link copied'), 'yourLink' => __('Your link'), 'shareTitle' => __(':name on Fama'),
-        'shareOff' => __('Complete your profile to go Live. Then you can share your link.'),
+        'shareOff' => $talent->status->getValue() === 'unpublished' ? __('Go Live from Edit profile to share your link.') : __('Complete your profile to go Live. Then you can share your link.'),
         'ownNote' => __('This is your own profile. Visitors use this button.'),
     ];
     $blockVars = ['talent' => $talent, 'isOwner' => $isOwner];
@@ -122,7 +122,7 @@
         </x-slot:hero>
     @elseif ($isOwner)
         <x-slot:hero>
-            <div class="pv-strip" id="strip"><div class="wrap"><span>{{ $isLive ? __('This is how everyone sees your profile.') : __("Your profile is private. This is how people will see it once it's public.") }}</span><a class="btn" href="{{ route('talent.profile.edit') }}"><svg class="icon" aria-hidden="true"><use href="#i-pen"/></svg><span>{{ __('Edit profile') }}</span></a></div></div>
+            <div class="pv-strip" id="strip"><div class="wrap"><span>{{ $isLive ? __('This is how everyone sees your profile.') : ($talent->status->getValue() === 'unpublished' ? __("Your profile is Private. This is how people will see it once you go Live.") : __("Your profile is a Draft. This is how people will see it once you go Live.")) }}</span><a class="btn" href="{{ route('talent.profile.edit') }}"><svg class="icon" aria-hidden="true"><use href="#i-pen"/></svg><span>{{ __('Edit profile') }}</span></a></div></div>
         </x-slot:hero>
     @endif
 

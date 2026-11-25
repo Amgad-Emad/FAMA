@@ -131,6 +131,9 @@ p{margin:0}
 .stat .p-live{background:var(--mint-fg);color:var(--white)}
 .stat .p-off{background:var(--ink);color:var(--white)}
 .stat .p-idx{background:var(--purple-dk);color:var(--white)}
+/* ADR-AQ (2026-11-23): Draft → Private → Live — Draft is the outlined, unfinished pill. */
+.stat .p-draft{background:var(--white);color:var(--ink);border:1.5px dashed var(--grey)}
+.stat .p-bad{background:var(--rose-fg);color:var(--white)}
 .stat .p-idx::before{background:var(--yellow)}
 .stat .tipbtn{color:var(--ink)}
 .tag{font-weight:600;font-size:13px;border-radius:var(--radius-pill);padding:2px var(--s3);white-space:nowrap}
@@ -372,7 +375,11 @@ dialog::backdrop{background:rgba(20,17,15,.5)}
 
 /* review 7 Oct 2026: every part is open and editable in place. Changes collect in a draft, and the bar at the
    bottom saves or discards them, so it's always clear whether the profile is saved. */
-.layout{padding-bottom:120px}
+/* 2026-11-23: the room for the fixed save bar is reserved only while the bar shows (it is hidden when the
+   draft is clean), so a saved page ends right after its last card, and the footer sits a normal gap below. */
+.layout{padding-bottom:0}
+.layout.has-bar{padding-bottom:120px}
+body:has(#savebar) .fx-foot{margin-top:var(--s7)}
 .panel{margin-top:var(--s5)}
 .panel .pbody{border-top:var(--border)}
 .savebar{position:fixed;inset-inline:0;bottom:var(--s5);z-index:40;display:flex;justify-content:center;padding-inline:var(--s5);pointer-events:none}

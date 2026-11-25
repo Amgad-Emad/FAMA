@@ -846,3 +846,29 @@
 - **Consequences:** a profile going private leaves the sitemap within the cache window (60 min) and is noindex at once.
   Social share previews of profiles and projects now show the featured project / project cover.
 
+## ADR-AP — Edit profile has no Sections panel (2026-11-23)
+- **Status:** Accepted (owner request, 2026-11-23).
+- **Decision:** Remove the Edit profile "Sections" card and its behaviour entirely. Talents no longer reorder
+  blocks, move them between skill tabs, or show/hide skill-tab sections. The talent-side endpoints
+  `PATCH /talent/profile/blocks/reorder` and `PATCH /talent/profile/blocks/{block}/move` and the service methods
+  `ProfileBlockService::reorder` / `moveBlock` are deleted. Supersedes the "blocks can move between scopes" part
+  of ADR-Q (point 3) and its `…/move` endpoint.
+- **Kept:** `PATCH /talent/profile/blocks/{block}/visibility` — used by the Willing to explore / Experience
+  "Show on profile" switches on Edit profile and the Recognitions switch on Credits. Existing hidden blocks stay
+  hidden; existing orders/scopes are unchanged.
+- **Consequences:** a profile shows its sections in the seeded order (`SeedBlocksForSkill`). Restoring reorder/move
+  later means re-adding the endpoints + service methods (see git history) and a UI.
+
+## ADR-AQ — Profile states: Draft → Private → Live (2026-11-23)
+- **Status:** Accepted (owner request, 2026-11-23). Supersedes ADR-AC's "a profile goes Live by itself".
+- **Decision:** The talent sees three states. **Draft** (`created`/`draft`) — Go Live steps not all saved.
+  **Private** (`unpublished`) — steps saved, only the talent sees it; reached BY ITSELF when the steps are
+  saved (`SyncGoLiveState`), or by making a Live profile private (talent or admin). **Live** — the talent
+  pressed Go Live. The talent switches Private ⇄ Live both ways (`PATCH /talent/profile/publish`); a Draft
+  can't do either (422). Breaking a Go Live step on Private or Live → Draft (edge-triggered, as before).
+  Suspended / archived remain Fama's holds.
+- **Home:** `ProfileCompletionService::stage()` maps status → draft/private/live; never re-derive it.
+- **Consequences:** new transitions draft⇄unpublished; the one-time "you're Live" e-mail fires on the
+  actual Go Live; Creatives Index listing still requires Live. The admin Unpublish lands on the same
+  Private state the talent can leave by pressing Go Live (as it already could before).
+

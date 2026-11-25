@@ -81,7 +81,7 @@ content older than the 30-day ranking windows), run `php artisan demo:freshen`.
 >
 > **Skill-scoped blocks & projects (ADR-Q, extended by ADR-X):** `profile_blocks` belong to a skill
 > (`talent_type_id`; NULL = profile-level). Adding a skill seeds **its own tab's** blocks (per-skill —
-> gallery in both tabs); the picker is per-scope, blocks move between tabs, and removing a skill deletes
+> gallery in both tabs); blocks keep their seeded scope and order (the editor's Sections panel was removed, ADR-AP), and removing a skill deletes
 > its tab's blocks but preserves content. The editor manages blocks per scope. A **project** carries
 > **one or more** skills (`project_talent_type`; `projects.talent_type_id` is its home tab) — so a
 > project tagged with two disciplines appears in **both** tabs, and removing a skill re-homes its

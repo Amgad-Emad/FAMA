@@ -27,7 +27,7 @@ class StoreInterestRequest extends FormRequest
         return [
             'talent_type_id' => ['required', 'integer', 'exists:talent_types,id'],
             'speciality_id' => ['nullable', 'integer', 'exists:specialities,id'],
-            'note' => ['nullable', 'string', 'max:160'],
+            'note' => ['nullable', 'string', 'max:2000'], // 2026-11-23: a text area, the normal long-text limit
         ];
     }
 

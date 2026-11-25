@@ -18,11 +18,12 @@
     if ($mode === 'talent' && ! $talent) {
         $mode = 'public';
     }
-    // 30 Oct 2026: "Profile structure" reads as "Edit profile". 13 Nov 2026 review: the portfolio comes
+    // 30 Oct 2026: "Profile structure" reads as "Edit profile"; 23 Nov 2026: the nav label is just "Profile"
+    // (the account menu and the owner's strip keep the "Edit profile" action wording). 13 Nov 2026 review: the portfolio comes
     // first, the feed after it.
     $items = [
         ['route' => 'talent.projects', 'label' => __('Projects'), 'icon' => 'grid'],
-        ['route' => 'talent.profile.edit', 'label' => __('Edit profile'), 'icon' => 'upen'],
+        ['route' => 'talent.profile.edit', 'label' => __('Profile'), 'icon' => 'upen'],
         ['route' => 'talent.credits', 'label' => __('Credits'), 'icon' => 'award'],
         ['route' => 'feed', 'label' => __('Feed'), 'icon' => 'home'],
         ['route' => 'talent.feed.activity', 'label' => __('Activity'), 'icon' => 'heart'],
@@ -70,7 +71,7 @@
             </ul>
             <p class="fx-sgroup">{{ __('Your profile') }}</p>
             <ul class="fx-slinks">
-                <li><a data-tip="{{ __('Edit profile') }}" href="{{ route('talent.profile.edit') }}" @if (request()->routeIs('talent.profile.edit*')) aria-current="page" @endif><span class="fx-si"><svg class="fx-icon" aria-hidden="true"><use href="#fx-i-upen"/></svg></span><span class="fx-sl">{{ __('Edit profile') }}</span></a></li>
+                <li><a data-tip="{{ __('Profile') }}" href="{{ route('talent.profile.edit') }}" @if (request()->routeIs('talent.profile.edit*')) aria-current="page" @endif><span class="fx-si"><svg class="fx-icon" aria-hidden="true"><use href="#fx-i-upen"/></svg></span><span class="fx-sl">{{ __('Profile') }}</span></a></li>
                 @if ($talent->slug)
                     <li><a data-tip="{{ __('View profile') }}" href="{{ url($talent->slug) }}" @if ($onOwnProfile) aria-current="page" @endif><span class="fx-si"><svg class="fx-icon" aria-hidden="true"><use href="#fx-i-eye"/></svg></span><span class="fx-sl">{{ __('View profile') }}</span></a></li>
                 @endif
@@ -173,16 +174,23 @@
             </nav>
         </div>
         @if (! $talent->is_published && ! request()->routeIs('talent.profile.edit'))
-            {{-- Pinned while the profile is Private (ADR-AC, 2026-11-04: no review step — the Go Live
-                 steps alone put it Live). Edit profile shows its own steps card instead. --}}
+            {{-- Pinned while the profile isn't Live (ADR-AQ, 2026-11-23: Draft → Private → Live).
+                 Draft = steps to finish; Private = ready, one press to Go Live (on Edit profile).
+                 Edit profile shows its own steps card instead. --}}
+            @php($isDraftProfile = ! in_array($talent->status->getValue(), ['unpublished', 'suspended', 'archived'], true))
             <div class="fx-notice" role="region" aria-label="{{ __('Profile status') }}">
                 <div class="fx-wrap fx-in">
                     <svg class="fx-icon" aria-hidden="true"><use href="#fx-i-lock"/></svg>
                     <p role="status">
-                        <span class="fx-long">{{ __('Your profile is Private: only you can see it. Complete it to go Live and share your link.') }}</span>
-                        <span class="fx-short">{{ __('Your profile is Private.') }}</span>
+                        @if ($isDraftProfile)
+                            <span class="fx-long">{{ __('Your profile is a Draft: only you can see it. Finish the Go Live steps, then go Live to share your link.') }}</span>
+                            <span class="fx-short">{{ __('Your profile is a Draft.') }}</span>
+                        @else
+                            <span class="fx-long">{{ __('Your profile is Private: only you can see it. Go Live to share your link.') }}</span>
+                            <span class="fx-short">{{ __('Your profile is Private.') }}</span>
+                        @endif
                     </p>
-                    <a class="fx-ncta" href="{{ route('talent.profile.edit') }}#gate">{{ __('Complete your profile') }}
+                    <a class="fx-ncta" href="{{ route('talent.profile.edit') }}#gate">{{ $isDraftProfile ? __('Complete your profile') : __('Go Live') }}
                         <svg class="fx-icon fx-flip" aria-hidden="true"><use href="#fx-i-arrow"/></svg></a>
                 </div>
             </div>

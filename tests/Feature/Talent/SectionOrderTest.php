@@ -2,6 +2,7 @@
 
 use App\Models\BlockType;
 use App\Models\ProfileBlock;
+use App\Models\Recognition;
 use App\Models\Talent;
 use App\Models\TalentType;
 use Database\Seeders\BlockTypeSeeder;
@@ -28,7 +29,7 @@ function talentWithSections(): Talent
     ProfileBlock::factory()->for($talent)->create([
         'block_type_id' => $universalType->id, 'talent_type_id' => $type->id, 'is_visible' => true, 'position' => 0,
     ]);
-    \App\Models\Recognition::factory()->approved()->create(['talent_id' => $talent->id]);
+    Recognition::factory()->approved()->create(['talent_id' => $talent->id]);
 
     return $talent->fresh();
 }
@@ -73,7 +74,7 @@ it('no longer offers the profile-wide placement control (the prototype fixes it 
 
     $this->actingAs($talent, 'talent')->get(route('talent.profile.edit'))
         ->assertOk()
-        ->assertSee('id="sections"', false)
+        ->assertDontSee('id="sections"', false) // the whole Sections panel is gone (2026-11-23)
         ->assertDontSee('setPlace(', false)
         ->assertDontSee(__('Before your work'));
 });

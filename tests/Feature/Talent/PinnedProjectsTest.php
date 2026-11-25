@@ -48,15 +48,12 @@ it('seeds a Projects section into every skill tab a talent adds', function () {
     }
 });
 
-it('refuses to hide, move or remove a skill tab\'s Projects section', function () {
+it('refuses to hide or remove a skill tab\'s Projects section', function () {
     $talent = pinnedTalent('photography', 'modeling');
     $block = projectsBlockIn($talent, 'photography');
 
     $this->actingAs($talent, 'talent')
         ->patchJson(route('talent.profile.blocks.visibility', $block->id), ['is_visible' => false])
-        ->assertStatus(422);
-    $this->actingAs($talent, 'talent')
-        ->patchJson(route('talent.profile.blocks.move', $block->id), ['talent_type_id' => null])
         ->assertStatus(422);
 
     expect($block->fresh())->is_visible->toBeTrue()->talent_type_id->toBe($block->talent_type_id);

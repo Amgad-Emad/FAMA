@@ -1235,8 +1235,8 @@ already guards it). (4) Tests that count text on a page must count in the <body>
 DEPLOY: `config/scribe.php` returns [] when Scribe is absent, so `composer install --no-dev` works.
 PROJECTS IN EVERY TAB + NO EMPTY SECTIONS (2026-11-23, suite 953 green): every skill tab has a PINNED
 Projects section — `ProfileBlockService::isPinned()` (skill-scoped `projects` block) is THE rule: it can't
-be hidden, moved or removed (422), only reordered; the editor mirrors it (`isPinned` in
-profile-structure-lists.js → locked ON switch). The editor has NO "Move to…" dropdown on any row — sections move between tabs by drag only. `SeedBlocksForSkill` always seeds
+be hidden or removed (422) (SUPERSEDED in part by ADR-AP below: no talent-side reorder/move at all, and the
+editor's Sections panel is gone). `SeedBlocksForSkill` always seeds
 it, and every catalog skill lists it. Migrations 2026_11_23_003520 (backfill, appended last) +
 2026_11_23_003522 (unhide). `App\Support\ProfileSections::forScope()` is THE public section list (profile
 page + lazy tab endpoint) and adds a Projects section when a scope has work but no block — projects always
@@ -1255,3 +1255,16 @@ only the props the tween set (`'transform,opacity,visibility'` for y/autoAlpha).
 EDIT PROFILE HAS NO FLOATING TRACKER (2026-11-23): `famaGate` (ui/profile-gate.js) no longer creates the `.fx-notice.gt`
 bar under the nav — the #gate card is the only steps UI (hidden once every step is done). The tracker code paths
 are inert behind `bar === null`; the nav's Private notice still stays off Edit profile.
+SECTIONS PANEL REMOVED (2026-11-23, ADR-AP; suite 950 green, build green): Edit profile has NO Sections card —
+talents can't reorder blocks, move them between tabs, or hide skill-tab sections; blocks keep their seeded scope
++ order. `PATCH /talent/profile/blocks/reorder` + `…/{block}/move`, `MoveBlockRequest` and
+`ProfileBlockService::reorder/moveBlock` are DELETED. `…/{block}/visibility` STAYS (Explore / Experience "Show on
+profile" switches + the Credits Recognitions switch). In profile-structure*.js only `blockName`/`uniBlock`/
+`toggleVisible` + a switches-only `saveBlocks()` remain; the editor no longer receives `catalog`/`contentKeys`.
+PROFILE STATES DRAFT → PRIVATE → LIVE (2026-11-23, ADR-AQ; SUPERSEDES ADR-AC's auto-Live; suite 957 green):
+saving the Go Live steps makes a Draft PRIVATE (`unpublished`) by itself (`SyncGoLiveState`), NOT Live; the
+talent presses Go Live and can Make private again (`PATCH /talent/profile/publish`, both ways; a Draft → 422).
+Breaking a step on Private/Live → Draft. `ProfileCompletionService::stage()` is THE status→draft/private/live
+map (`state()` returns `stage`; the editor reads `path.stage`). The "you're Live" mail fires on the real Go
+Live. Nav label for talent.profile.edit is now **Profile** (account menu + owner strip keep "Edit profile").
+

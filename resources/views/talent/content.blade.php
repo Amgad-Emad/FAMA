@@ -51,7 +51,6 @@
     <x-slot:hero>
         <x-fama.hero :label="__('Fill in your profile')" :title="__('Profile content')"
                      :lead="__('The parts of your profile around your projects: recognitions, brands and what you’d like to explore.')">
-            <a class="fx-hbtn light" href="{{ route('talent.profile.edit') }}#sections">{{ __('Show or hide sections') }}</a>
         </x-fama.hero>
     </x-slot:hero>
 
@@ -106,7 +105,7 @@
         @endif
       </section>
     @empty
-      <section class="block"><p class="none">{{ __('This section has no content blocks yet.') }} <a class="link" href="{{ route('talent.profile.edit') }}#sections">{{ __('Manage your sections') }}</a></p></section>
+      <section class="block"><p class="none">{{ __('This section has no content blocks yet.') }}</p></section>
     @endforelse
   </div>
 </main>
