@@ -22,7 +22,8 @@ use Illuminate\Support\Facades\Mail;
  *               gets a profile picked.
  *
  * "Profile done" = every Go Live AND Stand out step. It decides where a
- * talent lands after signing in (Feed when done, else Profile structure).
+ * talent lands after signing in (Projects when done; else the guided
+ * onboarding while an essential step is missing; else Profile — ADR-AR).
  * Reads are side-effect free; the only writes are the state sync and the
  * one-time "you're Live" e-mail stamp.
  */
@@ -36,6 +37,32 @@ class ProfileCompletionService extends Service
 
     /** The Stand out step that lists a Live profile in the Creatives Index. */
     public const INDEX_STEP = 'show';
+
+    /**
+     * The guided onboarding (/talent/welcome, ADR-AR): the same ten steps,
+     * regrouped into five screens in the order that builds a COMPLETE
+     * portfolio — who you are, what you do, the words around it, then the
+     * work itself (the heart of it, right before Go Live; owner order
+     * 2026-11-25), then Go Live. The last screen's own step
+     * (experience) links out to Profile, where that editor lives.
+     *
+     * @var array<string, list<string>>
+     */
+    public const ONBOARDING = [
+        'you' => ['name', 'headline', 'place', 'photo'],
+        'craft' => ['skill'],
+        'story' => ['bio', 'links'],
+        'work' => ['show', 'projects3'],
+        'live' => ['brands'],
+    ];
+
+    /**
+     * The steps onboarding insists on before it lets a talent go: the three
+     * Go Live steps plus something to show. Until they are all saved the
+     * talent lands on onboarding after signing in, and the flow resumes at
+     * the first screen still missing one of them.
+     */
+    public const ONBOARDING_ESSENTIAL = ['name', 'place', 'skill', 'show'];
 
     /**
      * The Go Live steps with whether each is done (cheap: one relation).
@@ -137,7 +164,47 @@ class ProfileCompletionService extends Service
      */
     public function homeRoute(Talent $talent): string
     {
-        return $this->isProfileDone($talent) ? 'talent.projects' : 'talent.profile.edit';
+        if ($this->isProfileDone($talent)) {
+            return 'talent.projects';
+        }
+
+        return $this->needsOnboarding($talent) ? 'talent.onboarding' : 'talent.profile.edit';
+    }
+
+    /**
+     * True while an essential onboarding step (Go Live + something to show)
+     * is missing — the talent's home is the guided flow until then (ADR-AR).
+     */
+    public function needsOnboarding(Talent $talent): bool
+    {
+        $steps = $this->steps($talent);
+
+        return in_array(false, array_intersect_key($steps, array_flip(self::ONBOARDING_ESSENTIAL)), true);
+    }
+
+    /**
+     * The onboarding screen a talent should resume on: the first screen still
+     * missing an ESSENTIAL step; failing that, the first with any step left
+     * (Go Live's screen is the last stop either way).
+     *
+     * @param  array<string, bool>|null  $steps  steps() when already computed
+     */
+    public function onboardingStep(Talent $talent, ?array $steps = null): string
+    {
+        $steps ??= $this->steps($talent);
+        $screens = array_keys(self::ONBOARDING);
+
+        foreach ([self::ONBOARDING_ESSENTIAL, array_keys($steps)] as $pass) {
+            foreach (self::ONBOARDING as $screen => $keys) {
+                foreach (array_intersect($keys, $pass) as $key) {
+                    if (! $steps[$key]) {
+                        return $screen;
+                    }
+                }
+            }
+        }
+
+        return end($screens);
     }
 
     /**
@@ -159,6 +226,8 @@ class ProfileCompletionService extends Service
             'profile_done' => ! in_array(false, $steps, true),
             'status' => $talent->status->getValue(),
             'stage' => $this->stage($talent),
+            // The onboarding screen to resume on (ADR-AR) — the Profile bar links there.
+            'onboarding_step' => $this->onboardingStep($talent, $steps),
         ];
     }
 

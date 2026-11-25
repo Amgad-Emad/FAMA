@@ -1266,5 +1266,19 @@ saving the Go Live steps makes a Draft PRIVATE (`unpublished`) by itself (`SyncG
 talent presses Go Live and can Make private again (`PATCH /talent/profile/publish`, both ways; a Draft → 422).
 Breaking a step on Private/Live → Draft. `ProfileCompletionService::stage()` is THE status→draft/private/live
 map (`state()` returns `stage`; the editor reads `path.stage`). The "you're Live" mail fires on the real Go
-Live. Nav label for talent.profile.edit is now **Profile** (account menu + owner strip keep "Edit profile").
+Live. Nav label for talent.profile.edit is now **Portfolio** (2026-11-25; account menu + owner strip keep "Edit profile").
+SIDE BAR ORDER (owner 2026-11-25): Profile → Portfolio · Projects · View profile; Community → Feed · Activity ·
+Credits · Notifications. Top bar ≤1100px: Portfolio · Projects · Feed · Activity · Credits.
+GUIDED ONBOARDING (2026-11-25, ADR-AR; suite 968 green, build green): `/talent/welcome/{step?}`
+(`talent.onboarding`) = five screens You · What you do · Your story · Your work · Go Live, ordered for a COMPLETE
+portfolio (projects get their own screen, goal of three) + a live "How brands see you" preview. It owns NO writes
+— every screen saves through the existing Profile/Skills/Projects endpoints and re-reads /talent/profile/state.
+THE grouping is `ProfileCompletionService::ONBOARDING` (+ `ONBOARDING_ESSENTIAL` = name·place·skill·show,
+`onboardingStep()`, `needsOnboarding()`; `state()` returns `onboarding_step`). Landing: registration → onboarding;
+login/`/` → Projects when done, onboarding while an essential step is missing, else Profile. Profile's steps card
+is now ONE slim bar (profile-gate.js) whose action opens the onboarding screen holding the next step. Project editor
+`?from=welcome` → back link to the Work screen. Skills editor payload lives in `SkillsService::editorPayload()`. The onboarding preview FRAMES the real profile: `/{slug}?embed=1`
+(owner only → bare layout, no strip/footer/motion) scaled from 1280px; the draft is posted in via
+`public/fama-ui/js/profile-embed.js` into `data-pv` hooks (name/headline/place/bio) — keep those hooks on the
+profile header if you restyle it. Profile editor PATCHes only CHANGED core keys (`changedCore()`).
 

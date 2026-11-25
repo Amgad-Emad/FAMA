@@ -26,7 +26,7 @@ it('renders the talent side bar with its groups, Create menu and account menu', 
         ->assertSee("localStorage.getItem('fama-side-folded')", false)
         ->assertSee('class="fx-side"', false)
         // 13 Nov 2026 review: the portfolio first, then the feed (Community).
-        ->assertSeeInOrder(['Your work', 'Projects', 'Credits', 'Your profile', 'Profile', 'View profile', 'Community', 'Feed', 'Notifications', 'Activity'])
+        ->assertSeeInOrder(['Profile', 'Portfolio', 'Projects', 'View profile', 'Community', 'Feed', 'Activity', 'Credits', 'Notifications'])
         // The folded rail is icons only: each link carries its name as a tooltip.
         ->assertSee('data-tip="Projects"', false)
         // Create → a project (the editor) or a post (the feed opens its composer).
@@ -36,13 +36,13 @@ it('renders the talent side bar with its groups, Create menu and account menu', 
         ->assertSee(route('notifications.page'), false);
 });
 
-it('orders the top bar links portfolio first and calls Profile structure "Profile"', function () {
+it('orders the top bar links Portfolio · Projects · Feed · Activity · Credits (owner 2026-11-25)', function () {
     $talent = Talent::factory()->create(['slug' => 'top-bar-talent']);
 
     $html = $this->actingAs($talent, 'talent')->get(route('talent.credits'))->assertOk()->getContent();
 
     preg_match('#<ul class="fx-links">(.*?)</ul>#s', $html, $m);
-    expect($m[1] ?? '')->toMatch('#Projects.*>Profile<.*Credits.*Feed.*Activity#s')
+    expect($m[1] ?? '')->toMatch('#>Portfolio<.*Projects.*Feed.*Activity.*Credits#s')
         ->not->toContain('Profile structure');
 });
 

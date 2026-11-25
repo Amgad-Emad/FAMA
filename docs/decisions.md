@@ -872,3 +872,19 @@
   actual Go Live; Creatives Index listing still requires Live. The admin Unpublish lands on the same
   Private state the talent can leave by pressing Go Live (as it already could before).
 
+## ADR-AR — Guided onboarding for complete portfolios (2026-11-25)
+- **Status:** Accepted (owner request, 2026-11-25: "redesign the steps card as part of an onboarding optimized
+  for complete portfolios"). Owner choices: a dedicated flow + slim bar; the Go Live rule (ADR-AC/AQ) unchanged;
+  designed in-house on the fama-ui system.
+- **Decision:** The ten profile steps are regrouped into five onboarding screens at `/talent/welcome/{step?}`
+  in portfolio order — You · What you do · Your story · Your work · Go Live (owner order 2026-11-25: the
+  work comes right before Go Live). Projects get their own screen and the most emphasis (goal of three). The flow owns NO writes: it uses the existing endpoints and reads ticks
+  from SAVED data. The Profile page keeps only a slim bar (meter + one next action into the flow).
+- **Home:** `ProfileCompletionService::ONBOARDING` / `ONBOARDING_ESSENTIAL` / `onboardingStep()` /
+  `needsOnboarding()`. Change the grouping there, never in the view or JS.
+- **Landing:** onboarding is the talent home (registration, login, `/`) while an essential step — the three
+  Go Live steps or something to show — is missing; then Profile; Projects once every step is done.
+- **Consequences:** Go Live stays three steps (a project is pushed, not required). Experience (`brands`) has no
+  onboarding editor — the Go Live screen links to Profile#brands. "Finish later" goes to Profile; the next
+  sign-in brings them back while essentials are missing. AR copy for the new strings is pending (Arabic paused).
+

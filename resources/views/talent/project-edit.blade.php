@@ -138,7 +138,7 @@
             'onPublish' => __('Asked when you publish'),
         ],
     ];
-    $editUrlTemplate = route('talent.projects.edit', ['project' => '__ID__']);
+    $editUrlTemplate = route('talent.projects.edit', ['project' => '__ID__'] + (($fromWelcome ?? false) ? ['from' => 'welcome'] : []));
     $isNew = ! $project;
     $initialName = $project ? ($project->getTranslation('title', 'en', false) ?: __('Untitled project')) : __('Untitled project');
     $me = auth('talent')->user();

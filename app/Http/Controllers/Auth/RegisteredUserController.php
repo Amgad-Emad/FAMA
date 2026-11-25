@@ -66,8 +66,8 @@ class RegisteredUserController extends Controller
         // Never honour a cross-guard intended URL (same rule as login).
         $request->session()->forget('url.intended');
 
-        // A new talent starts on Profile structure (the talent home).
-        return $guard === 'talent' ? redirect()->route('talent.profile.edit') : redirect()->route('dashboard');
+        // A new talent starts the guided onboarding (ADR-AR) — five screens to a complete portfolio.
+        return $guard === 'talent' ? redirect()->route('talent.onboarding') : redirect()->route('dashboard');
     }
 
     /**

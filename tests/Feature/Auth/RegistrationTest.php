@@ -8,7 +8,7 @@ test('registration screen can be rendered', function () {
     $this->get('/register')->assertStatus(200);
 });
 
-test('a talent can self-register and lands on Profile structure', function () {
+test('a talent can self-register and lands on the guided onboarding', function () {
     $response = $this->post('/register', [
         'account_type' => 'talent',
         'name' => 'New Talent',
@@ -18,7 +18,7 @@ test('a talent can self-register and lands on Profile structure', function () {
     ]);
 
     $this->assertAuthenticated('talent');
-    $response->assertRedirect(route('talent.profile.edit', absolute: false));
+    $response->assertRedirect(route('talent.onboarding', absolute: false));
 
     $talent = Talent::where('email', 'new-talent@example.com')->firstOrFail();
     expect($talent->display_name)->toBe('New Talent');

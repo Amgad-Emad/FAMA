@@ -15,10 +15,11 @@ that walks a brand and a talent through booking, quoting, contracting, payment, 
 client's fama-ui kit (`public/fama-ui/`, `<x-fama.layout>`), synced to the co-founder's prototype as of 1 Nov
 2026 and the 12–13 Nov review (ADR-AD, ADR-AE). Talent nav: a **side bar** on wide screens, portfolio first
 (account · Create · Your work: Projects · Credits · Your profile: Edit profile · View profile · Community: Feed ·
-Notifications · Activity), a top bar ≤1100px. A talent signs in to **Projects** once the profile is done, else to
-Profile structure; **going Live = three saved steps** (name, a skill with a speciality, city — no admin review,
+Notifications · Activity), a top bar ≤1100px. New talents start a **guided onboarding** (`/talent/welcome`, ADR-AR: You · What you do · Your
+story · Your work · Go Live). A talent signs in to **Projects** once the profile is done, to the onboarding while
+an essential step is missing, else to Profile; **going Live = three saved steps** (name, a skill with a speciality, city — no admin review,
 ADR-AC). Skills: the prototype's **41 skills / 195 specialities** (`database/data/skill-catalog.php`, ADR-AF).
-Full Pest suite **949/949 green**.
+Full Pest suite **968/968 green**.
 
 Demo logins (password `password`): `talent-demo@fama.test` (every screen populated), `talent-new@fama.test`
 (Private — the go-Live steps), `brand-demo@fama.test`, `admin-demo@fama.test` (at `/admin/login`).

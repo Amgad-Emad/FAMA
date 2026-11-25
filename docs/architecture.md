@@ -217,7 +217,12 @@ serves the Phase 1A queries/views.
 - **Go Live:** `ProfileCompletionService` (goLiveSteps · standOutSteps · canGoLive · isListed · isProfileDone ·
   homeRoute · state · syncAfterWrite) + `App\Actions\Talent\SyncGoLiveState` (Created/Draft → Live when ready;
   Live → Draft when a save breaks a step). `GET /talent/profile/state` feeds the editor's steps from SAVED data.
-- **Landing:** `AuthenticatedSessionController` + `FeedController::home` use `homeRoute()` for talents.
+- **Landing:** `AuthenticatedSessionController` + `FeedController::home` use `homeRoute()` for talents
+  (ADR-AR: Projects when done · onboarding while an essential step is missing · else Profile).
+- **Onboarding (ADR-AR, 2026-11-25):** `Talent\OnboardingController` renders `/talent/welcome/{step?}` from
+  `ProfileCompletionService::ONBOARDING` + `SkillsService::editorPayload()`; `famaOnboarding`
+  (resources/js/ui/onboarding.js) saves through the existing endpoints. Profile's `profile-gate.js` is the slim
+  bar into it; the project editor honours `?from=welcome` for its way back.
 - **Notifications page:** `NotificationInboxService` (filters, one aggregate counts query, kind map, bulk
   follow-back lookup) behind `NotificationController::index`.
 - **Titles:** `App\Support\ProjectTitle` (name · sub · year tag) shared by the profile grid, featured cover and

@@ -2,6 +2,69 @@
 
 Notable changes to the Fama project. Newest first.
 
+## 2026-11-25 — Side bar reordered (owner note)
+- Side bar: **Profile** → Portfolio (the Edit profile page, relabelled) · Projects · View profile; **Community** →
+  Feed · Activity · Credits · Notifications. The ≤1100px top bar follows: Portfolio · Projects · Feed · Activity ·
+  Credits. View profile + Notifications kept (owner choice). `components/fama/nav.blade.php`; FamaShellTest updated.
+
+## 2026-11-25 — Guided onboarding replaces the profile steps card (ADR-AR)
+- New **`GET /talent/welcome/{step?}`** (`talent.onboarding`, `OnboardingController`, view `talent/onboarding`,
+  `famaOnboarding` in `resources/js/ui/onboarding.js`, sheet `fama-ui/css/pages/onboarding.css`): five screens
+  ordered for a complete portfolio — **You** (name · country/city · photo) → **What you do** (skills +
+  specialities) → **Your work** (projects: 1 = Creatives Index, 3 = a style) → **Your story** (headline · bio ·
+  Instagram/website) → **Go Live** (every step ticked, Go Live / copy link). A live "How brands see you" preview
+  card + portfolio meter (n of 10) sits beside the form. No new write endpoints — every screen saves through the
+  existing Profile / Skills / Projects endpoints and re-reads `GET /talent/profile/state`.
+- `ProfileCompletionService::ONBOARDING` (screen → steps), `ONBOARDING_ESSENTIAL` (name · place · skill · show),
+  `needsOnboarding()`, `onboardingStep()` (resume screen); `state()` adds `onboarding_step`.
+- **Landing:** registration → onboarding; login / `/` → Projects when done, **onboarding while an essential step
+  is missing**, else Profile.
+- **Profile:** the two-part Go Live / Stand out card is now ONE slim bar (`profile-gate.js` rewritten): status,
+  next step, meter, Go Live (when Private) and "Continue setup" → the onboarding screen holding the next step.
+- The project editor accepts `?from=welcome`: its back link returns to the Work screen ("Setup").
+- `SkillController::payload` moved to `SkillsService::editorPayload()` (shared with onboarding; response unchanged).
+- Tests: `tests/Feature/Talent/OnboardingTest.php` (8) + landing tests updated. Suite 968 green.
+- Follow-up (same day): the public profile's **Point of view** renders without quotation marks. The onboarding
+  photo upload shows the picked image **at once** (local preview) while it uploads; a failed request re-reads the
+  saved path (the photo may already be stored) and only then reverts with a message. Upload errors are never
+  silent any more (onboarding + Profile fall back to a generic message when the server sends none).
+- **Data-loss fix (Profile):** the editor's save sent the WHOLE identity object on any change, so a stale tab
+  blanked fields it never touched (a Point of view saved elsewhere came back null). It now PATCHes only the
+  changed keys (`profileStructure.changedCore()`); the server already fills only the keys it receives.
+- **Order (owner, same day):** Your story is now step 3 and Your work step 4 — the work sits right before Go Live.
+- **Your story: every link platform** — Instagram · TikTok · X · Behance · Vimeo · YouTube · LinkedIn · Website (social.js
+  PLATFORMS minus 'other'), each an icon + fixed-prefix field in a 2-col grid. Saved links keep their order, new ones
+  append; an 'other' link from Profile rides along. Every field writes its icon into the preview as you type.
+- **Skills add/remove in place (no preview reload):** `fama-preview-skills` rewrites the header tags + the tab bar
+  (cloned tabs, Alpine re-inits them) and profileTabs' tabs/labels/urls; a new skill's tag shows before the server
+  answers, its tab opens once seeded. In embed mode the skill area + tab bar ALWAYS exist (bar `hidden` while ≤1
+  skill; `<template>`s `pv-skilltag-tpl` / `pv-tab-tpl` + `data-tab-url` build new ones), so 0⇄1⇄2+ never reloads.
+- **Skill tab badge:** still the number of PROJECTS in that skill, but left out entirely when there are none (owner
+  2026-11-25 — no "0" on a skill without work yet). A skill added in onboarding starts without a badge.
+- **One ring per edited place:** each screen lists GROUPS in `profile-embed.js` SECTIONS and every group gets its own
+  ring hugging its visible matches — "What you do" rings the header skill tags AND the tab bar + speciality chips;
+  "Your work" rings the featured cover AND the tab's work.
+- **Specialities update the preview in place (no reload):** a pick/unpick is optimistic and posts
+  `fama-preview-specs` into the frame — it opens that skill's tab (profileTabs' own lazy fetch), rewrites the
+  `.specs-row` chips in pick order, rings + scrolls to them, and pops the new chip in orchid.
+- **Fix: removing a skill now updates the preview at once.** Methods called from inside an x-for row (the skill ✕,
+  speciality chips) saw the ROW's `$refs` (no frame), so the reload silently did nothing; the frame + box are now
+  captured once in `init()` (`_frame`, `_pvBox`). **Closed switches hide their tag** on the public profile: no
+  "Not open for work" chip any more (Will travel was already hidden when off).
+- **Your story gains Point of view** (optional, `worldview`, saved with the bio). **Step 1 gains Open for work + Will
+  travel switches** (save on flip via `PATCH /talent/profile/now`). The preview writes along as you type: the
+  changed line glows with a blinking orchid caret and is scrolled into view; availability flips the yellow chip,
+  the green photo dot and the Will travel chip live (embed hooks `data-pv` avail/dot/travel/pov). The preview
+  reloads reliably (fresh URL via `location.replace`) and re-syncs skills + state when you come back to the tab.
+- **Links in the preview:** the drafted Instagram + website show live as round icons in the profile's button row (after Follow · Recognise · Share) — embed mode always renders `ul.ct-links[data-pv=links]` + a `<template id="pv-icons">` of platform marks.
+- **Headline moved to step 1 (You)**, under the display name (`ONBOARDING['you']` = name · headline · place · photo; Your story = bio · links).
+- **Live preview (onboarding):** the side panel frames the REAL public profile — `/{slug}?embed=1` (owner
+  only: no side bar/nav, owner strip, footer or GSAP motion) rendered at 1280px and scaled to fit, in a browser
+  frame showing the address + Draft/Private/Live. The typed draft (name, headline, city, bio) is posted into the
+  page (`public/fama-ui/js/profile-embed.js`, same-origin `postMessage`, `data-pv` hooks, textContent only); it
+  reloads after any save. The part the current step edits gets ONE orchid ring (union box) and is scrolled into
+  view; Go Live shows the page from the top. Narrow screens fold it into a "Live preview" bar.
+
 ## 2026-11-23 — Willing to explore: the note is a text area
 - Edit profile → Willing to explore: each entry's Note is a `<textarea>` with the normal long-text limit
   (2,000 characters, like Point of view and Highlights) instead of a 160-character one-line input.

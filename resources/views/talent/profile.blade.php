@@ -27,6 +27,9 @@
     // A visitor with no account at all: Follow / Recognise ask them to sign in.
     $isGuest = ! auth('talent')->check() && ! auth('brand')->check();
     $isLive = (bool) $talent->is_published;
+    // EMBED (ADR-AR): the onboarding's live preview frames this very page at desktop width.
+    // Owner only — no nav, no owner strip, no footer, no motion; the parent posts the draft in.
+    $embed = $isOwner && request()->boolean('embed');
 
     // The featured project on the cover: the talent's pick (FeaturedProjectService).
     $owned = $talent->projects->sortBy('position')->values();
@@ -111,7 +114,7 @@
 @endphp
 
 {{-- Staff preview (moderation's View panel): no visitor nav — no Log in / Feed chrome inside the admin. --}}
-<x-fama.layout :title="$name" :seo="$seo" :css="['fields', 'exp']" :mode="! empty($staffPreview) ? 'bare' : null">
+<x-fama.layout :title="$name" :seo="$seo" :css="['fields', 'exp']" :mode="(! empty($staffPreview) || $embed) ? 'bare' : null" :footer="! $embed">
     <x-slot:styles>
         <link rel="stylesheet" href="{{ \App\Support\FamaAsset::url('fama-ui/css/pages/preview.css') }}">
     </x-slot:styles>
@@ -120,7 +123,7 @@
         <x-slot:hero>
             <div class="pv-strip" id="strip"><div class="wrap"><span>{{ $isLive ? __('Staff preview — this is the Live profile, as visitors see it.') : __('Staff preview — this profile is private. Visitors can’t see it yet.') }}</span></div></div>
         </x-slot:hero>
-    @elseif ($isOwner)
+    @elseif ($isOwner && ! $embed)
         <x-slot:hero>
             <div class="pv-strip" id="strip"><div class="wrap"><span>{{ $isLive ? __('This is how everyone sees your profile.') : ($talent->status->getValue() === 'unpublished' ? __("Your profile is Private. This is how people will see it once you go Live.") : __("Your profile is a Draft. This is how people will see it once you go Live.")) }}</span><a class="btn" href="{{ route('talent.profile.edit') }}"><svg class="icon" aria-hidden="true"><use href="#i-pen"/></svg><span>{{ __('Edit profile') }}</span></a></div></div>
         </x-slot:hero>
@@ -132,31 +135,35 @@
 
   <section class="ct-top">
     <div class="ct-id">
-      <span class="ct-av" aria-hidden="true" @if ($avatar) style="background-image:url('{{ $avatar }}');color:transparent" @endif>{{ $initials }}@if ($talent->is_available)<i class="ct-on"></i>@endif</span>
-      <h1 dir="auto">{{ $name }}</h1>
-      <p class="ct-who" dir="auto">{{ $talent->headline ?: $primaryType?->name }}@if ($place)<span class="ct-place"><svg class="icon" aria-hidden="true"><use href="#i-pin"/></svg>{{ $place }}</span>@endif</p>
+      <span class="ct-av" aria-hidden="true" @if ($avatar) style="background-image:url('{{ $avatar }}');color:transparent" @endif>{{ $initials }}@if ($talent->is_available || $embed)<i class="ct-on" data-pv="dot" @unless ($talent->is_available) hidden @endunless></i>@endif</span>
+      <h1 dir="auto" data-pv="name">{{ $name }}</h1>
+      <p class="ct-who" dir="auto"><span data-pv="headline">{{ $talent->headline ?: $primaryType?->name }}</span>@if ($place || $embed)<span class="ct-place" @if (! $place) hidden @endif><svg class="icon" aria-hidden="true"><use href="#i-pin"/></svg><span data-pv="place">{{ $place }}</span></span>@endif</p>
       <div class="ct-tags">
         <div class="ct-chips">
           {{-- Availability is information, never a gate (ADR-L/Z) — the yellow
                signal; the last-changed date rides on the chip so a stale switch
                never passes for current. --}}
-          <span @class(['on' => $talent->is_available]) @if ($talent->availability_changed_at) title="{{ __('Changed :when', ['when' => $talent->availability_changed_at->diffForHumans()]) }}" @endif>{{ $talent->is_available ? __('Open for work') : __('Not open for work') }}</span>
-          @if ($talent->will_travel)<span>{{ __('Will travel') }}</span>@endif
+          {{-- Shown only while open for work (owner 2026-11-25: a closed switch hides its tag — no
+               "Not open for work"). Embed keeps the hidden node so the onboarding can flip it live. --}}
+          @if ($talent->is_available || $embed)
+          <span @class(['on' => $talent->is_available]) @unless ($talent->is_available) hidden @endunless @if ($talent->availability_changed_at) title="{{ __('Changed :when', ['when' => $talent->availability_changed_at->diffForHumans()]) }}" @endif data-pv="avail" data-on="{{ __('Open for work') }}">{{ __('Open for work') }}</span>
+          @endif
+          @if ($talent->will_travel || $embed)<span data-pv="travel" @unless ($talent->will_travel) hidden @endunless>{{ __('Will travel') }}</span>@endif
           @if ($hasRate)<span>{{ __('From') }} {{ $talent->rate_currency }} {{ $rateAmount }} / {{ $rateUnitLabels[$talent->rate_unit] ?? $talent->rate_unit }}</span>@endif
           @if ($externalUrl)<span><a href="{{ $externalUrl }}" target="_blank" rel="noopener nofollow" style="color:inherit;text-decoration:none">{{ preg_replace('#^https?://(www\.)?#i', '', rtrim($externalUrl, '/')) }}</a></span>@endif
         </div>
-        @if ($skills->isNotEmpty())
+        @if ($skills->isNotEmpty() || $embed)
           {{-- Each craft opens its tab and brings the work into view (profileTabs.goSkill). --}}
-          <ul class="ct-skills" aria-label="{{ __('Skills') }}">
+          <ul class="ct-skills" aria-label="{{ __('Skills') }}" @if ($skills->isEmpty()) hidden @endif>
             @foreach ($skills as $skill)
               <li><a href="?skill={{ $skill->slug }}" data-goskill="{{ $skill->slug }}" @click.prevent="$dispatch('fama-goskill', @js($skill->slug))">{{ $skill->name }}</a></li>
             @endforeach
           </ul>
         @endif
       </div>
-      @if ($talent->bio)<p class="ct-bio" dir="auto">{{ $talent->bio }}</p>@endif
+      @if ($talent->bio || $embed)<p class="ct-bio" dir="auto" data-pv="bio" @if (! $talent->bio) hidden @endif>{{ $talent->bio }}</p>@endif
       {{-- 13 Nov 2026 review: the point of view is part of the person's details, so it moved up into the hero. --}}
-      @if (filled($talent->worldview))<div class="ct-pov"><h2>{{ __('Point of view') }}</h2><p dir="auto">“{{ $talent->worldview }}”</p></div>@endif
+      @if (filled($talent->worldview) || $embed)<div class="ct-pov" @unless (filled($talent->worldview)) hidden @endunless><h2>{{ __('Point of view') }}</h2><p dir="auto" data-pv="pov">{{ $talent->worldview }}</p></div>@endif
       @if ($firms->isNotEmpty())
         <p class="ct-with"><span>{{ __('Worked with') }}</span> {{ $firms->take(3)->implode(', ') }}@if ($firms->count() > 3) {{ __('and :n more', ['n' => $firms->count() - 3]) }}@endif</p>
       @endif
@@ -199,8 +206,8 @@
         <button type="button" class="btn btn-2 ionly" @click="share()" aria-label="{{ __('Share profile') }}"
                 title="{{ $isLive ? __('Share profile') : __('Your link can be shared once your profile is Live') }}"
                 @unless ($isLive) aria-disabled="true" style="opacity:.45;cursor:not-allowed" @endunless><svg class="icon" aria-hidden="true"><use href="#i-link"/></svg><span class="vh">{{ __('Share profile') }}</span></button>
-        @if ($talent->socialHandles->isNotEmpty())
-          <ul class="ct-links">
+        @if ($talent->socialHandles->isNotEmpty() || $embed)
+          <ul class="ct-links" data-pv="links" @if ($talent->socialHandles->isEmpty()) hidden @endif>
             @foreach ($talent->socialHandles as $social)
               @php $label = in_array($social->platform, ['website', 'other'], true) ? preg_replace('#^https?://(www\.)?#i', '', rtrim((string) $social->url, '/')) : ($socialLabels[$social->platform] ?? $social->platform); @endphp
               <li><a href="{{ $social->url }}" rel="me noopener nofollow" target="_blank" aria-label="{{ $label }}" title="{{ $label }}">@include('talent.partials.social-icon', ['platform' => $social->platform])</a></li>
@@ -224,26 +231,32 @@
     @endif
   </section>
 
-  @if ($tabSkills->isNotEmpty())
-    <div id="skillArea" x-data="profileTabs({ active: @js($activeSkill?->slug), tabs: @js($tabSkills->pluck('slug')), labels: @js($tabSkills->pluck('name', 'slug')), urls: @js($tabUrls) })"
+  {{-- EMBED (ADR-AR): the skill area + its tab bar always exist (hidden while ≤1 skill) so the
+       onboarding preview can add/remove skills in place — no frame reload. --}}
+  @if ($tabSkills->isNotEmpty() || $embed)
+    <div id="skillArea" @if ($embed) data-tab-url="{{ route('talent.tab', ['slug' => $talent->slug, 'skill' => '__SKILL__']) }}" @endif x-data="profileTabs({ active: @js($activeSkill?->slug), tabs: @js($tabSkills->pluck('slug')), labels: @js($tabSkills->pluck('name', 'slug')), urls: @js($tabUrls) })"
          @fama-goskill.window="goSkill($event.detail)">
-      @if ($tabSkills->count() > 1)
+      @if ($tabSkills->count() > 1 || $embed)
         {{-- Scrolls with the page (30 Oct 2026); the open tab is filled in orchid
              and carries the FAMA star; names in the display face. --}}
-        <nav class="stabs" aria-label="{{ __('Skills') }}"><div class="row" role="tablist" aria-label="{{ __('Skills') }}" x-ref="tablist">
+        <nav class="stabs" aria-label="{{ __('Skills') }}" @if ($tabSkills->count() <= 1) hidden @endif><div class="row" role="tablist" aria-label="{{ __('Skills') }}" x-ref="tablist">
           @foreach ($tabSkills as $skill)
+            {{-- The badge counts the skill's PROJECTS, and is left out when there are none (owner
+                 2026-11-25: no "0" on a skill without work yet). --}}
             @php $isActive = $skill->is($activeSkill); $n = $talent->portfolioProjects($skill->id)->count(); @endphp
             <a role="tab" id="skill-tab-{{ $skill->slug }}" href="?skill={{ $skill->slug }}" aria-controls="skill-tabpanel" data-skill="{{ $skill->slug }}"
                @click.prevent="show('{{ $skill->slug }}')" @keydown="onTabKey($event, {{ $loop->index }})"
                :aria-selected="active === '{{ $skill->slug }}' ? 'true' : 'false'"
                :tabindex="active === '{{ $skill->slug }}' ? 0 : -1"
-               @if ($isActive) aria-selected="true" @else aria-selected="false" tabindex="-1" @endif><svg class="tstar" viewBox="10 80 760 690" aria-hidden="true"><polygon points="314.63 635.59 16.74 747.68 217.29 533.15 86.97 370.29 403.26 356.02 701.63 87.21 636.51 355.76 760 356.91 574.68 534.04 422.33 756.79 314.63 635.59"/></svg>{{ $skill->name }}<span class="n"><span class="vh">, </span>{{ $n }}<span class="vh"> {{ trans_choice('{1} project|[0,*] projects', $n) }}</span></span></a>
+               @if ($isActive) aria-selected="true" @else aria-selected="false" tabindex="-1" @endif><svg class="tstar" viewBox="10 80 760 690" aria-hidden="true"><polygon points="314.63 635.59 16.74 747.68 217.29 533.15 86.97 370.29 403.26 356.02 701.63 87.21 636.51 355.76 760 356.91 574.68 534.04 422.33 756.79 314.63 635.59"/></svg>{{ $skill->name }}@if ($n > 0)<span class="n"><span class="vh">, </span>{{ $n }}<span class="vh"> {{ trans_choice('{1} project|[0,*] projects', $n) }}</span></span>@endif</a>
           @endforeach
         </div></nav>
-        <h2 class="vh" x-text="labels[active]">{{ $activeSkill->name }}</h2>
+        <h2 class="vh" x-text="labels[active]">{{ $activeSkill?->name }}</h2>
         <div id="skillBody">
-          <div id="skill-tabpanel" role="tabpanel" x-ref="panel" :aria-labelledby="'skill-tab-' + active" aria-labelledby="skill-tab-{{ $activeSkill->slug }}" :aria-busy="loading">
-            @include('talent.partials.skill-blocks', $blockVars + ['skill' => $activeSkill, 'blocks' => $blocksFor($activeSkill->id)])
+          <div id="skill-tabpanel" role="tabpanel" x-ref="panel" :aria-labelledby="'skill-tab-' + active" aria-labelledby="skill-tab-{{ $activeSkill?->slug }}" :aria-busy="loading">
+            @if ($activeSkill)
+              @include('talent.partials.skill-blocks', $blockVars + ['skill' => $activeSkill, 'blocks' => $blocksFor($activeSkill->id)])
+            @endif
           </div>
         </div>
       @else
@@ -262,7 +275,7 @@
        partial renders nothing when none of it has content for this viewer. --}}
   @include('talent.partials.universal-blocks', $blockVars + ['blocks' => $universalBlocks, 'name' => $name])
 
-  @if ($universalBlocks->isEmpty() && $tabSkills->isEmpty())
+  @if ($universalBlocks->isEmpty() && $tabSkills->isEmpty() && ! $embed)
     <section class="notlive"><h2 class="h1">{{ __('This profile is still being set up.') }}</h2><p>{{ __('Check back soon.') }}</p>
       <a class="btn" style="margin-top:var(--s5)" href="{{ route('feed') }}">{{ __('Browse the feed') }}</a></section>
   @endif
@@ -299,8 +312,24 @@
          the prototype loads them. Everything is visible without JS and under
          reduced motion — GSAP only animates from a hidden start it sets itself. --}}
     <x-slot:scripts>
+      @if ($embed)
+        {{-- A skill tag + a skill tab for a skill added during onboarding (profile-embed.js fills
+             __SKILL__ / __NAME__; Alpine initialises them when they're inserted). --}}
+        <template id="pv-skilltag-tpl"><li><a href="?skill=__SKILL__" data-goskill="__SKILL__" @click.prevent="$dispatch('fama-goskill', '__SKILL__')">__NAME__</a></li></template>
+        <template id="pv-tab-tpl"><a role="tab" id="skill-tab-__SKILL__" href="?skill=__SKILL__" aria-controls="skill-tabpanel" data-skill="__SKILL__" @click.prevent="show('__SKILL__')" :aria-selected="active === '__SKILL__' ? 'true' : 'false'" :tabindex="active === '__SKILL__' ? 0 : -1" aria-selected="false" tabindex="-1"><svg class="tstar" viewBox="10 80 760 690" aria-hidden="true"><polygon points="314.63 635.59 16.74 747.68 217.29 533.15 86.97 370.29 403.26 356.02 701.63 87.21 636.51 355.76 760 356.91 574.68 534.04 422.33 756.79 314.63 635.59"/></svg>__NAME__</a></template>
+        {{-- One icon per platform for the live links row (profile-embed.js clones these). --}}
+        <template id="pv-icons">
+          @foreach (['instagram', 'tiktok', 'x', 'behance', 'vimeo', 'youtube', 'linkedin', 'website', 'other'] as $p)
+            <span data-p="{{ $p }}">@include('talent.partials.social-icon', ['platform' => $p])</span>
+          @endforeach
+        </template>
+        {{-- The onboarding preview drives this page (same origin only): the draft text, and which
+             section to bring into view + light. Links don't navigate inside the frame. --}}
+        <script src="{{ \App\Support\FamaAsset::url('fama-ui/js/profile-embed.js') }}"></script>
+      @else
         <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
         <script src="{{ \App\Support\FamaAsset::url('fama-ui/js/profile-motion.js') }}"></script>
+      @endif
     </x-slot:scripts>
 </x-fama.layout>

@@ -5,9 +5,6 @@ namespace App\Http\Controllers\Talent;
 use App\Http\Requests\Talent\ReorderRequest;
 use App\Http\Requests\Talent\StoreSkillRequest;
 use App\Http\Requests\Talent\UpdateSpecialitiesRequest;
-use App\Http\Resources\SpecialityResource;
-use App\Http\Resources\TalentTypeResource;
-use App\Models\Speciality;
 use App\Models\TalentType;
 use App\Services\SkillsService;
 use Illuminate\Http\JsonResponse;
@@ -67,38 +64,12 @@ class SkillController extends TalentController
     }
 
     /**
-     * The linked (ordered) skills, the ones still available to add, and the
-     * speciality vocabulary + current picks for each linked skill.
+     * The skills editor payload — one home in SkillsService (shared with onboarding).
      *
      * @return array<string, mixed>
      */
     private function payload(): array
     {
-        $talent = $this->talent()->load(['talentTypes', 'specialities']);
-
-        // The whole controlled vocabulary for the skills the talent holds, in
-        // one query — the picker needs the options, not just the picks.
-        $catalog = Speciality::query()
-            ->selectable()
-            ->whereIn('talent_type_id', $talent->talentTypes->pluck('id'))
-            ->orderBy('position')->orderBy('id')
-            ->get()
-            ->groupBy('talent_type_id');
-
-        $claimed = $talent->specialities->groupBy('talent_type_id');
-
-        return [
-            'linked' => TalentTypeResource::collection($talent->talentTypes),
-            'available' => TalentTypeResource::collection(
-                TalentType::whereNotIn('id', $talent->talentTypes->pluck('id'))->alphabetical()->get()
-            ),
-            // Keyed by skill id so the per-skill picker reads its own slice.
-            'specialities' => $talent->talentTypes->mapWithKeys(fn (TalentType $type) => [
-                $type->id => [
-                    'options' => SpecialityResource::collection($catalog->get($type->id, collect())),
-                    'selected' => $claimed->get($type->id, collect())->pluck('id')->map('intval')->values(),
-                ],
-            ]),
-        ];
+        return $this->skills->editorPayload($this->talent());
     }
 }

@@ -10,11 +10,12 @@ use App\Models\TalentSocialHandle;
 use Illuminate\Http\UploadedFile;
 
 /**
- * ADR-AC landing rule (stakeholder-confirmed, prototype FAMA_HOME): a talent
- * who signs in lands on the Feed once their profile is done (every Go Live and
- * Stand out step), else on Profile structure. Registration still lands on
- * Profile structure; the site root follows the same rule for a signed-in
- * talent; the visitor's pending feed action is still replayed on login.
+ * Landing rule (ADR-AC → ADR-AE → ADR-AR): a talent who signs in lands on
+ * Projects once their profile is done (every Go Live and Stand out step); on
+ * the guided onboarding while an ESSENTIAL step (Go Live + something to show)
+ * is missing; else on Profile. Registration lands on the onboarding; the site
+ * root follows the same rule; the visitor's pending feed action is still
+ * replayed on login.
  */
 function landingDoneTalent(): Talent
 {
@@ -38,8 +39,16 @@ it('lands a talent with a done profile on Projects (portfolio first, 13 Nov 2026
         ->assertRedirect(route('talent.projects'));
 });
 
-it('lands a talent with an unfinished profile on Profile structure', function () {
+it('lands a talent missing an essential step on the guided onboarding (ADR-AR)', function () {
     $talent = Talent::factory()->create(['password' => bcrypt('password')]);
+
+    $this->post('/login', ['email' => $talent->email, 'password' => 'password', 'role' => 'talent'])
+        ->assertRedirect(route('talent.onboarding'));
+});
+
+it('lands a talent with the essentials but not every step on Profile (ADR-AR)', function () {
+    $talent = Talent::factory()->draft()->goLiveReady()->create(['password' => bcrypt('password')]);
+    Project::factory()->for($talent)->create();
 
     $this->post('/login', ['email' => $talent->email, 'password' => 'password', 'role' => 'talent'])
         ->assertRedirect(route('talent.profile.edit'));
@@ -61,5 +70,5 @@ it('still replays the visitor intent on login, whatever the landing', function (
 
 it('sends a signed-in talent from the site root by the same rule', function () {
     $this->actingAs(landingDoneTalent(), 'talent')->get('/')->assertRedirect(route('talent.projects'));
-    $this->actingAs(Talent::factory()->create(), 'talent')->get('/')->assertRedirect(route('talent.profile.edit'));
+    $this->actingAs(Talent::factory()->create(), 'talent')->get('/')->assertRedirect(route('talent.onboarding'));
 });

@@ -11,7 +11,8 @@
  *                      changes warns. Only the photo uploads immediately (a file
  *                      is not a draft — the prototype treats it the same way).
  *   profileViews     — the views card (./profile-views.js).
- * The profile path (Go Live → Stand out, ADR-AC) is ./profile-gate.js: it
+ * The profile path (Go Live → Stand out, ADR-AC) is ./profile-gate.js — a slim
+ * bar into the guided onboarding since ADR-AR: it
  * follows what is SAVED (GET /talent/profile/state after every save), never
  * the draft — a half-typed edit must not tell anyone they are no longer Live.
  * If saving the draft WOULD take the profile out of Live, the bar says so first.
@@ -132,7 +133,7 @@ document.addEventListener('alpine:init', () => {
             });
             if (window.location.hash === '#display') this.focusField('fDisplay');
             window.matchMedia('(max-width:760px)').addEventListener('change', (e) => { this.narrow = e.matches; });
-            // The path card + the tracker under the nav (follows SAVED data only).
+            // The slim path bar (follows SAVED data only) — leads into /talent/welcome.
             const gateEl = document.getElementById('gate');
             if (gateEl) {
                 const gate = famaGate(gateEl, {
@@ -140,9 +141,11 @@ document.addEventListener('alpine:init', () => {
                     rec: this.S.standOut || [],
                     indexKey: 'show',
                     S: this.S.gate || {},
-                    go: { name: '#fDisplay', place: '#fCity', skill: '#skills', photo: '#fPhoto', headline: '#fHeadline', bio: '#fBio', links: '#social .pin-card', brands: '#addBrand' },
+                    // The bar's one action opens the guided onboarding on the screen holding the next step (ADR-AR).
+                    url: this.S.onboardingUrl,
+                    screenOf: this.S.screenOf || {},
                     done: (k) => !!(this.path.steps || {})[k],
-                    // ADR-AQ: finishing the steps makes the profile Private; the card offers Go Live.
+                    // ADR-AQ: finishing the steps makes the profile Private; the bar offers Go Live.
                     stage: () => this.stage,
                     goLive: () => this.setPublished(true),
                 });
@@ -428,7 +431,10 @@ document.addEventListener('alpine:init', () => {
                 if (d.core) {
                     this.errors = {};
                     try {
-                        const { data } = await patch('/talent/profile', this.core);
+                        // Send ONLY the identity fields that changed. Sending the whole object let a
+                        // stale tab (or one opened before another edit) blank fields it never touched —
+                        // e.g. a Point of view saved elsewhere came back null (2026-11-25).
+                        const { data } = await patch('/talent/profile', this.changedCore());
                         this.core = { ...this.core, ...this.pickCore(data) };
                         this.base.core = clone(this.core);
                     } catch (e) {
@@ -634,6 +640,14 @@ document.addEventListener('alpine:init', () => {
                 f.focus({ preventScroll: true });
             });
         },
+        /** The identity fields that differ from the saved base (the core PATCH payload). */
+        changedCore() {
+            const out = {};
+            Object.keys(this.core).forEach((k) => {
+                if (JSON.stringify(this.core[k]) !== JSON.stringify((this.base.core || {})[k])) out[k] = this.core[k];
+            });
+            return out;
+        },
         /** The identity keys the PATCH echoes back. */
         pickCore(d) {
             const out = {};
@@ -674,7 +688,7 @@ document.addEventListener('alpine:init', () => {
                 toast(this.S.tPhoto);
                 this.refreshState();
             } catch (e) {
-                this.avatarError = e instanceof ApiError ? (e.errors?.avatar?.[0] || e.message) : this.S.uploadFailed;
+                this.avatarError = (e instanceof ApiError && (e.errors?.avatar?.[0] || e.message)) || this.S.uploadFailed;
             } finally {
                 this.uploadingAvatar = false;
             }

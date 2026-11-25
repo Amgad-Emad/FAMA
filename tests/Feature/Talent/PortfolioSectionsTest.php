@@ -74,13 +74,25 @@ it('saves the travel toggle without touching the availability stamp', function (
 
 it('shows availability with its last-changed date on the public profile', function () {
     $talent = livePortfolioTalent('Layla');
-    app(TalentProfileService::class)->updateNow($talent, ['is_available' => false, 'will_travel' => true]);
+    app(TalentProfileService::class)->updateNow($talent, ['is_available' => false]);
+    app(TalentProfileService::class)->updateNow($talent, ['is_available' => true, 'will_travel' => true]); // a real flip stamps the date
 
     $this->get(url($talent->slug))
         ->assertOk()
-        ->assertSee(__('Not open for work'))
+        ->assertSee(__('Open for work'))
         ->assertSee(__('Changed :when', ['when' => $talent->fresh()->availability_changed_at->diffForHumans()]))
         ->assertSee(__('Will travel'));
+});
+
+it('hides the availability tag entirely while not open for work (owner 2026-11-25)', function () {
+    $talent = livePortfolioTalent('Noor');
+    app(TalentProfileService::class)->updateNow($talent, ['is_available' => false, 'will_travel' => false]);
+
+    $this->get(url($talent->slug))
+        ->assertOk()
+        ->assertDontSee(__('Not open for work'))
+        ->assertDontSee('data-pv="avail"', false)
+        ->assertDontSee(__('Will travel'));
 });
 
 // ----- ABOUT -----------------------------------------------------------------

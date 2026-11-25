@@ -8,7 +8,7 @@ use App\Models\Talent;
 // Product rule (2026-10-12): a talent ALWAYS lands on Profile structure after login;
 // the visitor's pending action is still replayed by the Login event.
 
-it('replays the guest action on login and lands the talent on Profile structure', function () {
+it('replays the guest action on login and lands the talent on their home (onboarding)', function () {
     $talent = Talent::factory()->create(['password' => bcrypt('password')]);
     $post = Post::factory()->create();
 
@@ -22,7 +22,7 @@ it('replays the guest action on login and lands the talent on Profile structure'
         'email' => $talent->email, 'password' => 'password', 'role' => 'talent',
     ]);
 
-    $response->assertRedirect(route('talent.profile.edit'));
+    $response->assertRedirect(route('talent.onboarding'));
     expect(session('feed.return_to'))->toBeNull();
 
     expect(Like::query()->where([
@@ -31,9 +31,9 @@ it('replays the guest action on login and lands the talent on Profile structure'
     ])->exists())->toBeTrue();
 });
 
-it('sends an ordinary talent login straight to Profile structure', function () {
+it('sends an ordinary new-talent login straight to the guided onboarding', function () {
     $talent = Talent::factory()->create(['password' => bcrypt('password')]);
 
     $this->post('/login', ['email' => $talent->email, 'password' => 'password', 'role' => 'talent'])
-        ->assertRedirect(route('talent.profile.edit'));
+        ->assertRedirect(route('talent.onboarding'));
 });

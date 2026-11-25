@@ -9,6 +9,7 @@ use App\Http\Controllers\Talent\FeedActivityController;
 use App\Http\Controllers\Talent\FeedCollectionController;
 use App\Http\Controllers\Talent\FollowsController;
 use App\Http\Controllers\Talent\InterestController;
+use App\Http\Controllers\Talent\OnboardingController;
 use App\Http\Controllers\Talent\ProfileEditorController;
 use App\Http\Controllers\Talent\ProjectController;
 use App\Http\Controllers\Talent\ReviewController;
@@ -33,6 +34,10 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 Route::get('/dashboard/views', [DashboardController::class, 'viewStats'])->name('dashboard.views');
+
+// --- Guided onboarding (ADR-AR) — five screens to a complete portfolio. It writes
+// nothing itself: every screen saves through the Profile / Skills / Projects endpoints.
+Route::get('/welcome/{step?}', [OnboardingController::class, 'show'])->name('onboarding');
 
 // --- Profile editor (the single profile surface) ----------------------------
 Route::get('/profile', [ProfileEditorController::class, 'edit'])->name('profile.edit');

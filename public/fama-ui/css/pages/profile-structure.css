@@ -527,3 +527,21 @@ dialog.dlg{padding:0}
 .picklist li:first-of-type label{border-top:0}
 .sk:last-of-type{border-bottom:0}
 .vw-todo li:first-of-type{border-top:0}
+
+/* ---- The path as ONE slim bar into the guided onboarding (ADR-AR, 2026-11-25) — replaces the
+   two-part Go Live / Stand out card. Layout: title + next step · meter · actions. ---- */
+.vw.vw-obb{padding:var(--s4) var(--s5)}
+.obb{display:flex;align-items:center;gap:var(--s5);flex-wrap:wrap}
+.obb-t{flex:1 1 260px;min-width:0}
+.obb-h{font-family:var(--font-display);font-weight:600;font-size:24px;line-height:1.15;margin-top:2px}
+[dir=rtl] .obb-h{font-family:var(--ar);font-weight:700}
+.obb-n{font-size:var(--t-meta);color:var(--grey);margin-top:2px}
+.obb-n b{color:var(--ink);font-weight:600}
+.obb-m{flex:0 1 220px;display:flex;align-items:center;gap:var(--s3)}
+.obb-m b{font-family:var(--font-display);font-size:18px;white-space:nowrap}
+.obb-bar{flex:1;display:block;height:8px;border-radius:var(--radius-pill);background:var(--line);overflow:hidden}
+.obb-bar i{display:block;height:100%;background:var(--purple);border-radius:inherit;transition:width var(--slow) var(--ease)}
+.obb-a{display:flex;gap:var(--s2);flex-wrap:wrap}
+.obb-a .icon{width:16px;height:16px}
+[dir=rtl] .obb-a .icon{transform:scaleX(-1)}
+@media (max-width:760px){.obb-m{flex-basis:100%}.obb-a{flex-basis:100%}.obb-a .btn{flex:1}}

@@ -5,7 +5,12 @@
     wide screens, or inside the site header (which steps aside) on narrow ones. Scope: famaProjectEdit.
 --}}
 <div class="pe-head">
+    {{-- Opened from onboarding (ADR-AR, ?from=welcome): the way back is the Work screen. --}}
+    @if ($fromWelcome ?? false)
+    <a class="back" href="{{ route('talent.onboarding', ['step' => 'work']) }}" aria-label="{{ __('Back to setup') }}"><svg class="pe-i" aria-hidden="true"><use href="#e-left"/></svg><span class="lbl">{{ __('Setup') }}</span></a>
+    @else
     <a class="back" href="{{ route('talent.projects') }}" aria-label="{{ __('Back to projects') }}"><svg class="pe-i" aria-hidden="true"><use href="#e-left"/></svg><span class="lbl">{{ __('Projects') }}</span></a>
+    @endif
     <div class="pe-mid">
         <b class="pe-name" x-text="displayName">{{ $initialName }}</b>
         <span class="pe-meta">

@@ -113,14 +113,15 @@ it('reports the Go Live and Stand out steps from real data (ADR-AC)', function (
         ->and($service->isProfileDone($fresh))->toBeFalse();
 });
 
-it('shows the two-part path (no verification step) on Profile structure while Private', function () {
+it('shows the slim path bar into the onboarding (no verification step) on Profile (ADR-AR)', function () {
     $talent = Talent::factory()->draft()->create(['is_verified' => false]);
 
     $this->actingAs($talent, 'talent')->get(route('talent.profile.edit'))
         ->assertOk()
         ->assertSee('id="gate"', false)
-        ->assertSee(__('Creatives Index'))
-        ->assertSee(e(__('Something to show')), false)
+        ->assertSee(e(__('Your first project')), false)
+        // The bar's action leads into the onboarding (the URL rides in the strings payload).
+        ->assertSee('onboardingUrl', false)
         ->assertDontSee(__('Checked by Fama'));
 });
 

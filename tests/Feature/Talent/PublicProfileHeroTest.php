@@ -118,7 +118,7 @@ it('loads GSAP 3.12.5 + ScrollTrigger and the profile motion layer', function ()
         ->assertSee('fama-ui/js/profile-motion.js', false);
 });
 
-it('marks the open skill tab with the FAMA star and its project count', function () {
+it('marks the open skill tab with the FAMA star and its project count — none when it has no projects', function () {
     $talent = Talent::factory()->create(['slug' => 'hero-six', 'is_published' => true]);
     foreach (['modeling', 'photography'] as $i => $slug) {
         $id = TalentType::where('slug', $slug)->value('id');
@@ -129,8 +129,15 @@ it('marks the open skill tab with the FAMA star and its project count', function
         ]);
     }
 
+    // No projects anywhere: no "0" badge (owner 2026-11-25).
     $this->get('/hero-six')->assertOk()
         ->assertSee('class="tstar"', false)
         ->assertSee('id="skill-tab-modeling"', false)
-        ->assertSee('<span class="vh">, </span>0', false);
+        ->assertDontSee('<span class="n">', false);
+
+    // Two projects in modeling: its tab carries "2"; photography still shows no badge.
+    \App\Models\Project::factory()->count(2)->for($talent)->create(['talent_type_id' => TalentType::where('slug', 'modeling')->value('id')]);
+    $html = $this->get('/hero-six')->assertOk()->getContent();
+    expect($html)->toContain('<span class="vh">, </span>2')
+        ->and(substr_count($html, '<span class="n">'))->toBe(1);
 });

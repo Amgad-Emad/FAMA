@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Actions\SeedBlocksForSkill;
+use App\Http\Resources\SpecialityResource;
+use App\Http\Resources\TalentTypeResource;
 use App\Models\PortfolioItem;
 use App\Models\Speciality;
 use App\Models\Talent;
@@ -268,5 +270,42 @@ class SkillsService extends Service
 
             $project->forceFill(['talent_type_id' => $remaining[0] ?? null])->save();
         }
+    }
+
+    /**
+     * The skills editor payload (Profile's skills endpoint AND the onboarding
+     * page): the linked skills in order, the ones still available to add, and
+     * the speciality vocabulary + current picks for each linked skill, keyed by
+     * skill id. ONE query for the whole vocabulary — a picker needs the options,
+     * not just the picks.
+     *
+     * @return array<string, mixed>
+     */
+    public function editorPayload(Talent $talent): array
+    {
+        $talent->load(['talentTypes', 'specialities']);
+        $linked = $talent->talentTypes->sortBy(fn (TalentType $t) => [(int) $t->pivot->position, (int) $t->id])->values();
+
+        $catalog = Speciality::query()
+            ->selectable()
+            ->whereIn('talent_type_id', $linked->pluck('id'))
+            ->orderBy('position')->orderBy('id')
+            ->get()
+            ->groupBy('talent_type_id');
+
+        $claimed = $talent->specialities->groupBy('talent_type_id');
+
+        return [
+            'linked' => TalentTypeResource::collection($linked),
+            'available' => TalentTypeResource::collection(
+                TalentType::whereNotIn('id', $linked->pluck('id'))->alphabetical()->get()
+            ),
+            'specialities' => $linked->mapWithKeys(fn (TalentType $type) => [
+                $type->id => [
+                    'options' => SpecialityResource::collection($catalog->get($type->id, collect())),
+                    'selected' => $claimed->get($type->id, collect())->pluck('id')->map('intval')->values(),
+                ],
+            ]),
+        ];
     }
 }

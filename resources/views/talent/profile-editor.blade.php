@@ -1,8 +1,8 @@
 {{--
     Profile structure (GET /talent/profile) — the fama-ui "profile-structure.html"
     screen on real data. The old dashboard is folded in: the profile path (Go Live
-    then Stand out — ADR-AC, drawn by ./profile-gate.js from SAVED data, with the
-    tracker floating under the nav) and the views card (the chart opens on request). EVERY edit — identity, availability, links,
+    then Stand out — ADR-AC, drawn by ./profile-gate.js from SAVED data as one slim
+    bar into the guided onboarding, ADR-AR) and the views card (the chart opens on request). EVERY edit — identity, availability, links,
     skills (order = tab order; the first opens first), specialities, the
     Explore / Experience show switches,
     willing to explore, pricing — collects in a draft; the bottom bar saves it
@@ -39,52 +39,36 @@
         ? ($deltaUp ? '▲' : '▼').' '.number_format(abs($weekly['delta_pct'])).'%'
         : ($weekly['current_week'] > 0 ? '▲ '.number_format($weekly['current_week']) : '–');
 
-    // The profile path (ADR-AC — prototype profile.js FAMA_INDEX_REQ / _REC).
-    // Order = ProfileCompletionService::GO_LIVE / STAND_OUT. Steps on this page
-    // land on their field (profile-gate.js `go` map); the rest link away.
+    // The profile path (ADR-AC) as the SLIM BAR into the guided onboarding (ADR-AR):
+    // the steps in order (ProfileCompletionService::GO_LIVE / STAND_OUT) and which
+    // onboarding screen holds each (ProfileCompletionService::ONBOARDING).
     $goLive = [
-        ['key' => 'name', 'label' => __('Display name'), 'help' => __('The name brands see in search results.'), 'href' => '#core'],
-        ['key' => 'skill', 'label' => __('A skill and a speciality'), 'help' => __('What brands search for.'), 'href' => '#skills'],
-        ['key' => 'place', 'label' => __('Your city'), 'help' => __('Brands filter by where you are.'), 'href' => '#core'],
+        ['key' => 'name', 'label' => __('Display name')],
+        ['key' => 'skill', 'label' => __('A skill and a speciality')],
+        ['key' => 'place', 'label' => __('Your city')],
     ];
     $standOut = [
-        ['key' => 'show', 'label' => __('Something to show'), 'help' => __('A project, three photos or a showreel. This puts you in the Creatives Index.'), 'href' => route('talent.projects')],
-        ['key' => 'projects3', 'label' => __('Three projects'), 'help' => __('One project shows you can do it. Three show a style.'), 'href' => route('talent.projects')],
-        ['key' => 'headline', 'label' => __('A headline'), 'help' => __('One line under your name in search, like “Art director & stylist”.'), 'href' => '#core'],
-        ['key' => 'photo', 'label' => __('A profile photo'), 'help' => __('Profiles with a photo get opened more.'), 'href' => '#core'],
-        ['key' => 'brands', 'label' => __('Experience'), 'help' => __('The brands and teams you have worked with.'), 'href' => '#brands'],
-        ['key' => 'links', 'label' => __('Your Instagram or website'), 'help' => __('Brands look at where else your work lives.'), 'href' => '#social'],
-        ['key' => 'bio', 'label' => __('A short bio'), 'help' => __('A few lines on how you work.'), 'href' => '#core'],
+        ['key' => 'show', 'label' => __('Your first project')],
+        ['key' => 'projects3', 'label' => __('Three projects')],
+        ['key' => 'headline', 'label' => __('A headline')],
+        ['key' => 'photo', 'label' => __('A profile photo')],
+        ['key' => 'brands', 'label' => __('Experience')],
+        ['key' => 'links', 'label' => __('Your Instagram or website')],
+        ['key' => 'bio', 'label' => __('A short bio')],
     ];
+    $screenOf = collect(\App\Services\ProfileCompletionService::ONBOARDING)
+        ->flatMap(fn ($keys, $screen) => array_fill_keys($keys, $screen))->all();
     $gate = [
-        'barLabel' => __('Profile steps'), 'doneSuffix' => __(', done'), 'ofN' => __(':n of :m'),
-        'trackA' => __('Go Live :a done, Stand out :b done'),
-        'grpLive' => __('1 · Go Live'), 'grpStand' => __('2 · Stand out'),
-        'inIndex' => __('In the Creatives Index'), 'getsIndex' => __('Gets you into the Creatives Index'),
-        'edit' => __('Edit'), 'add' => __('Add'),
-        'standOut' => __('Stand out'), 'oneToIndex' => __('1 step to the Creatives Index'), 'nextColon' => __('Next:'),
-        'allSteps' => __('All steps'), 'fold' => __('Fold steps'), 'yourProfile' => __('Your profile'),
+        'yourPortfolio' => __('Your portfolio'), 'ofN' => __(':n of :m'), 'meterA' => __('Portfolio complete'),
         'moreOne' => __(':n more step to go Live'), 'moreMany' => __(':n more steps to go Live'),
-        'liveStand' => __('You’re Live. Now stand out'), 'liveNext' => __('You’re Live. Next, the Creatives Index'),
-        'leadLive' => __('Two parts. Go Live takes a minute, and then your link works. Stand out starts with something to show, which puts you in the Creatives Index where brands search. The rest gets you picked.'),
-        'leadListed' => __('Your link works and brands find you in the Creatives Index. Fama recommends these next: they are what gets a profile picked.'),
-        'leadNotListed' => __('Your link works and you can share it. Add something to show and brands find you in the Creatives Index too.'),
-        'onlyYou' => __('Only you see this'),
         'privH' => __('Ready. Your profile is Private'), 'goLive' => __('Go Live'),
-        'leadPrivate' => __('Your Go Live steps are done. Only you can see your profile until you go Live; then your link works and you can share it.'),
-        'p1Title' => __('Go Live'), 'p1Sub' => __('Your link works and you can share it.'),
-        'p2Title' => __('Stand out'), 'p2Sub' => __('Not needed to go Live. Something to show gets you into the Creatives Index; the rest gets you picked.'),
-        'readyH' => __('Your profile is ready'), 'readySub' => __('Live, and standing out. Nice work.'), 'readySr' => __('Your profile is ready.'),
-        'headWent' => __('You’re Live. Your link works'), 'headListed' => __('You’re in the Creatives Index'), 'headNice' => __('Nice. :n to go'),
-        'headLast' => __('Last step to go Live'), 'headMore' => __(':n more steps to go Live'), 'headGetListed' => __('Next: the Creatives Index'), 'headStand' => __('Stand out · :n to go'),
-        'shortWent' => __('You’re Live'), 'shortListed' => __('In the Index!'), 'shortNice' => __('Nice!'), 'shortLive' => __(':n to go Live'), 'shortGet' => __('Get listed'), 'shortStand' => __('Stand out'),
-        'sub1' => __('Part 1 of 2 · Go Live'), 'sub2Listed' => __('Part 2 of 2 · Recommended by Fama'), 'sub2Not' => __('Part 2 of 2 · Live, not in the Creatives Index yet'),
-        'nextL' => __('Next: '), 'pop1' => __('1 · Go Live'), 'pop2' => __('2 · Stand out'),
-        'srWent' => __('You are Live. Your link works.'), 'srListed' => __('You are in the Creatives Index. Brands can find you now.'), 'srN' => __(':n of :m done'),
+        'liveNext' => __('You’re Live. Next, the Creatives Index'), 'standN' => __('Stand out · :n to go'),
+        'nextL' => __('Next: '), 'start' => __('Start setup'), 'cont' => __('Continue setup'),
     ];
 
     $strings = [
         'goLive' => $goLive, 'standOut' => $standOut, 'gate' => $gate,
+        'onboardingUrl' => route('talent.onboarding'), 'screenOf' => $screenOf,
         'partNames' => ['core' => __('Core details'), 'now' => __('Availability'), 'social' => __('Social links'), 'skills' => __('Skills'), 'explore' => __('Willing to explore'), 'brands' => __('Experience')] + (\App\Support\Features::enabled('pricing') ? ['pricing' => __('Pricing rate')] : []),
         'sbClean' => __('All changes saved'), 'sbCleanN' => __('Your profile is up to date.'), 'sbSavedNow' => __('Saved just now'),
         'sbDirtyOneIn' => __('Unsaved changes in :name'), 'sbDirtyManyIn' => __('Unsaved changes in :n sections'), 'sbShort' => __('Unsaved changes'),
@@ -190,9 +174,10 @@
   <div class="band" role="presentation"></div>
 </section>
 
-{{-- The dashboard lives here: the path (Go Live, then Stand out — drawn by profile-gate.js
-     from SAVED data; folds to one line once Live, gone once everything is done) and the views. --}}
-<section class="vw" id="gate" aria-label="{{ __('Creatives Index') }}" x-ref="gate" hidden></section>
+{{-- The path as ONE slim bar (profile-gate.js, from SAVED data; ADR-AR): where the profile
+     stands, the portfolio meter and the next step — which opens the guided onboarding
+     (/talent/welcome) on its screen. Gone once everything is done. --}}
+<section class="vw vw-obb" id="gate" aria-label="{{ __('Your portfolio') }}" x-ref="gate" hidden></section>
 
 <section class="vw" id="views" aria-label="{{ __('Profile views') }}" x-data="profileViews({ strings: @js($viewStrings) })">
   {{-- 24 Oct 2026: the card is a heading, the number and one line; the chart opens on request. --}}

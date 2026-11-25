@@ -389,6 +389,8 @@ class ProjectController extends TalentController
 
         return [
             'talent' => $talent,
+            // Opened from the onboarding Work screen (ADR-AR): the way back leads there.
+            'fromWelcome' => request()->query('from') === 'welcome',
             'homeOwner' => $homeOwner,
             'project' => $project,
             'payload' => $project ? $this->present($project) : null,
